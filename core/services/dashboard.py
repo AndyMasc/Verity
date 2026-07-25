@@ -15,6 +15,7 @@ from django.utils.timezone import make_aware
 
 from documents.models import DocumentData, DocumentStatus
 from records.models import MergeLog, Record
+from core.models import Notification
 
 logger = logging.getLogger(__name__)
 
@@ -124,6 +125,11 @@ async def get_dashboard_context(user) -> dict:
         get_webpush_warning(user),
     )
 
+    notifications = Notification.objects.filter(
+        recipient=user,
+        is_read=False,
+    )[:3]
+
     context = {
         "merged_records_count": merge_count,
         "records": recent_records,
@@ -133,6 +139,7 @@ async def get_dashboard_context(user) -> dict:
         "orphaned_document_count": orphaned_count,
         "pending_ocr_count": pending_ocr_count,
         "webpush_warning": webpush_warning,
+        "notifications": notifications,
     }
 
     return context

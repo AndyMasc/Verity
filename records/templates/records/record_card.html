@@ -15,7 +15,7 @@
             <!-- Title & Type Grid Section -->
             <div class="flex items-center gap-3 min-w-0 flex-1">
                 <!-- Responsive badge: compact on mobile, full text on sm+ screens -->
-                <span class="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[10px] font-bold {{ record.badge_classes }} border uppercase tracking-wider shrink-0 text-center shadow-xs truncate w-35">
+                <span class="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[10px] font-bold {{ record.badge_classes }} border uppercase tracking-wider shrink-0 text-center shadow-xs truncate max-w-35">
                     <span class="sm:hidden">{{ record.get_record_type_display|slice:":3" }}</span>
                     <span class="hidden sm:inline">{{ record.get_record_type_display }}</span>
                 </span>
