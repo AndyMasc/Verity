@@ -1,28 +1,11 @@
-from typing import Any
-
 from pythonjsonlogger.json import JsonFormatter
 
-ALLOWED_HOSTS: list[str] = []
+from .base import *  # noqa: F401, F403
 
-CSRF_TRUSTED_ORIGINS: list[str] = []
 CORS_ALLOW_ALL_ORIGINS = False
 
-SECURE_SSL_REDIRECT = True
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
-SECURE_HSTS_SECONDS = 31536000
-SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-SECURE_HSTS_PRELOAD = True
-SECURE_CONTENT_TYPE_NOSNIFF = True
-SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
-SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
-SESSION_COOKIE_HTTPONLY = True
-CSRF_COOKIE_HTTPONLY = True
-SESSION_COOKIE_SAMESITE = "Lax"
-CSRF_COOKIE_SAMESITE = "Lax"
-SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-
-LOGGING: dict[str, Any] = {
+# Override base LOGGING with production JSON formatter
+LOGGING = {  # noqa: F811
     "version": 1,
     "disable_existing_loggers": False,
     "filters": {

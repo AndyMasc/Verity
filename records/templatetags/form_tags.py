@@ -5,6 +5,8 @@ for building URLs that preserve existing query parameters while
 updating or removing specific filter values.
 """
 
+from typing import Any
+
 from django import template
 from django.urls import reverse
 
@@ -12,13 +14,13 @@ register = template.Library()
 
 
 @register.filter
-def get_attr(obj, attr):
+def get_attr(obj: Any, attr: str) -> str:
     """Return ``getattr(obj, attr, "")`` — a safe dynamic attribute lookup for templates."""
     return getattr(obj, attr, "")
 
 
 @register.simple_tag(takes_context=True)
-def filter_url(context, view_name, **kwargs):
+def filter_url(context: dict[str, Any], view_name: str, **kwargs: Any) -> str:
     """Build a URL for *view_name* that merges *kwargs* into the current query params.
 
     Set a param to ``None`` to remove it. Existing query parameters not

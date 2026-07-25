@@ -1,9 +1,7 @@
-{% extends "account/logout.html" %}
+{% extends "allauth/layouts/base.html" %}
 {% load i18n %}
 {% load allauth_ui %}
 {% load widget_tweaks %}
-{% load tailwind_tags %}
-{% tailwind_css %}
 
 {% block content %}
     {% trans "Sign Out" as heading %}

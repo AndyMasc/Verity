@@ -14,16 +14,16 @@ from .deletion import DocumentDeletionService
 from .detail import DocumentDetailService
 from .ocr import GeminiOCRError, extract
 from .upload import UploadService
-from .validation import UploadValidationResult, UploadValidator
+from .validation import DocumentUploadService, UploadResult
 
 __all__ = [
     "ConfirmUploadService",
     "DocumentDeletionService",
     "DocumentDetailService",
+    "DocumentUploadService",
     "GeminiOCRError",
+    "UploadResult",
     "UploadService",
-    "UploadValidator",
-    "UploadValidationResult",
     "bulk_delete_documents",
     "delete_7year_deleted_documents",
     "delete_orphaned_documents",

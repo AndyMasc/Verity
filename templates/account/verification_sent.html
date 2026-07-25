@@ -1,12 +1,10 @@
-{% extends "account/verification_sent.html" %}
+{% extends "allauth/layouts/base.html" %}
 {% load i18n %}
 {% load allauth_ui %}
-{% load tailwind_tags %}
-{% tailwind_css %}
 
 {% block content %}
     {% trans "Confirm Email Address" as heading %}
-    {% blocktrans asvar subheading %}We have sent an email to you for verification. Follow the link provided to finalize the signup process. If you do not see the verification email in your main inbox, check your spam folder. Please contact us if you do not receive the verification email within a few minutes.{% endblocktrans %}
+    {% blocktrans asvar subheading %}We have sent an email to you for verification. Follow the link provided to finalize the sign up process. If you do not see the verification email in your main inbox, check your spam folder. Please contact us if you do not receive the verification email within a few minutes.{% endblocktrans %}
     {% #container heading=heading subheading=subheading %}
     {% /container %}
 {% endblock content %}

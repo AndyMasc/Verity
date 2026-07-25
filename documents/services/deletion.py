@@ -12,10 +12,9 @@ from datetime import timedelta
 from django.utils import timezone
 
 from documents.models import DocumentData
+from documents.services.cleanup import COMPLIANCE_RETENTION_YEARS
 
 logger = logging.getLogger(__name__)
-
-COMPLIANCE_RETENTION_YEARS = 7
 
 
 @dataclass

@@ -1,8 +1,6 @@
 {% load allauth socialaccount %}
 {% load allauth_ui %}
 {% get_providers as socialaccount_providers %}
-{% load tailwind_tags %}
-{% tailwind_css %}
 
 {% load static %}
 {% get_social_accounts user as accounts %}
@@ -16,14 +14,14 @@
                     {% provider_login_url provider openid=brand.openid_url process=process as href %}
                     {% element provider name=brand.name provider_id=provider.id href=href %}
                     {% endelement %}
-                    <a class="w-full my-1 btn" title="{{ brand.name }}" href="{{ href }}">{{ brand.name }}</a>
+                    <a class="w-full my-1 px-4 py-2.5 h-10 flex items-center justify-center text-sm font-medium rounded-2xl" title="{{ brand.name }}" href="{{ href }}">{{ brand.name }}</a>
                 {% endfor %}
             {% endif %}
             {% provider_login_url provider process=process scope=scope auth_params=auth_params as href %}
 
             <a class="
-                      btn w-full my-1 rounded-2xl
-                      text-zinc-900 dark:text-zinc-100 font-medium bg-zinc-100 dark:bg-zinc-800/30 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-800/50 transition-all duration-150"
+                      w-full my-1 px-4 py-2.5 h-10 flex items-center justify-center rounded-2xl
+                      text-zinc-900 dark:text-zinc-100 font-medium text-sm bg-zinc-100 dark:bg-zinc-800/30 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-800/50 transition-all duration-150"
                title="{{ provider.name }}"
                href="{{ href }}">
                 {% if provider.id == 'google' %}

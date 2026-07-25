@@ -3,7 +3,7 @@
 {% load socialaccount %}
 {% get_providers as socialaccount_providers %}
 {% if socialaccount_providers %}
-    {% if not SOCIALACCOUNT_ONLY %}<div class="divider divider-zinc-200 dark:divider-zinc-800 my-1 mb-2"><span class="text-sm text-zinc-400 dark:text-zinc-600">Or</span></div>{% endif %}
+    {% if not SOCIALACCOUNT_ONLY %}<div class="relative flex items-center my-1 mb-2"><div class="flex-grow h-px bg-zinc-200 dark:bg-zinc-800"></div><span class="px-3 text-sm text-zinc-400 dark:text-zinc-600">Or</span><div class="flex-grow h-px bg-zinc-200 dark:bg-zinc-800"></div></div>{% endif %}
     {% include "socialaccount/snippets/provider_list.html" with process="login" %}
     {% include "socialaccount/snippets/login_extra.html" %}
 {% endif %}

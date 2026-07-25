@@ -23,89 +23,9 @@
             </a>
         </header>
 
-        <section class="space-y-3">
-            {% for document in documents %}
-                <div class="relative group rounded-2xl border border-zinc-200/50 dark:border-zinc-800/40 bg-white dark:bg-zinc-900/20 hover:border-zinc-300 dark:hover:border-zinc-700/60 hover:shadow-lg hover:shadow-zinc-100/50 dark:hover:shadow-none transition-all duration-350">
-                    <div class="absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-zinc-200 dark:via-zinc-700/50 to-transparent"></div>
-                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-5 py-4">
-                        <div class="flex items-start gap-4 min-w-0 flex-1">
-                            <div class="shrink-0 mt-0.5 p-2 rounded-xl bg-zinc-50 dark:bg-zinc-900/80 text-zinc-400 dark:text-zinc-500">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="w-5 h-5">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
-                                </svg>
-                            </div>
-                            <div class="min-w-0 flex-1">
-                                <div class="flex items-center gap-2 flex-wrap">
-                                    <span class="font-semibold text-sm text-zinc-900 dark:text-zinc-100 truncate max-w-[200px] sm:max-w-[300px]">
-                                        {{ document.title }}
-                                    </span>
-                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border uppercase tracking-wider
-                                                 {% if document.status == 'processing' %}text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 border-amber-200/50 dark:border-amber-800/40
-                                                 {% elif document.status == 'uploaded' %}text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 border-blue-200/50 dark:border-blue-800/40
-                                                 {% elif document.status == 'completed' %}text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200/50 dark:border-emerald-800/40
-                                                 {% elif document.status == 'error' %}text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/30 border-rose-200/50 dark:border-rose-800/40
-                                                 {% endif %}">
-                                        {% if document.status == 'processing' %}
-                                            <span class="relative flex h-1.5 w-1.5">
-                                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                                                <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500"></span>
-                                            </span>
-                                        {% endif %}
-                                        {{ document.get_status_display }}
-                                    </span>
-                                </div>
-                                <p class="text-xs text-zinc-400 dark:text-zinc-500 mt-1">
-                                    Uploaded {{ document.date_added|date:"M j, Y" }}
-                                </p>
-                            </div>
-                        </div>
-                        <div class="shrink-0 self-end sm:self-center">
-                            <a href="{% url 'records:add_record' document.id %}"
-                               class="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md active:scale-[0.98]">
-                                Continue
-                                <svg class="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-                                </svg>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            {% empty %}
-                <div class="text-center py-20 flex flex-col items-center justify-center p-6 border-2 border-dashed border-zinc-200 dark:border-zinc-800/40 rounded-2xl bg-zinc-50/50 dark:bg-zinc-950/10">
-                    <div class="p-3 bg-zinc-100 dark:bg-zinc-900 rounded-2xl text-zinc-400 dark:text-zinc-500 mb-4">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                        </svg>
-                    </div>
-                    <h3 class="text-sm font-semibold text-zinc-900 dark:text-zinc-200">All caught up</h3>
-                    <p class="text-xs text-zinc-400 dark:text-zinc-500 max-w-xs mt-1 leading-relaxed">
-                        No documents are currently processing. Upload a file to get started.
-                    </p>
-                    <a href="{% url 'documents:upload_document' %}" class="mt-5 inline-flex items-center text-xs font-semibold px-4 py-2 rounded-xl bg-zinc-950 text-white dark:bg-zinc-50 dark:text-zinc-950 hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-all duration-250 shadow-sm active:scale-[0.98]">
-                        Upload File
-                    </a>
-                </div>
-            {% endfor %}
-        </section>
+        <main class="relative min-h-0 w-full min-w-0 mt-10 dark:bg-zinc-900/30 bg-white py-4 px-6 rounded-2xl shadow-sm dark:shadow-none ring-1 ring-inset ring-black/[0.04] dark:ring-white/[0.04]">
+            {% include 'documents/partials/document_list_partial.html' with pending_ocr_view=True %}
+        </main>
 
-        {% if is_paginated %}
-            <nav class="flex items-center justify-center gap-2 pt-4">
-                {% if page_obj.has_previous %}
-                    <a href="?page={{ page_obj.previous_page_number }}"
-                       class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-zinc-600 dark:text-zinc-400 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all duration-200">
-                        Previous
-                    </a>
-                {% endif %}
-                <span class="text-xs text-zinc-400 dark:text-zinc-500 px-2">
-                    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
-                </span>
-                {% if page_obj.has_next %}
-                    <a href="?page={{ page_obj.next_page_number }}"
-                       class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-zinc-600 dark:text-zinc-400 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all duration-200">
-                        Next
-                    </a>
-                {% endif %}
-            </nav>
-        {% endif %}
     </main>
 {% endblock %}

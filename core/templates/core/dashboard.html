@@ -4,7 +4,7 @@
 {% block title %}Dashboard | Papertrail{% endblock %}
 
 {% block content %}
-    <main class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 selection:bg-zinc-900 selection:text-white dark:selection:bg-white dark:selection:text-zinc-900 overflow-x-clip font-sans relative">
+    <main class="flex flex-col min-h-screen justify-center max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 selection:bg-zinc-900 selection:text-white dark:selection:bg-white dark:selection:text-zinc-900 overflow-x-clip font-sans relative">
 
         <header class="w-full flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 pb-6 mb-6">
             <div class="flex flex-wrap items-center gap-3">
@@ -29,7 +29,7 @@
             </div>
 
             <div class="flex items-center gap-3">
-                <a href="{% url 'documents:upload_document' %}" class="group inline-flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-medium text-zinc-900 bg-white hover:bg-zinc-50 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200 rounded-full transition-all duration-200 active:scale-[0.97] ring-1 ring-inset ring-black/5 dark:ring-0">
+                <a href="{% url 'documents:upload_document' %}" class="group inline-flex items-center justify-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-black dark:bg-white hover:bg-zinc-800 dark:text-zinc-900 dark:hover:bg-zinc-200 rounded-full transition-all duration-200 active:scale-[0.97] ring-1 ring-inset ring-black/5 dark:ring-0">
                     <svg class="w-4 h-4 transition-transform duration-300 ease-out group-hover:rotate-90" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                     </svg>
@@ -98,14 +98,18 @@
 
             <div class="lg:col-span-3 mt-2" x-data="recordBulkActions()">
                 <section class="flex flex-col">
-                    <div class="flex items-center justify-between pb-4 mb-4 border-b border-black/[0.04] dark:border-white/[0.04]">
-                        <div class="flex items-baseline gap-3">
-                            <h2 class="text-[15px] font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">Recent Records</h2>
-                            <span class="text-[13px] font-medium text-zinc-400 dark:text-zinc-500 tabular-nums">{{ records|length }} total</span>
-                        </div>
-                    </div>
 
-                    <div class="space-y-3" x-init="$nextTick(() => updateVisibleIds([{% for record in records %}'{{ record.pk }}'{% if not forloop.last %},{% endif %}{% endfor %}]))">
+                    <div
+                        class="space-y-3 bg-white dark:bg-zinc-900/30 p-2 sm:p-6 rounded-2xl shadow-sm dark:shadow-none ring-1 ring-inset ring-black/[0.04] dark:ring-white/[0.04]"
+                        x-init="$nextTick(() => updateVisibleIds([{% for record in records %}'{{ record.pk }}'{% if not forloop.last %},{% endif %}{% endfor %}]))">
+
+                        <div class="flex items-center justify-between pb-2">
+                            <div class="flex items-baseline gap-3">
+                                <h2 class="font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">Recent Records</h2>
+                                <span class="text-[13px] font-medium text-zinc-400 dark:text-zinc-500 tabular-nums">{{ records|length }} total</span>
+                            </div>
+                        </div>
+
                         {% if records %}
                             {% for record in records %}
                                 {% include 'records/record_card.html' %}

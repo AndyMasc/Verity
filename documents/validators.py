@@ -7,6 +7,7 @@ and pixel dimensions for images.
 
 import logging
 from dataclasses import dataclass
+from typing import IO
 
 import filetype
 from django.core.exceptions import ValidationError
@@ -16,7 +17,7 @@ try:
 
     HAS_MAGIC = True
 except (ImportError, OSError):
-    python_magic = None
+    python_magic = None  # type: ignore[assignment]
     HAS_MAGIC = False
 
 logger = logging.getLogger(__name__)
@@ -96,7 +97,9 @@ def _validate_file(size: int, detected_mime: str | None) -> ValidationResult:
     return ValidationResult(file_size=size, mime_type=detected_mime)
 
 
-def validate_file_upload(file_obj, declared_mime_type=None) -> ValidationResult:  # noqa: ARG001
+def validate_file_upload(
+    file_obj: IO[bytes], declared_mime_type: str | None = None
+) -> ValidationResult:  # noqa: ARG001
     """Validate a file-like upload object by reading its header and checking constraints.
 
     Args:

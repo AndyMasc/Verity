@@ -5,7 +5,7 @@ INSTALLED_APPS.extend(["django_browser_reload", "debug_toolbar"])
 MIDDLEWARE.insert(-1, "django_browser_reload.middleware.BrowserReloadMiddleware")
 MIDDLEWARE.insert(-1, "debug_toolbar.middleware.DebugToolbarMiddleware")
 
-CSRF_TRUSTED_ORIGINS = [env("NGROK_HTTPS_TUNNEL_URL")]
+CSRF_TRUSTED_ORIGINS = [env("NGROK_HTTPS_TUNNEL_URL", default="http://localhost:8000")]
 CORS_ALLOW_ALL_ORIGINS = True
 ALLOWED_HOSTS = ["*"]
 

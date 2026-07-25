@@ -2,28 +2,52 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Too Many Requests | Papertrail</title>
-        <script src="https://cdn.tailwindcss.com"></script>
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
-        <script>
-            tailwind.config = {
-                theme: {
-                    fontFamily: {
-                        sans: ['Geist', 'system-ui', 'sans-serif'],
-                    }
-                }
+        <style>
+            *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+                background-color: #fafafa;
+                color: #18181b;
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                -webkit-font-smoothing: antialiased;
             }
-        </script>
+            @media (prefers-color-scheme: dark) {
+                body { background-color: #09090b; color: #fafafa; }
+                .card { background-color: #18181b; border-color: #27272a; }
+                .subtitle { color: #a1a1aa; }
+                .btn { background-color: #fafafa; color: #09090b; }
+                .btn:hover { background-color: #e4e4e7; }
+            }
+            .card {
+                max-width: 28rem; width: 100%; text-align: center;
+                padding: 2rem; margin: 1rem;
+                background-color: #ffffff;
+                border: 1px solid rgba(228,228,231,0.5);
+                border-radius: 1rem;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.02);
+            }
+            h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; }
+            .subtitle { color: #71717a; font-size: 0.875rem; margin-bottom: 1.5rem; line-height: 1.6; }
+            .btn {
+                display: inline-flex; align-items: center; justify-content: center;
+                padding: 0.5rem 1rem; font-size: 0.875rem; font-weight: 500;
+                border-radius: 1rem; text-decoration: none; transition: all 0.15s;
+                cursor: pointer; border: none;
+                background-color: #18181b; color: #ffffff;
+            }
+            .btn:hover { background-color: #27272a; }
+        </style>
     </head>
-    <body class="font-sans bg-zinc-50 dark:bg-zinc-950 flex items-center justify-center min-h-screen">
-        <div class="text-center p-8 max-w-md bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200/50 dark:border-zinc-800/50 shadow-lg">
-            <h1 class="text-2xl font-bold text-zinc-900 dark:text-zinc-50 mb-2">Slow down a bit</h1>
-            <p class="text-zinc-500 dark:text-zinc-400 text-sm mb-6">You've made too many sign-in requests in a short period. Please wait before trying to get a new code.</p>
-            <a href="/accounts/login/" class="inline-flex items-center justify-center px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white text-sm font-medium rounded-2xl transition-all duration-150 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200 shadow-xs active:scale-[0.98]">
-                Return to Login
-            </a>
+    <body>
+        <div class="card">
+            <h1>Slow down a bit</h1>
+            <p class="subtitle">You've made too many sign-in requests in a short period. Please wait before trying to get a new code.</p>
+            <a href="/accounts/login/" class="btn">Return to Login</a>
         </div>
     </body>
 </html>

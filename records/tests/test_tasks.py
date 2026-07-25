@@ -1,4 +1,5 @@
 from datetime import date, timedelta
+from unittest.mock import patch
 
 from django.contrib.auth.models import User
 from django.test import TestCase
@@ -94,7 +95,8 @@ class TasksTest(TestCase):
         delete_7year_archived_records()
         self.assertTrue(Record.objects.filter(id=recent.id).exists())
 
-    def test_send_expiry_notifications(self):
+    @patch("records.tasks.send_multi_channel_notification")
+    def test_send_expiry_notifications(self, mock_notify):
         future = timezone.now().date() + timedelta(days=3)
         Record.objects.create(
             user=self.user,
@@ -111,6 +113,7 @@ class TasksTest(TestCase):
 
         result = send_expiry_notifications()
         self.assertIsNone(result)
+        mock_notify.assert_called_once()
 
     def test_send_expiry_notifications_no_expiring(self):
         from records.tasks import send_expiry_notifications

@@ -11,7 +11,7 @@ from datetime import timedelta
 from django.utils import timezone
 
 from documents.models import DocumentData, DocumentStatus
-from documents.storage import BUCKET, s3
+from documents.storage import BUCKET, delete_r2_objects_batch, get_s3_client
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +48,7 @@ def bulk_delete_documents(file_data: list[tuple[int, str]]) -> None:
             continue
 
         try:
+            s3 = get_s3_client()
             s3.delete_objects(
                 Bucket=BUCKET,
                 Delete={"Objects": [{"Key": path} for path in chunk_paths]},
@@ -106,6 +107,7 @@ def reconcile_documents() -> None:
     Removes pending uploads older than 30 minutes and errored documents
     older than 2 days, deleting both the R2 objects and database records.
     """
+    s3 = get_s3_client()
     stale_cutoff = timezone.now() - timedelta(minutes=30)
     abandoned_uploads = DocumentData.objects.filter(
         filepath__isnull=False,
@@ -136,16 +138,9 @@ def reconcile_documents() -> None:
     )
     dangling_ids = list(dangling_records.values_list("id", "filepath"))
     if dangling_ids:
-        for doc_id, path in dangling_ids:
-            if path:
-                try:
-                    s3.delete_object(Bucket=BUCKET, Key=normalize_s3_key(path))
-                except Exception as e:
-                    logger.error(
-                        "Failed to clean up R2 object for dangling error doc %s: %s",
-                        doc_id,
-                        e,
-                    )
+        dangling_paths = [path for _, path in dangling_ids if path]
+        if dangling_paths:
+            delete_r2_objects_batch(dangling_paths)
         DocumentData.objects.filter(id__in=[d[0] for d in dangling_ids]).delete()
         logger.info("Reconciliation: removed %d dangling error records.", len(dangling_ids))
 
@@ -159,7 +154,7 @@ def delete_7year_deleted_documents() -> None:
     seven_years_ago = timezone.now() - timedelta(days=365 * COMPLIANCE_RETENTION_YEARS)
     expired_deleted = DocumentData.objects.filter(
         deleted_at__isnull=False,
-        deleted_at__lt=seven_years_ago,
+        date_added__lte=seven_years_ago,
         user__settings__auto_delete_deleted_documents=True,
     )
     count = expired_deleted.count()

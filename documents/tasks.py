@@ -8,7 +8,6 @@ from typing import Any
 
 from django_qstash import shared_task
 
-from .services.cleanup import bulk_delete_documents as _bulk_delete_documents
 from .services.cleanup import (
     delete_7year_deleted_documents as _cleanup_7year,
 )
@@ -22,11 +21,10 @@ from .services.cleanup import (
 from .services.ocr import MAX_OCR_RETRIES
 from .services.ocr import GeminiOCRError as GeminiOCRError
 from .services.ocr import extract as _ocr_extract
-from .storage import BUCKET, s3
+from .storage import BUCKET, get_s3_client
 
 __all__ = [
     "GeminiOCRError",
-    "_bulk_delete_documents",
 ]
 
 
@@ -40,6 +38,7 @@ def extract_document(document_id: int) -> dict[str, Any]:
 def delete_document(filepath: str) -> None:
     """Delete a single file from R2 storage, retrying on transient failures."""
     if filepath:
+        s3 = get_s3_client()
         s3.delete_object(Bucket=BUCKET, Key=normalize_s3_key(filepath))
 
 

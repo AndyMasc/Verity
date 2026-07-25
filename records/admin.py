@@ -40,10 +40,15 @@ class RecordAdmin(admin.ModelAdmin):
     def get_actions(self, request):
         actions = super().get_actions(request)
         if not request.user.is_superuser:
-            del actions["hard_delete_records"]
-            del actions["delete_selected"]
+            if "hard_delete_records" in actions:
+                del actions["hard_delete_records"]
+            if "delete_selected" in actions:
+                del actions["delete_selected"]
         else:
-            actions["delete_selected"][0] = safe_delete_selected
+            if "delete_selected" in actions:
+                # Fix: Extract tuple properties safely and overwrite with a new tuple
+                func, name, description = actions["delete_selected"]
+                actions["delete_selected"] = (safe_delete_selected, name, description)
         return actions
 
     def delete_model(self, request, obj):
@@ -60,8 +65,9 @@ class RecordAdmin(admin.ModelAdmin):
             for obj in queryset:
                 obj.delete()
 
-    def get_deleted_objects(self, objs, request):
-        deleted, protected, perms_needed, view_only = super().get_deleted_objects(objs, request)
+    def get_deleted_objects(self, queryset, request):
+        # Fix: Updated signature from old (objs, request) to modern (queryset, request)
+        deleted, protected, perms_needed, view_only = super().get_deleted_objects(queryset, request)
         return deleted, protected, perms_needed, view_only
 
     def has_delete_permission(self, request, obj=None):  # noqa: ARG002

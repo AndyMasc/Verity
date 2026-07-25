@@ -15,7 +15,7 @@ from django.db.models import F
 
 from documents.models import DocumentData, DocumentStatus
 from documents.ocr_helpers import prepare_image_for_gemini
-from documents.storage import BUCKET, s3
+from documents.storage import BUCKET, get_s3_client
 
 from .cleanup import normalize_s3_key
 
@@ -68,7 +68,7 @@ try:
     )
 except ImportError:
     client = None
-    OCRResult = None
+    OCRResult = None  # type: ignore[misc]
     CONFIG = None
 
 
@@ -95,6 +95,7 @@ def increment_ocr_retries(document_id: int) -> int:
 
 def fetch_from_r2(filepath: str) -> bytes:
     """Download the full file content from R2 for the given key."""
+    s3 = get_s3_client()
     key = normalize_s3_key(filepath)
     response = s3.get_object(Bucket=BUCKET, Key=key)
     body = response["Body"]

@@ -1,5 +1,6 @@
 <div
     x-data="expenseChart()"
+    x-cloak
     x-init="init()"
     class="relative rounded-2xl bg-white/70 dark:bg-zinc-900/40 backdrop-blur-xl ring-1 ring-inset ring-black/[0.04] dark:ring-white/[0.04] shadow-[0_2px_12px_rgba(0,0,0,0.02)] overflow-hidden transition-all duration-300 hover:bg-white dark:hover:bg-zinc-900/60 hover:ring-black/[0.06] dark:hover:ring-white/[0.08] hover:shadow-[0_4px_20px_rgba(0,0,0,0.04)] active:scale-[0.99]"
 >
@@ -28,7 +29,7 @@
     </div>
 
     <div class="relative px-6 pb-6 mt-4">
-        <div class="relative" style="height: 270px;">
+        <div class="relative" style="height: 265px;">
             <canvas
                 x-ref="canvas"
                 class="absolute inset-0 w-full h-full cursor-crosshair"

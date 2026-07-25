@@ -12,7 +12,7 @@ concurrency:
 
 env:
   PYTHON_VERSION: "3.14"
-  DJANGO_SETTINGS_MODULE: "Papertrail.settings.local"
+  DJANGO_SETTINGS_MODULE: "Papertrail.settings.ci"
 
 jobs:
   lint:
@@ -128,12 +128,12 @@ jobs:
       - name: Run migrations
         run: python manage.py migrate --no-input
         env:
-          DJANGO_SETTINGS_MODULE: Papertrail.settings.local
+          DJANGO_SETTINGS_MODULE: Papertrail.settings.ci
       - name: Run tests
         run: |
           pytest --tb=short -q --numprocesses=auto
         env:
-          DJANGO_SETTINGS_MODULE: Papertrail.settings.local
+          DJANGO_SETTINGS_MODULE: Papertrail.settings.ci
       - name: Upload coverage
         if: always()
         uses: actions/upload-artifact@v4

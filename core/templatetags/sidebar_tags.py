@@ -4,6 +4,8 @@ Provides the ``active_link`` tag which returns the appropriate CSS classes
 based on whether the current request path matches a given URL pattern.
 """
 
+from typing import Any
+
 from django import template
 from django.urls import NoReverseMatch, reverse
 
@@ -11,7 +13,9 @@ register = template.Library()
 
 
 @register.simple_tag(takes_context=True)
-def active_link(context, view_name, base_classes, active_classes):
+def active_link(
+    context: dict[str, Any], view_name: str, base_classes: str, active_classes: str
+) -> str:
     """Return ``active_classes`` when the current path matches ``view_name``, else ``base_classes``.
 
     Handles both resolved URL names and literal paths. A literal path of ``/``
@@ -26,7 +30,7 @@ def active_link(context, view_name, base_classes, active_classes):
     except NoReverseMatch:
         target_url = view_name
 
-    if request.path == target_url or request.path.startswith(target_url) and target_url != "/":
+    if request.path == target_url or (request.path.startswith(target_url) and target_url != "/"):
         return active_classes
 
     return base_classes

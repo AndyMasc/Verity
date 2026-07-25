@@ -91,7 +91,7 @@ class ExportExcelAllViewTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("Record_export.xlsx", response["Content-Disposition"])
 
-    @patch("accounting.views.export_to_excel", side_effect=RuntimeError("db down"))
+    @patch("accounting.views.export_records_to_excel", side_effect=RuntimeError("db down"))
     def test_returns_500_on_export_failure(self, _mock_export, _mock_rl):
         self.client.force_login(self.user)
         response = self.client.get(EXPORT_URL)
@@ -100,14 +100,15 @@ class ExportExcelAllViewTest(TestCase):
 
 class ExportExcelAllServiceTest(TestCase):
     def test_user_scoping(self):
-        from accounting.services import export_to_excel
+        from accounting.services import export_records_to_excel
 
         user = User.objects.create_user(username="svc_user", password="pass")
         other = User.objects.create_user(username="svc_other", password="pass")
         Record.objects.create(user=user, title="owned")
         Record.objects.create(user=other, title="not owned")
 
-        result = export_to_excel(user=user)
+        queryset = Record.objects.filter(user=user)
+        result = export_records_to_excel(queryset=queryset)
         self.assertIsInstance(result, bytes)
         self.assertGreater(len(result), 0)
 

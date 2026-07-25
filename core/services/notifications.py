@@ -1,41 +1,37 @@
 """Unified notification service supporting webpush, email, and database channels.
 
 Provides helpers to build notification payloads, check per-user delivery
-preferences, and dispatch notifications across one or more channels in a
-single call.
+preferences, and dispatch notifications across one or more channels in
+a single call.
 """
 
+from __future__ import annotations
+
 import logging
-from dataclasses import dataclass
+from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.sites.models import Site
 from django.templatetags.static import static
-from webpush import send_user_notification
 
 from core.tasks import fire_single_webpush, send_background_email
+
+if TYPE_CHECKING:
+    from django.contrib.auth.models import AbstractUser
 
 logger = logging.getLogger(__name__)
 
 User = get_user_model()
 
 
-@dataclass
-class NotificationContext:
-    """Data transfer object bundling all inputs needed to send a multi-channel notification.
-
-    Groups the common fields (user, subject, bodies, webpush payload) so that
-    callers can construct a single object and pass it to ``send_multi_channel_notification``.
-    """
-
-    user: User
-    subject: str
-    text_body: str
-    html_body: str
-    webpush_payload: dict | None = None
-    webpush_ttl: int = 1000
+def _base_payload() -> dict:
+    """Return the base webpush payload with icon and URL, lazily evaluated."""
+    return {
+        "icon": static("favicon-package/icon-512.png"),
+        "url": getattr(settings, "SITE_URL", "http://localhost:8000"),
+    }
 
 
 def build_site_context() -> dict:
@@ -60,12 +56,6 @@ def build_site_context() -> dict:
     }
 
 
-base_payload = {
-    "icon": static("favicon-package/icon-512.png"),
-    "url": settings.SITE_URL,
-}
-
-
 def build_expiry_webpush_payload(record_count: int) -> dict:
     """Build a webpush payload for the record expiry alert notification.
 
@@ -73,14 +63,14 @@ def build_expiry_webpush_payload(record_count: int) -> dict:
     or plural record counts.
     """
     return {
-        **base_payload,
+        **_base_payload(),
         "head": "Record Expiry Alert",
         "body": f"You have {record_count} record{'s' if record_count > 1 else ''} expiring soon.",
     }
 
 
 def build_expiry_email_context(
-    user: User,
+    user: AbstractUser,
     records: list,
     remaining_count: int,
     total_records_count: int,
@@ -105,21 +95,8 @@ def build_expiry_email_context(
     }
 
 
-def send_push_notification(user: User, payload: dict, ttl: int = 1000) -> None:
-    """Send a webpush notification synchronously, logging failures.
-
-    This is a thin wrapper around django-webpush that centralizes error
-    handling and logging for push delivery.
-    """
-    try:
-        send_user_notification(user=user, payload=payload, ttl=ttl)
-        logger.info(f"Dispatched webpush to {user.email}")
-    except Exception as e:
-        logger.error(f"Failed webpush delivery to {user.email}: {e}")
-
-
 def send_email_notification(
-    user: User,
+    user: AbstractUser,
     subject: str,
     text_body: str,
     html_body: str,
@@ -139,7 +116,7 @@ def send_email_notification(
     logger.info(f"Dispatched background email request for {user.email}")
 
 
-def _user_can_receive_push(user: User) -> bool:
+def _user_can_receive_push(user: AbstractUser) -> bool:
     """Check whether the user has push notifications enabled and at least one subscription.
 
     Returns False when the user has no settings, when push is disabled, or
@@ -158,7 +135,7 @@ def _user_can_receive_push(user: User) -> bool:
         return False
 
 
-def _user_can_receive_email(user: User) -> bool:
+def _user_can_receive_email(user: AbstractUser) -> bool:
     """Check whether the user has email notifications enabled.
 
     Refreshes the settings from the database to avoid returning a stale value
@@ -172,7 +149,7 @@ def _user_can_receive_email(user: User) -> bool:
 
 
 def send_multi_channel_notification(
-    user: User,
+    user: AbstractUser,
     subject: str,
     text_body: str,
     html_body: str,
@@ -204,4 +181,4 @@ def send_multi_channel_notification(
     if send_db and db_message:
         from core.models import Notification
 
-        Notification.objects.create(recipient=user, message=db_message)
+        Notification.objects.create(recipient=user, subject=subject, message=db_message)

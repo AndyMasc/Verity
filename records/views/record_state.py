@@ -16,6 +16,8 @@ from django.views import View
 from django.views.decorators.http import require_POST
 from django_ratelimit.decorators import ratelimit
 
+from Papertrail.views import parse_record_ids
+
 from ..models import AuditLog, Record
 from ..services import (
     BulkLimitExceededError,
@@ -74,29 +76,6 @@ class DeleteRecordView(LoginRequiredMixin, View):
         return redirect("records:view_all_records")
 
 
-def _parse_bulk_ids(request: HttpRequest) -> tuple[list[int] | None, HttpResponse | None]:
-    """Parse and validate record_ids from a JSON request body.
-
-    Returns ``(ids, None)`` on success or ``(None, error_response)`` on failure.
-    """
-    try:
-        data = json.loads(request.body)
-        record_ids = data.get("record_ids", [])
-    except (json.JSONDecodeError, AttributeError):
-        return None, HttpResponse(
-            '{"error": "Invalid request body"}', status=400, content_type="application/json"
-        )
-
-    if not isinstance(record_ids, list) or not all(isinstance(rid, int) for rid in record_ids):
-        return None, HttpResponse(
-            '{"error": "record_ids must be a list of integers"}',
-            status=400,
-            content_type="application/json",
-        )
-
-    return record_ids, None
-
-
 def _bulk_response(
     request: HttpRequest,
     count: int,
@@ -128,7 +107,7 @@ def BulkArchiveView(request: HttpRequest) -> HttpResponse:
     Accepts a JSON body with ``{"record_ids": [1, 2, 3]}`` and archives
     all active records belonging to the user.
     """
-    record_ids, error = _parse_bulk_ids(request)
+    record_ids, error = parse_record_ids(request)
     if error:
         return error
 
@@ -151,7 +130,7 @@ def BulkUnarchiveView(request: HttpRequest) -> HttpResponse:
     Accepts a JSON body with ``{"record_ids": [1, 2, 3]}`` and restores
     all inactive records belonging to the user.
     """
-    record_ids, error = _parse_bulk_ids(request)
+    record_ids, error = parse_record_ids(request)
     if error:
         return error
 

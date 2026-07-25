@@ -1,38 +1,74 @@
-{% extends "base.html" %}
-
-{% block title %}500 - Server Error | Papertrail{% endblock %}
-
-{% block content %}
-    <main class="flex min-h-[calc(100vh-12rem)] items-center justify-center px-6 py-24">
-        <div class="max-w-md w-full text-center space-y-8">
-
-            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-zinc-50 text-zinc-500 dark:bg-zinc-800/30 dark:text-zinc-400 border border-zinc-200/40 dark:border-zinc-800/40 text-[11px] font-medium tracking-wider uppercase">
-                <span class="w-1.5 h-1.5 rounded-full bg-zinc-400 dark:bg-zinc-500" aria-hidden="true"></span>
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>500 - Server Error | Papertrail</title>
+        <style>
+            *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+                background-color: #fafafa;
+                color: #18181b;
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                -webkit-font-smoothing: antialiased;
+            }
+            @media (prefers-color-scheme: dark) {
+                body { background-color: #0e0e0e; color: #fafafa; }
+                .card { background-color: #18181b; border-color: #27272a; }
+                .badge { background-color: rgba(39,39,42,0.3); color: #a1a1aa; border-color: rgba(39,39,42,0.4); }
+                .dot { background-color: #71717a; }
+                .subtitle { color: #a1a1aa; }
+                .btn-secondary { background-color: #18181b; color: #d4d4d8; border-color: #27272a; }
+                .btn-secondary:hover { background-color: #27272a; }
+                .btn-primary { background-color: #fafafa; color: #09090b; }
+                .btn-primary:hover { background-color: #e4e4e7; }
+            }
+            .container { max-width: 28rem; width: 100%; text-align: center; padding: 2rem 1.5rem; }
+            .badge {
+                display: inline-flex; align-items: center; gap: 0.5rem;
+                padding: 0.25rem 0.75rem; border-radius: 0.75rem;
+                background-color: #f4f4f5; color: #71717a;
+                border: 1px solid rgba(228,228,231,0.4);
+                font-size: 0.6875rem; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase;
+            }
+            .dot { width: 0.375rem; height: 0.375rem; border-radius: 50%; background-color: #a1a1aa; }
+            h1 { font-size: 2.25rem; font-weight: 700; letter-spacing: -0.025em; margin-top: 1.5rem; }
+            .subtitle { color: #71717a; font-size: 0.875rem; margin-top: 0.75rem; max-width: 20rem; margin-left: auto; margin-right: auto; line-height: 1.625; }
+            .actions { display: flex; flex-direction: column; gap: 0.75rem; margin-top: 2rem; justify-content: center; }
+            @media (min-width: 640px) { .actions { flex-direction: row; } }
+            .btn {
+                display: inline-flex; align-items: center; justify-content: center; gap: 0.375rem;
+                padding: 0.5rem 1rem; font-size: 0.75rem; font-weight: 500;
+                border-radius: 1rem; text-decoration: none; transition: all 0.15s;
+                cursor: pointer; border: none;
+            }
+            .btn-secondary { border: 1px solid #e4e4e7; }
+            .btn-primary { color: white; background-color: #18181b; }
+            .btn-primary:hover { background-color: #27272a; }
+            .btn-secondary:hover { background-color: #f4f4f5; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="badge">
+                <span class="dot" aria-hidden="true"></span>
                 Error 500
             </div>
-
-            <div class="space-y-3">
-                <h1 class="text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-5xl">
-                    Something went wrong.
-                </h1>
-                <p class="text-sm text-zinc-500 dark:text-zinc-400 max-w-xs mx-auto leading-relaxed">
-                    Our servers hit a snag. The issue has been logged and we're looking into it.
-                </p>
-            </div>
-
-            <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
-                <a href="javascript:history.back()" class="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-medium bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-2xl transition-all duration-150 shadow-xs active:scale-[0.98]">
-                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+            <h1>Something went wrong.</h1>
+            <p class="subtitle">Our servers hit a snag. The issue has been logged and we're looking into it.</p>
+            <div class="actions">
+                <a href="/" class="btn btn-secondary">
+                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
                     </svg>
                     Go Back
                 </a>
-
-                <a href="{% url 'core:dashboard' %}" class="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-medium text-white bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white rounded-2xl transition-all duration-150 shadow-xs active:scale-[0.98]">
-                    Dashboard
-                </a>
+                <a href="/" class="btn btn-primary">Dashboard</a>
             </div>
-
         </div>
-    </main>
-{% endblock %}
+    </body>
+</html>

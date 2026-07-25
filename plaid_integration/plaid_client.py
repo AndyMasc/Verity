@@ -11,7 +11,7 @@ from plaid.api import plaid_api
 
 PLAID_ENV_MAP = {
     "sandbox": plaid.Environment.Sandbox,
-    "development": "https://development.plaid.com",
+    "development": plaid.Environment.Sandbox,
     "production": plaid.Environment.Production,
 }
 

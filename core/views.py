@@ -22,7 +22,6 @@ from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
 from django.utils import timezone
-from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 from django.views.generic import TemplateView, UpdateView
 from django_ratelimit.decorators import ratelimit
@@ -32,8 +31,6 @@ from webpush.views import save_info
 from .forms import UpdateUserSettingsForm
 from .models import UserSettings
 from .services.dashboard import get_dashboard_context
-
-logger = logging.getLogger(__name__)
 
 logger = logging.getLogger(__name__)
 
@@ -90,7 +87,6 @@ def health_check(request: HttpRequest) -> JsonResponse:  # noqa: ARG001
     )
 
 
-@csrf_exempt
 @require_POST
 def safe_webpush_save_info(request: HttpRequest) -> HttpResponse:
     """Deduplicate webpush subscriptions before delegating to django-webpush.
@@ -201,7 +197,7 @@ def expense_chart_data(request: HttpRequest) -> JsonResponse:
 
     from records.models import Record
 
-    period = request.GET.get("period", "1y")
+    period = request.GET.get("period", "3m")
     months_back = PERIOD_MONTHS.get(period)
 
     now = timezone.now()

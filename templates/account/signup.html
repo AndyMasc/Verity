@@ -1,4 +1,4 @@
-{% extends "account/signup.html" %}
+{% extends "allauth/layouts/base.html" %}
 {% load i18n %}
 {% load allauth_ui %}
 {% load widget_tweaks %}
@@ -22,7 +22,7 @@
         {# 2. Social/Third-Party Signup Section #}
         {% get_providers as socialaccount_providers %}
         {% if socialaccount_providers %}
-            <div class="divider divider-zinc-200 dark:divider-zinc-800 my-1 mb-2"><span class="text-sm text-zinc-400 dark:text-zinc-600">Or</span></div>
+            <div class="relative flex items-center my-1 mb-2"><div class="flex-grow h-px bg-zinc-200 dark:bg-zinc-800"></div><span class="px-3 text-sm text-zinc-400 dark:text-zinc-600">Or</span><div class="flex-grow h-px bg-zinc-200 dark:bg-zinc-800"></div></div>
             <div class="flex flex-col gap-2">
                 {% include "socialaccount/snippets/provider_list.html" with process="connect" %}
             </div>

@@ -5,6 +5,7 @@ modified, and removed transactions. Converts them into Record objects
 and organizes them into user folders by category.
 """
 
+import json
 import logging
 from datetime import date
 from typing import Any
@@ -66,21 +67,28 @@ def choose_folder(
 
 
 def _get_payment_method(plaid_item: PlaidItem, account_id: str) -> str:
-    """Build a display string for the payment method from stored account data.
-
-    Returns a formatted string like ``Chase Checking (••1234)`` for use
-    in Record metadata. Falls back to the account name alone if the mask
-    is unavailable.
-    """
-    if not plaid_item.accounts_data or not account_id:
+    """Build a display string for the payment method from stored account data."""
+    accounts = plaid_item.accounts_data
+    if not accounts or not account_id:
         return ""
-    for acct in plaid_item.accounts_data:
-        if acct.get("id") == account_id:
+
+    while isinstance(accounts, str):
+        try:
+            accounts = json.loads(accounts)
+        except (json.JSONDecodeError, TypeError):
+            return ""
+
+    if not isinstance(accounts, list):
+        return ""
+
+    for acct in accounts:
+        if isinstance(acct, dict) and acct.get("id") == account_id:
             name = acct.get("name", "")
             mask = acct.get("mask", "")
             if name and mask:
                 return f"{name} (••{mask})"
             return name or ""
+
     return ""
 
 

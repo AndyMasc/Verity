@@ -1,19 +1,24 @@
 """Shared view utilities and mixins for the Papertrail project.
 
-Provides reusable helpers for HTMX responses, pagination, and audit
-logging that are used across multiple Django apps.
+Provides reusable helpers for HTMX responses, pagination, audit
+logging, and JSON body parsing that are used across multiple Django apps.
 """
 
 from __future__ import annotations
 
 import json
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from django.core.paginator import InvalidPage
 from django.http import Http404, HttpRequest, HttpResponse
 
 from Papertrail.utils import CachedPaginator
+
+if TYPE_CHECKING:
+    from django.contrib.auth.models import AbstractUser
+
+    from records.models import AuditLog, MergeLog, Record
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +61,7 @@ class CachedPaginatorMixin:
     Use with ``ListView`` or ``FilterView`` that sets ``paginate_by``.
     """
 
-    def paginate_queryset(self, queryset, page_size):  # type: ignore[override]
+    def paginate_queryset(self, queryset, page_size):
         paginator = CachedPaginator(queryset, page_size)
         page_kwarg = self.page_kwarg
         page = self.kwargs.get(page_kwarg) or self.request.GET.get(page_kwarg) or 1
@@ -76,12 +81,12 @@ class CachedPaginatorMixin:
 
 def create_audit_log(
     *,
-    user: Any,
-    action: Any,
-    record: Any,
-    merge_log: Any | None = None,
-    details: dict | None = None,
-) -> Any:
+    user: AbstractUser,
+    action: str,
+    record: Record,
+    merge_log: MergeLog | None = None,
+    details: dict[str, Any] | None = None,
+) -> AuditLog:
     """Create an AuditLog entry, reducing boilerplate in merge/detach views."""
     from records.models import AuditLog
 
@@ -95,3 +100,27 @@ def create_audit_log(
     if details is not None:
         kwargs["details"] = details
     return AuditLog.objects.create(**kwargs)
+
+
+def parse_record_ids(request: HttpRequest) -> tuple[list[int] | None, HttpResponse | None]:
+    """Parse and validate record_ids from a JSON request body.
+
+    Returns ``(ids, None)`` on success or ``(None, error_response)`` on failure.
+    Used by bulk archive/unarchive and export views.
+    """
+    try:
+        data = json.loads(request.body)
+        record_ids = data.get("record_ids", [])
+    except (json.JSONDecodeError, AttributeError):
+        return None, HttpResponse(
+            '{"error": "Invalid request body"}', status=400, content_type="application/json"
+        )
+
+    if not isinstance(record_ids, list) or not all(isinstance(rid, int) for rid in record_ids):
+        return None, HttpResponse(
+            '{"error": "record_ids must be a list of integers"}',
+            status=400,
+            content_type="application/json",
+        )
+
+    return record_ids, None

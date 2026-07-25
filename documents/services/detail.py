@@ -14,11 +14,11 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 
 from documents.storage import generate_read_presigned_url
+from documents.services.cleanup import COMPLIANCE_RETENTION_YEARS
 from records.models import Record
 
 logger = logging.getLogger(__name__)
 
-COMPLIANCE_RETENTION_YEARS = 7
 RECORD_SEARCH_PAGE_SIZE = 5
 
 

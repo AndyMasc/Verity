@@ -1,7 +1,6 @@
 """Unified history timeline view for records."""
 
 import logging
-from types import SimpleNamespace
 
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404
@@ -10,6 +9,7 @@ from django.views.generic.list import ListView
 from documents.models import DocumentData
 
 from ..models import MergeLog, Record
+from ..types import HistoryEntry
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +77,7 @@ class RecordHistoryView(LoginRequiredMixin, ListView):
         )[:_HISTORY_MAX_ENTRIES_PER_SOURCE]
         for merge in merges:
             merged.append(
-                SimpleNamespace(
+                HistoryEntry(
                     source_type="merge",
                     history_type="+",
                     history_date=merge.created_at,
@@ -87,7 +87,7 @@ class RecordHistoryView(LoginRequiredMixin, ListView):
             )
             if merge.undone_at:
                 merged.append(
-                    SimpleNamespace(
+                    HistoryEntry(
                         source_type="merge",
                         history_type="-",
                         history_date=merge.undone_at,

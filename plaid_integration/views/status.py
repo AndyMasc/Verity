@@ -45,7 +45,7 @@ class PlaidStatusView(APIView):
                     "item_id": item.item_id,
                     "created_at": item.created_at.isoformat() if item.created_at else None,
                     "has_cursor": bool(item.next_cursor),
-                    "record_count": len(item.records.all()),
+                    "record_count": len(item.records.all()),  # type: ignore[attr-defined]
                     "account_name": item.institution_name,
                     "accounts_data": item.accounts_data,
                     "last_error_code": item.last_error_code,

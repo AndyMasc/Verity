@@ -1,12 +1,9 @@
 {# -*- engine:django -*- #}
-{% extends "account/confirm_login_code.html" %}
+{% extends "allauth/layouts/base.html" %}
 {% load i18n %}
 {% load allauth %}
 {% load allauth_ui %}
 {% load widget_tweaks %}
-
-{% load tailwind_tags %}
-{% tailwind_css %}
 
 {% block content %}
     {% trans "Sign In" as heading %}
@@ -24,7 +21,7 @@
             {{ redirect_field }}
             {% csrf_token %}
         {% /form %}
-        <button type="submit" class="btn w-full rounded-3xl text-zinc-900 dark:text-zinc-100 font-medium bg-zinc-100 dark:bg-zinc-800/30 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-800/50 transition-all duration-150" form="logout-from-stage">{% translate "Cancel" %}</button>
+        <button type="submit" class="w-full px-4 py-2.5 h-10 flex items-center justify-center rounded-3xl text-sm font-medium text-zinc-900 dark:text-zinc-100 bg-zinc-100 dark:bg-zinc-800/30 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-800/50 transition-all duration-150" form="logout-from-stage">{% translate "Cancel" %}</button>
         <form id="logout-from-stage"
               method="post"
               action="{% url 'account_logout' %}">
@@ -33,4 +30,3 @@
         </form>
     {% /container %}
 {% endblock content %}
-{% comment %}{% endcomment %}

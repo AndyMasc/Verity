@@ -6,13 +6,18 @@ Provides three middleware classes:
 - HtmxMessageMiddleware: injects Django messages into HTMX responses via HX-Trigger.
 """
 
+from __future__ import annotations
+
 import contextvars
 import json
 import logging
 import uuid
+from collections.abc import Callable
+from typing import Any
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from django.contrib.messages import get_messages
+from django.http import HttpRequest, HttpResponse
 from django.utils import timezone
 
 request_id_var: contextvars.ContextVar[str] = contextvars.ContextVar("request_id", default="")
@@ -26,12 +31,12 @@ class RequestIDMiddleware:
     for log correlation, and echoed in the response header.
     """
 
-    def __init__(self, get_response):
+    def __init__(self, get_response: Callable[[HttpRequest], HttpResponse]) -> None:
         self.get_response = get_response
 
-    def __call__(self, request):
+    def __call__(self, request: HttpRequest) -> HttpResponse:
         request_id = request.headers.get("X-Request-ID") or uuid.uuid4().hex
-        request.request_id = request_id
+        request.request_id = request_id  # type: ignore[attr-defined]
         token = request_id_var.set(request_id)
         try:
             response = self.get_response(request)
@@ -48,7 +53,7 @@ class RequestIDLogFilter(logging.Filter):
     with specific HTTP requests via the ``request_id`` attribute.
     """
 
-    def filter(self, record):
+    def filter(self, record: logging.LogRecord) -> bool:
         record.request_id = request_id_var.get("")
         return True
 
@@ -63,10 +68,10 @@ class TimezoneMiddleware:
 
     COOKIE_NAME = "user_timezone"
 
-    def __init__(self, get_response):
+    def __init__(self, get_response: Callable[[HttpRequest], HttpResponse]) -> None:
         self.get_response = get_response
 
-    def __call__(self, request):
+    def __call__(self, request: HttpRequest) -> HttpResponse:
         timezone_name = request.COOKIES.get(self.COOKIE_NAME)
 
         if timezone_name:
@@ -88,10 +93,10 @@ class HtmxMessageMiddleware:
     the client-side can display them without a full page reload.
     """
 
-    def __init__(self, get_response):
+    def __init__(self, get_response: Callable[[HttpRequest], HttpResponse]) -> None:
         self.get_response = get_response
 
-    def __call__(self, request):
+    def __call__(self, request: HttpRequest) -> HttpResponse:
         response = self.get_response(request)
 
         if (
@@ -100,7 +105,7 @@ class HtmxMessageMiddleware:
             and "HX-Refresh" not in response
         ):
             storage = get_messages(request)
-            messages_list = []
+            messages_list: list[dict[str, Any]] = []
 
             for message in storage:
                 messages_list.append({"message": str(message.message), "level": message.level})
@@ -108,7 +113,7 @@ class HtmxMessageMiddleware:
             if messages_list:
                 hx_trigger = response.get("HX-Trigger")
 
-                payload = {"djangoMessages": messages_list}
+                payload: dict[str, Any] = {"djangoMessages": messages_list}
 
                 if hx_trigger:
                     try:

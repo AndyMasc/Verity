@@ -8,28 +8,7 @@ Django model instances.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, NotRequired, TypedDict
-
-
-class RecordSnapshot(TypedDict):
-    """Snapshot of a Record's editable fields, stored in MergeLog as JSON.
-
-    Captures the state of a bank transaction record before a merge modifies it,
-    so the merge can be undone or the receipt detached later.
-    """
-
-    products: str
-    notes: str
-    record_type: str
-    folder_id: int | None
-    is_active: bool
-    plaid_transaction_id: str | None
-    title: str
-    merchant: str
-    balance: str | None
-    transaction_date: str | None
-    payment_method: str
-    document_ids: NotRequired[list[int]]
+from typing import Any
 
 
 @dataclass

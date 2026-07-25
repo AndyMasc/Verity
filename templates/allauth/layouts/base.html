@@ -1,13 +1,10 @@
 {# djlint:off H006 #}
 {% load i18n %}
 {% load static %}
-{% load allauth_ui %}
 {% load tailwind_tags %}
-{% tailwind_css %}
 {% load allauth %}
-{% load static %}
 <!DOCTYPE html>
-<html data-theme="{% allauth_ui_theme %}" class="scroll-smooth">
+<html class="scroll-smooth">
     <head>
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -17,7 +14,7 @@
         </title>
 
         {% block extra_head %}
-            <link rel="stylesheet" href="{% static 'allauth_ui/output.css' %}">
+            {% tailwind_css %}
             <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/persist@3.x.x/dist/cdn.min.js"></script>
             <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
             <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>

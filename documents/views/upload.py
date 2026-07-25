@@ -112,7 +112,7 @@ class ConfirmUploadView(LoginRequiredMixin, View):
             service = ConfirmUploadService(document=document, key=key)
             result = service.confirm()
 
-            if not result.success:
+            if not result.valid:
                 return JsonResponse({"error": result.error}, status=result.status_code)
 
         return JsonResponse({"status": "confirmed", "document_id": document.id})

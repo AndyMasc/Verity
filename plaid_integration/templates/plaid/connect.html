@@ -35,14 +35,6 @@
                                 </div>
                                 <div>
                                     <h3 class="text-sm font-medium text-zinc-900 dark:text-zinc-200">{{ item.institution_name|default:"Bank Account" }}</h3>
-                                    <p class="text-xs text-zinc-400 dark:text-zinc-500">
-                                        {% if item.accounts_data %}
-                                            {% for acct in item.accounts_data %}
-                                                {{ acct.name }}{% if acct.mask %} (••••{{ acct.mask }}){% endif %}{% if not forloop.last %}, {% endif %}
-                                            {% endfor %}
-                                        {% endif %}
-                                        &middot; Connected {{ item.created_at|date:"M d, Y" }}
-                                    </p>
                                 </div>
                             </div>
                             <div class="flex items-center gap-3">

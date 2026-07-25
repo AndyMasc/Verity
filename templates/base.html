@@ -38,10 +38,9 @@
 
         {% load tailwind_tags %}
         {% tailwind_css %}
-        {% load form_tags %}
 
         {% load webpush_notifications %}
-        {% if request %}{% webpush_header %}{% endif %}
+        {% if user.is_authenticated %}{% webpush_header %}{% endif %}
 
         <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
         <link rel="icon" href="{% static 'favicon-package/favicon.svg' %}" type="image/svg+xml" sizes="any">

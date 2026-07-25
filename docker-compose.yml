@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   web:
     build:
@@ -11,7 +9,7 @@ services:
       - DEBUG=1
       - DJANGO_ENV=development
       - SECRET_KEY=${SECRET_KEY:-django-insecure-dev-key-change-in-production}
-      - DATABASE_URL=sqlite:///db.sqlite3
+      - DATABASE_URL=postgres://papertrail:papertrail@db:5432/papertrail
       - REDIS_URL=redis://redis:6379/0
       - CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
       - QSTASH_TOKEN=${QSTASH_TOKEN}
@@ -31,13 +29,41 @@ services:
       - GOOGLE_OAUTH_CLIENT_SECRET=${GOOGLE_OAUTH_CLIENT_SECRET}
       - GITHUB_OAUTH_CLIENT_ID=${GITHUB_OAUTH_CLIENT_ID}
       - GITHUB_OAUTH_CLIENT_SECRET=${GITHUB_OAUTH_CLIENT_SECRET}
+      - WEB_PUSH_PUBLIC_KEY=${WEB_PUSH_PUBLIC_KEY}
+      - WEB_PUSH_PRIVATE_KEY=${WEB_PUSH_PRIVATE_KEY}
+      - WEB_PUSH_EMAIL=${WEB_PUSH_EMAIL:-dev@example.com}
+      - SITE_URL=${SITE_URL:-http://localhost:8000}
+      - NGROK_HTTPS_TUNNEL_URL=${NGROK_HTTPS_TUNNEL_URL:-http://localhost:8000}
+      - PLAID_CLIENT_ID=${PLAID_CLIENT_ID}
+      - PLAID_SECRET=${PLAID_SECRET}
+      - PLAID_ENV=${PLAID_ENV:-sandbox}
+      - PLAID_WEBHOOK_URL=${PLAID_WEBHOOK_URL:-http://localhost:8000/plaid/webhook/}
     volumes:
       - .:/app
     depends_on:
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     command: >
       sh -c "python manage.py migrate --noinput &&
              python manage.py runserver 0.0.0.0:8000"
+
+  db:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=papertrail
+      - POSTGRES_PASSWORD=papertrail
+      - POSTGRES_DB=papertrail
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U papertrail"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine
@@ -45,6 +71,12 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 volumes:
+  postgres_data:
   redis_data:

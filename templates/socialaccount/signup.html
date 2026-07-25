@@ -1,4 +1,4 @@
-{% extends "socialaccount/signup.html" %}
+{% extends "allauth/layouts/base.html" %}
 {% load i18n %}
 {% load allauth_ui %}
 {% load allauth %}
@@ -9,7 +9,6 @@
         As a final step, please complete the following form:
     {% endblocktrans %}
     {% #container heading=heading subheading=subheading %}
-        {% trans "Continue" as button_text %}
         {% url "socialaccount_signup" as url %}
         {% trans "Sign Up" as button_text %}
         {% #form form=form url=url button_text=button_text %}

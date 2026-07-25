@@ -66,7 +66,7 @@ class Notification(models.Model):
         on_delete=models.CASCADE,
         related_name="notifications",
     )
-    subject = models.CharField(max_length=255)
+    subject = models.CharField(max_length=255, blank=True, default="")
     message = models.TextField()
     is_read = models.BooleanField(default=False)
     sent_at = models.DateTimeField(auto_now_add=True)

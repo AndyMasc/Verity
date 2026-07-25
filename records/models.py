@@ -5,20 +5,26 @@ folders for organisation, merge tracking between Plaid and document records,
 and an audit log that captures every significant mutation.
 """
 
+from __future__ import annotations
+
 import calendar
 import datetime
 import re
 from decimal import Decimal, InvalidOperation
 from functools import reduce
 from operator import or_
+from typing import TYPE_CHECKING
 
 from django.contrib.auth import get_user_model
 from django.db import models
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.utils import timezone
 from simple_history.models import HistoricalRecords
 
 from .constants import RECORD_TYPE_COLOR_MAP
+
+if TYPE_CHECKING:
+    from django.contrib.auth.models import AbstractUser
 
 User = get_user_model()
 
@@ -69,7 +75,7 @@ class RecordQuerySet(models.QuerySet):
     (soft-delete) / ``record.hard_delete()`` (permanent) instead.
     """
 
-    def delete(self):
+    def delete(self) -> tuple[int, dict[str, int]]:
         if getattr(self, "_allow_bulk_delete", False):
             return super().delete()
         raise TypeError(
@@ -77,29 +83,29 @@ class RecordQuerySet(models.QuerySet):
             "QuerySet.delete() is not allowed on Record to prevent accidental data loss."
         )
 
-    def allow_bulk_delete(self) -> "RecordQuerySet":
+    def allow_bulk_delete(self) -> RecordQuerySet:
         """Return a clone that permits ``QuerySet.delete()`` for maintenance tasks."""
         qs = self.all()
         qs._allow_bulk_delete = True
         return qs
 
-    def for_user(self, user: User) -> "RecordQuerySet":
+    def for_user(self, user: AbstractUser) -> RecordQuerySet:
         """Scope the queryset to records belonging to *user*."""
         return self.filter(user=user)
 
-    def active(self) -> "RecordQuerySet":
+    def active(self) -> RecordQuerySet:
         """Return only records that have not been soft-deleted."""
         return self.filter(is_active=True)
 
-    def archived(self) -> "RecordQuerySet":
+    def archived(self) -> RecordQuerySet:
         """Return only records that have been soft-deleted."""
         return self.filter(is_active=False)
 
-    def with_documents(self) -> "RecordQuerySet":
+    def with_documents(self) -> RecordQuerySet:
         """Prefetch related ``DocumentData`` objects to avoid N+1 queries."""
         return self.prefetch_related("documents")
 
-    def expiring_soon(self, days: int = 30) -> "RecordQuerySet":
+    def expiring_soon(self, days: int = 30) -> RecordQuerySet:
         """Return active records whose expiry falls within the next *days* days."""
         today = timezone.now().date()
         return self.active().filter(
@@ -107,11 +113,11 @@ class RecordQuerySet(models.QuerySet):
             expiry_date__lte=today + datetime.timedelta(days=days),
         )
 
-    def expired(self) -> "RecordQuerySet":
+    def expired(self) -> RecordQuerySet:
         """Return active records whose expiry date has already passed."""
         return self.active().filter(expiry_date__lt=timezone.now().date())
 
-    def smart_search(self, search_query: str) -> "RecordQuerySet":
+    def smart_search(self, search_query: str) -> RecordQuerySet:
         """Search across text, numeric, and date fields with natural-language heuristics.
 
         Accepts free-text queries that are matched against titles, merchants,
@@ -173,6 +179,16 @@ class RecordQuerySet(models.QuerySet):
         return self.filter(conditions)
 
 
+class FolderQuerySet(models.QuerySet):
+    """Custom queryset for Folder with annotation helpers."""
+
+    def with_record_counts(self) -> FolderQuerySet:
+        """Annotate each folder with its active record count."""
+        return self.annotate(
+            active_records_count=Count("records", filter=Q(records__is_active=True))
+        )
+
+
 class Folder(models.Model):
     """User-owned folder for organising records into logical groups."""
 
@@ -180,7 +196,9 @@ class Folder(models.Model):
     name = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
 
-    def __str__(self):
+    objects = FolderQuerySet.as_manager()
+
+    def __str__(self) -> str:
         return self.name
 
 

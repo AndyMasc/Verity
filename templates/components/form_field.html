@@ -4,9 +4,9 @@
         <span class="label-text">{{ field.label }}</span>
     </label>
     {% if field.errors %}
-        {% render_field field placeholder="" class="rounded-2xl w-full input focus:outline-none border border-rose-300 dark:border-rose-300/30 text-primary bg-transparent shadow-none input-error text-black dark:text-white" %}
+        {% render_field field placeholder="" class="rounded-2xl w-full px-4 py-2.5 h-10 text-sm focus:outline-none border border-rose-300 dark:border-rose-300/30 bg-transparent shadow-none text-black dark:text-white" %}
     {% else %}
-        {% render_field field placeholder=field.label class="border dark:border-zinc-700 border-zinc-300 rounded-2xl w-full input focus:outline-none focus:border-zinc-900 dark:focus:border-zinc-100 text-primary bg-transparent shadow-none text-black dark:text-white" %}
+        {% render_field field placeholder=field.label class="border dark:border-zinc-700 border-zinc-300 rounded-2xl w-full px-4 py-2.5 h-10 text-sm focus:outline-none focus:border-zinc-900 dark:focus:border-zinc-100 bg-transparent shadow-none text-black dark:text-white" %}
     {% endif %}
     {% for error in field.errors %}
         <span class="flex items-center max-w-full mt-1 ml-1 text-xs font-light tracking-wide text-rose-600 dark:text-rose-400">{{ error }}</span>

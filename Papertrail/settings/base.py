@@ -136,6 +136,7 @@ ACCOUNT_LOGIN_METHODS = {"email"}
 ACCOUNT_MAX_EMAIL_ADDRESSES = 3
 ACCOUNT_EMAIL_VERIFICATION = "mandatory"
 LOGIN_REDIRECT_URL = "core:dashboard"
+LOGOUT_REDIRECT_URL = "core:landing_page"
 ACCOUNT_SIGNUP_REDIRECT_URL = "core:dashboard"
 ACCOUNT_SESSION_REMEMBER = True
 ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
@@ -171,13 +172,8 @@ AUTHENTICATION_BACKENDS = [
     "allauth.account.auth_backends.AuthenticationBackend",
 ]
 
-# Password validation
-AUTH_PASSWORD_VALIDATORS = [
-    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
-    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
-    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
-    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
-]
+# Password validation (disabled — project uses passwordless auth via allauth login-by-code)
+AUTH_PASSWORD_VALIDATORS: list = []
 
 # Templates
 TEMPLATES = [
@@ -218,7 +214,8 @@ CACHES = {
 }
 SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
 SESSION_CACHE_ALIAS = "default"
-SESSION_COOKIE_AGE = 60 * 60 * 24 * 30  # 30 days
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 7  # 7 days
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
 # Email
 EMAIL_BACKEND = "core.backends.QStashEmailBackend"  # Use custom backend to queue emails sending, and use anymail
@@ -232,6 +229,7 @@ R2_STORAGE_BUCKET_NAME = env("R2_STORAGE_BUCKET_NAME")
 R2_S3_ENDPOINT_URL = env("R2_S3_ENDPOINT_URL")
 R2_PAPERTRAIL_STORAGE_ACCOUNT_ID = env("R2_PAPERTRAIL_STORAGE_ACCOUNT_ID")
 
+AWS_S3_FILE_OVERWRITE = False
 AWS_ACCESS_KEY_ID = R2_ACCESS_KEY_ID
 AWS_SECRET_ACCESS_KEY = R2_SECRET_ACCESS_KEY
 AWS_STORAGE_BUCKET_NAME = R2_STORAGE_BUCKET_NAME
@@ -279,13 +277,11 @@ USE_I18N = True
 USE_TZ = True
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATIC_URL = "static/"
-MEDIA_ROOT = BASE_DIR / "media"
-MEDIA_URL = "media/"
+
 
 TAILWIND_APP_NAME = "theme"
 TAILWIND_USE_STANDALONE_BINARY = True
 SITE_ID = 1
-ALLAUTH_UI_THEME = "noir"
 
 # List view pagination
 PAGINATE_BY = 25
@@ -362,3 +358,6 @@ PLAID_WEBHOOK_URL = env("PLAID_WEBHOOK_URL")
 IMPORT_EXPORT_ESCAPE_FORMULAE_ON_EXPORT = (
     True  # Force Excel cell formulas to automatically escape (security measure)
 )
+
+# Fernet
+FERNET_KEYS = [env("FERNET_KEY"),]

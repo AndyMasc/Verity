@@ -1,11 +1,14 @@
 """Template context processors that inject webpush state into every request."""
 
+from typing import Any
+
 from django.core.cache import cache
+from django.http import HttpRequest
 
 WEBPUSH_STATUS_CACHE_TTL = 300
 
 
-def webpush_status(request):
+def webpush_status(request: HttpRequest) -> dict[str, Any]:
     """Add webpush subscription status to the template context.
 
     Returns ``webpush_enabled`` (bool) and ``webpush_subscription_count``

@@ -5,8 +5,11 @@ permanent deletion of records older than seven years, and expiry
 notification dispatch (DB, email, and web push).
 """
 
+from __future__ import annotations
+
 import logging
 from datetime import timedelta
+from typing import TYPE_CHECKING
 
 from django.contrib.auth import get_user_model
 from django.db.models import F, Q
@@ -15,6 +18,9 @@ from django.urls import reverse
 from django.utils import timezone
 from django_qstash import shared_task
 
+if TYPE_CHECKING:
+    from django.contrib.auth.models import AbstractUser
+
 from core.models import Notification
 from core.services.notifications import (
     build_expiry_email_context,
@@ -22,6 +28,8 @@ from core.services.notifications import (
     build_site_context,
     send_multi_channel_notification,
 )
+
+from documents.services.cleanup import COMPLIANCE_RETENTION_YEARS
 
 from .models import Record
 
@@ -103,10 +111,9 @@ def delete_7year_archived_records() -> None:
         MergeLog.objects.filter(undone_at__isnull=True).values_list("document_record_id", flat=True)
     )
 
-    seven_years_ago = timezone.now() - timedelta(days=365 * 7)
+    seven_years_ago = timezone.now() - timedelta(days=365 * COMPLIANCE_RETENTION_YEARS)
     seven_year_expired_records = Record.objects.filter(
-        last_edited__lt=seven_years_ago,
-        expiry_date__gte=F("date_added"),
+        date_added__lte=seven_years_ago,
         is_active=False,
         user__settings__auto_delete_archived_records=True,
     ).exclude(pk__in=merged_ids)
@@ -118,9 +125,12 @@ def delete_7year_archived_records() -> None:
     )
 
     deleted_count = 0
-    for record in seven_year_expired_records:
-        record.hard_delete()
-        deleted_count += 1
+    pks = list(seven_year_expired_records.values_list("pk", flat=True))
+    for pk in pks:
+        record = Record.objects.filter(pk=pk).first()
+        if record:
+            record.hard_delete()
+            deleted_count += 1
 
     if deleted_count:
         logger.info("Hard-deleted %d archived records.", deleted_count)
@@ -128,16 +138,6 @@ def delete_7year_archived_records() -> None:
     for path in document_paths:
         if path:
             delete_s3_object.delay(path)
-
-
-@shared_task
-def delete_2month_archived_records() -> None:
-    """Alias for delete_7year_archived_records kept for backward compatibility.
-
-    Hard deletion requires records to be archived for at least 7 years
-    per IRS audit compliance.
-    """
-    delete_7year_archived_records()
 
 
 @shared_task
@@ -182,7 +182,7 @@ def send_expiry_notifications() -> None:
 
     notifications_to_create: list = []
     user_records_map: dict[int, list] = {}
-    user_object_map: dict[int, object] = {}
+    user_object_map: dict[int, AbstractUser] = {}
     user_settings_cache = {}
 
     for record in expiring_records:
@@ -190,6 +190,7 @@ def send_expiry_notifications() -> None:
         notifications_to_create.append(
             Notification(
                 recipient=user,
+                subject="Expiring Records on Papertrail",
                 message=f"Your record '{record.title}' is expiring on {record.expiry_date}.",
             )
         )
@@ -206,8 +207,9 @@ def send_expiry_notifications() -> None:
 
     Notification.objects.bulk_create(notifications_to_create)
 
-    record_ids = [r.id for r in expiring_records]
-    Record.objects.filter(id__in=record_ids).update(expiry_notification_sent=True)
+    Record.objects.filter(id__in=[r.id for r in user_records_map.values() for r in r]).update(
+        expiry_notification_sent=True
+    )
     logger.info("Created %d DB notifications.", len(notifications_to_create))
 
     site_context = build_site_context()
