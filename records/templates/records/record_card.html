@@ -1,70 +1,75 @@
 {% if list_view %}
-{# ── List-view card: premium, compact, scannable ── #}
-<div class="relative group rounded-2xl border border-zinc-200/60 dark:border-zinc-800/40 bg-white dark:bg-zinc-900/30 hover:border-zinc-300 dark:hover:border-zinc-700/60 hover:shadow-md dark:hover:shadow-zinc-900/20 transition-all duration-200">
+<div class="relative group rounded-2xl border border-zinc-200/60 dark:border-zinc-800/60 bg-white/80 dark:bg-zinc-900/40 backdrop-blur-xl hover:border-zinc-300 dark:hover:border-zinc-700 hover:shadow-xl hover:shadow-zinc-900/5 dark:hover:shadow-none transition-all duration-300">
+    <div class="absolute inset-0 bg-gradient-to-r from-zinc-500/[0.02] via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none rounded-2xl"></div>
+
     <a href="{% url 'records:record_detail' record.pk %}"
-       class="block px-4 py-3.5 sm:px-5 sm:py-4 pr-10 sm:pr-12">
+       class="block px-5 py-4 pr-14">
 
-        <div class="flex flex-col gap-1.5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
 
-            <div class="flex items-center gap-2.5 min-w-0">
-                <span class="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold {{ record.badge_classes }} border uppercase tracking-wider text-center shadow-xs">
+            <!-- Left side: Badge, Title, and Meta info -->
+            <div class="flex items-center gap-3 min-w-0 flex-1">
+                <span class="shrink-0 px-2.5 py-1 rounded-full text-[10px] font-bold {{ record.badge_classes }} border uppercase tracking-wider text-center shadow-xs">
                     {{ record.get_record_type_display }}
                 </span>
 
-                <span class="font-semibold text-zinc-900 dark:text-zinc-50 text-[13px] sm:text-sm truncate group-hover:text-black dark:group-hover:text-white transition-colors">
-                    {{ record.title }}
+                <div class="min-w-0 flex flex-col gap-0.5">
+                    <span class="font-semibold text-zinc-900 dark:text-zinc-50 text-sm truncate group-hover:text-black dark:group-hover:text-white transition-colors">
+                        {{ record.title }}
+                    </span>
+
+                    <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-zinc-500 dark:text-zinc-400 text-xs">
+                        {% if record.merchant %}
+                            <span class="inline-flex items-center gap-1 truncate max-w-[160px]">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="w-3 h-3 opacity-50 shrink-0">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 21v-7.5a.75.75 0 0 1 .75-.75h3a.75.75 0 0 1 .75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349M3.75 21V9.349m0 0a3.001 3.001 0 0 0 3.75-.615A2.993 2.993 0 0 0 9.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 0 0 2.25 1.016c.896 0 1.7-.393 2.25-1.015a3.001 3.001 0 0 0 3.75.614m-16.5 0a3.004 3.004 0 0 1-.621-4.72l1.189-1.19a1.5 1.5 0 0 1 5.378 3h13.243a1.5 1.5 0 0 1 1.06.44l1.19 1.189a3 3 0 0 1-.621 4.72M6.75 18h3.75a.75.75 0 0 0 .75-.75V13.5a.75.75 0 0 0-.75-.75H6.75a.75.75 0 0 0-.75.75v3.75c0 .414.336.75.75.75Z" />
+                                </svg>
+                                {{ record.merchant }}
+                            </span>
+                        {% endif %}
+
+                        {% if record.notes %}
+                            {% if record.merchant %}<span class="text-zinc-300 dark:text-zinc-700 text-[10px]">·</span>{% endif %}
+                            <span class="truncate max-w-[200px] sm:max-w-[280px] italic">
+                                {{ record.notes }}
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right side: Date, Expiry badge, and Balance -->
+            <div class="flex items-center justify-between sm:justify-end gap-4 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-zinc-100 dark:border-zinc-800/60">
+                <span class="text-zinc-400 dark:text-zinc-500 text-xs font-medium whitespace-nowrap">
+                    {% if record.transaction_date %}{{ record.transaction_date|date:"M d, Y" }}{% else %}{{ record.date_added|date:"M d, Y" }}{% endif %}
+                </span>
+
+                {% if record.expiry_date %}
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 whitespace-nowrap">
+                        <svg class="w-3 h-3 opacity-80 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                        </svg>
+                        {{ record.expiry_date|timeuntil }}
+                    </span>
+                {% endif %}
+
+                <span class="text-zinc-950 dark:text-zinc-50 font-bold text-sm tracking-tight whitespace-nowrap min-w-[70px] text-right">
+                    {% if record.balance %}${{ record.balance|floatformat:2 }}{% else %}<span class="text-zinc-300 dark:text-zinc-700 font-normal">—</span>{% endif %}
                 </span>
             </div>
 
-            <div class="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-zinc-500 dark:text-zinc-400 text-xs">
-                {% if record.merchant %}
-                    <span class="inline-flex items-center gap-1 truncate max-w-[160px]">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="w-3 h-3 opacity-50 shrink-0">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 21v-7.5a.75.75 0 0 1 .75-.75h3a.75.75 0 0 1 .75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349M3.75 21V9.349m0 0a3.001 3.001 0 0 0 3.75-.615A2.993 2.993 0 0 0 9.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 0 0 2.25 1.016c.896 0 1.7-.393 2.25-1.015a3.001 3.001 0 0 0 3.75.614m-16.5 0a3.004 3.004 0 0 1-.621-4.72l1.189-1.19a1.5 1.5 0 0 1 5.378 3h13.243a1.5 1.5 0 0 1 1.06.44l1.19 1.189a3 3 0 0 1-.621 4.72M6.75 18h3.75a.75.75 0 0 0 .75-.75V13.5a.75.75 0 0 0-.75-.75H6.75a.75.75 0 0 0-.75.75v3.75c0 .414.336.75.75.75Z" />
-                        </svg>
-                        {{ record.merchant }}
-                    </span>
-                {% endif %}
-
-                {% if record.notes %}
-                    {% if record.merchant %}<span class="text-zinc-300 dark:text-zinc-700 text-[10px]">·</span>{% endif %}
-                    <span class="truncate max-w-[160px] sm:max-w-[240px] italic">
-                        {{ record.notes }}
-                    </span>
-                {% endif %}
-
-                <span class="text-zinc-300 dark:text-zinc-700 text-[10px]">·</span>
-
-                <div class="flex items-center gap-2.5">
-                    <span class="text-zinc-400 dark:text-zinc-500 whitespace-nowrap">
-                        {% if record.transaction_date %}{{ record.transaction_date|date:"M d" }}{% else %}{{ record.date_added|date:"M d" }}{% endif %}
-                    </span>
-
-                    {% if record.expiry_date %}
-                        <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-200/50 dark:border-amber-500/20 whitespace-nowrap">
-                            <svg class="w-3 h-3 opacity-60 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                            </svg>
-                            {{ record.expiry_date|timeuntil }}
-                        </span>
-                    {% endif %}
-
-                    <span class="text-zinc-950 dark:text-zinc-50 font-semibold text-xs tracking-tight whitespace-nowrap">
-                        {% if record.balance %}${{ record.balance }}{% else %}<span class="text-zinc-300 dark:text-zinc-700">—</span>{% endif %}
-                    </span>
-                </div>
-            </div>
         </div>
     </a>
 
-    <div class="absolute top-1/2 -translate-y-1/2 right-3 sm:right-4 z-20">
+    <!-- Interactive Selection Checkbox -->
+    <div class="absolute top-1/2 -translate-y-1/2 right-4 z-20">
         <label class="relative flex items-center justify-center w-5 h-5 cursor-pointer" @click.stop>
             <input type="checkbox"
                    value="{{ record.pk }}"
                    :checked="selectedIds.includes('{{ record.pk }}')"
                    @change="toggleSelect('{{ record.pk }}')"
                    class="sr-only">
-            <div class="w-5 h-5 rounded-full border transition-all duration-150 flex items-center justify-center"
+            <div class="w-5 h-5 rounded-lg border transition-all duration-150 flex items-center justify-center shadow-xs"
                  :class="selectedIds.includes('{{ record.pk }}')
                          ? 'border-zinc-900 dark:border-white bg-zinc-900 dark:bg-white'
                          : 'border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900/80 hover:border-zinc-400 dark:hover:border-zinc-500'">
@@ -81,36 +86,35 @@
 </div>
 
 {% else %}
-{# ── Dashboard card: compact rows, unchanged ── #}
-<div class="relative group border-b border-zinc-200/60 dark:border-zinc-800/50 last:border-b-0">
+{# ── Dashboard card: clean structured row with interactive indicator accent and edge-to-edge bottom borders ── #}
+<div class="relative group rounded-none {% if not forloop.last %}border-b border-zinc-200/60 dark:border-zinc-800/60{% endif %} bg-transparent hover:bg-white/60 dark:hover:bg-zinc-900/40 transition-all duration-200">
     <a href="{% url 'records:record_detail' record.pk %}"
-       class="block relative pl-5 pr-12 py-3.5 lg:pr-14 hover:bg-zinc-100/60 dark:hover:bg-zinc-800/40 transition-colors duration-200 rounded-xl">
+       class="block relative pl-7 pr-14 py-3.5">
 
-        <div class="absolute left-1.5 top-3 bottom-3 w-1 rounded-full transition-colors duration-300
+        <!-- Left status pill indicator -->
+        <div class="absolute left-3.5 top-3.5 bottom-3.5 w-1 rounded-full transition-colors duration-300
                     {% if not record.is_active %} bg-zinc-300 dark:bg-zinc-700
-                    {% elif record.expiry_date %} bg-amber-500/80 dark:bg-amber-400/80
-                    {% else %} bg-zinc-200 dark:bg-zinc-800/80 {% endif %}">
+                    {% elif record.expiry_date %} bg-amber-500 dark:bg-amber-400
+                    {% else %} bg-zinc-900 dark:bg-zinc-100 {% endif %}">
         </div>
 
-        <div class="flex flex-row justify-between gap-4 lg:items-center">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
 
-            <div class="flex flex-col items-start gap-2 min-w-0 flex-1 lg:grid lg:grid-cols-[130px_1fr] lg:items-center lg:gap-4">
+            <!-- Title & Type Grid Section -->
+            <div class="flex items-center gap-3.5 min-w-0 flex-1">
+                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold {{ record.badge_classes }} border uppercase tracking-wider shrink-0 text-center shadow-xs">
+                    {{ record.get_record_type_display }}
+                </span>
 
-                <div class="flex items-center shrink-0 min-w-0 w-auto lg:w-full">
-                    <span class="px-2.5 py-1 rounded-full text-[10px] font-bold {{ record.badge_classes }} border uppercase tracking-wider truncate block text-center w-full max-w-[130px] shadow-2xs">
-                        {{ record.get_record_type_display }}
-                    </span>
-                </div>
-
-                <div class="min-w-0 flex flex-col items-start text-left gap-0.5 w-full">
-                    <span class="font-medium text-zinc-900 dark:text-zinc-100 text-sm truncate w-full group-hover:text-black dark:group-hover:text-white transition-colors">
+                <div class="min-w-0 flex flex-col gap-0.5">
+                    <span class="font-medium text-zinc-900 dark:text-zinc-100 text-sm truncate group-hover:text-black dark:group-hover:text-white transition-colors">
                         {{ record.title }}
                     </span>
 
-                    <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-zinc-500 dark:text-zinc-400 text-xs">
+                    <div class="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-zinc-500 dark:text-zinc-400 text-xs">
                         {% if record.merchant %}
-                            <span class="inline-flex items-center gap-1.5 truncate max-w-[140px]">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="w-3.5 h-3.5 opacity-60 shrink-0">
+                            <span class="inline-flex items-center gap-1 truncate max-w-[140px]">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="w-3 h-3 opacity-50 shrink-0">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 21v-7.5a.75.75 0 0 1 .75-.75h3a.75.75 0 0 1 .75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349M3.75 21V9.349m0 0a3.001 3.001 0 0 0 3.75-.615A2.993 2.993 0 0 0 9.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 0 0 2.25 1.016c.896 0 1.7-.393 2.25-1.015a3.001 3.001 0 0 0 3.75.614m-16.5 0a3.004 3.004 0 0 1-.621-4.72l1.189-1.19a1.5 1.5 0 0 1 5.378 3h13.243a1.5 1.5 0 0 1 1.06.44l1.19 1.189a3 3 0 0 1-.621 4.72M6.75 18h3.75a.75.75 0 0 0 .75-.75V13.5a.75.75 0 0 0-.75-.75H6.75a.75.75 0 0 0-.75.75v3.75c0 .414.336.75.75.75Z" />
                                 </svg>
                                 {{ record.merchant }}
@@ -119,7 +123,7 @@
 
                         {% if record.notes %}
                             {% if record.merchant %}<span class="text-zinc-300 dark:text-zinc-700 text-[10px]">·</span>{% endif %}
-                            <span class="text-zinc-400 dark:text-zinc-500 truncate max-w-[120px] lg:max-w-[180px]">
+                            <span class="text-zinc-400 dark:text-zinc-500 truncate max-w-[160px] italic">
                                 {{ record.notes }}
                             </span>
                         {% endif %}
@@ -127,38 +131,38 @@
                 </div>
             </div>
 
-            <div class="flex flex-col items-end justify-between shrink-0 text-right gap-1.5 lg:grid lg:grid-cols-[110px_60px_80px] lg:items-center lg:gap-4 lg:text-left">
-
-                <div class="flex items-center shrink-0 lg:justify-start">
-                    <div class="inline-flex items-center gap-1.5 shrink-0 px-2 py-0.5 rounded-md text-[11px] font-medium {% if record.expiry_date %} bg-zinc-100 dark:bg-zinc-800/80 text-zinc-600 dark:text-zinc-300 {% else %} text-zinc-400 dark:text-zinc-500 {% endif %}">
-                        <svg class="w-3.5 h-3.5 opacity-60 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                        </svg>
-                        <span class="truncate max-w-[80px]">
-                            {% if record.expiry_date %}{{ record.expiry_date|timeuntil }}{% else %}No expiry{% endif %}
-                        </span>
-                    </div>
+            <!-- Details Block: Expiry, Date, Balance -->
+            <div class="flex items-center justify-between lg:justify-end gap-6 shrink-0 text-xs">
+                <div class="flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-[11px] font-medium {% if record.expiry_date %} bg-zinc-100 dark:bg-zinc-800/80 text-zinc-600 dark:text-zinc-300 border border-zinc-200/50 dark:border-zinc-700/50{% else %} text-zinc-400 dark:text-zinc-500 {% endif %}">
+                    <svg class="w-3.5 h-3.5 opacity-60 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                    </svg>
+                    <span class="truncate max-w-[90px]">
+                        {% if record.expiry_date %}{{ record.expiry_date|timeuntil }}{% else %}No expiry{% endif %}
+                    </span>
                 </div>
 
-                <div class="text-zinc-400 dark:text-zinc-500 text-[11px] font-medium tracking-wide lg:text-left">
+                <div class="text-zinc-400 dark:text-zinc-500 font-medium whitespace-nowrap">
                     {% if record.transaction_date %}{{ record.transaction_date|date:"M d" }}{% else %}{{ record.date_added|date:"M d" }}{% endif %}
                 </div>
 
-                <div class="text-zinc-950 dark:text-zinc-100 font-semibold text-sm tracking-tight lg:text-right lg:pr-2">
-                    {% if record.balance %}${{ record.balance }}{% else %}<span class="text-zinc-300 dark:text-zinc-700">—</span>{% endif %}
+                <div class="text-zinc-950 dark:text-zinc-100 font-bold tracking-tight text-sm text-right min-w-[60px]">
+                    {% if record.balance %}${{ record.balance|floatformat:2 }}{% else %}<span class="text-zinc-300 dark:text-zinc-700 font-normal">—</span>{% endif %}
                 </div>
             </div>
+
         </div>
     </a>
 
-    <div class="absolute bottom-3.5 right-3.5 z-20 lg:top-1/2 lg:bottom-auto lg:right-4 lg:-translate-y-1/2">
+    <!-- Interactive Selection Checkbox -->
+    <div class="absolute top-1/2 -translate-y-1/2 right-4 z-20">
         <label class="relative flex items-center justify-center w-5 h-5 cursor-pointer" @click.stop>
             <input type="checkbox"
                    value="{{ record.pk }}"
                    :checked="selectedIds.includes('{{ record.pk }}')"
                    @change="toggleSelect('{{ record.pk }}')"
                    class="sr-only">
-            <div class="w-5 h-5 rounded-full border transition-all duration-150 flex items-center justify-center"
+            <div class="w-5 h-5 rounded-lg border transition-all duration-150 flex items-center justify-center shadow-xs"
                  :class="selectedIds.includes('{{ record.pk }}')
                          ? 'border-zinc-900 dark:border-white bg-zinc-900 dark:bg-white'
                          : 'border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900/80 hover:border-zinc-400 dark:hover:border-zinc-500'">
