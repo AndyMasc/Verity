@@ -61,7 +61,13 @@ async def get_dashboard_context(user) -> dict:
         ).aaggregate(total=Sum("balance")),
         DocumentData.objects.for_user(user)
         .orphaned()
-        .exclude(status__in=[DocumentStatus.COMPLETED, DocumentStatus.PENDING_UPLOAD, DocumentStatus.DELETING])
+        .exclude(
+            status__in=[
+                DocumentStatus.COMPLETED,
+                DocumentStatus.PENDING_UPLOAD,
+                DocumentStatus.DELETING,
+            ]
+        )
         .acount(),
         DocumentData.objects.for_user(user)
         .filter(

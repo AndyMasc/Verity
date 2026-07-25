@@ -13,8 +13,8 @@ from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 
-from documents.storage import generate_read_presigned_url
 from documents.services.cleanup import COMPLIANCE_RETENTION_YEARS
+from documents.storage import generate_read_presigned_url
 from records.models import Record
 
 logger = logging.getLogger(__name__)

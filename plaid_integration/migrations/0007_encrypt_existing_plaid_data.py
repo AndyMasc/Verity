@@ -43,15 +43,23 @@ def encrypt_plaid_data(apps, schema_editor):
         params = []
 
         # Encrypt plaintext access_token (skip if already encrypted)
-        if access_token and not access_token.startswith(b"gAAAAAB") and not str(access_token).startswith("gAAAAAB"):
-            token_bytes = access_token if isinstance(access_token, bytes) else access_token.encode("utf-8")
+        if (
+            access_token
+            and not access_token.startswith(b"gAAAAAB")
+            and not str(access_token).startswith("gAAAAAB")
+        ):
+            token_bytes = (
+                access_token if isinstance(access_token, bytes) else access_token.encode("utf-8")
+            )
             encrypted_token = fernet.encrypt(token_bytes)
             token_updates.append("access_token = %s")
             params.append(encrypted_token)
 
         # Encrypt plaintext accounts_data (skip if already encrypted)
         if accounts_data:
-            acct_str = accounts_data if isinstance(accounts_data, str) else accounts_data.decode("utf-8")
+            acct_str = (
+                accounts_data if isinstance(accounts_data, str) else accounts_data.decode("utf-8")
+            )
             if not acct_str.startswith("gAAAAAB"):
                 # accounts_data was stored as a JSON string or a Python repr string
                 # Ensure it's valid JSON before encrypting
@@ -89,14 +97,18 @@ def reverse_encrypt(apps, schema_editor):
         params = []
 
         if access_token:
-            token_bytes = access_token if isinstance(access_token, bytes) else access_token.encode("utf-8")
+            token_bytes = (
+                access_token if isinstance(access_token, bytes) else access_token.encode("utf-8")
+            )
             if token_bytes.startswith(b"gAAAAAB"):
                 decrypted = fernet.decrypt(token_bytes)
                 updates.append("access_token = %s")
                 params.append(decrypted.decode("utf-8"))
 
         if accounts_data:
-            acct_bytes = accounts_data if isinstance(accounts_data, bytes) else accounts_data.encode("utf-8")
+            acct_bytes = (
+                accounts_data if isinstance(accounts_data, bytes) else accounts_data.encode("utf-8")
+            )
             if acct_bytes.startswith(b"gAAAAAB"):
                 decrypted = fernet.decrypt(acct_bytes)
                 updates.append("accounts_data = %s")
@@ -112,7 +124,6 @@ def reverse_encrypt(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         (
             "plaid_integration",

@@ -28,7 +28,6 @@ from core.services.notifications import (
     build_site_context,
     send_multi_channel_notification,
 )
-
 from documents.services.cleanup import COMPLIANCE_RETENTION_YEARS
 
 from .models import Record
