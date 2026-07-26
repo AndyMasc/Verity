@@ -346,7 +346,7 @@ class PaymentSuccessView(LoginRequiredMixin, TemplateView):
 
         if session.payment_status == "paid":
             payment.is_completed = True
-            payment_intent_id = session.get("payment_intent")
+            payment_intent_id = getattr(session, "payment_intent", None)
             if payment_intent_id:
                 payment.stripe_payment_intent_id = payment_intent_id
             payment.save(update_fields=["is_completed", "stripe_payment_intent_id"])
