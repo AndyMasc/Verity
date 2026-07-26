@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+
+{% block title %}Reimbursements | Papertrail{% endblock %}
+
+{% block content %}
+    <main class="flex flex-col min-h-screen w-full max-w-7xl mx-auto px-4 py-16 space-y-8"
+          x-data="{
+                  activeTab: 'all',
+                  searchQuery: '',
+                  }">
+
+    <!-- Arc-Style Header & Command Toolbar -->
+        <header class="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-2">
+            <div class="space-y-1">
+                <h1 class="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
+                    Reimbursements
+                </h1>
+                <p class="text-sm text-zinc-500 dark:text-zinc-400">
+                    Manage sent, received, and paid packages.
+                </p>
+            </div>
+
+            <div class="flex items-center gap-3">
+            <!-- Global Search Input -->
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-zinc-400">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                    </span>
+                    <input type="text"
+                           x-model="searchQuery"
+                           placeholder="Search packages..."
+                           class="w-full md:w-56 pl-10 pr-4 py-1.5 text-sm rounded-xl bg-zinc-100/60 dark:bg-zinc-900/60 border border-zinc-200/60 dark:border-zinc-800/80 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400 transition-all shadow-sm">
+                </div>
+
+            <!-- Arc Pill Tab Switcher -->
+                <div class="inline-flex p-1 rounded-xl bg-zinc-100/80 dark:bg-zinc-900/80 backdrop-blur-xl border border-zinc-200/60 dark:border-zinc-800/80 shadow-sm text-sm">
+                    <button @click="activeTab = 'all'"
+                            :class="activeTab === 'all' ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200'"
+                            class="px-3 py-1 rounded-lg font-medium transition-all duration-200">
+                        All
+                    </button>
+                    <button @click="activeTab = 'sent'"
+                            :class="activeTab === 'sent' ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200'"
+                            class="px-3 py-1 rounded-lg font-medium transition-all duration-200">
+                        Sent
+                    </button>
+                    <button @click="activeTab = 'received'"
+                            :class="activeTab === 'received' ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200'"
+                            class="px-3 py-1 rounded-lg font-medium transition-all duration-200">
+                        Received
+                    </button>
+                </div>
+            </div>
+        </header>
+
+    <!-- Stripe Connection Banner -->
+        {% if not stripe_connected %}
+        <div class="rounded-2xl bg-white/60 dark:bg-zinc-900/50 backdrop-blur-md
+                    border border-zinc-200/20 dark:border-zinc-800/20 shadow-sm p-5">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div class="flex items-center gap-3.5">
+                    <div class="w-9 h-9 rounded-xl bg-violet-500/10 dark:bg-violet-500/10 border border-violet-500/20 flex items-center justify-center shrink-0">
+                        <svg class="w-4.5 h-4.5 text-violet-600 dark:text-violet-400" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5h16.5a1.5 1.5 0 0 1 1.5 1.5v9.75a1.5 1.5 0 0 1-1.5 1.5H3.75a1.5 1.5 0 0 1-1.5-1.5V6a1.5 1.5 0 0 1 1.5-1.5Zm13.5 6a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                            Connect your Stripe account
+                        </p>
+                        <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                            You need to connect Stripe before you can send reimbursement requests.
+                        </p>
+                    </div>
+                </div>
+                <a href="{% url 'reimbursements:stripe-onboard' %}"
+                   class="inline-flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white
+                          bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-white
+                          dark:text-zinc-900 rounded-xl shadow-sm transition-all duration-200 active:scale-[0.98] shrink-0">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"/>
+                    </svg>
+                    Connect Stripe
+                </a>
+            </div>
+        </div>
+        {% endif %}
+
+    <!-- Sections Container with Fixed Min-Height to Prevent Page Jumping -->
+        <div class="space-y-6 min-h-[50vh]">
+            {% for section, section_packages, section_type in sections %}
+                <section class="rounded-2xl bg-white/40 dark:bg-zinc-900/30 backdrop-blur-xl border border-zinc-200/40 dark:border-zinc-800/40 shadow-sm p-5 transition-all duration-200"
+                         x-show="activeTab === 'all' || activeTab === '{{ section_type }}'">
+
+            <!-- Section Header -->
+                    <div class="flex items-center justify-between pb-3 mb-1 border-b border-zinc-200/30 dark:border-zinc-800/40">
+                        <h2 class="text-xs font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                            {{ section }}
+                        </h2>
+                        {% if section_packages %}
+                            <span class="text-[11px] font-medium px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800/80 text-zinc-500 dark:text-zinc-400">
+                                {{ section_packages|length }}
+                            </span>
+                        {% endif %}
+                    </div>
+
+                    {% if section_packages %}
+                        <div class="divide-y divide-zinc-200/20 dark:divide-zinc-800/20">
+                            {% for package in section_packages %}
+                                <a href="{% url 'reimbursements:package-detail' package.uuid %}"
+                                   x-show="searchQuery === '' || '{{ package.title|escapejs }}'.toLowerCase().includes(searchQuery.toLowerCase())"
+                                   class="group flex items-center justify-between py-3 px-2 rounded-xl hover:bg-zinc-100/50 dark:hover:bg-zinc-800/40 transition-all duration-150">
+
+                    <!-- Left -->
+                                    <div class="flex items-center gap-3.5 min-w-0 flex-1">
+                                        <div class="w-9 h-9 rounded-xl bg-zinc-100/80 dark:bg-zinc-800/60 border border-zinc-200/40 dark:border-zinc-700/30 flex items-center justify-center shrink-0">
+                                            {% if section_type == 'sent' %}
+                                                <svg class="w-4 h-4 text-zinc-400 dark:text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 19.5l15-15m0 0H8.25m11.25 0v11.25"/>
+                                                </svg>
+                                            {% elif section_type == 'received' %}
+                                                <svg class="w-4 h-4 text-zinc-400 dark:text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 4.5l-15 15m0 0h11.25m-11.25 0V8.25"/>
+                                                </svg>
+                                            {% else %}
+                                                <svg class="w-4 h-4 text-zinc-400 dark:text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
+                                                </svg>
+                                            {% endif %}
+                                        </div>
+
+                                        <div class="min-w-0">
+                                            <div class="text-sm font-medium text-zinc-900 dark:text-zinc-200 truncate group-hover:text-zinc-950 dark:group-hover:text-white transition-colors">
+                                                {{ package.title }}
+                                            </div>
+                                            <div class="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5 truncate">
+                                                {% if section_type == 'sent' and package.recipient %}
+                                                    To {{ package.recipient.email }}
+                                                {% elif section_type == 'received' %}
+                                                    From {{ package.creator.email }}
+                                                {% elif package.paid_by %}
+                                                    Paid by {{ package.paid_by.email }}
+                                                {% else %}
+                                                    Created {{ package.created_at|timesince }} ago
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                    <!-- Right -->
+                                    <div class="flex items-center gap-4 shrink-0 ml-4">
+                                        {% if package.status == 'paid' %}
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-4xl text-[11px] font-medium bg-emerald-500/10 text-emerald-500 border border-emerald-800/50">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Paid
+                                            </span>
+                                        {% elif package.is_expired %}
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-4xl text-[11px] font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 border border-zinc-200/50 dark:border-zinc-700/50">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-zinc-400"></span> Expired
+                                            </span>
+                                        {% else %}
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-4xl text-[11px] font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200/50 dark:border-zinc-700/50">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-zinc-400 animate-pulse"></span> Pending
+                                            </span>
+                                        {% endif %}
+
+                                        <span class="text-sm font-medium text-zinc-900 dark:text-zinc-200 tabular-nums">
+                                            ${{ package.total_amount }}
+                                        </span>
+
+                                        <svg class="w-4 h-4 text-zinc-300 dark:text-zinc-600 group-hover:translate-x-0.5 group-hover:text-zinc-600 dark:group-hover:text-zinc-300 transition-all duration-150" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+                                        </svg>
+                                    </div>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="py-8 text-center text-xs text-zinc-400 dark:text-zinc-500">
+                            {% if section_type == 'sent' %}No packages sent yet.{% elif section_type == 'received' %}No packages received.{% else %}No paid packages.{% endif %}
+                        </div>
+                    {% endif %}
+                </section>
+            {% endfor %}
+        </div>
+
+    <!-- Pagination -->
+        {% if is_paginated %}
+            <nav class="flex items-center justify-between pt-2 border-t border-zinc-200/40 dark:border-zinc-800/40">
+                {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}"
+                       class="px-3 py-1.5 text-xs font-medium text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 rounded-lg transition-colors">
+                        Previous
+                    </a>
+                {% else %}
+                    <div></div>
+                {% endif %}
+
+                <span class="text-xs font-medium text-zinc-400 dark:text-zinc-500 tabular-nums">
+                    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                </span>
+
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}"
+                       class="px-3 py-1.5 text-xs font-medium text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 rounded-lg transition-colors">
+                        Next
+                    </a>
+                {% else %}
+                    <div></div>
+                {% endif %}
+            </nav>
+        {% endif %}
+
+    </main>
+{% endblock %}

@@ -10,11 +10,11 @@
                     <!-- File Type / Status Badge -->
                     <div class="flex items-center shrink-0">
                         {% if document.did_ocr %}
-                            <span class="inline-flex items-center justify-center px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 uppercase tracking-wider shadow-xs">
+                            <span class="inline-flex items-center justify-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 uppercase tracking-wider shadow-xs">
                                 OCR
                             </span>
                         {% else %}
-                            <span class="inline-flex items-center justify-center px-2 py-0.5 rounded-md text-[10px] font-mono font-medium bg-zinc-100 text-zinc-600 dark:bg-zinc-800/80 dark:text-zinc-400 border border-zinc-200/80 dark:border-zinc-700/50 uppercase tracking-wider">
+                            <span class="inline-flex items-center justify-center px-2 py-0.5 rounded-md text-[10px] font-medium bg-zinc-100 text-zinc-600 dark:bg-zinc-800/80 dark:text-zinc-400 border border-zinc-200/80 dark:border-zinc-700/50 uppercase tracking-wider">
                                 File
                             </span>
                         {% endif %}
@@ -40,7 +40,7 @@
 
                         <div class="hidden sm:flex items-center gap-2 text-xs text-zinc-400 dark:text-zinc-500 shrink-0">
                             <span class="tabular-nums">{{ document.date_added|date:"M d, Y" }}</span>
-                            <span class="font-mono text-[10px] uppercase px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800/50 text-zinc-500 dark:text-zinc-400 border border-zinc-200/50 dark:border-zinc-800">
+                            <span class=" text-[10px] uppercase px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800/50 text-zinc-500 dark:text-zinc-400 border border-zinc-200/50 dark:border-zinc-800">
                                 {{ document.filepath|slice:"-4:"|cut:"." }}
                             </span>
                         </div>

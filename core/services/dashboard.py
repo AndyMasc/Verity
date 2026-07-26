@@ -9,13 +9,14 @@ import logging
 from datetime import datetime, time, timedelta
 
 from django.core.cache import cache
-from django.db.models import Sum
+from django.db.models import Q, Sum
 from django.utils import timezone
 from django.utils.timezone import make_aware
 
+from core.models import Notification
 from documents.models import DocumentData, DocumentStatus
 from records.models import MergeLog, Record
-from core.models import Notification
+from reimbursements.models import PackagePayment, ReimbursementPackage
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +26,17 @@ DASHBOARD_CACHE_TTL = 30
 async def _fetch_records(queryset) -> list:
     """Helper to evaluate an async queryset into a concrete list."""
     return [r async for r in queryset]
+
+
+async def _fetch_notifications(user) -> list:
+    """Fetch recent unread notifications for the user."""
+    return [
+        n
+        async for n in Notification.objects.filter(
+            recipient=user,
+            is_read=False,
+        ).order_by("-sent_at")[:3]
+    ]
 
 
 async def get_dashboard_context(user) -> dict:
@@ -53,6 +65,12 @@ async def get_dashboard_context(user) -> dict:
         recent_records,
         expiring_soon,
         webpush_warning,
+        sent_total,
+        sent_pending_count,
+        received_total,
+        received_count,
+        has_packages,
+        notifications,
     ) = await asyncio.gather(
         MergeLog.objects.filter(plaid_record__user=user, undone_at__isnull=True).acount(),
         all_user_records.filter(
@@ -123,12 +141,21 @@ async def get_dashboard_context(user) -> dict:
             )
         ),
         get_webpush_warning(user),
+        PackagePayment.objects.filter(package__paid_by=user, is_completed=True).aaggregate(
+            total=Sum("amount_paid")
+        ),
+        ReimbursementPackage.objects.filter(
+            creator=user, status=ReimbursementPackage.Status.OPEN
+        ).acount(),
+        PackagePayment.objects.filter(package__recipient=user, is_completed=True).aaggregate(
+            total=Sum("amount_paid")
+        ),
+        ReimbursementPackage.objects.filter(
+            recipient=user, status=ReimbursementPackage.Status.PAID
+        ).acount(),
+        ReimbursementPackage.objects.filter(Q(creator=user) | Q(recipient=user)).aexists(),
+        _fetch_notifications(user),
     )
-
-    notifications = Notification.objects.filter(
-        recipient=user,
-        is_read=False,
-    )[:3]
 
     context = {
         "merged_records_count": merge_count,
@@ -140,6 +167,11 @@ async def get_dashboard_context(user) -> dict:
         "pending_ocr_count": pending_ocr_count,
         "webpush_warning": webpush_warning,
         "notifications": notifications,
+        "reimbursements_sent_total": float(sent_total.get("total") or 0),
+        "reimbursements_sent_pending_count": sent_pending_count,
+        "reimbursements_received_total": float(received_total.get("total") or 0),
+        "reimbursements_received_count": received_count,
+        "has_packages": has_packages,
     }
 
     return context
@@ -151,7 +183,7 @@ async def get_webpush_warning(user) -> str | None:
 
     webpush_enabled = await PushInformation.objects.filter(user=user).aexists()
     if not webpush_enabled and user.settings.enable_push_notifications:
-        return "Subscribe to push messages in settings to recieve push notifications."
+        return "Subscribe to push messages in settings to receive push notifications."
     if webpush_enabled and not user.settings.enable_push_notifications:
-        return "Enable push messages in settings to recieve push notifications."
+        return "Enable push messages in settings to receive push notifications."
     return None

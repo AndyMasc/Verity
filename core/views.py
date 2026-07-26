@@ -19,17 +19,17 @@ from django.core.cache import cache
 from django.db import DatabaseError, connection
 from django.db.models import Sum
 from django.http import HttpRequest, HttpResponse, JsonResponse
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
-from django.views.generic import TemplateView, UpdateView
+from django.views.generic import ListView, TemplateView, UpdateView
 from django_ratelimit.decorators import ratelimit
 from webpush.models import SubscriptionInfo
 from webpush.views import save_info
 
 from .forms import UpdateUserSettingsForm
-from .models import UserSettings
+from .models import Notification, UserSettings
 from .services.dashboard import get_dashboard_context
 
 logger = logging.getLogger(__name__)
@@ -236,3 +236,60 @@ def expense_chart_data(request: HttpRequest) -> JsonResponse:
         )
 
     return JsonResponse({"months": months, "currency": "$"})
+
+
+class NotificationListView(LoginRequiredMixin, ListView):
+    """List all notifications for the current user, newest first."""
+
+    model = Notification
+    template_name = "core/notifications.html"
+    context_object_name = "notifications"
+    paginate_by = 20
+
+    def get_queryset(self):
+        return Notification.objects.filter(recipient=self.request.user).order_by("-sent_at")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["unread_count"] = Notification.objects.filter(
+            recipient=self.request.user, is_read=False
+        ).count()
+        return context
+
+
+@require_POST
+def notification_delete(request: HttpRequest, notification_id: int) -> HttpResponse:
+    """Delete a single notification. Only the recipient may delete."""
+    notification = get_object_or_404(Notification, pk=notification_id, recipient=request.user)
+    notification.delete()
+    if request.headers.get("HX-Request"):
+        return HttpResponse(status=200)
+    return redirect("core:notifications")
+
+
+@require_POST
+def notification_mark_read(request: HttpRequest, notification_id: int) -> HttpResponse:
+    """Toggle read/unread on a single notification."""
+    notification = get_object_or_404(Notification, pk=notification_id, recipient=request.user)
+    notification.is_read = not notification.is_read
+    notification.save(update_fields=["is_read"])
+    if request.headers.get("HX-Request"):
+        from django.template.loader import render_to_string
+
+        html = render_to_string(
+            "core/partials/notification_row.html",
+            {"notification": notification},
+            request=request,
+        )
+        return HttpResponse(html)
+    return redirect("core:notifications")
+
+
+@require_POST
+def notification_mark_all_read(request: HttpRequest) -> HttpResponse:
+    """Mark all unread notifications as read."""
+    count = Notification.objects.filter(recipient=request.user, is_read=False).update(is_read=True)
+    if request.headers.get("HX-Request"):
+        return HttpResponse(status=200)
+    messages.success(request, f"Marked {count} notification{'s' if count != 1 else ''} as read.")
+    return redirect("core:notifications")

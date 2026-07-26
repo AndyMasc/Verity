@@ -1,0 +1,10 @@
+Reimbursement Request
+
+Hi {{ recipient_name }},
+
+{{ creator_name }} sent you a reimbursement request for "{{ title }}" totalling ${{ amount }}.
+
+View and pay: {{ package_url }}
+
+---
+Sent via Papertrail

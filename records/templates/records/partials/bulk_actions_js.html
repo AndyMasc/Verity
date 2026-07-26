@@ -1,4 +1,4 @@
-{# Reusable Alpine.js data function for bulk record actions. #}
+{# bulk_action_js.html #}
 <script>
     function recordBulkActions() {
         return {
@@ -7,6 +7,14 @@
             archiving: false,
             unarchiving: false,
             exporting: false,
+            creatingPackage: false,
+            showPackageModal: false,
+            packageTitle: 'Expense Reimbursement',
+            recipientEmail: '',
+            recipientStatus: '',
+            recipientName: '',
+            packageError: '',
+            emailCheckTimeout: null,
 
             get allVisibleSelected() {
                 return this.allVisibleIds.length > 0 && this.allVisibleIds.every(id => this.selectedIds.includes(id));
@@ -40,6 +48,102 @@
                 return document.querySelector('meta[name="csrf-token"]')?.content || '';
             },
 
+            _toast(message, level) {
+                window.dispatchEvent(new CustomEvent('django-messages', {
+                    detail: { message, level }
+                }));
+            },
+
+            openPackageModal() {
+                this.packageTitle = 'Expense Reimbursement';
+                this.recipientEmail = '';
+                this.recipientStatus = '';
+                this.recipientName = '';
+                this.packageError = '';
+                this.showPackageModal = true;
+            },
+
+            onEmailInput() {
+                clearTimeout(this.emailCheckTimeout);
+                this.recipientStatus = '';
+                this.recipientName = '';
+                if (!this.recipientEmail.trim() || !this.recipientEmail.includes('@')) return;
+                this.emailCheckTimeout = setTimeout(() => this.checkEmail(), 500);
+            },
+
+            async checkEmail() {
+                this.recipientStatus = 'checking';
+                try {
+                    const resp = await fetch("{% url 'reimbursements:validate-email' %}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': this._getCsrfToken(),
+                        },
+                        body: JSON.stringify({ email: this.recipientEmail.trim() }),
+                    });
+                    const data = await resp.json();
+                    if (data.valid) {
+                        this.recipientStatus = 'valid';
+                        this.recipientName = data.name;
+                    } else {
+                        this.recipientStatus = 'invalid';
+                        this.packageError = data.error;
+                    }
+                } catch {
+                    this.recipientStatus = 'invalid';
+                    this.packageError = 'Could not verify email.';
+                }
+            },
+
+            async createReimbursementPackage() {
+                this.packageError = '';
+                if (!this.recipientEmail.trim()) {
+                    this.packageError = 'Recipient email is required.';
+                    return;
+                }
+                if (this.recipientStatus !== 'valid') {
+                    await this.checkEmail();
+                    if (this.recipientStatus !== 'valid') return;
+                }
+
+                this.creatingPackage = true;
+                try {
+                    const response = await fetch("{% url 'reimbursements:create-package' %}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': this._getCsrfToken(),
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        body: JSON.stringify({
+                            record_ids: this.selectedIds.map(Number),
+                            title: this.packageTitle.trim() || 'Expense Reimbursement',
+                            recipient_email: this.recipientEmail.trim(),
+                        }),
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        this.showPackageModal = false;
+                        if (data.redirect_url) {
+                            window.location.href = data.redirect_url;
+                        }
+                    } else {
+                        let errorMsg = 'Failed to create reimbursement package.';
+                        try {
+                            const err = await response.json();
+                            errorMsg = err.error || errorMsg;
+                        } catch {}
+                        this.packageError = errorMsg;
+                    }
+                } catch {
+                    this.packageError = 'A network error occurred. Please try again.';
+                } finally {
+                    this.creatingPackage = false;
+                }
+            },
+
             async bulkArchive() {
                 if (!confirm('Archive ' + this.selectedIds.length + ' record(s)?')) return;
                 this.archiving = true;
@@ -56,7 +160,12 @@
                     if (response.ok) {
                         this.selectedIds = [];
                         document.body.dispatchEvent(new Event('recordChanged'));
+                        this._toast('Records archived.', 25);
+                    } else {
+                        this._toast('Failed to archive records.', 40);
                     }
+                } catch {
+                    this._toast('A network error occurred.', 40);
                 } finally {
                     this.archiving = false;
                 }
@@ -78,7 +187,12 @@
                     if (response.ok) {
                         this.selectedIds = [];
                         document.body.dispatchEvent(new Event('recordChanged'));
+                        this._toast('Records restored.', 25);
+                    } else {
+                        this._toast('Failed to restore records.', 40);
                     }
+                } catch {
+                    this._toast('A network error occurred.', 40);
                 } finally {
                     this.unarchiving = false;
                 }
@@ -106,7 +220,11 @@
                         a.click();
                         a.remove();
                         window.URL.revokeObjectURL(url);
+                    } else {
+                        this._toast('Export failed.', 40);
                     }
+                } catch {
+                    this._toast('A network error occurred during export.', 40);
                 } finally {
                     this.exporting = false;
                 }

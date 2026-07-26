@@ -54,11 +54,13 @@ INSTALLED_APPS = [
     "slippers",
     "django_filters",
     "simple_history",
+    "django.contrib.humanize",
     # Local apps
     "core.apps.CoreConfig",
     "documents.apps.DocumentsConfig",
     "records.apps.RecordsConfig",
     "accounting.apps.AccountingConfig",
+    "reimbursements.apps.ReimbursementsConfig",
     # Webpush
     "webpush",
     # Plaid
@@ -363,3 +365,8 @@ IMPORT_EXPORT_ESCAPE_FORMULAE_ON_EXPORT = (
 FERNET_KEYS = [
     env("FERNET_KEY"),
 ]
+
+# Stripe
+STRIPE_SECRET_KEY = env("STRIPE_SECRET_KEY")
+STRIPE_PUBLISHABLE_KEY = env("STRIPE_PUBLISHABLE_KEY")
+STRIPE_WEBHOOK_SECRET = env("STRIPE_WEBHOOK_SECRET")

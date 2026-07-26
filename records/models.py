@@ -242,6 +242,7 @@ class Record(models.Model):
     date_added = models.DateField(auto_now_add=True, db_index=True)
     last_edited = models.DateTimeField(auto_now=True, db_index=True)
     is_active = models.BooleanField(default=True, db_index=True)
+    reimbursed = models.BooleanField(default=False, db_index=True)
 
     title = models.CharField(max_length=255)
     merchant = models.CharField(max_length=255, default="")

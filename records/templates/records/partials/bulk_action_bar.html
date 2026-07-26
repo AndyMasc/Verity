@@ -2,91 +2,158 @@
 {# Requires Alpine.js x-data with recordBulkActions() scope. #}
 <div x-show="selectedIds.length > 0"
      x-cloak
-     x-transition:enter="transition ease-out duration-200"
-     x-transition:enter-start="translate-y-4 opacity-0"
+     x-transition:enter="transition ease-out duration-300"
+     x-transition:enter-start="translate-y-3 opacity-0"
      x-transition:enter-end="translate-y-0 opacity-100"
-     x-transition:leave="transition ease-in duration-150"
+     x-transition:leave="transition ease-in duration-200"
      x-transition:leave-start="translate-y-0 opacity-100"
-     x-transition:leave-end="translate-y-4 opacity-0"
+     x-transition:leave-end="translate-y-3 opacity-0"
      class="fixed bottom-0 inset-x-0 z-50 sm:bottom-8 sm:left-1/2 sm:inset-x-auto sm:-translate-x-1/2"
      @keydown.escape.window="clearSelection()">
 
-    <div class="sm:flex sm:items-center sm:gap-3 sm:px-4 sm:py-2.5 sm:bg-zinc-900 sm:text-zinc-300 sm:dark:bg-[#111] sm:dark:text-zinc-400 sm:rounded-xl sm:shadow-xl sm:border sm:border-zinc-800 sm:dark:border-white/10">
+    <div class="sm:flex sm:items-center sm:gap-3 sm:px-4 sm:py-2 sm:bg-[#111113]/95 sm:backdrop-blur-xl sm:text-zinc-400 sm:rounded-2xl sm:shadow-2xl sm:border sm:border-white/[0.06]">
 
-        {# Mobile: full-width bar with safe-area padding #}
-        <div class="flex items-center justify-between gap-2 px-4 py-3 bg-zinc-900 text-zinc-300 dark:bg-[#111] dark:text-zinc-400 border-t border-zinc-800 dark:border-white/10 sm:hidden safe-area-pb">
+        {# Mobile #}
+        <div class="flex items-center justify-between gap-2 px-4 py-3 bg-[#111113]/95 backdrop-blur-xl text-zinc-400 border-t border-white/[0.06] sm:hidden safe-area-pb">
             <div class="flex items-center gap-2.5 min-w-0">
-                <span class="flex items-center justify-center w-5 h-5 rounded bg-zinc-800 dark:bg-zinc-800 text-zinc-100 text-[11px] font-medium shrink-0" x-text="selectedIds.length"></span>
-                <span class="text-[13px] font-medium whitespace-nowrap text-zinc-100 dark:text-zinc-200">selected</span>
+                <span class="flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-md bg-white/[0.06] text-[11px] font-medium text-zinc-300 tabular-nums" x-text="selectedIds.length"></span>
+                <span class="text-[13px] font-medium whitespace-nowrap text-zinc-500">selected</span>
             </div>
 
-            <div class="flex items-center gap-1 overflow-x-auto scrollbar-none">
-                <button type="button"
-                        @click="toggleSelectAll()"
-                        class="px-2.5 py-1 text-[13px] font-medium rounded hover:bg-zinc-800 dark:hover:bg-zinc-800 hover:text-white dark:hover:text-zinc-100 transition-colors duration-200 whitespace-nowrap cursor-pointer"
-                        x-text="allVisibleSelected ? 'Deselect All' : 'Select All'">
-                </button>
-
-                <button type="button"
-                        @click="bulkArchive()"
-                        :disabled="archiving"
-                        class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[13px] font-medium rounded hover:bg-zinc-800 dark:hover:bg-zinc-800 hover:text-white dark:hover:text-zinc-100 transition-colors duration-200 whitespace-nowrap cursor-pointer disabled:opacity-50">
+            <div class="flex items-center gap-0.5 overflow-x-auto scrollbar-none">
+                <button type="button" @click="toggleSelectAll()"
+                        class="px-2.5 py-1 text-[13px] font-medium rounded-lg hover:bg-white/[0.04] hover:text-zinc-200 transition-all duration-200 whitespace-nowrap"
+                        x-text="allVisibleSelected ? 'Deselect' : 'Select All'"></button>
+                <button type="button" @click="bulkArchive()" :disabled="archiving"
+                        class="px-2.5 py-1 text-[13px] font-medium rounded-lg hover:bg-white/[0.04] hover:text-zinc-200 transition-all duration-200 whitespace-nowrap disabled:opacity-40">
                     <span x-text="archiving ? 'Archiving...' : 'Archive'"></span>
                 </button>
-
-                <button type="button"
-                        @click="bulkUnarchive()"
-                        :disabled="unarchiving"
-                        class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[13px] font-medium rounded hover:bg-zinc-800 dark:hover:bg-zinc-800 hover:text-white dark:hover:text-zinc-100 transition-colors duration-200 whitespace-nowrap cursor-pointer disabled:opacity-50">
+                <button type="button" @click="bulkUnarchive()" :disabled="unarchiving"
+                        class="px-2.5 py-1 text-[13px] font-medium rounded-lg hover:bg-white/[0.04] hover:text-zinc-200 transition-all duration-200 whitespace-nowrap disabled:opacity-40">
                     <span x-text="unarchiving ? 'Restoring...' : 'Restore'"></span>
                 </button>
-
-                <button type="button"
-                        @click="exportSelected()"
-                        :disabled="exporting"
-                        class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[13px] font-medium rounded hover:bg-zinc-800 dark:hover:bg-zinc-800 hover:text-white dark:hover:text-zinc-100 transition-colors duration-200 whitespace-nowrap cursor-pointer disabled:opacity-50">
+                <button type="button" @click="exportSelected()" :disabled="exporting"
+                        class="px-2.5 py-1 text-[13px] font-medium rounded-lg hover:bg-white/[0.04] hover:text-zinc-200 transition-all duration-200 whitespace-nowrap disabled:opacity-40">
                     <span x-text="exporting ? 'Exporting...' : 'Export'"></span>
+                </button>
+                <button type="button" @click="openPackageModal()" :disabled="creatingPackage"
+                        class="px-2.5 py-1 text-[13px] font-medium text-indigo-400/80 rounded-lg hover:bg-indigo-500/[0.08] transition-all duration-200 whitespace-nowrap disabled:opacity-40">
+                    <span x-text="creatingPackage ? 'Creating...' : 'Reimburse'"></span>
                 </button>
             </div>
         </div>
 
-        {# Desktop: centered floating bar #}
+        {# Desktop #}
         <div class="hidden sm:flex sm:items-center sm:gap-3">
             <div class="flex items-center gap-2">
-                <span class="flex items-center justify-center w-5 h-5 rounded bg-zinc-800 dark:bg-zinc-800 text-zinc-100 text-[11px] font-medium" x-text="selectedIds.length"></span>
-                <span class="text-[13px] font-medium whitespace-nowrap pr-2 text-zinc-100 dark:text-zinc-200">selected</span>
+                <span class="flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-md bg-white/[0.06] text-[11px] font-medium text-zinc-300 tabular-nums" x-text="selectedIds.length"></span>
+                <span class="text-[13px] font-medium whitespace-nowrap pr-2 text-zinc-500">selected</span>
             </div>
 
-            <div class="w-px h-4 bg-zinc-700 dark:bg-zinc-700"></div>
+            <div class="w-px h-4 bg-white/[0.06]"></div>
 
-            <div class="flex items-center gap-1">
-                <button type="button"
-                        @click="toggleSelectAll()"
-                        class="px-2.5 py-1 text-[13px] font-medium rounded hover:bg-zinc-800 dark:hover:bg-zinc-800 hover:text-white dark:hover:text-zinc-100 transition-colors duration-200 whitespace-nowrap cursor-pointer"
-                        x-text="allVisibleSelected ? 'Deselect All' : 'Select All'">
-                </button>
-
-                <button type="button"
-                        @click="bulkArchive()"
-                        :disabled="archiving"
-                        class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[13px] font-medium rounded hover:bg-zinc-800 dark:hover:bg-zinc-800 hover:text-white dark:hover:text-zinc-100 transition-colors duration-200 whitespace-nowrap cursor-pointer disabled:opacity-50">
+            <div class="flex items-center gap-0.5">
+                <button type="button" @click="toggleSelectAll()"
+                        class="px-2.5 py-1 text-[13px] font-medium rounded-lg hover:bg-white/[0.04] hover:text-zinc-200 transition-all duration-200 whitespace-nowrap"
+                        x-text="allVisibleSelected ? 'Deselect' : 'Select All'"></button>
+                <button type="button" @click="bulkArchive()" :disabled="archiving"
+                        class="px-2.5 py-1 text-[13px] font-medium rounded-lg hover:bg-white/[0.04] hover:text-zinc-200 transition-all duration-200 whitespace-nowrap disabled:opacity-40">
                     <span x-text="archiving ? 'Archiving...' : 'Archive'"></span>
                 </button>
-
-                <button type="button"
-                        @click="bulkUnarchive()"
-                        :disabled="unarchiving"
-                        class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[13px] font-medium rounded hover:bg-zinc-800 dark:hover:bg-zinc-800 hover:text-white dark:hover:text-zinc-100 transition-colors duration-200 whitespace-nowrap cursor-pointer disabled:opacity-50">
+                <button type="button" @click="bulkUnarchive()" :disabled="unarchiving"
+                        class="px-2.5 py-1 text-[13px] font-medium rounded-lg hover:bg-white/[0.04] hover:text-zinc-200 transition-all duration-200 whitespace-nowrap disabled:opacity-40">
                     <span x-text="unarchiving ? 'Restoring...' : 'Restore'"></span>
                 </button>
-
-                <button type="button"
-                        @click="exportSelected()"
-                        :disabled="exporting"
-                        class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[13px] font-medium rounded hover:bg-zinc-800 dark:hover:bg-zinc-800 hover:text-white dark:hover:text-zinc-100 transition-colors duration-200 whitespace-nowrap cursor-pointer disabled:opacity-50">
+                <button type="button" @click="exportSelected()" :disabled="exporting"
+                        class="px-2.5 py-1 text-[13px] font-medium rounded-lg hover:bg-white/[0.04] hover:text-zinc-200 transition-all duration-200 whitespace-nowrap disabled:opacity-40">
                     <span x-text="exporting ? 'Exporting...' : 'Export'"></span>
+                </button>
+                <button type="button" @click="openPackageModal()" :disabled="creatingPackage"
+                        class="px-2.5 py-1 text-[13px] font-medium text-indigo-400/80 rounded-lg hover:bg-indigo-500/[0.08] transition-all duration-200 whitespace-nowrap disabled:opacity-40">
+                    <span x-text="creatingPackage ? 'Creating...' : 'Request Reimbursement'"></span>
                 </button>
             </div>
         </div>
     </div>
 </div>
+
+{# Modal — teleported to body to escape stacking contexts #}
+<template x-teleport="body">
+    <div x-show="showPackageModal"
+         x-cloak
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-[200] flex items-center justify-center p-4"
+         @keydown.escape.window="showPackageModal = false">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="showPackageModal = false"></div>
+        <div class="relative w-full max-w-md bg-[#0c0c0e] rounded-2xl border border-white/[0.06] shadow-2xl overflow-hidden"
+             x-show="showPackageModal"
+             x-transition:enter="transition ease-out duration-300 delay-75"
+             x-transition:enter-start="opacity-0 scale-[0.97] translate-y-1"
+             x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100 scale-100"
+             x-transition:leave-end="opacity-0 scale-[0.97]"
+             @click.stop>
+
+            <div class="px-6 pt-6 pb-4">
+                <h3 class="text-[15px] font-semibold text-zinc-100 tracking-tight">New Reimbursement</h3>
+                <p class="text-[13px] text-zinc-500 mt-1">Send a payment request to another Papertrail user.</p>
+            </div>
+
+            <template x-if="packageError">
+                <div class="mx-6 mb-4 px-3.5 py-2.5 rounded-xl bg-red-500/[0.06] border border-red-500/[0.12] text-[13px] text-red-400/90" x-text="packageError"></div>
+            </template>
+
+            <div class="px-6 pb-6 space-y-4">
+                <div>
+                    <label for="package-title" class="block text-[12px] font-medium text-zinc-500 mb-1.5 tracking-wide uppercase">Title</label>
+                    <input id="package-title" type="text" x-model="packageTitle"
+                           class="w-full px-3.5 py-2.5 text-[14px] rounded-xl bg-white/[0.03] border border-white/[0.06] text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-indigo-500/40 focus:border-indigo-500/40 transition-all duration-200"
+                           placeholder="Expense Reimbursement">
+                </div>
+                <div>
+                    <label for="recipient-email" class="block text-[12px] font-medium text-zinc-500 mb-1.5 tracking-wide uppercase">Recipient</label>
+                    <div class="relative">
+                        <input id="recipient-email" type="email" x-model="recipientEmail"
+                               @input="onEmailInput()"
+                               class="w-full px-3.5 py-2.5 pr-10 text-[14px] rounded-xl bg-white/[0.03] border text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 transition-all duration-200"
+                               :class="recipientStatus === 'valid' ? 'border-emerald-500/30 focus:ring-emerald-500/30' : recipientStatus === 'invalid' ? 'border-red-500/30 focus:ring-red-500/30' : 'border-white/[0.06] focus:ring-indigo-500/40 focus:border-indigo-500/40'"
+                               placeholder="colleague@example.com">
+                        <div class="absolute right-3 top-1/2 -translate-y-1/2" x-show="recipientStatus === 'checking'">
+                            <svg class="w-4 h-4 text-zinc-500 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                        </div>
+                        <div class="absolute right-3 top-1/2 -translate-y-1/2" x-show="recipientStatus === 'valid'">
+                            <svg class="w-4 h-4 text-emerald-400/80" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
+                        </div>
+                    </div>
+                    <template x-if="recipientStatus === 'valid' && recipientName">
+                        <p class="mt-1.5 text-[12px] text-emerald-400/70" x-text="'Sending to ' + recipientName"></p>
+                    </template>
+                    <template x-if="recipientStatus !== 'valid'">
+                        <p class="mt-1.5 text-[12px] text-zinc-600">Must be a registered Papertrail user.</p>
+                    </template>
+                </div>
+            </div>
+
+            <div class="px-6 py-4 border-t border-white/[0.04] flex items-center justify-end gap-2.5">
+                <button type="button" @click="showPackageModal = false"
+                        class="px-4 py-2 text-[13px] font-medium text-zinc-400 hover:text-zinc-200 rounded-xl hover:bg-white/[0.04] transition-all duration-200">
+                    Cancel
+                </button>
+                <button type="button" @click="createReimbursementPackage()"
+                        :disabled="creatingPackage || recipientStatus !== 'valid'"
+                        class="inline-flex items-center gap-2 px-5 py-2 text-[13px] font-medium text-white bg-indigo-500/90 hover:bg-indigo-400/90 rounded-xl shadow-lg shadow-indigo-500/10 transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed active:scale-[0.98]">
+                    <template x-if="creatingPackage">
+                        <svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                    </template>
+                    <span x-text="creatingPackage ? 'Sending...' : 'Create & Send'"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+</template>
