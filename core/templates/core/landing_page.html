@@ -2,138 +2,338 @@
 {% load static %}
 
 {% block content %}
-    {% block sidebar %} {% endblock %}
+{% block sidebar %} {% endblock %}
 
-    <nav class="sticky top-0 z-50 w-full border-b border-zinc-200/40 bg-white/70 backdrop-blur-md dark:border-zinc-900/60 dark:bg-zinc-950/70">
-        <div class="container mx-auto flex w-full items-center justify-between px-6 py-3.5 md:max-w-7xl">
-            <div class="flex items-center gap-8">
-                <a href="{% url 'core:landing_page' %}" class="font-black tracking-tight text-zinc-900 dark:text-white flex items-center gap-2">
-                    <span>Papertrail.</span>
-                </a>
+```
+<nav class="sticky top-0 z-50 w-full border-b border-zinc-200/40 bg-white/70 backdrop-blur-md dark:border-zinc-900/60 dark:bg-zinc-950/70">
+    <div class="container mx-auto flex w-full items-center justify-between px-6 py-3.5 md:max-w-7xl">
+        <div class="flex items-center gap-8">
+            <a href="{% url 'core:landing_page' %}" class="font-black tracking-tight text-zinc-900 dark:text-white flex items-center gap-2">
+                <span>Papertrail.</span>
+            </a>
 
-                <nav class="hidden items-center md:inline-flex space-x-1 pl-6 border-l border-zinc-200/60 dark:border-zinc-800/60">
-                    {% for label, anchor in nav_links %}
-                        <a href="{{ anchor }}" class="rounded-xl px-4 py-1.5 text-xs font-medium text-zinc-500 transition-all duration-200 hover:text-zinc-950 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-800">
-                            {{ label }}
-                        </a>
-                    {% empty %}
-                        <a href="#_" class="rounded-xl px-4 py-1.5 text-xs font-medium text-zinc-500 transition-all duration-200 hover:text-zinc-950 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-800">Features</a>
-                        <a href="#_" class="rounded-xl px-4 py-1.5 text-xs font-medium text-zinc-500 transition-all duration-200 hover:text-zinc-950 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-800">Pricing</a>
-                        <a href="#faq" class="rounded-xl px-4 py-1.5 text-xs font-medium text-zinc-500 transition-all duration-200 hover:text-zinc-950 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-800">FAQ</a>
-                    {% endfor %}
-                </nav>
-            </div>
-
-            <div class="inline-flex items-center space-x-2.5">
-                <a href="{% url 'account_login' %}" class="border border-zinc-200/80 dark:border-zinc-800 rounded-2xl px-4 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-900 transition-all duration-150 active:scale-[0.98]">Sign in</a>
-                <a href="{% url 'account_signup' %}" class="rounded-2xl bg-zinc-900 px-4 py-1.5 text-xs font-medium text-white transition-all duration-150 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white active:scale-[0.98] shadow-sm">Join now</a>
-            </div>
-        </div>
-    </nav>
-
-    <section class="relative w-full overflow-hidden bg-white dark:bg-zinc-950 pt-16 md:pt-28 pb-16">
-        <div class="absolute inset-0 bg-[radial-gradient(#e4e4e7_1px,transparent_1px)] dark:bg-[radial-gradient(#18181b_1px,transparent_1px)] [background-size:24px_24px] [mask-image:radial-gradient(ellipse_50%_50%_at_50%_50%,#000_60%,transparent_100%)] pointer-events-none"></div>
-
-        <div class="relative container mx-auto flex flex-col items-center justify-center gap-8 px-6 max-w-7xl text-center">
-
-            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-50 border border-zinc-200/60 dark:bg-zinc-900/40 dark:border-zinc-800/60 text-[10px] tracking-tight text-zinc-500 dark:text-zinc-400">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                v2.0 Autonomous Processing Platform
-            </div>
-
-            <header class="max-w-4xl">
-                <h1 class="mb-6 text-4xl font-semibold tracking-tight text-transparent bg-gradient-to-b from-zinc-950 to-zinc-600 bg-clip-text dark:from-white dark:to-zinc-400 md:text-6xl lg:text-7xl">
-                    Papertrail.<br class="hidden sm:inline">
-                    The intelligent workspace for every purchase.
-                </h1>
-                <p class="mx-auto max-w-2xl text-sm md:text-base text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                    Centralize every purchase in one secure, smart, and searchable workspace. <span class="whitespace-nowrap">Minimal friction. Blazing speed. Private by default.</span>
-                </p>
-            </header>
-
-            <div class="flex items-center gap-3">
-                <a href="{% url 'account_signup' %}" class="rounded-3xl bg-zinc-900 px-6 py-2.5 text-xs font-medium text-white transition-all duration-150 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white shadow-md active:scale-[0.99]">
-                    Get Started Free
-                </a>
-                <a href="#" class="border border-zinc-200 dark:border-zinc-800 flex items-center justify-center gap-2 rounded-3xl px-6 py-2.5 text-xs font-medium text-zinc-600 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-white hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-all duration-150 active:scale-[0.99]">
-                    Discover Papertrail
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="size-3.5 opacity-80">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
-                    </svg>
-                </a>
-            </div>
+            <nav class="hidden items-center md:inline-flex space-x-1 pl-6 border-l border-zinc-200/60 dark:border-zinc-800/60">
+                {% for label, anchor in nav_links %}
+                    <a href="{{ anchor }}" class="rounded-xl px-4 py-1.5 text-xs font-medium text-zinc-500 transition-all duration-200 hover:text-zinc-950 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-800">
+                        {{ label }}
+                    </a>
+                {% empty %}
+                    <a href="#features" class="rounded-xl px-4 py-1.5 text-xs font-medium text-zinc-500 transition-all duration-200 hover:text-zinc-950 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-800">Features</a>
+                    <a href="#performance" class="rounded-xl px-4 py-1.5 text-xs font-medium text-zinc-500 transition-all duration-200 hover:text-zinc-950 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-800">Performance</a>
+                    <a href="#reimbursements" class="rounded-xl px-4 py-1.5 text-xs font-medium text-zinc-500 transition-all duration-200 hover:text-zinc-950 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-800">Reimbursements</a>
+                    <a href="#security" class="rounded-xl px-4 py-1.5 text-xs font-medium text-zinc-500 transition-all duration-200 hover:text-zinc-950 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-800">Security</a>
+                    <a href="#faq" class="rounded-xl px-4 py-1.5 text-xs font-medium text-zinc-500 transition-all duration-200 hover:text-zinc-950 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-800">FAQ</a>
+                {% endfor %}
+            </nav>
         </div>
 
-        <div class="relative mt-16 w-full overflow-hidden">
-            <div class="flex justify-center px-6">
-                <div class="relative w-full max-w-7xl shrink-0 min-w-[800px] md:min-w-0 rounded-l-3xl sm:rounded-3xl border border-zinc-200/60 dark:border-zinc-800/60 p-2 bg-zinc-50/50 dark:bg-zinc-900/10 backdrop-blur-xs shadow-[0_24px_70px_rgba(0,0,0,0.12)] dark:shadow-[0_24px_70px_rgba(255,255,255,0.03)]">
-                    <div class="rounded-l-3xl sm:rounded-3xl border border-zinc-200/80 dark:border-zinc-800/80 overflow-hidden bg-white dark:bg-zinc-950">
-                        <img src="{% static 'core/images/interface-demo-light.png' %}" alt="App interface preview"
-                             class="w-full object-cover dark:hidden rounded-l-3xl sm:rounded-3xl">
-                        <img src="{% static 'core/images/interface-demo-dark.png' %}" alt="App interface preview (dark)"
-                             class="hidden w-full object-cover dark:block rounded-l-3xl sm:rounded-3xl">
-                    </div>
+        <div class="inline-flex items-center space-x-2.5">
+            <a href="{% url 'account_login' %}" class="border border-zinc-200/80 dark:border-zinc-800 rounded-2xl px-4 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-900 transition-all duration-150 active:scale-[0.98]">Sign in</a>
+            <a href="{% url 'account_signup' %}" class="rounded-2xl bg-zinc-900 px-4 py-1.5 text-xs font-medium text-white transition-all duration-150 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white active:scale-[0.98] shadow-sm">Join now</a>
+        </div>
+    </div>
+</nav>
+
+<section class="relative w-full overflow-hidden bg-white dark:bg-zinc-950 pt-16 md:pt-28 pb-16">
+    <div class="absolute inset-0 bg-[radial-gradient(#e4e4e7_1px,transparent_1px)] dark:bg-[radial-gradient(#18181b_1px,transparent_1px)] [background-size:24px_24px] [mask-image:radial-gradient(ellipse_50%_50%_at_50%_50%,#000_60%,transparent_100%)] pointer-events-none"></div>
+
+    <div class="relative container mx-auto flex flex-col items-center justify-center gap-8 px-6 max-w-7xl text-center">
+
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-50 border border-zinc-200/60 dark:bg-zinc-900/40 dark:border-zinc-800/60 text-[10px] tracking-tight text-zinc-500 dark:text-zinc-400">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            v2.0 Autonomous Processing Platform
+        </div>
+
+        <header class="max-w-4xl">
+            <h1 class="mb-6 text-4xl font-semibold tracking-tight text-transparent bg-gradient-to-b from-zinc-950 to-zinc-600 bg-clip-text dark:from-white dark:to-zinc-400 md:text-6xl lg:text-7xl">
+                Papertrail.<br class="hidden sm:inline">
+                The intelligent workspace for every purchase.
+            </h1>
+            <p class="mx-auto max-w-2xl text-sm md:text-base text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                Centralize every purchase in one secure, smart, and searchable workspace. <span class="whitespace-nowrap">Minimal friction. Blazing speed. Private by default.</span>
+            </p>
+        </header>
+
+        <div class="flex items-center gap-3">
+            <a href="{% url 'account_signup' %}" class="rounded-3xl bg-zinc-900 px-6 py-2.5 text-xs font-medium text-white transition-all duration-150 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white shadow-md active:scale-[0.99]">
+                Get Started Free
+            </a>
+            <a href="#features" class="border border-zinc-200 dark:border-zinc-800 flex items-center justify-center gap-2 rounded-3xl px-6 py-2.5 text-xs font-medium text-zinc-600 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-white hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-all duration-150 active:scale-[0.99]">
+                Discover Papertrail
+                <svg xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="size-3.5 opacity-80">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+                </svg>
+            </a>
+        </div>
+    </div>
+
+    <div class="relative mt-16 w-full overflow-hidden">
+        <div class="flex justify-center px-6">
+            <div class="relative w-full max-w-7xl shrink-0 min-w-[800px] md:min-w-0 rounded-l-3xl sm:rounded-3xl border border-zinc-200/60 dark:border-zinc-800/60 p-2 bg-zinc-50/50 dark:bg-zinc-900/10 backdrop-blur-xs shadow-[0_24px_70px_rgba(0,0,0,0.12)] dark:shadow-[0_24px_70px_rgba(255,255,255,0.03)]">
+                <div class="rounded-l-3xl sm:rounded-3xl border border-zinc-200/80 dark:border-zinc-800/80 overflow-hidden bg-white dark:bg-zinc-950">
+                    <img src="{% static 'core/images/interface-demo-light.png' %}" alt="App interface preview"
+                         class="w-full object-cover dark:hidden rounded-l-3xl sm:rounded-3xl">
+                    <img src="{% static 'core/images/interface-demo-dark.png' %}" alt="App interface preview (dark)"
+                         class="hidden w-full object-cover dark:block rounded-l-3xl sm:rounded-3xl">
                 </div>
             </div>
-            <div class="absolute -inset-x-12 bottom-0 top-1/2 bg-gradient-to-t from-white dark:from-zinc-950 pointer-events-none"></div>
         </div>
-    </section>
+        <div class="absolute -inset-x-12 bottom-0 top-1/2 bg-gradient-to-t from-white dark:from-zinc-950 pointer-events-none"></div>
+    </div>
+</section>
 
-    <section class="py-24 border-t border-zinc-100 dark:border-zinc-900 bg-zinc-50/20 dark:bg-zinc-950/20">
-        <div class="mx-auto max-w-7xl px-6 lg:px-8">
+<!-- Core Features Section -->
+<section id="features" class="py-24 border-t border-zinc-100 dark:border-zinc-900 bg-zinc-50/20 dark:bg-zinc-950/20">
+    <div class="mx-auto max-w-7xl px-6 lg:px-8">
 
-            <div class="mx-auto max-w-3xl text-center mb-20">
+        <div class="mx-auto max-w-3xl text-center mb-20">
+            <h2 class="text-3xl font-semibold tracking-tight text-zinc-950 dark:text-white sm:text-4xl">
+                The autonomous layer, built for flow.
+            </h2>
+            <p class="mt-4 text-sm md:text-base text-zinc-500 dark:text-zinc-400 max-w-xl mx-auto">
+                Papertrail manages your financial footprint automatically, securely, and completely in the background.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-2">
+
+            <div class="group relative rounded-2xl border border-zinc-200/50 dark:border-zinc-800/50 bg-white dark:bg-zinc-900/10 p-8 transition-all duration-300 hover:border-zinc-300 dark:hover:border-zinc-700/60 hover:shadow-[0_4px_24px_rgba(0,0,0,0.01)] flex flex-col justify-between min-h-[220px]">
+                <div>
+                    <div class="mb-5 flex size-12 items-center justify-center rounded-2xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-white">
+                        <svg class="size-6 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16.5V9.75m0 0 3 3m-3-3-3 3M6.75 19.5a4.5 4.5 0 0 1-1.41-8.775 5.25 5.25 0 0 1 10.233-2.33 3 3 0 0 1 3.758 3.848A3.752 3.752 0 0 1 18 19.5H6.75Z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </div>
+                    <h3 class="text-sm font-semibold text-zinc-950 dark:text-zinc-100">Intelligent document capture</h3>
+                    <p class="mt-2 text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">Automatically extract and organize key parameters and figures from financial records and invoices seamlessly.</p>
+                </div>
+            </div>
+
+            <div class="group relative rounded-2xl border border-zinc-200/50 dark:border-zinc-800/50 bg-white dark:bg-zinc-900/10 p-8 transition-all duration-300 hover:border-zinc-300 dark:hover:border-zinc-700/60 hover:shadow-[0_4px_24px_rgba(0,0,0,0.01)] flex flex-col justify-between min-h-[220px]">
+                <div>
+                    <div class="mb-5 flex size-12 items-center justify-center rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-white">
+                        <svg class="size-6 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </div>
+                    <h3 class="text-sm font-semibold text-zinc-950 dark:text-zinc-100">Archive without the clutter</h3>
+                    <p class="mt-2 text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">Replace noisy physical clutter with a pristine, digital twin you can reference from any checkout point, completely paperlessly.</p>
+                </div>
+            </div>
+
+            <div class="group relative rounded-2xl border border-zinc-200/50 dark:border-zinc-800/50 bg-white dark:bg-zinc-900/10 p-8 transition-all duration-300 hover:border-zinc-300 dark:hover:border-zinc-700/60 hover:shadow-[0_4px_24px_rgba(0,0,0,0.01)] flex flex-col justify-between min-h-[220px]">
+                <div>
+                    <div class="mb-5 flex size-12 items-center justify-center rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-white">
+                        <svg class="size-6 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </div>
+                    <h3 class="text-sm font-semibold text-zinc-950 dark:text-zinc-100">Powerful query matching</h3>
+                    <p class="mt-2 text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">Instantly filter records by vendor, category segment, custom date metrics, or values. Zero friction.</p>
+                </div>
+            </div>
+
+            <div class="group relative rounded-2xl border border-zinc-200/50 dark:border-zinc-800/50 bg-white dark:bg-zinc-900/10 p-8 transition-all duration-300 hover:border-zinc-300 dark:hover:border-zinc-700/60 hover:shadow-[0_4px_24px_rgba(0,0,0,0.01)] flex flex-col justify-between min-h-[220px]">
+                <div>
+                    <div class="mb-5 flex size-12 items-center justify-center rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-white">
+                        <svg class="size-6 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7.864 4.243A7.5 7.5 0 0 1 19.5 10.5c0 2.92-.556 5.709-1.568 8.268M5.742 6.364A7.465 7.465 0 0 0 4.5 10.5a7.464 7.464 0 0 1-1.15 3.993m1.989 3.559A11.209 11.209 0 0 0 8.25 10.5a3.75 3.75 0 1 1 7.5 0c0 .527-.021 1.049-.064 1.565M12 10.5a14.94 14.94 0 0 1-3.6 9.75m6.633-4.596a18.666 18.666 0 0 1-2.485 5.33" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </div>
+                    <h3 class="text-sm font-semibold text-zinc-950 dark:text-zinc-100">Advanced cryptographic security</h3>
+                    <p class="mt-2 text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">Protect sensitive data with reliable, encrypted, cloud storage.</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<!-- Performance & Speed Section -->
+<section id="performance" class="py-24 border-t border-zinc-100 dark:border-zinc-900 bg-white dark:bg-zinc-950">
+    <div class="mx-auto max-w-7xl px-6 lg:px-8">
+        <div class="mx-auto max-w-3xl text-center mb-16">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-50 border border-zinc-200/60 dark:bg-zinc-900/40 dark:border-zinc-800/60 text-[10px] tracking-tight text-zinc-500 dark:text-zinc-400 mb-4">
+                Unmatched Velocity
+            </div>
+            <h2 class="text-3xl font-semibold tracking-tight text-zinc-950 dark:text-white sm:text-4xl">
+                Outpaces legacy platforms by orders of magnitude.
+            </h2>
+            <p class="mt-4 text-sm md:text-base text-zinc-500 dark:text-zinc-400">
+                Engineered from the ground up for rapid extraction using Gemini AI and asynchronous processing queues.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+            <div class="rounded-2xl border border-zinc-200/60 dark:border-zinc-800/60 p-6 bg-zinc-50/50 dark:bg-zinc-900/20 text-center">
+                <span class="block text-3xl md:text-4xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">~4s</span>
+                <span class="block text-xs font-semibold text-zinc-900 dark:text-white mt-2">Papertrail AI Engine</span>
+                <span class="block text-[11px] text-zinc-500 dark:text-zinc-400 mt-1">Blazing-fast parsing and database entry</span>
+            </div>
+            <div class="rounded-2xl border border-zinc-200/60 dark:border-zinc-800/60 p-6 bg-zinc-50/50 dark:bg-zinc-900/20 text-center">
+                <span class="block text-3xl md:text-4xl font-bold tracking-tight text-zinc-400 dark:text-zinc-500">17s</span>
+                <span class="block text-xs font-semibold text-zinc-900 dark:text-white mt-2">Expensify</span>
+                <span class="block text-[11px] text-zinc-500 dark:text-zinc-400 mt-1">Standard industry benchmark</span>
+            </div>
+            <div class="rounded-2xl border border-zinc-200/60 dark:border-zinc-800/60 p-6 bg-zinc-50/50 dark:bg-zinc-900/20 text-center">
+                <span class="block text-3xl md:text-4xl font-bold tracking-tight text-zinc-400 dark:text-zinc-500">100s+</span>
+                <span class="block text-xs font-semibold text-zinc-900 dark:text-white mt-2">Zoho Expense</span>
+                <span class="block text-[11px] text-zinc-500 dark:text-zinc-400 mt-1">Legacy multi-tier processing</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Supporting Evidence & Folders Section -->
+<section class="py-24 border-t border-zinc-100 dark:border-zinc-900 bg-zinc-50/20 dark:bg-zinc-950/20">
+    <div class="mx-auto max-w-7xl px-6 lg:px-8">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div>
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-50 border border-zinc-200/60 dark:bg-zinc-900/40 dark:border-zinc-800/60 text-[10px] tracking-tight text-zinc-500 dark:text-zinc-400 mb-4">
+                    Holistic Evidence Folders
+                </div>
                 <h2 class="text-3xl font-semibold tracking-tight text-zinc-950 dark:text-white sm:text-4xl">
-                    The autonomous layer, built for flow.
+                    More than just a scan. A complete paper trail.
                 </h2>
-                <p class="mt-4 text-sm md:text-base text-zinc-500 dark:text-zinc-400 max-w-xl mx-auto">
-                    Papertrail manages your financial footprint automatically, securely, and completely in the background.
+                <p class="mt-4 text-sm md:text-base text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                    Every purchase becomes a centralized evidence archive. Bind tax invoices, extended warranty certificates, insurance policies, manuals, and serial number photos directly to your purchase item permanently.
                 </p>
+                <ul class="mt-8 space-y-3 text-xs md:text-sm text-zinc-600 dark:text-zinc-300">
+                    <li class="flex items-center gap-3">
+                        <span class="flex size-5 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold">✓</span>
+                        <span>Automatic Plaid bank transaction reconciliation with zero data duplication.</span>
+                    </li>
+                    <li class="flex items-center gap-3">
+                        <span class="flex size-5 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold">✓</span>
+                        <span>Immutable historical merge snapshots with full audit rollbacks.</span>
+                    </li>
+                    <li class="flex items-center gap-3">
+                        <span class="flex size-5 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold">✓</span>
+                        <span>7-year retention protocols for hassle-free compliance and taxes.</span>
+                    </li>
+                </ul>
             </div>
 
-            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-2">
-
-                <div class="group relative rounded-2xl border border-zinc-200/50 dark:border-zinc-800/50 bg-white dark:bg-zinc-900/10 p-8 transition-all duration-300 hover:border-zinc-300 dark:hover:border-zinc-700/60 hover:shadow-[0_4px_24px_rgba(0,0,0,0.01)] flex flex-col justify-between min-h-[220px]">
-                    <div>
-                        <div class="mb-5 flex size-12 items-center justify-center rounded-2xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-white">
-                            <svg class="size-6 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16.5V9.75m0 0 3 3m-3-3-3 3M6.75 19.5a4.5 4.5 0 0 1-1.41-8.775 5.25 5.25 0 0 1 10.233-2.33 3 3 0 0 1 3.758 3.848A3.752 3.752 0 0 1 18 19.5H6.75Z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <div class="rounded-3xl border border-zinc-200/60 dark:border-zinc-800/60 p-6 bg-white dark:bg-zinc-900 shadow-xl">
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 pb-4">
+                        <div>
+                            <span class="block text-xs font-semibold text-zinc-950 dark:text-white">MacBook Pro 16" M3 Max</span>
+                            <span class="block text-[11px] text-zinc-400">Apple Store • Jan 14, 2026</span>
                         </div>
-                        <h3 class="text-sm font-semibold text-zinc-950 dark:text-zinc-100">Intelligent document capture</h3>
-                        <p class="mt-2 text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">Automatically extract and organize key parameters and figures from financial records and invoices seamlessly.</p>
+                        <span class="px-2.5 py-1 rounded-full text-[10px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">Verified Match</span>
+                    </div>
+                    <div class="space-y-2 text-xs">
+                        <div class="flex items-center justify-between p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200/40 dark:border-zinc-800/60">
+                            <span class="text-zinc-600 dark:text-zinc-300">Store Receipt (PDF)</span>
+                            <span class="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">Attached</span>
+                        </div>
+                        <div class="flex items-center justify-between p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200/40 dark:border-zinc-800/60">
+                            <span class="text-zinc-600 dark:text-zinc-300">Extended Warranty Certificate</span>
+                            <span class="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">Attached</span>
+                        </div>
+                        <div class="flex items-center justify-between p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200/40 dark:border-zinc-800/60">
+                            <span class="text-zinc-600 dark:text-zinc-300">Serial Number Photo</span>
+                            <span class="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">Attached</span>
+                        </div>
                     </div>
                 </div>
-
-                <div class="group relative rounded-2xl border border-zinc-200/50 dark:border-zinc-800/50 bg-white dark:bg-zinc-900/10 p-8 transition-all duration-300 hover:border-zinc-300 dark:hover:border-zinc-700/60 hover:shadow-[0_4px_24px_rgba(0,0,0,0.01)] flex flex-col justify-between min-h-[220px]">
-                    <div>
-                        <div class="mb-5 flex size-12 items-center justify-center rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-white">
-                            <svg class="size-6 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                        </div>
-                        <h3 class="text-sm font-semibold text-zinc-950 dark:text-zinc-100">Archive without the clutter</h3>
-                        <p class="mt-2 text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">Replace noisy physical clutter with a pristine, digital twin you can reference from any checkout point, completely paperlessly.</p>
-                    </div>
-                </div>
-
-                <div class="group relative rounded-2xl border border-zinc-200/50 dark:border-zinc-800/50 bg-white dark:bg-zinc-900/10 p-8 transition-all duration-300 hover:border-zinc-300 dark:hover:border-zinc-700/60 hover:shadow-[0_4px_24px_rgba(0,0,0,0.01)] flex flex-col justify-between min-h-[220px]">
-                    <div>
-                        <div class="mb-5 flex size-12 items-center justify-center rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-white">
-                            <svg class="size-6 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                        </div>
-                        <h3 class="text-sm font-semibold text-zinc-950 dark:text-zinc-100">Powerful query matching</h3>
-                        <p class="mt-2 text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">Instantly filter records by vendor, category segment, custom date metrics, or values. Zero friction.</p>
-                    </div>
-                </div>
-
-                <div class="group relative rounded-2xl border border-zinc-200/50 dark:border-zinc-800/50 bg-white dark:bg-zinc-900/10 p-8 transition-all duration-300 hover:border-zinc-300 dark:hover:border-zinc-700/60 hover:shadow-[0_4px_24px_rgba(0,0,0,0.01)] flex flex-col justify-between min-h-[220px]">
-                    <div>
-                        <div class="mb-5 flex size-12 items-center justify-center rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-white">
-                            <svg class="size-6 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7.864 4.243A7.5 7.5 0 0 1 19.5 10.5c0 2.92-.556 5.709-1.568 8.268M5.742 6.364A7.465 7.465 0 0 0 4.5 10.5a7.464 7.464 0 0 1-1.15 3.993m1.989 3.559A11.209 11.209 0 0 0 8.25 10.5a3.75 3.75 0 1 1 7.5 0c0 .527-.021 1.049-.064 1.565M12 10.5a14.94 14.94 0 0 1-3.6 9.75m6.633-4.596a18.666 18.666 0 0 1-2.485 5.33" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                        </div>
-                        <h3 class="text-sm font-semibold text-zinc-950 dark:text-zinc-100">Advanced cryptographic security</h3>
-                        <p class="mt-2 text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">Protect sensitive data with reliable, encrypted, cloud storage.</p>
-                    </div>
-                </div>
-
             </div>
         </div>
-    </section>
+    </div>
+</section>
+
+<!-- Reimbursements Section -->
+<section id="reimbursements" class="py-24 border-t border-zinc-100 dark:border-zinc-900 bg-white dark:bg-zinc-950">
+    <div class="mx-auto max-w-7xl px-6 lg:px-8 text-center max-w-3xl">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-50 border border-zinc-200/60 dark:bg-zinc-900/40 dark:border-zinc-800/60 text-[10px] tracking-tight text-zinc-500 dark:text-zinc-400 mb-4">
+            Dynamic Peer-to-Peer Workflows
+        </div>
+        <h2 class="text-3xl font-semibold tracking-tight text-zinc-950 dark:text-white sm:text-4xl">
+            Evidence-backed reimbursements that build absolute trust.
+        </h2>
+        <p class="mt-4 text-sm md:text-base text-zinc-500 dark:text-zinc-400 leading-relaxed">
+            Stop chasing people down over raw totals. Send requests backed directly by original purchase receipts, bank logs, and metadata through secure dynamic status pages. Recipients review clear evidence prior to settling.
+        </p>
+    </div>
+</section>
+
+<!-- Security & Architecture Section -->
+<section id="security" class="py-24 border-t border-zinc-100 dark:border-zinc-900 bg-zinc-50/20 dark:bg-zinc-950/20">
+    <div class="mx-auto max-w-7xl px-6 lg:px-8">
+        <div class="mx-auto max-w-3xl text-center mb-16">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-50 border border-zinc-200/60 dark:bg-zinc-900/40 dark:border-zinc-800/60 text-[10px] tracking-tight text-zinc-500 dark:text-zinc-400 mb-4">
+                Privacy by default
+            </div>
+            <h2 class="text-3xl font-semibold tracking-tight text-zinc-950 dark:text-white sm:text-4xl">
+                Built for absolute privacy and resilience.
+            </h2>
+            <p class="mt-4 text-sm md:text-base text-zinc-500 dark:text-zinc-400">
+                Your financial metrics remain secure using modern cryptography and isolated server architecture.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+            <div class="p-6 rounded-2xl border border-zinc-200/50 dark:border-zinc-800/50 bg-white dark:bg-zinc-900/10">
+                <span class="block text-xs font-semibold text-zinc-950 dark:text-white">Django & PostgreSQL</span>
+                <span class="block text-[11px] text-zinc-500 dark:text-zinc-400 mt-1">Robust core data engine</span>
+            </div>
+            <div class="p-6 rounded-2xl border border-zinc-200/50 dark:border-zinc-800/50 bg-white dark:bg-zinc-900/10">
+                <span class="block text-xs font-semibold text-zinc-950 dark:text-white">Cloudflare R2 Direct</span>
+                <span class="block text-[11px] text-zinc-500 dark:text-zinc-400 mt-1">Signed secure uploads</span>
+            </div>
+            <div class="p-6 rounded-2xl border border-zinc-200/50 dark:border-zinc-800/50 bg-white dark:bg-zinc-900/10">
+                <span class="block text-xs font-semibold text-zinc-950 dark:text-white">Google Gemini AI</span>
+                <span class="block text-[11px] text-zinc-500 dark:text-zinc-400 mt-1">Autonomous data extraction</span>
+            </div>
+            <div class="p-6 rounded-2xl border border-zinc-200/50 dark:border-zinc-800/50 bg-white dark:bg-zinc-900/10">
+                <span class="block text-xs font-semibold text-zinc-950 dark:text-white">Plaid Integration</span>
+                <span class="block text-[11px] text-zinc-500 dark:text-zinc-400 mt-1">Encrypted bank feed syncing</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- FAQ Section -->
+<section id="faq" class="py-24 border-t border-zinc-100 dark:border-zinc-900 bg-white dark:bg-zinc-950">
+    <div class="mx-auto max-w-4xl px-6 lg:px-8">
+        <div class="text-center mb-16">
+            <h2 class="text-3xl font-semibold tracking-tight text-zinc-950 dark:text-white sm:text-4xl">
+                Frequently asked questions
+            </h2>
+            <p class="mt-4 text-sm text-zinc-500 dark:text-zinc-400">
+                Everything you need to know about Papertrail and how it transforms purchase records.
+            </p>
+        </div>
+
+        <div class="space-y-6 text-left">
+            <div class="p-6 rounded-2xl border border-zinc-200/60 dark:border-zinc-800/60 bg-zinc-50/30 dark:bg-zinc-900/10">
+                <h3 class="text-sm font-semibold text-zinc-950 dark:text-white">How does Papertrail differ from standard receipt scanners?</h3>
+                <p class="mt-2 text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">Papertrail prioritizes simple P2P reimbursements. Generate detailed reimbursement requests to recipients effortlessly. Papertrail creates an entire digital workspace and evidence folder for every purchase, unifying all supporting documents into a searchable immutable record.</p>
+            </div>
+
+            <div class="p-6 rounded-2xl border border-zinc-200/60 dark:border-zinc-800/60 bg-zinc-50/30 dark:bg-zinc-900/10">
+                <h3 class="text-sm font-semibold text-zinc-950 dark:text-white">Is my financial data secure?</h3>
+                <p class="mt-2 text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">Papertrail is built with a security-first design philosophy. Financial credentials are encrypted, documents are uploaded via secure signed URLs directly to cloud storage, and access control is strictly enforced based on individual user ownership.</p>
+            </div>
+
+            <div class="p-6 rounded-2xl border border-zinc-200/60 dark:border-zinc-800/60 bg-zinc-50/30 dark:bg-zinc-900/10">
+                <h3 class="text-sm font-semibold text-zinc-950 dark:text-white">Can I export my data for accounting or tax purposes?</h3>
+                <p class="mt-2 text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">You can download all or select records as Excel reports. Export individual or bulk purchases, and keep organized records that fulfill 7-year document retention requirements effortlessly.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Footer Call-to-Action -->
+<section class="py-20 border-t border-zinc-100 dark:border-zinc-900 bg-zinc-50/50 dark:bg-zinc-950 text-center">
+    <div class="mx-auto max-w-4xl px-6">
+        <h2 class="text-2xl md:text-3xl font-semibold tracking-tight text-zinc-950 dark:text-white">
+            Ready to transform how you track purchases?
+        </h2>
+        <p class="mt-3 text-xs md:text-sm text-zinc-500 dark:text-zinc-400 max-w-lg mx-auto">
+            Join individuals and businesses moving to autonomous, audit-ready financial records.
+        </p>
+        <div class="mt-8 flex items-center justify-center gap-3">
+            <a href="{% url 'account_signup' %}" class="rounded-3xl bg-zinc-900 px-6 py-2.5 text-xs font-medium text-white transition-all duration-150 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white shadow-md active:scale-[0.99]">
+                Get Started Free
+            </a>
+        </div>
+    </div>
+</section>
+
+```
+
 {% endblock %}
