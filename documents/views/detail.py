@@ -9,8 +9,10 @@ from django.db import transaction
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
+from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.generic import UpdateView
+from django_ratelimit.decorators import ratelimit
 
 from Papertrail.views import htmx_response
 
@@ -79,6 +81,7 @@ class ViewDocument(LoginRequiredMixin, UpdateView):
         return super().form_invalid(form)
 
 
+@method_decorator(ratelimit(key="user", rate="10/m", method="POST", block=True), name="dispatch")
 class DeleteDocument(LoginRequiredMixin, View):
     """Soft or hard-deletes a document and redirects to the parent record."""
 
@@ -117,6 +120,7 @@ class DeleteDocument(LoginRequiredMixin, View):
         return redirect(url)
 
 
+@method_decorator(ratelimit(key="user", rate="10/m", method="POST", block=True), name="dispatch")
 class UndoDeleteDocument(LoginRequiredMixin, View):
     """Restores a soft-deleted document to active status."""
 
@@ -130,6 +134,7 @@ class UndoDeleteDocument(LoginRequiredMixin, View):
         return redirect("documents:trash_list")
 
 
+@method_decorator(ratelimit(key="user", rate="5/m", method="POST", block=True), name="dispatch")
 class HardDeleteDocumentView(LoginRequiredMixin, View):
     """Permanently deletes documents older than 7 years from R2 and the database."""
 

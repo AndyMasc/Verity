@@ -3,7 +3,9 @@ from decimal import Decimal
 
 from django.contrib.auth import get_user_model
 from django.db import models, transaction
+from django.db.models import Q, Sum
 from django.utils import timezone
+
 
 from core.currencies import CURRENCY_CHOICES, DEFAULT_CURRENCY, format_currency, to_stripe_amount
 from records.models import Record
@@ -11,6 +13,18 @@ from records.models import Record
 User = get_user_model()
 
 STRIPE_MINIMUM_FEE_CENTS = 50
+
+
+class ReimbursementPackageQuerySet(models.QuerySet):
+    def with_annotated_total(self):
+        return self.annotate(
+            _annotated_total=Sum("records__balance", filter=Q(records__is_active=True))
+        )
+
+    def with_prefetched_active_records(self):
+        return self.prefetch_related(
+            models.Prefetch("records", queryset=Record.objects.filter(is_active=True))
+        )
 
 
 class StripeAccount(models.Model):
@@ -76,8 +90,17 @@ class ReimbursementPackage(models.Model):
 
     deleted_at = models.DateTimeField(null=True, blank=True, db_index=True)
 
+    objects = ReimbursementPackageQuerySet.as_manager()
+
+    _prefetched_converted_total: Decimal | None = None
+
     class Meta:
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["status", "expires_at"]),
+            models.Index(fields=["creator", "deleted_at"]),
+            models.Index(fields=["recipient", "deleted_at"]),
+        ]
 
     def __str__(self) -> str:
         return f"{self.title} ({self.uuid})"
@@ -115,7 +138,7 @@ class ReimbursementPackage(models.Model):
 
         with transaction.atomic():
             locked = (
-                ReimbursementPackage.objects.select_for_update(nowait=True)
+                ReimbursementPackage.objects.select_for_update(skip_locked=True)
                 .filter(pk=self.pk, status=self.Status.OPEN)
                 .first()
             )
@@ -128,10 +151,7 @@ class ReimbursementPackage(models.Model):
             self.status = locked.status
             self.paid_by = locked.paid_by
             self.paid_at = locked.paid_at
-            records_to_update = list(self.records.all())
-            for record in records_to_update:
-                record.reimbursed = True
-            Record.objects.bulk_update(records_to_update, ["reimbursed"])
+            self.records.filter(is_active=True).update(reimbursed=True)
             Record.objects.create(
                 user=payer,
                 title=f"Reimbursement: {self.title}",
@@ -155,7 +175,7 @@ class ReimbursementPackage(models.Model):
         """
         with transaction.atomic():
             locked = (
-                ReimbursementPackage.objects.select_for_update(nowait=True)
+                ReimbursementPackage.objects.select_for_update(skip_locked=True)
                 .filter(pk=self.pk, status=self.Status.PAID)
                 .first()
             )
@@ -169,10 +189,7 @@ class ReimbursementPackage(models.Model):
             self.status = locked.status
             self.paid_by = locked.paid_by
             self.paid_at = locked.paid_at
-            records_to_update = list(self.records.all())
-            for record in records_to_update:
-                record.reimbursed = False
-            Record.objects.bulk_update(records_to_update, ["reimbursed"])
+            self.records.filter(is_active=True).update(reimbursed=False)
             if previous_payer:
                 Record.objects.filter(
                     user=previous_payer,
@@ -189,13 +206,19 @@ class ReimbursementPackage(models.Model):
 
     @property
     def total_amount(self) -> Decimal:
-        return sum(
-            (r.balance for r in self.records.all() if r.is_active and r.balance),
-            Decimal("0.00"),
+        if hasattr(self, "_annotated_total") and self._annotated_total is not None:
+            return self._annotated_total
+        return (
+            self.records.filter(is_active=True)
+            .exclude(balance__isnull=True)
+            .aggregate(total=Sum("balance"))["total"]
+            or Decimal("0.00")
         )
 
     @property
     def display_total(self) -> Decimal:
+        if self._prefetched_converted_total is not None:
+            return self._prefetched_converted_total
         return self.converted_total(self.currency)
 
     @property
@@ -206,7 +229,15 @@ class ReimbursementPackage(models.Model):
         target = to_currency or self.currency
         from core.exchange_rates import convert_batch
 
-        items = [(r.balance, r.currency) for r in self.records.all() if r.is_active and r.balance]
+        cache = getattr(self, "_prefetched_objects_cache", {})
+        if "records" in cache:
+            items = [(r.balance, r.currency) for r in cache["records"] if r.is_active and r.balance]
+        else:
+            items = list(
+                self.records.filter(is_active=True)
+                .exclude(balance__isnull=True)
+                .values_list("balance", "currency")
+            )
         if not items:
             return Decimal("0.00")
         return convert_batch(items, target)
@@ -216,7 +247,10 @@ class ReimbursementPackage(models.Model):
         return to_stripe_amount(self.converted_total(target), target)
 
     def _active_records(self):
-        return [r for r in self.records.all() if r.is_active]
+        cache = getattr(self, "_prefetched_objects_cache", {})
+        if "records" in cache:
+            return [r for r in cache["records"] if r.is_active]
+        return list(self.records.filter(is_active=True))
 
 
 class PackagePayment(models.Model):

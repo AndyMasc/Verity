@@ -5,6 +5,7 @@ from django.conf import settings
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
+from django_ratelimit.decorators import ratelimit
 
 from records.models import AuditLog
 
@@ -16,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 @csrf_exempt
 @require_POST
+@ratelimit(key="ip", rate="60/m", method="POST", block=True)
 def stripe_webhook(request):
     payload = request.body
     sig_header = request.META.get("HTTP_STRIPE_SIGNATURE")
@@ -65,7 +67,8 @@ def stripe_webhook(request):
                 },
             )
 
-            _send_package_paid_notification(package, payment.payer)
+            from .tasks import send_package_paid_notification_task
+            send_package_paid_notification_task.delay(package.pk, payment.payer.pk)
 
     elif event["type"] == "account.updated":
         account = event["data"]["object"]
@@ -131,7 +134,4 @@ def stripe_webhook(request):
     return HttpResponse(status=200)
 
 
-def _send_package_paid_notification(package, payer) -> None:
-    from .notifications import send_package_paid_notification
 
-    send_package_paid_notification(package, payer)

@@ -41,6 +41,8 @@ LIST_FIELDS = (
     "notes",
 )
 
+DEFERRED_FIELDS = ("products",)
+
 
 class RecordListView(LoginRequiredMixin, CachedPaginatorMixin, FilterView):
     """Paginated, filterable list of the current user's records.
@@ -61,11 +63,16 @@ class RecordListView(LoginRequiredMixin, CachedPaginatorMixin, FilterView):
         return super().dispatch(*args, **kwargs)
 
     def get_queryset(self):
-        qs = Record.objects.for_user(self.request.user)
+        qs = (
+            Record.objects.for_user(self.request.user)
+            .select_related("folder")
+            .prefetch_related("documents", "packages")
+            .defer(*DEFERRED_FIELDS)
+        )
         search_query = self.request.GET.get("search", "").strip()
         if search_query:
-            return qs.smart_search(search_query).only(*LIST_FIELDS)
-        return qs.only(*LIST_FIELDS).order_by("-last_edited")
+            return qs.smart_search(search_query)
+        return qs.order_by("-last_edited")
 
     def get_template_names(self):
         if self.request.headers.get("HX-Target") == "query-results-container":

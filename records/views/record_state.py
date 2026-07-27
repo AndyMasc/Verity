@@ -12,6 +12,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect
+from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.http import require_POST
 from django_ratelimit.decorators import ratelimit
@@ -32,14 +33,16 @@ logger = logging.getLogger(__name__)
 class ArchiveRecord(LoginRequiredMixin, View):
     """Soft-delete a record by marking it inactive and logging the action."""
 
+    @method_decorator(ratelimit(key="user", rate="30/m", method="POST", block=True))
     def post(self, request: HttpRequest, record_id: int) -> HttpResponse:
-        record = get_object_or_404(Record, id=record_id, user=request.user, is_active=True)
-        archive_record(record)
-        AuditLog.objects.create(
-            user=request.user,
-            action=AuditLog.Action.ARCHIVE,
-            record=record,
-        )
+        with transaction.atomic():
+            record = get_object_or_404(Record, id=record_id, user=request.user, is_active=True)
+            archive_record(record)
+            AuditLog.objects.create(
+                user=request.user,
+                action=AuditLog.Action.ARCHIVE,
+                record=record,
+            )
         if request.headers.get("HX-Request") == "true":
             response = HttpResponse(status=200)
             response["HX-Trigger"] = "recordChanged"
@@ -50,14 +53,16 @@ class ArchiveRecord(LoginRequiredMixin, View):
 class UnarchiveRecord(LoginRequiredMixin, View):
     """Restore a soft-deleted record and log the action."""
 
+    @method_decorator(ratelimit(key="user", rate="30/m", method="POST", block=True))
     def post(self, request: HttpRequest, record_id: int) -> HttpResponse:
-        record = get_object_or_404(Record, id=record_id, user=request.user, is_active=False)
-        unarchive_record(record)
-        AuditLog.objects.create(
-            user=request.user,
-            action=AuditLog.Action.UNARCHIVE,
-            record=record,
-        )
+        with transaction.atomic():
+            record = get_object_or_404(Record, id=record_id, user=request.user, is_active=False)
+            unarchive_record(record)
+            AuditLog.objects.create(
+                user=request.user,
+                action=AuditLog.Action.UNARCHIVE,
+                record=record,
+            )
         return redirect("records:view_all_records")
 
 

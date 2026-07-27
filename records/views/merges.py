@@ -8,7 +8,7 @@ import logging
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.core.paginator import InvalidPage, Paginator
+from django.core.paginator import Paginator
 from django.db.models import QuerySet
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -131,10 +131,7 @@ class ManualMergeSearchView(LoginRequiredMixin, View):
         qs = filterset.qs
         paginator = Paginator(qs, MANUAL_MERGE_PAGE_SIZE)
         page_number = request.GET.get("page", 1)
-        try:
-            page_obj = paginator.get_page(page_number)
-        except InvalidPage:
-            page_obj = paginator.get_page(1)
+        page_obj = paginator.get_page(page_number)
         return render(
             request,
             "records/partials/merge_search_panel.html",

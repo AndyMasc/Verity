@@ -25,6 +25,7 @@ BALANCE_TOLERANCE = Decimal("1.00")
 DATE_TOLERANCE_DAYS = 3
 MATCH_LOOKAHEAD_DAYS = 14
 MERGE_SCORE_THRESHOLD = 55
+MAX_MATCH_CANDIDATES = 2000
 
 
 def _normalize(text: str) -> str:
@@ -130,7 +131,7 @@ def find_best_plaid_match(record: Record) -> Record | None:
     best_score = 0
     best_match: Record | None = None
 
-    for candidate in candidates.iterator(chunk_size=500):
+    for candidate in candidates[:MAX_MATCH_CANDIDATES].iterator(chunk_size=500):
         score = calculate_match_score(record, candidate)
         if score > best_score:
             best_score = score
@@ -165,7 +166,7 @@ def find_document_matches_for_plaid(plaid_record: Record) -> list[tuple[Record, 
         .exclude(pk=plaid_record.pk)
         .select_related("folder", "user")
     )
-    doc_records = _apply_date_window(qs, plaid_record)
+    doc_records = _apply_date_window(qs, plaid_record)[:MAX_MATCH_CANDIDATES]
 
     results: list[tuple[Record, int]] = []
 

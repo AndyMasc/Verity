@@ -125,11 +125,9 @@ def delete_7year_archived_records() -> None:
 
     deleted_count = 0
     pks = list(seven_year_expired_records.values_list("pk", flat=True))
-    for pk in pks:
-        record = Record.objects.filter(pk=pk).first()
-        if record:
-            record.hard_delete()
-            deleted_count += 1
+    if pks:
+        records_qs = Record.objects.filter(pk__in=pks)
+        deleted_count, _ = records_qs.delete()
 
     if deleted_count:
         logger.info("Hard-deleted %d archived records.", deleted_count)
