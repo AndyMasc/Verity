@@ -4,6 +4,8 @@ from django.conf import settings
 from django.template.loader import render_to_string
 from django.utils.html import escape
 
+from core.currencies import format_currency
+
 
 def build_package_url(package_uuid: str) -> str:
     site_url = getattr(settings, "SITE_URL", "http://localhost:8000")
@@ -25,6 +27,7 @@ def send_package_created_notification(package, recipient) -> None:
     safe_title = escape(package.title)
     safe_recipient = escape(recipient.get_full_name() or recipient.email)
     amount = package.total_amount
+    currency = package.currency
 
     subject = f'{creator_name} sent you a reimbursement request: "{safe_title}"'
 
@@ -33,6 +36,7 @@ def send_package_created_notification(package, recipient) -> None:
         "recipient_name": safe_recipient,
         "title": safe_title,
         "amount": amount,
+        "currency": currency,
         "package_url": package_url,
         "records": package.records.filter(is_active=True),
         **_site_context(),
@@ -45,7 +49,8 @@ def send_package_created_notification(package, recipient) -> None:
         "reimbursements/email/package_created_message.txt", template_context
     )
 
-    db_message = f'{creator_name} sent you a reimbursement request for "{safe_title}" (${amount}).'
+    formatted_amount = format_currency(amount, currency)
+    db_message = f'{creator_name} sent you a reimbursement request for "{safe_title}" ({formatted_amount}).'
 
     send_multi_channel_notification(
         user=recipient,
@@ -71,6 +76,7 @@ def send_package_paid_notification(package, payer) -> None:
     safe_title = escape(package.title)
     safe_creator = escape(package.creator.get_full_name() or package.creator.email)
     amount = package.total_amount
+    currency = package.currency
 
     subject = f'Your reimbursement "{safe_title}" was paid'
 
@@ -79,6 +85,7 @@ def send_package_paid_notification(package, payer) -> None:
         "payer_name": payer_name,
         "title": safe_title,
         "amount": amount,
+        "currency": currency,
         "package_url": package_url,
         **_site_context(),
     }
@@ -86,7 +93,8 @@ def send_package_paid_notification(package, payer) -> None:
     html_body = render_to_string("reimbursements/email/package_paid_message.html", template_context)
     text_body = render_to_string("reimbursements/email/package_paid_message.txt", template_context)
 
-    db_message = f'{payer_name} paid ${amount} for "{safe_title}".'
+    formatted_amount = format_currency(amount, currency)
+    db_message = f'{payer_name} paid {formatted_amount} for "{safe_title}".'
 
     send_multi_channel_notification(
         user=package.creator,

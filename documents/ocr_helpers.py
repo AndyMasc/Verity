@@ -45,6 +45,7 @@ def ocr_data_to_form_initial(data: dict | None) -> dict:
         "products": products_value,
         "merchant": data.get("merchant"),
         "balance": data.get("balance"),
+        "currency": data.get("currency"),
         "transaction_date": data.get("transaction_date"),
         "expiry_date": data.get("expiry_date"),
         "record_type": data.get("record_type"),

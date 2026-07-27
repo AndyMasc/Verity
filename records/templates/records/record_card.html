@@ -1,4 +1,4 @@
-
+{% load form_tags %}
 <div class="relative mb-0 group rounded-none {% if not forloop.last %}border-b border-zinc-200/60 dark:border-zinc-800/60{% endif %} bg-transparent hover:bg-white/60 dark:hover:bg-zinc-900/40 transition-all duration-200">
     <a href="{% url 'records:record_detail' record.pk %}"
        class="block relative pl-7 pr-14 py-2.5 sm:py-5">
@@ -61,7 +61,7 @@
                 </div>
 
                 <div class="text-zinc-950 dark:text-zinc-100 font-bold tracking-tight text-sm text-right min-w-[50px] sm:min-w-[60px]">
-                    {% if record.balance %}${{ record.balance|floatformat:2 }}{% else %}<span class="text-zinc-300 dark:text-zinc-700 font-normal">—</span>{% endif %}
+                    {% if record.balance %}{{ record.balance|currency_format:record.currency }}{% else %}<span class="text-zinc-300 dark:text-zinc-700 font-normal">—</span>{% endif %}
                 </div>
             </div>
 

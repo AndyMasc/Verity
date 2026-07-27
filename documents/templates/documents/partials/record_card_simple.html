@@ -1,3 +1,4 @@
+{% load form_tags %}
 <div class="block group relative rounded-2xl last:mb-0 mb-2 overflow-hidden border border-zinc-200/50 bg-white dark:border-zinc-800 dark:bg-zinc-800/20 hover:bg-zinc-100/50 dark:hover:bg-zinc-800/30 hover:border-zinc-300 dark:hover:border-zinc-700/60 transition-all duration-200">
 
     <div class="absolute left-0 top-0 bottom-0 w-1 transition-colors duration-200 {% if not record.is_active %}bg-zinc-300/80 dark:bg-zinc-700/80{% elif record.expiry_date %}bg-black dark:bg-white{% else %}bg-zinc-200 dark:bg-zinc-800{% endif %}"></div>
@@ -45,7 +46,7 @@
             </div>
 
             <div class="text-left sm:text-right text-zinc-900 dark:text-zinc-50 font-semibold text-sm tracking-tight sm:pr-2">
-                {% if record.balance %}${{ record.balance }}{% else %}<span class="text-zinc-300 dark:text-zinc-700">—</span>{% endif %}
+                {% if record.balance %}{{ record.balance|currency_format:record.currency }}{% else %}<span class="text-zinc-300 dark:text-zinc-700">—</span>{% endif %}
             </div>
         </div>
     </div>

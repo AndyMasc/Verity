@@ -8,7 +8,7 @@ import json
 import logging
 import time as _time
 from calendar import month_name
-from datetime import timedelta
+from datetime import datetime as _dt, timedelta
 from typing import Any
 
 from asgiref.sync import async_to_sync
@@ -17,7 +17,6 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.cache import cache
 from django.db import DatabaseError, connection
-from django.db.models import Sum
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
@@ -193,12 +192,15 @@ def expense_chart_data(request: HttpRequest) -> JsonResponse:
     Response:
         ``{"months": [{"label": "Jan 24", "total": 1234.56}, ...], "currency": "$"}``
     """
-    from django.db.models.functions import TruncMonth
+    from collections import defaultdict
 
     from records.models import Record
 
+    from core.exchange_rates import convert, get_rates
+
     period = request.GET.get("period", "3m")
     months_back = PERIOD_MONTHS.get(period)
+    user_currency = getattr(request.user.settings, "default_currency", "usd")
 
     now = timezone.now()
     if months_back is not None:
@@ -212,30 +214,37 @@ def expense_chart_data(request: HttpRequest) -> JsonResponse:
         )
         start = earliest or (now - timedelta(days=365))
 
-    expenses = (
+    # Fetch raw rows: one DB query, no aggregation
+    rows = list(
         Record.objects.filter(
             user=request.user,
             transaction_date__gte=start.date(),
             transaction_date__lte=now.date(),
             balance__isnull=False,
-        )
-        .annotate(month=TruncMonth("transaction_date"))
-        .values("month")
-        .annotate(total=Sum("balance"))
-        .order_by("month")
+        ).values_list("balance", "currency", "transaction_date")
     )
 
+    # Pre-fetch USD-based rates once for the entire batch
+    rates = get_rates("USD")
+
+    # Group by month and convert each amount
+    monthly: dict[str, float] = defaultdict(float)
+    for balance, currency, txn_date in rows:
+        month_key = txn_date.strftime("%Y-%m")
+        converted = convert(balance, currency, user_currency, rates=rates)
+        monthly[month_key] += float(converted)
+
     months = []
-    for row in expenses:
-        dt = row["month"]
+    for month_key in sorted(monthly):
+        dt = _dt.strptime(month_key, "%Y-%m")
         months.append(
             {
                 "label": f"{month_name[dt.month][:3]} {dt.strftime('%y')}",
-                "total": float(row["total"]),
+                "total": round(monthly[month_key], 2),
             }
         )
 
-    return JsonResponse({"months": months, "currency": "$"})
+    return JsonResponse({"months": months, "currency": user_currency})
 
 
 class NotificationListView(LoginRequiredMixin, ListView):

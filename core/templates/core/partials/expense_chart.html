@@ -79,6 +79,7 @@
     function expenseChart() {
         return {
             data: [],
+            currencySymbol: '$',
             period: '1y',
             loading: true,
             periods: [
@@ -95,7 +96,7 @@
                 if (this.data.length === 0) return '';
                 const total = this.data.reduce((s, d) => s + d.total, 0);
                 const avg = total / this.data.length;
-                return `${this.data.length} mo · $${this.formatNum(total)} total · $${this.formatNum(avg)}/mo avg`;
+                return `${this.data.length} mo · ${this.currencySymbol}${this.formatNum(total)} total · ${this.currencySymbol}${this.formatNum(avg)}/mo avg`;
             },
 
             formatNum(n) {
@@ -105,7 +106,7 @@
             },
 
             formatCurrency(n) {
-                return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                return this.currencySymbol + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             },
 
             async init() {
@@ -122,6 +123,8 @@
                     const resp = await fetch(`/api/expense-chart/?period=${period}`);
                     const json = await resp.json();
                     this.data = json.months;
+                    const currencySymbols = {usd:'$',eur:'€',gbp:'£',cad:'C$',aud:'A$',nzd:'NZ$',chf:'CHF ',jpy:'¥',sek:'kr',nok:'kr',dkk:'kr',pln:'zł',czk:'Kč',huf:'Ft',ron:'lei',brl:'R$',mxn:'MX$',inr:'₹',sgd:'S$',hkd:'HK$',twd:'NT$',krw:'₩',zar:'R',egp:'E£',ngn:'₦',kes:'KSh',ghc:'GH₵',aed:'د.إ',sar:'﷼',qar:'﷼',kwd:'د.ك',bhd:'BD',omr:'﷼',ils:'₪',jod:'JD',lbp:'L£',thb:'฿',myr:'RM',idr:'Rp',php:'₱',vnd:'₫',pkr:'₨',bdt:'৳',lkr:'Rs',npr:'Rs',mmk:'K',rub:'₽',uah:'₴',try:'₺',gel:'₾',azn:'₼',kzt:'₸',uzb:"so'm"};
+                    this.currencySymbol = currencySymbols[json.currency] || json.currency?.toUpperCase() + ' ' || '$';
                     this.animateIn();
                 } catch (e) {
                     console.error('Chart load failed:', e);

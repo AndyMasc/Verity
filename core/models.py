@@ -9,6 +9,8 @@ from django.contrib.auth import get_user_model
 from django.db import models
 from django.utils import timezone
 
+from core.currencies import CURRENCY_CHOICES, DEFAULT_CURRENCY
+
 User = get_user_model()
 
 
@@ -30,6 +32,12 @@ class UserSettings(models.Model):
     enable_push_notifications = models.BooleanField(default=True)
     enable_email_notifications = models.BooleanField(default=True)
     auto_create_and_organize_folders = models.BooleanField(default=True)
+
+    default_currency = models.CharField(
+        max_length=3,
+        choices=CURRENCY_CHOICES,
+        default=DEFAULT_CURRENCY,
+    )
 
     class AdvanceTimeChoices(models.TextChoices):
         ONE_DAY = "1", "1 Day"

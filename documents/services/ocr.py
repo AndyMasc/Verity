@@ -45,6 +45,10 @@ try:
             default=None,
             description="Total monetary sum as a raw number. No symbols, commas or currency symbols.",
         )
+        currency: str | None = Field(
+            default=None,
+            description="ISO 4217 lowercase currency code (e.g. usd, eur, gbp). Infer from currency symbols on the document. Default to null if unclear.",
+        )
         products: list[str] = Field(
             default_factory=list,
             description="List of items. Standardize typos, expand abbreviations, use Title Case. If no products are listed, use an empty list.",

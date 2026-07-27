@@ -11,7 +11,13 @@ from django.forms.utils import flatatt
 from django.utils import timezone
 from django.utils.html import format_html
 
+from core.currencies import CURRENCY_CHOICES
+
 from .models import Folder, Record
+
+CURRENCY_WIDGET_ATTRS = {
+    "class": "w-full text-xs font-semibold bg-transparent border-transparent focus:outline-hidden cursor-pointer",
+}
 
 
 class FolderForm(forms.ModelForm):
@@ -111,6 +117,11 @@ class BaseRecordForm(forms.ModelForm):
             }
         ),
     )
+    currency = forms.ChoiceField(
+        choices=[("", "—")] + list(CURRENCY_CHOICES),
+        required=True,
+        widget=forms.Select(attrs=CURRENCY_WIDGET_ATTRS),
+    )
 
     class Meta:
         model = Record
@@ -119,6 +130,7 @@ class BaseRecordForm(forms.ModelForm):
             "products",
             "merchant",
             "balance",
+            "currency",
             "transaction_date",
             "expiry_date",
             "record_type",
@@ -186,6 +198,9 @@ class AddRecordForm(BaseRecordForm):
             self.fields["folder"].empty_label = "Unfiled"
             if user is not None:
                 self.fields["folder"].queryset = Folder.objects.filter(user=user)
+        if "currency" in self.fields and not self.initial.get("currency") and user is not None:
+            user_currency = getattr(user.settings, "default_currency", "usd")
+            self.initial["currency"] = user_currency
 
 
 class RecordUpdateForm(BaseRecordForm):

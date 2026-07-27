@@ -2,6 +2,20 @@
 <div id="UserSettingsForm" class="divide-y divide-zinc-100 dark:divide-zinc-800/60">
     <div class="flex items-start justify-between px-6 py-4 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/10 transition-all duration-150">
         <div class="flex flex-col pr-4">
+            <label for="{{ form.default_currency.id_for_label }}" class="text-xs font-medium text-zinc-800 dark:text-zinc-200 cursor-pointer select-none">
+                {{ form.default_currency.label }}
+            </label>
+            <span class="text-[11px] text-zinc-400 dark:text-zinc-500 mt-0.5">
+                Default currency for new records and reimbursements.
+            </span>
+        </div>
+        <div class="flex items-center pt-0.5">
+            {% render_field form.default_currency class="w-40 rounded border-zinc-300 dark:border-zinc-700 text-sm bg-transparent cursor-pointer px-2 py-1" %}
+        </div>
+    </div>
+
+    <div class="flex items-start justify-between px-6 py-4 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/10 transition-all duration-150">
+        <div class="flex flex-col pr-4">
             <label for="{{ form.auto_archive_expired_records.id_for_label }}" class="text-xs font-medium text-zinc-800 dark:text-zinc-200 cursor-pointer select-none">
                 {{ form.auto_archive_expired_records.label }}
             </label>

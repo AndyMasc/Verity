@@ -276,14 +276,23 @@ class CreatePackageFromRecordsView(LoginRequiredMixin, StripeAccountRequiredMixi
                 status=400,
             )
 
+        records = Record.objects.filter(id__in=record_ids, user=request.user, is_active=True)
+        currencies = set(records.values_list("currency", flat=True))
+        if len(currencies) > 1:
+            return JsonResponse(
+                {"error": "All records must use the same currency. Please select records with the same currency."},
+                status=400,
+            )
+        package_currency = records.first().currency if records.exists() else "usd"
+
         with transaction.atomic():
             package = ReimbursementPackage.objects.create(
                 creator=request.user,
                 recipient=recipient,
                 title=title,
+                currency=package_currency,
                 expires_at=timezone.now() + timedelta(days=days_valid),
             )
-            records = Record.objects.filter(id__in=record_ids, user=request.user, is_active=True)
             package.records.set(records)
 
         _send_package_created_notification(package, recipient)
@@ -421,7 +430,7 @@ class CreatePackageCheckoutView(LoginRequiredMixin, View):
                 line_items.append(
                     {
                         "price_data": {
-                            "currency": "usd",
+                            "currency": package.currency,
                             "product_data": product_data,
                             "unit_amount": int(record.balance * 100),
                         },
@@ -438,7 +447,7 @@ class CreatePackageCheckoutView(LoginRequiredMixin, View):
             line_items.append(
                 {
                     "price_data": {
-                        "currency": "usd",
+                        "currency": package.currency,
                         "product_data": {"name": package.title},
                         "unit_amount": package.total_amount_cents,
                     },

@@ -9,9 +9,11 @@ import logging
 from datetime import datetime, time, timedelta
 
 from django.core.cache import cache
-from django.db.models import Q, Sum
+from django.db.models import Q
 from django.utils import timezone
 from django.utils.timezone import make_aware
+
+from asgiref.sync import sync_to_async
 
 from core.models import Notification
 from documents.models import DocumentData, DocumentStatus
@@ -28,6 +30,11 @@ async def _fetch_records(queryset) -> list:
     return [r async for r in queryset]
 
 
+async def _fetch_values_list(queryset) -> list:
+    """Async helper to evaluate a values_list queryset into a list of tuples."""
+    return [row async for row in queryset]
+
+
 async def _fetch_notifications(user) -> list:
     """Fetch recent unread notifications for the user."""
     return [
@@ -37,6 +44,19 @@ async def _fetch_notifications(user) -> list:
             is_read=False,
         ).order_by("-sent_at")[:3]
     ]
+
+
+def _convert_total(raw_items: list[tuple], to_currency: str) -> float:
+    """Convert a list of (amount, currency) tuples to *to_currency* and sum.
+
+    Fetches exchange rates once, then converts each amount in a tight loop.
+    Returns 0.0 if the list is empty.
+    """
+    if not raw_items:
+        return 0.0
+    from core.exchange_rates import convert_batch
+
+    return float(convert_batch(raw_items, to_currency))
 
 
 async def get_dashboard_context(user) -> dict:
@@ -53,31 +73,34 @@ async def get_dashboard_context(user) -> dict:
         timezone=timezone.get_current_timezone(),
     )
     expiring_cutoff = now + timedelta(days=30)
+    user_currency = getattr(user.settings, "default_currency", "usd")
 
     all_user_records = Record.objects.for_user(user)
     active_records_qs = all_user_records.active()
 
     (
         merge_count,
-        monthly_expenses,
+        monthly_expense_rows,
         orphaned_count,
         pending_ocr_count,
         recent_records,
         expiring_soon,
         webpush_warning,
-        sent_total,
+        sent_payment_rows,
         sent_pending_count,
-        received_total,
+        received_payment_rows,
         received_count,
         has_packages,
         notifications,
     ) = await asyncio.gather(
         MergeLog.objects.filter(plaid_record__user=user, undone_at__isnull=True).acount(),
-        all_user_records.filter(
-            transaction_date__gte=start_of_month,
-            transaction_date__lte=now,
-            balance__isnull=False,
-        ).aaggregate(total=Sum("balance")),
+        _fetch_values_list(
+            all_user_records.filter(
+                transaction_date__gte=start_of_month,
+                transaction_date__lte=now,
+                balance__isnull=False,
+            ).values_list("balance", "currency")
+        ),
         DocumentData.objects.for_user(user)
         .orphaned()
         .exclude(
@@ -141,14 +164,20 @@ async def get_dashboard_context(user) -> dict:
             )
         ),
         get_webpush_warning(user),
-        PackagePayment.objects.filter(package__paid_by=user, is_completed=True).aaggregate(
-            total=Sum("amount_paid")
+        _fetch_values_list(
+            PackagePayment.objects.filter(
+                package__creator=user,
+                is_completed=True,
+            ).values_list("amount_paid", "package__currency")
         ),
         ReimbursementPackage.objects.filter(
             creator=user, status=ReimbursementPackage.Status.OPEN
         ).acount(),
-        PackagePayment.objects.filter(package__recipient=user, is_completed=True).aaggregate(
-            total=Sum("amount_paid")
+        _fetch_values_list(
+            PackagePayment.objects.filter(
+                package__recipient=user,
+                is_completed=True,
+            ).values_list("amount_paid", "package__currency")
         ),
         ReimbursementPackage.objects.filter(
             recipient=user, status=ReimbursementPackage.Status.PAID
@@ -162,14 +191,20 @@ async def get_dashboard_context(user) -> dict:
         "records": recent_records,
         "expiring_soon": expiring_soon,
         "expiring_soon_count": len(expiring_soon),
-        "monthly_expenses": monthly_expenses.get("total") or 0,
+        "monthly_expenses": await sync_to_async(_convert_total)(
+            [(b, c) for b, c in monthly_expense_rows if b], user_currency
+        ),
         "orphaned_document_count": orphaned_count,
         "pending_ocr_count": pending_ocr_count,
         "webpush_warning": webpush_warning,
         "notifications": notifications,
-        "reimbursements_sent_total": float(sent_total.get("total") or 0),
+        "reimbursements_sent_total": await sync_to_async(_convert_total)(
+            [(a, c) for a, c in sent_payment_rows], user_currency
+        ),
         "reimbursements_sent_pending_count": sent_pending_count,
-        "reimbursements_received_total": float(received_total.get("total") or 0),
+        "reimbursements_received_total": await sync_to_async(_convert_total)(
+            [(a, c) for a, c in received_payment_rows], user_currency
+        ),
         "reimbursements_received_count": received_count,
         "has_packages": has_packages,
     }

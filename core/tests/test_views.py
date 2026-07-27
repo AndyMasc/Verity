@@ -82,6 +82,7 @@ class ProfilePageViewTest(TestCase):
         response = self.client.post(
             reverse("core:profile_page"),
             {
+                "default_currency": "eur",
                 "auto_archive_expired_records": False,
                 "auto_delete_archived_records": False,
                 "enable_push_notifications": False,
@@ -94,3 +95,4 @@ class ProfilePageViewTest(TestCase):
         self.assertFalse(self.user.settings.auto_archive_expired_records)
         self.assertFalse(self.user.settings.enable_email_notifications)
         self.assertEqual(self.user.settings.expiring_notifications_advance_time, "7")
+        self.assertEqual(self.user.settings.default_currency, "eur")

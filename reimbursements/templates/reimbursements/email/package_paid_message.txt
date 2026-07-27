@@ -1,8 +1,9 @@
+{% load form_tags %}
 Reimbursement Paid
 
 Hi {{ creator_name }},
 
-{{ payer_name }} paid ${{ amount }} for your reimbursement package "{{ title }}".
+{{ payer_name }} paid {{ amount|currency_format:currency }} for your reimbursement package "{{ title }}".
 
 View details: {{ package_url }}
 

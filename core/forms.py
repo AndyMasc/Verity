@@ -43,6 +43,7 @@ class UpdateUserSettingsForm(forms.ModelForm):
     class Meta:
         model = UserSettings
         fields = [
+            "default_currency",
             "auto_archive_expired_records",
             "auto_delete_archived_records",
             "auto_delete_deleted_documents",

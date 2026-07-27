@@ -1,4 +1,4 @@
-{% load widget_tweaks %}
+{% load widget_tweaks form_tags %}
 
 <form method="POST"
       action="{% url 'records:record_detail' record.pk %}"
@@ -54,8 +54,8 @@
         <div class="p-4 sm:p-5 bg-zinc-50/70 dark:bg-zinc-900/20 border {% if form.balance.errors or form.merchant.errors %}border-rose-500/80{% else %}border-zinc-200/70 dark:border-zinc-800/60 hover:border-zinc-300 dark:hover:border-zinc-700/80{% endif %} rounded-xl sm:rounded-2xl flex flex-col justify-between gap-y-4 shadow-xs backdrop-blur-md transition-all duration-200">
             <div>
                 <label class="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 block">Value <span class="text-rose-400">*</span></label>
-                <div class="relative flex items-center mt-0.5 group">
-                    <span class="absolute left-1 text-xl sm:text-2xl font-semibold text-zinc-400 dark:text-zinc-500">$</span>
+                <div class="relative flex items-center mt-0.5 group" x-data="{ sym: '{{ form.currency.value|default:'usd'|currency_symbol }}' }" @change="sym = $event.target.value ? $event.target.value : sym">
+                    <span class="absolute left-1 text-xl sm:text-2xl font-semibold text-zinc-400 dark:text-zinc-500" x-text="sym">$</span>
                     {% render_field form.balance step="0.01" placeholder="0.00" class="w-full pl-5 sm:pl-6 pr-2 py-0.5 text-2xl sm:text-3xl font-black tracking-tight bg-transparent border border-transparent hover:border-zinc-200/50 dark:hover:border-zinc-800 focus:border-zinc-300 dark:focus:border-zinc-700 rounded-lg text-zinc-950 dark:text-white focus:outline-hidden focus:ring-0 transition-all" %}
                 </div>
                 {% if form.balance.errors %}<p class="text-[11px] text-rose-500 pl-1 font-medium mt-0.5">{{ form.balance.errors|striptags }}</p>{% endif %}
@@ -65,6 +65,12 @@
                 {% render_field form.merchant placeholder="Merchant name" class="w-full -mx-1 px-1.5 py-0.5 text-sm font-semibold bg-transparent border border-transparent hover:border-zinc-200/50 dark:hover:border-zinc-800 focus:border-zinc-300 dark:focus:border-zinc-700 rounded-lg text-zinc-800 dark:text-zinc-200 focus:outline-hidden focus:ring-0 transition-all" %}
                 {% if form.merchant.errors %}<p class="text-[11px] text-rose-500 pl-1 font-medium">{{ form.merchant.errors|striptags }}</p>{% endif %}
             </div>
+            {% if form.currency %}
+            <div>
+                <label for="{{ form.currency.id_for_label }}" class="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 block">Currency <span class="text-rose-400">*</span></label>
+                {% render_field form.currency class="w-full text-xs font-semibold bg-transparent border border-transparent hover:border-zinc-200/50 dark:hover:border-zinc-800 focus:border-zinc-300 dark:focus:border-zinc-700 rounded-lg text-zinc-800 dark:text-zinc-200 focus:outline-hidden focus:ring-0 transition-all" %}
+            </div>
+            {% endif %}
         </div>
 
         <div class="md:col-span-2 p-4 sm:p-5 bg-white dark:bg-zinc-900/40 border {% if form.products.errors %}border-rose-500/80{% else %}border-zinc-200/70 dark:border-zinc-800/80 hover:border-zinc-300 dark:hover:border-zinc-700/80{% endif %} rounded-xl sm:rounded-2xl space-y-1.5 shadow-xs backdrop-blur-md transition-all duration-200">

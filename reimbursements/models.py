@@ -5,6 +5,7 @@ from django.contrib.auth import get_user_model
 from django.db import models, transaction
 from django.utils import timezone
 
+from core.currencies import CURRENCY_CHOICES, DEFAULT_CURRENCY, format_currency
 from records.models import Record
 
 User = get_user_model()
@@ -51,6 +52,11 @@ class ReimbursementPackage(models.Model):
         related_name="reimbursements_received",
     )
     title = models.CharField(max_length=255)
+    currency = models.CharField(
+        max_length=3,
+        choices=CURRENCY_CHOICES,
+        default=DEFAULT_CURRENCY,
+    )
     records = models.ManyToManyField(Record, related_name="packages")
     status = models.CharField(
         max_length=20, choices=Status.choices, default=Status.OPEN, db_index=True
@@ -122,11 +128,15 @@ class ReimbursementPackage(models.Model):
             Record.objects.create(
                 user=payer,
                 title=f"Reimbursement: {self.title}",
+                transaction_date=locked.paid_at.strftime("%Y-%m-%d"),
+                merchant=self.creator.email,
                 balance=self.total_amount,
+                currency=self.currency,
                 record_type=Record.RecordTypes.EXPENSE_RECEIPT,
+                payment_method="Papertrail reimbursment transfer",
                 notes=(
                     f"Reimbursement package '{self.title}' paid to {self.creator.email}. "
-                    f"Amount: ${self.total_amount}. "
+                    f"Amount: {format_currency(self.total_amount, self.currency)}. "
                     f"Date: {locked.paid_at.strftime('%Y-%m-%d')}."
                 ),
             )

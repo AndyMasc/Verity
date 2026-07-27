@@ -21,6 +21,8 @@ from django.db.models import Count, Q
 from django.utils import timezone
 from simple_history.models import HistoricalRecords
 
+from core.currencies import CURRENCY_CHOICES, DEFAULT_CURRENCY
+
 from .constants import RECORD_TYPE_COLOR_MAP
 
 if TYPE_CHECKING:
@@ -248,6 +250,11 @@ class Record(models.Model):
     merchant = models.CharField(max_length=255, default="")
     balance = models.DecimalField(
         max_digits=12, decimal_places=2, null=True, blank=True, default=None, db_index=True
+    )
+    currency = models.CharField(
+        max_length=3,
+        choices=CURRENCY_CHOICES,
+        default=DEFAULT_CURRENCY,
     )
     products = models.TextField(blank=True, default="")
     transaction_date = models.DateField(null=True, blank=True, db_index=True)

@@ -8,6 +8,7 @@ class UpdateUserSettingsFormTest(TestCase):
     def test_form_fields(self):
         form = UpdateUserSettingsForm()
         expected = [
+            "default_currency",
             "auto_archive_expired_records",
             "auto_delete_archived_records",
             "auto_delete_deleted_documents",
@@ -21,6 +22,7 @@ class UpdateUserSettingsFormTest(TestCase):
     def test_form_valid_data(self):
         form = UpdateUserSettingsForm(
             data={
+                "default_currency": "usd",
                 "auto_archive_expired_records": False,
                 "auto_delete_archived_records": False,
                 "enable_push_notifications": False,

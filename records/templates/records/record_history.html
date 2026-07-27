@@ -55,7 +55,7 @@
                                                         <div class="space-y-1">
                                                             <div><span class="text-zinc-400">Title:</span> <span class="font-semibold text-zinc-700 dark:text-zinc-300">{{ h.merge.plaid_snapshot.title|default:"—" }}</span></div>
                                                             <div><span class="text-zinc-400">Merchant:</span> <span class="font-semibold text-zinc-700 dark:text-zinc-300">{{ h.merge.plaid_snapshot.merchant|default:"—" }}</span></div>
-                                                            <div><span class="text-zinc-400">Amount:</span> <span class="font-semibold text-zinc-700 dark:text-zinc-300">${{ h.merge.plaid_snapshot.balance|default:"—" }}</span></div>
+                                                            <div><span class="text-zinc-400">Amount:</span> <span class="font-semibold text-zinc-700 dark:text-zinc-300">{% if h.merge.plaid_snapshot.balance %}{{ h.merge.plaid_snapshot.balance|currency_format:h.merge.plaid_snapshot.currency }}{% else %}—{% endif %}</span></div>
                                                             <div><span class="text-zinc-400">Payment:</span> <span class="font-semibold text-zinc-700 dark:text-zinc-300">{{ h.merge.plaid_snapshot.payment_method|default:"—" }}</span></div>
                                                         </div>
                                                     </div>
@@ -69,7 +69,7 @@
                                                         <div class="space-y-1">
                                                             <div><span class="text-zinc-400">Title:</span> <span class="font-semibold text-zinc-700 dark:text-zinc-300">{{ h.merge.document_snapshot.title|default:"—" }}</span></div>
                                                             <div><span class="text-zinc-400">Merchant:</span> <span class="font-semibold text-zinc-700 dark:text-zinc-300">{{ h.merge.document_snapshot.merchant|default:"—" }}</span></div>
-                                                            <div><span class="text-zinc-400">Amount:</span> <span class="font-semibold text-zinc-700 dark:text-zinc-300">${{ h.merge.document_snapshot.balance|default:"—" }}</span></div>
+                                                            <div><span class="text-zinc-400">Amount:</span> <span class="font-semibold text-zinc-700 dark:text-zinc-300">{% if h.merge.document_snapshot.balance %}{{ h.merge.document_snapshot.balance|currency_format:h.merge.document_snapshot.currency }}{% else %}—{% endif %}</span></div>
                                                             <div><span class="text-zinc-400">Payment:</span> <span class="font-semibold text-zinc-700 dark:text-zinc-300">{{ h.merge.document_snapshot.payment_method|default:"—" }}</span></div>
                                                         </div>
                                                     </div>
@@ -86,7 +86,7 @@
                                 <p class="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">
                                     {{ h.history_date|date:"M j, Y g:i A" }}
                                     {% if h.history_user %}
-                                        by {{ h.history_user.get_full_name|default:h.history_user.username }}
+                                        by {{ h.history_user.get_full_name|default:h.history_user.email }}
                                     {% endif %}
                                 </p>
                             </div>
