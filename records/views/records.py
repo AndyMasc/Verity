@@ -138,7 +138,7 @@ class RecordDetailView(LoginRequiredMixin, UpdateView):
         messages.error(self.request, "An error was left in a record")
         return render(
             self.request,
-            self.get_template_names()[0],
+            self.get_template_names(),
             self.get_context_data(form=form),
             status=422,
         )

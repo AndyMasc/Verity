@@ -11,8 +11,8 @@ attrs==26.1.0
 beautifulsoup4==4.15.0
 binaryornot==0.6.0
 boolean.py==5.0
-boto3==1.43.36
-botocore==1.43.36
+boto3==1.43.56
+botocore==1.43.56
 CacheControl==0.14.4
 camel-converter==5.1.0
 certifi==2026.5.20
