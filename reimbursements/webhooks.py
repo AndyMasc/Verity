@@ -50,7 +50,8 @@ def stripe_webhook(request):
             payment.save(update_fields=["is_completed", "stripe_payment_intent_id"])
 
             package = payment.package
-            package.mark_as_paid(payer=payment.payer)
+            payer_currency = getattr(payment, "payer_currency", None) or "usd"
+            package.mark_as_paid(payer=payment.payer, payer_currency=payer_currency)
 
             AuditLog.objects.create(
                 user=package.creator,
@@ -87,11 +88,17 @@ def stripe_webhook(request):
     elif event["type"] == "charge.refunded":
         charge = event["data"]["object"]
         payment_intent_id = charge.get("payment_intent")
-        amount_refunded = charge.get("amount_refunded", 0) / 100
+        charge_currency = charge.get("currency", "usd")
+        amount_refunded = charge.get("amount_refunded", 0)
+        if charge_currency.lower() in ("jpy", "krw", "vnd", "idr", "clp", "ugx"):
+            refunded_display = float(amount_refunded)
+        else:
+            refunded_display = amount_refunded / 100
         logger.warning(
-            "Charge refunded — payment_intent: %s, amount: $%.2f",
+            "Charge refunded — payment_intent: %s, amount: %s %.2f",
             payment_intent_id,
-            amount_refunded,
+            charge_currency.upper(),
+            refunded_display,
         )
         if payment_intent_id:
             payment = (
@@ -102,6 +109,8 @@ def stripe_webhook(request):
                 .first()
             )
             if payment:
+                payment.is_completed = False
+                payment.save(update_fields=["is_completed"])
                 payment.package.mark_as_refunded()
                 AuditLog.objects.create(
                     user=payment.package.creator,

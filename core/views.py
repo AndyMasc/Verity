@@ -103,7 +103,7 @@ def safe_webpush_save_info(request: HttpRequest) -> HttpResponse:
 
             if existing_subs.exists():
                 existing_subs.delete()
-    except (json.JSONDecodeError, SubscriptionInfo.DoesNotExist):
+    except (json.JSONDecodeError, KeyError, ValueError):
         logger.warning("Failed to process webpush subscription info", exc_info=True)
 
     return save_info(request)
@@ -187,7 +187,7 @@ def expense_chart_data(request: HttpRequest) -> JsonResponse:
     """Return monthly expense aggregates for the expense chart.
 
     Query params:
-        period – ``3m``, ``6m``, ``1y``, or ``all`` (default ``1y``).
+        period – ``3m``, ``6m``, ``1y``, or ``all`` (default ``3m``).
 
     Response:
         ``{"months": [{"label": "Jan 24", "total": 1234.56}, ...], "currency": "$"}``

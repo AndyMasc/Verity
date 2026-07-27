@@ -21,6 +21,9 @@ from django.views.decorators.http import require_POST
 from django.views.generic import DetailView, ListView, TemplateView
 from django_ratelimit.decorators import ratelimit
 
+from core.currencies import to_stripe_amount
+from core.exchange_rates import convert as convert_currency
+from core.exchange_rates import get_rates
 from records.models import Record
 
 from .mixins import StripeAccountRequiredMixin
@@ -37,7 +40,7 @@ logger = logging.getLogger(__name__)
 PLATFORM_FEE_PERCENT = Decimal("0.03")
 
 
-@method_decorator(ratelimit(key="user", rate="10/m", method="GET"), name="dispatch")
+@method_decorator(ratelimit(key="user", rate="10/m", method="GET", block=True), name="dispatch")
 class StripeOnboardView(LoginRequiredMixin, View):
     """Creates a Stripe Connect account link and redirects to hosted onboarding."""
 
@@ -55,19 +58,29 @@ class StripeOnboardView(LoginRequiredMixin, View):
                 live_account = stripe.Account.retrieve(stripe_account.stripe_account_id)
                 if live_account.details_submitted:
                     stripe_account.stripe_details_submitted = True
-                    stripe_account.save(update_fields=["stripe_details_submitted"])
-                    return redirect(reverse("reimbursements:package-list"))
+                    if hasattr(stripe_account, "charges_enabled"):
+                        stripe_account.charges_enabled = live_account.charges_enabled
+                    stripe_account.save()
+                    if stripe_account.is_active:
+                        return redirect(reverse("reimbursements:package-list"))
             except stripe.error.StripeError:
                 logger.warning("Failed to retrieve Stripe account for user %s", request.user.id)
 
         if not stripe_account.stripe_account_id:
-            account = stripe.Account.create(
-                type="express",
-                email=request.user.email,
-                metadata={"user_id": request.user.id},
-            )
-            stripe_account.stripe_account_id = account.id
-            stripe_account.save(update_fields=["stripe_account_id"])
+            try:
+                account = stripe.Account.create(
+                    type="express",
+                    email=request.user.email,
+                    metadata={"user_id": request.user.id},
+                )
+                stripe_account.stripe_account_id = account.id
+                stripe_account.save(update_fields=["stripe_account_id"])
+            except stripe.error.StripeError:
+                logger.exception(
+                    "Failed to create Stripe express account for user %s", request.user.id
+                )
+                messages.error(request, "Unable to initiate Stripe onboarding. Please try again.")
+                return redirect(reverse("reimbursements:package-list"))
 
         refresh_url = request.build_absolute_uri(reverse("reimbursements:stripe-onboard"))
         return_url = request.build_absolute_uri(reverse("reimbursements:package-list"))
@@ -114,9 +127,7 @@ def validate_recipient_email(request: HttpRequest) -> JsonResponse:
 
 
 class PackageListView(LoginRequiredMixin, ListView):
-    """
-    Dashboard view listing all reimbursement packages created by the current user.
-    """
+    """Dashboard view listing all reimbursement packages created by the current user."""
 
     model = ReimbursementPackage
     template_name = "reimbursements/package_list.html"
@@ -139,7 +150,7 @@ class PackageListView(LoginRequiredMixin, ListView):
             ReimbursementPackage.objects.filter(paid_by=self.request.user, deleted_at__isnull=True)
             .select_related("creator", "recipient")
             .prefetch_related("records")
-            .order_by("-paid_at")
+            .order_by("-paid_at")[:25]
         )
         sent_to_me = (
             ReimbursementPackage.objects.filter(
@@ -147,7 +158,7 @@ class PackageListView(LoginRequiredMixin, ListView):
             )
             .select_related("creator")
             .prefetch_related("records")
-            .order_by("-created_at")
+            .order_by("-created_at")[:25]
         )
         context["sections"] = [
             ("Sent by You", context["packages"], "sent"),
@@ -160,12 +171,8 @@ class PackageListView(LoginRequiredMixin, ListView):
 
 
 @method_decorator(ratelimit(key="user", rate="30/m", method="GET"), name="dispatch")
+@method_decorator(ratelimit(key="user", rate="30/m", method="GET"), name="dispatch")
 class PackageDetailView(LoginRequiredMixin, DetailView):
-    """
-    Detail view for a specific reimbursement package.
-    Accessible to the creator and the designated recipient only.
-    """
-
     model = ReimbursementPackage
     template_name = "reimbursements/package_detail.html"
     context_object_name = "package"
@@ -187,19 +194,66 @@ class PackageDetailView(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
         context = super().get_context_data(**kwargs)
         package: ReimbursementPackage = self.object
-        context["records"] = package.records.filter(is_active=True)
-        context["is_creator"] = self.request.user == package.creator
-        context["is_payer"] = self.request.user == package.paid_by
-        context["is_recipient"] = self.request.user == package.recipient
+
+        payer_settings = getattr(self.request.user, "settings", None)
+        user_currency = getattr(payer_settings, "default_currency", "usd")
+        context["user_currency"] = user_currency
+
+        active_records = [r for r in package.records.all() if r.is_active]
+
+        user_rates = get_rates("USD")
+        record_items = []
+        converted_total = Decimal("0")
+        original_total = Decimal("0")
+
+        if active_records:
+            # Batch-fetch first history entries — kills the N+1
+            HistoricalRecord = Record.history.model
+            record_ids = [r.id for r in active_records]
+            first_histories: dict[int, object] = {}
+            for h in HistoricalRecord.objects.filter(id__in=record_ids).order_by("history_date"):
+                if h.id not in first_histories:
+                    first_histories[h.id] = h
+
+            for rec in active_records:
+                first = first_histories.get(rec.id)
+                orig_bal = first.balance if first else rec.balance
+                orig_cc = first.currency if first else rec.currency
+
+                orig_converted = convert_currency(orig_bal, orig_cc, user_currency, rates=user_rates)
+                current_converted = (
+                    convert_currency(rec.balance, rec.currency, user_currency, rates=user_rates)
+                    if rec.balance
+                    else orig_converted
+                )
+
+                converted_total += current_converted
+                original_total += convert_currency(
+                    orig_bal, orig_cc, package.currency, rates=user_rates
+                )
+
+                record_items.append(
+                    {
+                        "record": rec,
+                        "original_converted": orig_converted,
+                        "requested_converted": current_converted,
+                        "converted_currency": user_currency,
+                    }
+                )
+
+        context["record_items"] = record_items
+        context["converted_total"] = converted_total
+        context["original_total"] = original_total
+        context["package_currency"] = package.currency
+        context["is_recipient"] = package.recipient == self.request.user
+        context["is_payer"] = package.paid_by == self.request.user
         context["can_delete"] = package.can_delete(self.request.user)
         return context
 
 
 @method_decorator(ratelimit(key="user", rate="10/m", method="POST"), name="dispatch")
 class PackageDeleteView(LoginRequiredMixin, View):
-    """Soft-deletes a reimbursement package. Only the creator (always) and the
-    recipient (if paid) may delete. Returns 200 JSON on success for HTMX/JS
-    callers, or redirects to the package list for traditional form posts."""
+    """Soft-deletes a reimbursement package."""
 
     def post(self, request: HttpRequest, package_uuid: str) -> HttpResponse:
         package = get_object_or_404(
@@ -228,7 +282,7 @@ class PackageDeleteView(LoginRequiredMixin, View):
 @method_decorator(ratelimit(key="user", rate="5/m", method="POST"), name="dispatch")
 class CreatePackageFromRecordsView(LoginRequiredMixin, StripeAccountRequiredMixin, View):
     def post(self, request: HttpRequest) -> HttpResponse:
-        if request.content_type == "application/json":
+        if request.content_type and "application/json" in request.content_type:
             try:
                 data: dict[str, Any] = json.loads(request.body)
             except json.JSONDecodeError:
@@ -255,6 +309,10 @@ class CreatePackageFromRecordsView(LoginRequiredMixin, StripeAccountRequiredMixi
         if not record_ids:
             return JsonResponse({"error": "No records selected."}, status=400)
 
+        title = title.strip()[:255]
+        if not title:
+            title = "Reimbursement Package"
+
         if not recipient_email:
             return JsonResponse(
                 {"error": "Recipient email is required."},
@@ -277,13 +335,10 @@ class CreatePackageFromRecordsView(LoginRequiredMixin, StripeAccountRequiredMixi
             )
 
         records = Record.objects.filter(id__in=record_ids, user=request.user, is_active=True)
-        currencies = set(records.values_list("currency", flat=True))
-        if len(currencies) > 1:
-            return JsonResponse(
-                {"error": "All records must use the same currency. Please select records with the same currency."},
-                status=400,
-            )
-        package_currency = records.first().currency if records.exists() else "usd"
+        if not records.exists():
+            return JsonResponse({"error": "No valid records found."}, status=400)
+
+        package_currency = getattr(request.user.settings, "default_currency", "usd")
 
         with transaction.atomic():
             package = ReimbursementPackage.objects.create(
@@ -295,13 +350,15 @@ class CreatePackageFromRecordsView(LoginRequiredMixin, StripeAccountRequiredMixi
             )
             package.records.set(records)
 
-        _send_package_created_notification(package, recipient)
+        from .notifications import send_package_created_notification
+
+        send_package_created_notification(package, recipient)
 
         redirect_url = reverse(
             "reimbursements:package-detail", kwargs={"package_uuid": package.uuid}
         )
 
-        if request.content_type == "application/json":
+        if request.content_type and "application/json" in request.content_type:
             return JsonResponse({"redirect_url": redirect_url})
 
         return redirect(redirect_url)
@@ -309,10 +366,7 @@ class CreatePackageFromRecordsView(LoginRequiredMixin, StripeAccountRequiredMixi
 
 @method_decorator(ratelimit(key="user", rate="30/m", method="GET"), name="dispatch")
 class PaymentSuccessView(LoginRequiredMixin, TemplateView):
-    """
-    Renders the success confirmation landing page following Stripe payment.
-    Falls back to checking Stripe directly if the webhook hasn't fired yet.
-    """
+    """Renders success landing page and syncs Stripe checkout state."""
 
     template_name = "reimbursements/payment_success.html"
 
@@ -359,17 +413,14 @@ class PaymentSuccessView(LoginRequiredMixin, TemplateView):
             if payment_intent_id:
                 payment.stripe_payment_intent_id = payment_intent_id
             payment.save(update_fields=["is_completed", "stripe_payment_intent_id"])
-            package.mark_as_paid(payer=payment.payer)
+            payer_currency = getattr(payment, "payer_currency", None) or "usd"
+            package.mark_as_paid(payer=payment.payer, payer_currency=payer_currency)
             logger.info("Fallback: marked package %s as paid via success page", package.uuid)
 
 
 @method_decorator(ratelimit(key="user", rate="10/m", method="POST"), name="dispatch")
 class CreatePackageCheckoutView(LoginRequiredMixin, View):
-    """
-    Constructs a Stripe Checkout Session for a package and redirects the client.
-
-    Uses POST to prevent prefetchers/crawlers from triggering payment sessions.
-    """
+    """Constructs a Stripe Checkout Session for a package and redirects the client."""
 
     def post(self, request: HttpRequest, package_uuid: str) -> HttpResponse:
         package = get_object_or_404(
@@ -407,7 +458,7 @@ class CreatePackageCheckoutView(LoginRequiredMixin, View):
                 session = stripe.checkout.Session.retrieve(
                     existing_payment.stripe_checkout_session_id
                 )
-                if session.status == "open":
+                if session.status == "open" and session.url:
                     return redirect(session.url)
             except stripe.error.StripeError:
                 logger.warning(
@@ -416,11 +467,28 @@ class CreatePackageCheckoutView(LoginRequiredMixin, View):
                 )
 
         stripe_account = getattr(package.creator, "stripe_account", None)
-        stripe_account_id = stripe_account.stripe_account_id if stripe_account else None
+        # Check active status to prevent transfer_data errors on incomplete accounts
+        stripe_account_id = (
+            stripe_account.stripe_account_id
+            if stripe_account and stripe_account.is_active
+            else None
+        )
+
+        payer_currency = getattr(request.user.settings, "default_currency", "usd")
+        payer_rates = get_rates("USD")
 
         line_items: list[dict[str, Any]] = []
-        for record in package.records.filter(is_active=True):
+        actual_total_cents = 0
+        actual_total_amount = Decimal("0")
+        for record in (r for r in package.records.all() if r.is_active):
             if record.balance and record.balance > 0:
+                converted = convert_currency(
+                    record.balance, record.currency, payer_currency, rates=payer_rates
+                )
+                converted_stripe = to_stripe_amount(converted, payer_currency)
+                if converted_stripe <= 0:
+                    continue
+
                 product_data: dict[str, Any] = {
                     "name": record.title or "Expense Item",
                 }
@@ -430,16 +498,19 @@ class CreatePackageCheckoutView(LoginRequiredMixin, View):
                 line_items.append(
                     {
                         "price_data": {
-                            "currency": package.currency,
+                            "currency": payer_currency,
                             "product_data": product_data,
-                            "unit_amount": int(record.balance * 100),
+                            "unit_amount": converted_stripe,
                         },
                         "quantity": 1,
                     }
                 )
+                actual_total_cents += converted_stripe
+                actual_total_amount += converted
 
         if not line_items:
-            if package.total_amount_cents <= 0:
+            fallback_cents = package.converted_total_cents(payer_currency)
+            if fallback_cents <= 0:
                 messages.error(request, "This package has no payable items.")
                 return redirect(
                     reverse("reimbursements:package-detail", kwargs={"package_uuid": package.uuid})
@@ -447,13 +518,15 @@ class CreatePackageCheckoutView(LoginRequiredMixin, View):
             line_items.append(
                 {
                     "price_data": {
-                        "currency": package.currency,
+                        "currency": payer_currency,
                         "product_data": {"name": package.title},
-                        "unit_amount": package.total_amount_cents,
+                        "unit_amount": fallback_cents,
                     },
                     "quantity": 1,
                 }
             )
+            actual_total_cents = fallback_cents
+            actual_total_amount = package.converted_total(payer_currency)
 
         checkout_args: dict[str, Any] = {
             "payment_method_types": ["card"],
@@ -472,12 +545,24 @@ class CreatePackageCheckoutView(LoginRequiredMixin, View):
 
         if stripe_account_id:
             platform_fee_cents = int(
-                (Decimal(str(package.total_amount_cents)) * PLATFORM_FEE_PERCENT).quantize(
+                (Decimal(str(actual_total_cents)) * PLATFORM_FEE_PERCENT).quantize(
                     Decimal("1"), rounding=ROUND_DOWN
                 )
             )
-            if platform_fee_cents < STRIPE_MINIMUM_FEE_CENTS:
-                platform_fee_cents = STRIPE_MINIMUM_FEE_CENTS
+            # Convert USD minimum fee threshold to payer currency minor units
+            min_fee_converted = convert_currency(
+                Decimal(STRIPE_MINIMUM_FEE_CENTS) / Decimal("100"),
+                "usd",
+                payer_currency,
+                rates=payer_rates,
+            )
+            min_fee_units = to_stripe_amount(min_fee_converted, payer_currency)
+
+            if platform_fee_cents < min_fee_units:
+                platform_fee_cents = min_fee_units
+            if platform_fee_cents > actual_total_cents:
+                platform_fee_cents = actual_total_cents
+
             checkout_args["payment_intent_data"] = {
                 "application_fee_amount": platform_fee_cents,
                 "transfer_data": {
@@ -485,20 +570,26 @@ class CreatePackageCheckoutView(LoginRequiredMixin, View):
                 },
             }
 
-        checkout_session = stripe.checkout.Session.create(**checkout_args)
+        try:
+            checkout_session = stripe.checkout.Session.create(**checkout_args)
+        except stripe.error.StripeError:
+            logger.exception(
+                "Failed to create Stripe Checkout Session for package %s", package.uuid
+            )
+            messages.error(
+                request, "Unable to initiate payment session with Stripe. Please try again later."
+            )
+            return redirect(
+                reverse("reimbursements:package-detail", kwargs={"package_uuid": package.uuid})
+            )
 
         with transaction.atomic():
             PackagePayment.objects.create(
                 package=package,
                 payer=request.user,
                 stripe_checkout_session_id=checkout_session.id,
-                amount_paid=package.total_amount,
+                amount_paid=actual_total_amount,
+                payer_currency=payer_currency,
             )
 
         return redirect(checkout_session.url)
-
-
-def _send_package_created_notification(package, recipient) -> None:
-    from .notifications import send_package_created_notification
-
-    send_package_created_notification(package, recipient)

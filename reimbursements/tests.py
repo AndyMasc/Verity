@@ -43,16 +43,14 @@ def _record(user, balance=Decimal("25.00")):
 
 
 def _stripe_account(user, active=True):
-    return StripeAccount.objects.create(
-        user=user,
+    StripeAccount.objects.filter(user=user).update(
         stripe_account_id="acct_test123" if active else None,
         stripe_details_submitted=active,
     )
+    user.stripe_account.refresh_from_db()
+    return user.stripe_account
 
 
-# ---------------------------------------------------------------------------
-# Model tests
-# ---------------------------------------------------------------------------
 class ReimbursementPackageModelTest(TestCase):
     def setUp(self):
         self.creator = _user("creator@test.com")
@@ -142,9 +140,6 @@ class StripeAccountModelTest(TestCase):
         self.assertFalse(acct.is_active)
 
 
-# ---------------------------------------------------------------------------
-# View tests
-# ---------------------------------------------------------------------------
 class ValidateRecipientEmailTest(TestCase):
     def setUp(self):
         self.factory = RequestFactory()
@@ -251,7 +246,7 @@ class PackageDetailViewTest(TestCase):
 
 
 @patch("django_ratelimit.decorators.is_ratelimited", return_value=False)
-@patch("reimbursements.views._send_package_created_notification")
+@patch("reimbursements.notifications.send_package_created_notification")
 class CreatePackageFromRecordsViewTest(TestCase):
     def setUp(self):
         self.user = _user()
@@ -524,7 +519,8 @@ class StripeWebhookTest(TestCase):
     @patch("reimbursements.webhooks.stripe.Webhook.construct_event")
     def test_account_updated(self, mock_construct):
         user = _user("stripe@test.com")
-        acct = StripeAccount.objects.create(user=user, stripe_account_id="acct_test")
+        user.stripe_account.stripe_account_id = "acct_test"
+        user.stripe_account.save(update_fields=["stripe_account_id"])
 
         mock_construct.return_value = {
             "type": "account.updated",
@@ -544,8 +540,8 @@ class StripeWebhookTest(TestCase):
             response = stripe_webhook(request)
 
         self.assertEqual(response.status_code, 200)
-        acct.refresh_from_db()
-        self.assertTrue(acct.stripe_details_submitted)
+        user.stripe_account.refresh_from_db()
+        self.assertTrue(user.stripe_account.stripe_details_submitted)
 
     @patch("reimbursements.webhooks.stripe.Webhook.construct_event")
     def test_invalid_signature(self, mock_construct):

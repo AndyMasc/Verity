@@ -24,14 +24,14 @@
         </thead>
         <tbody>
             {% for record in records %}
-            <tr>
-                <td align="left" style="padding: 14px 16px; font-size: 14px; color: #18181b; border-bottom: {% if forloop.last %}none{% else %}1px solid #f4f4f5{% endif %};">
-                    <strong style="font-weight: 600;">{{ record.title|default:"Expense Item" }}</strong>
-                </td>
-                <td align="right" style="padding: 14px 16px; font-size: 14px; font-weight: 600; color: #18181b; border-bottom: {% if forloop.last %}none{% else %}1px solid #f4f4f5{% endif %};">
-                    {{ record.balance|currency_format:record.currency }}
-                </td>
-            </tr>
+                <tr>
+                    <td align="left" style="padding: 14px 16px; font-size: 14px; color: #18181b; border-bottom: {% if forloop.last %}none{% else %}1px solid #f4f4f5{% endif %};">
+                        <strong style="font-weight: 600;">{{ record.title|default:"Expense Item" }}</strong>
+                    </td>
+                    <td align="right" style="padding: 14px 16px; font-size: 14px; font-weight: 600; color: #18181b; border-bottom: {% if forloop.last %}none{% else %}1px solid #f4f4f5{% endif %};">
+                        {{ record.balance|currency_format:record.currency }}
+                    </td>
+                </tr>
             {% endfor %}
         </tbody>
         <tfoot>

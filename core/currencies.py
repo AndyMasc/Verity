@@ -1,8 +1,8 @@
-"""ISO 4217 currency definitions used across the application.
+"""ISO 4217 currency definitions and Stripe minor-unit helpers."""
 
-Each entry maps a currency code to its display name and symbol.
-Stripe-compatible codes are used as keys (lowercase).
-"""
+from decimal import Decimal, ROUND_HALF_UP
+
+DEFAULT_CURRENCY = "usd"
 
 CURRENCY_CHOICES = [
     ("usd", "USD – US Dollar"),
@@ -34,8 +34,8 @@ CURRENCY_CHOICES = [
     ("zar", "ZAR – South African Rand"),
     ("egp", "EGP – Egyptian Pound"),
     ("ngn", "NGN – Nigerian Naira"),
-    ("kes", "KEs – Kenyan Shilling"),
-    ("ghc", "GHS – Ghanaian Cedi"),
+    ("kes", "KES – Kenyan Shilling"),
+    ("ghs", "GHS – Ghanaian Cedi"),
     ("aed", "AED – UAE Dirham"),
     ("sar", "SAR – Saudi Riyal"),
     ("qar", "QAR – Qatari Riyal"),
@@ -61,7 +61,7 @@ CURRENCY_CHOICES = [
     ("gel", "GEL – Georgian Lari"),
     ("azn", "AZN – Azerbaijani Manat"),
     ("kzt", "KZT – Kazakhstani Tenge"),
-    ("uzb", "UZS – Uzbekistani Som"),
+    ("uzs", "UZS – Uzbekistani Som"),
 ]
 
 CURRENCY_SYMBOLS = {
@@ -95,7 +95,7 @@ CURRENCY_SYMBOLS = {
     "egp": "E£",
     "ngn": "₦",
     "kes": "KSh",
-    "ghc": "GH₵",
+    "ghs": "GH₵",
     "aed": "د.إ",
     "sar": "﷼",
     "qar": "﷼",
@@ -121,26 +121,73 @@ CURRENCY_SYMBOLS = {
     "gel": "₾",
     "azn": "₼",
     "kzt": "₸",
-    "uzb": "so'm",
+    "uzs": "so'm",
 }
 
-# Stripe uses lowercase 3-letter codes
-DEFAULT_CURRENCY = "usd"
+# ISO 4217 currencies with 0 decimal places
+ZERO_DECIMAL_CURRENCIES = frozenset(
+    {
+        "bif",
+        "clp",
+        "djf",
+        "gnf",
+        "jpy",
+        "kmf",
+        "krw",
+        "mga",
+        "pyg",
+        "rwf",
+        "ugx",
+        "vnd",
+        "vuv",
+        "xaf",
+        "xof",
+        "xpf",
+    }
+)
+
+# ISO 4217 currencies with 3 decimal places
+THREE_DECIMAL_CURRENCIES = frozenset({"bhd", "jod", "kwd", "omr", "tnd"})
 
 
-def get_currency_symbol(code: str) -> str:
-    """Return the display symbol for a given currency code."""
-    return CURRENCY_SYMBOLS.get(code, code.upper() + " ")
+def get_currency_decimals(currency: str) -> int:
+    """Returns the number of decimal places for a given currency code."""
+    code = (currency or DEFAULT_CURRENCY).lower()
+    if code in ZERO_DECIMAL_CURRENCIES:
+        return 0
+    if code in THREE_DECIMAL_CURRENCIES:
+        return 3
+    return 2
 
 
-def format_currency(amount, code: str) -> str:
-    """Format a decimal amount with the appropriate currency symbol."""
-    from decimal import Decimal
+def get_currency_symbol(currency: str) -> str:
+    """Returns the symbol for a given currency code or default uppercase fallback."""
+    code = (currency or DEFAULT_CURRENCY).lower()
+    return CURRENCY_SYMBOLS.get(code, code.upper())
 
+
+def format_currency(amount: Decimal | float | int, currency: str) -> str:
+    """Formats a numerical amount with its currency symbol and correct decimal places."""
     if amount is None:
-        return "—"
+        return ""
+
+    code = (currency or DEFAULT_CURRENCY).lower()
     symbol = get_currency_symbol(code)
-    amount = Decimal(str(amount))
-    if code == "jpy":
-        return f"{symbol}{amount:,.0f}"
-    return f"{symbol}{amount:,.2f}"
+    decimals = get_currency_decimals(code)
+    quant_target = Decimal("1") if decimals == 0 else Decimal(f"0.{'0' * decimals}")
+    amount = Decimal(str(amount)).quantize(quant_target, rounding=ROUND_HALF_UP)
+    return f"{symbol}{amount:,.{decimals}f}"
+
+
+def to_stripe_amount(amount: Decimal, currency: str) -> int:
+    """Converts major currency units (e.g. 8.17 SGD) to Stripe minor units (cents/pesos/fils)."""
+    decimals = get_currency_decimals(currency)
+    multiplier = Decimal(10**decimals)
+    return int((Decimal(str(amount)) * multiplier).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+
+
+def from_stripe_amount(amount_cents: int, currency: str) -> Decimal:
+    """Converts Stripe minor units back to major units."""
+    decimals = get_currency_decimals(currency)
+    divisor = Decimal(10**decimals)
+    return Decimal(amount_cents) / divisor

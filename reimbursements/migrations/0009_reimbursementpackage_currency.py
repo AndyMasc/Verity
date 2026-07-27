@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("reimbursements", "0008_add_payment_intent_to_packagepayment"),
     ]

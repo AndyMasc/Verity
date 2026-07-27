@@ -122,7 +122,11 @@ def _txn_to_record_defaults(
         "title": txn["name"],
         "merchant": txn.get("merchant_name") or txn["name"],
         "balance": abs(txn["amount"]),
-        "currency": (txn.get("iso_currency_code") or txn.get("unofficial_currency_code") or getattr(user.settings, "default_currency", "usd")).lower(),
+        "currency": (
+            txn.get("iso_currency_code")
+            or txn.get("unofficial_currency_code")
+            or getattr(user.settings, "default_currency", "usd")
+        ).lower(),
         "transaction_date": raw_date,
         "record_type": Record.RecordTypes.FINANCIAL_DOCUMENT,
         "notes": primary_category,

@@ -26,10 +26,12 @@ def send_package_created_notification(package, recipient) -> None:
     creator_name = escape(package.creator.get_full_name() or package.creator.email)
     safe_title = escape(package.title)
     safe_recipient = escape(recipient.get_full_name() or recipient.email)
-    amount = package.total_amount
+    amount = package.display_total
     currency = package.currency
 
-    subject = f'{creator_name} sent you a reimbursement request: "{safe_title}"'
+    plain_creator = package.creator.get_full_name() or package.creator.email
+    plain_title = package.title
+    subject = f'{plain_creator} sent you a reimbursement request: "{plain_title}"'
 
     template_context = {
         "creator_name": creator_name,
@@ -50,7 +52,7 @@ def send_package_created_notification(package, recipient) -> None:
     )
 
     formatted_amount = format_currency(amount, currency)
-    db_message = f'{creator_name} sent you a reimbursement request for "{safe_title}" ({formatted_amount}).'
+    db_message = f'{plain_creator} sent you a reimbursement request for "{plain_title}" ({formatted_amount}).'
 
     send_multi_channel_notification(
         user=recipient,
@@ -75,10 +77,11 @@ def send_package_paid_notification(package, payer) -> None:
     payer_name = escape(payer.get_full_name() or payer.email) if payer else "Someone"
     safe_title = escape(package.title)
     safe_creator = escape(package.creator.get_full_name() or package.creator.email)
-    amount = package.total_amount
+    amount = package.display_total
     currency = package.currency
 
-    subject = f'Your reimbursement "{safe_title}" was paid'
+    plain_title = package.title
+    subject = f'Your reimbursement "{plain_title}" was paid'
 
     template_context = {
         "creator_name": safe_creator,
@@ -94,7 +97,8 @@ def send_package_paid_notification(package, payer) -> None:
     text_body = render_to_string("reimbursements/email/package_paid_message.txt", template_context)
 
     formatted_amount = format_currency(amount, currency)
-    db_message = f'{payer_name} paid {formatted_amount} for "{safe_title}".'
+    plain_payer = payer.get_full_name() or payer.email if payer else "Someone"
+    db_message = f'{plain_payer} paid {formatted_amount} for "{plain_title}".'
 
     send_multi_channel_notification(
         user=package.creator,

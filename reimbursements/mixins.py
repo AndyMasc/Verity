@@ -21,7 +21,7 @@ class StripeAccountRequiredMixin(UserPassesTestMixin):
 
         onboard_url = reverse("reimbursements:stripe-onboard")
 
-        if self.request.content_type == "application/json":
+        if self.request.content_type and "application/json" in self.request.content_type:
             return JsonResponse(
                 {
                     "error": "You must connect your Stripe account before requesting reimbursements.",

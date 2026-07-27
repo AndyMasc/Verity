@@ -11,15 +11,17 @@ from typing import Any
 from django import template
 from django.urls import reverse
 
-from core.currencies import CURRENCY_SYMBOLS
+from core.currencies import get_currency_symbol as _get_currency_symbol
 from core.currencies import format_currency as _format_currency
 
 register = template.Library()
 
 
 @register.filter
-def get_attr(obj: Any, attr: str) -> str:
-    """Return ``getattr(obj, attr, "")`` — a safe dynamic attribute lookup for templates."""
+def get_attr(obj: Any, attr: str) -> Any:
+    """Dynamic attribute/key lookup for templates. Handles both objects and dicts."""
+    if isinstance(obj, dict):
+        return obj.get(attr, "")
     return getattr(obj, attr, "")
 
 
@@ -53,7 +55,7 @@ def filter_url(context: dict[str, Any], view_name: str, **kwargs: Any) -> str:
 @register.filter
 def currency_symbol(currency_code: str) -> str:
     """Return the display symbol for a currency code (e.g. 'usd' → '$')."""
-    return CURRENCY_SYMBOLS.get(str(currency_code).lower(), str(currency_code).upper() + " ")
+    return _get_currency_symbol(str(currency_code).lower())
 
 
 @register.filter
@@ -65,10 +67,13 @@ def currency_format(amount, currency_code: str) -> str:
     return _format_currency(amount, str(currency_code).lower())
 
 
-@register.simple_tag(takes_context=True)
-def currency_amount(context: dict[str, Any], amount, currency_code: str) -> str:  # noqa: ARG001
-    """Same as ``currency_format`` but as a simple_tag for use with ``as`` syntax.
+@register.filter
+def index(sequence, i: int):
+    """Return ``sequence[i]`` — safe list indexing in templates.
 
-    Usage: ``{% currency_amount record.balance record.currency as val %}``
+    Usage: ``{{ my_list|index:forloop.counter0 }}``
     """
-    return _format_currency(amount, str(currency_code).lower())
+    try:
+        return sequence[int(i)]
+    except (IndexError, TypeError, ValueError):
+        return ""

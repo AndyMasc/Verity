@@ -113,7 +113,7 @@ def send_email_notification(
         recipient_list=[user.email],
         html_message=html_body,
     )
-    logger.info(f"Dispatched background email request for {user.email}")
+    logger.info("Dispatched background email request for %s", user.email)
 
 
 def _user_can_receive_push(user: AbstractUser) -> bool:

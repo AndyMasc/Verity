@@ -66,10 +66,10 @@
                 {% if form.merchant.errors %}<p class="text-[11px] text-rose-500 pl-1 font-medium">{{ form.merchant.errors|striptags }}</p>{% endif %}
             </div>
             {% if form.currency %}
-            <div>
-                <label for="{{ form.currency.id_for_label }}" class="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 block">Currency <span class="text-rose-400">*</span></label>
-                {% render_field form.currency class="w-full text-xs font-semibold bg-transparent border border-transparent hover:border-zinc-200/50 dark:hover:border-zinc-800 focus:border-zinc-300 dark:focus:border-zinc-700 rounded-lg text-zinc-800 dark:text-zinc-200 focus:outline-hidden focus:ring-0 transition-all" %}
-            </div>
+                <div>
+                    <label for="{{ form.currency.id_for_label }}" class="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 block">Currency <span class="text-rose-400">*</span></label>
+                    {% render_field form.currency class="w-full text-xs font-semibold bg-transparent border border-transparent hover:border-zinc-200/50 dark:hover:border-zinc-800 focus:border-zinc-300 dark:focus:border-zinc-700 rounded-lg text-zinc-800 dark:text-zinc-200 focus:outline-hidden focus:ring-0 transition-all" %}
+                </div>
             {% endif %}
         </div>
 

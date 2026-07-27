@@ -168,7 +168,7 @@ async def get_dashboard_context(user) -> dict:
             PackagePayment.objects.filter(
                 package__creator=user,
                 is_completed=True,
-            ).values_list("amount_paid", "package__currency")
+            ).values_list("amount_paid", "payer_currency")
         ),
         ReimbursementPackage.objects.filter(
             creator=user, status=ReimbursementPackage.Status.OPEN
@@ -177,7 +177,7 @@ async def get_dashboard_context(user) -> dict:
             PackagePayment.objects.filter(
                 package__recipient=user,
                 is_completed=True,
-            ).values_list("amount_paid", "package__currency")
+            ).values_list("amount_paid", "payer_currency")
         ),
         ReimbursementPackage.objects.filter(
             recipient=user, status=ReimbursementPackage.Status.PAID
@@ -209,6 +209,7 @@ async def get_dashboard_context(user) -> dict:
         "has_packages": has_packages,
     }
 
+    await cache.aset(cache_key, context, DASHBOARD_CACHE_TTL)
     return context
 
 
