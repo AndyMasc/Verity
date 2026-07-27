@@ -126,7 +126,7 @@ def delete_7year_archived_records() -> None:
     deleted_count = 0
     pks = list(seven_year_expired_records.values_list("pk", flat=True))
     if pks:
-        records_qs = Record.objects.filter(pk__in=pks)
+        records_qs = Record.objects.filter(pk__in=pks).allow_bulk_delete()
         deleted_count, _ = records_qs.delete()
 
     if deleted_count:
