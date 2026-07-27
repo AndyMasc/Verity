@@ -16,7 +16,7 @@
 
         {% if LOGIN_BY_CODE_ENABLED %}
             <div class="relative flex items-center my-1 mb-2"><div class="flex-grow h-px bg-zinc-200 dark:bg-zinc-800"></div><span class="px-3 text-sm text-zinc-400 dark:text-zinc-600">Or</span><div class="flex-grow h-px bg-zinc-200 dark:bg-zinc-800"></div></div>
-            <a href="{{ request_login_code_url }}" class="mb-2 w-full px-4 py-2.5 h-10 flex items-center justify-center rounded-3xl text-sm font-medium text-zinc-900 dark:text-zinc-100 bg-zinc-100 dark:bg-zinc-800/30 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-800/50 transition-all duration-150">{% trans "Mail me a sign-in code" %}</a>
+            <a href="{{ request_login_code_url }}" class="mb-2 w-full px-4 py-2.5 h-10 flex items-center justify-center rounded-2xl text-sm font-medium text-zinc-900 dark:text-zinc-100 bg-zinc-100 dark:bg-zinc-800/30 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-800/50 transition-all duration-200 active:scale-[0.98]">{% trans "Mail me a sign-in code" %}</a>
         {% endif %}
 
         {% if SOCIALACCOUNT_ENABLED %}

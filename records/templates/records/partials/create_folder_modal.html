@@ -1,10 +1,10 @@
-<div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/40 backdrop-blur-xs"
+<div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/40 dark:bg-black/60 backdrop-blur-sm"
      id="create-folder-modal"
      hx-on:click="if(event.target === this) this.remove()">
 
-    <div class="w-full max-w-md overflow-hidden bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800 rounded-2xl shadow-xl animate-in fade-in zoom-in-95 duration-150">
+    <div class="w-full max-w-md overflow-hidden bg-white/90 dark:bg-zinc-900/90 backdrop-blur-2xl border border-black/5 dark:border-white/10 rounded-2xl shadow-2xl">
 
-        <div class="p-6 border-b border-zinc-100 dark:border-zinc-800/60 flex items-center justify-between">
+        <div class="p-6 border-b border-black/[0.04] dark:border-white/[0.04] flex items-center justify-between">
             <div>
                 <h2 class="text-sm font-semibold text-zinc-950 dark:text-zinc-50">Create New Folder</h2>
                 <p class="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">Group related records in a searchable workspace.</p>
@@ -35,14 +35,14 @@
                 {% endif %}
             </div>
 
-            <div class="pt-3 border-t border-zinc-100 dark:border-zinc-800/60 flex items-center justify-end gap-2">
+            <div class="pt-3 border-t border-black/[0.04] dark:border-white/[0.04] flex items-center justify-end gap-2">
                 <button type="button"
                         onclick="document.getElementById('create-folder-modal').remove()"
-                        class="px-3.5 py-2 text-xs font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-50 dark:bg-zinc-800/40 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl border border-zinc-200/50 dark:border-zinc-700/40 transition-colors duration-150 cursor-pointer">
+                        class="px-3.5 py-2 text-xs font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-50 dark:bg-zinc-800/40 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl border border-zinc-200/50 dark:border-zinc-700/40 transition-all duration-200 cursor-pointer">
                     Cancel
                 </button>
                 <button type="submit"
-                        class="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-medium text-white bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white rounded-xl transition-all duration-150 shadow-xs active:scale-[0.98] cursor-pointer">
+                        class="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-medium text-white bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white rounded-2xl transition-all duration-200 shadow-xs active:scale-[0.98] cursor-pointer">
                     Create
                 </button>
             </div>

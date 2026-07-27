@@ -4,7 +4,7 @@
 
     {% for record in records %}
         <label data-record-id="{{ record.pk }}"
-               class="relative block transition-all duration-150 rounded-xl cursor-pointer"
+               class="relative block transition-all duration-200 rounded-xl cursor-pointer"
                :class="selectedRecord == '{{ record.pk }}' ? 'ring-2 ring-zinc-900 dark:ring-zinc-100' : 'hover:opacity-80'">
 
             <input type="radio"

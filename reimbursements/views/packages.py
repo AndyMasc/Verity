@@ -123,22 +123,22 @@ class PackageDetailView(LoginRequiredMixin, DetailView):
         user_currency = getattr(payer_settings, "default_currency", "usd")
         context["user_currency"] = user_currency
 
-        active_records = list(package.records.filter(is_active=True))
+        all_records = list(package.records.all())
 
         user_rates = get_rates("USD")
         record_items = []
         converted_total = Decimal("0")
         original_total = Decimal("0")
 
-        if active_records:
+        if all_records:
             HistoricalRecord = Record.history.model
-            record_ids = [r.id for r in active_records]
+            record_ids = [r.id for r in all_records]
             first_histories: dict[int, object] = {}
             for h in HistoricalRecord.objects.filter(id__in=record_ids).order_by("history_date"):
                 if h.id not in first_histories:
                     first_histories[h.id] = h
 
-            for rec in active_records:
+            for rec in all_records:
                 first = first_histories.get(rec.id)
                 orig_bal = first.balance if first else rec.balance
                 orig_cc = first.currency if first else rec.currency
@@ -161,6 +161,7 @@ class PackageDetailView(LoginRequiredMixin, DetailView):
                         "original_converted": orig_converted,
                         "requested_converted": current_converted,
                         "converted_currency": user_currency,
+                        "is_inactive": not rec.is_active,
                     }
                 )
 

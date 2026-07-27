@@ -7,7 +7,7 @@
              :class="selectedRecord === '{{ record.pk }}'
                      ? 'ring-2 ring-inset ring-zinc-300 dark:ring-zinc-600'
                      : ''"
-             class="transition-all duration-150">
+             class="transition-all duration-200">
             {% include 'records/record_card.html' with list_view=True %}
         </div>
     {% empty %}

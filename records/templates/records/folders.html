@@ -18,7 +18,7 @@
                     hx-get="{% url 'records:create_folder' %}"
                     hx-target="#modal-container"
                     hx-swap="innerHTML"
-                    class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-3.5 py-2 text-xs font-medium text-white bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white rounded-2xl transition-all duration-150 shadow-xs active:scale-[0.98] cursor-pointer">
+                    class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-3.5 py-2 text-xs font-medium text-white bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white rounded-2xl transition-all duration-200 shadow-xs active:scale-[0.98] cursor-pointer">
                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
                 New Folder
             </button>
@@ -30,7 +30,7 @@
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.604 10.604z" /></svg>
                 </div>
                 <input
-                    class="w-full bg-white dark:bg-zinc-950 border border-zinc-200/50 dark:border-zinc-800/50 py-3 pl-10 pr-4 text-xs rounded-xl dark:text-zinc-100 text-zinc-900 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-600 transition-all duration-150"
+                    class="w-full bg-white dark:bg-zinc-950 border border-zinc-200/50 dark:border-zinc-800/50 py-3 pl-10 pr-4 text-xs rounded-xl dark:text-zinc-100 text-zinc-900 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-600 transition-all duration-200"
                     placeholder="Search folders by name..."
                     id="folder-search" type="search" name="search"
                     hx-get="{% url 'records:view_folders' %}"

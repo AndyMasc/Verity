@@ -23,7 +23,7 @@
                 <button type="submit"
                         x-bind:disabled="!canMerge"
                         x-bind:class="canMerge ? 'bg-zinc-950 hover:bg-zinc-900 dark:bg-zinc-50 dark:hover:bg-zinc-200 text-white dark:text-zinc-950 shadow-[0_4px_20px_rgba(0,0,0,0.15)] dark:shadow-[0_4px_20px_rgba(255,255,255,0.08)] cursor-pointer active:scale-[0.99]' : 'bg-zinc-200 dark:bg-zinc-900 text-zinc-400 dark:text-zinc-600 cursor-not-allowed'"
-                        class="w-full py-2 px-4 rounded-2xl text-xs font-bold tracking-wide uppercase transition-all duration-300 flex items-center justify-center gap-2 border border-transparent dark:border-zinc-800/80">
+                        class="w-full py-2 px-4 rounded-2xl text-xs font-bold tracking-wide uppercase transition-all duration-200 flex items-center justify-center gap-2 border border-transparent dark:border-zinc-800/80">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="size-4 shrink-0">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M3 3v1.5M3 21v-6m0 0 2.77-.693a9 9 0 0 1 6.208.682l.108.054a9 9 0 0 0 6.086.71l3.114-.732a48.524 48.524 0 0 1-.005-10.499l-3.11.732a9 9 0 0 1-6.085-.711l-.108-.054a9 9 0 0 0-6.208-.682L3 4.5M3 15V4.5" />
                     </svg>
@@ -53,7 +53,7 @@
              class="fixed inset-0 z-50 flex items-center justify-center p-4"
              @keyup.escape.window="showModal = false">
 
-            <div class="fixed inset-0 bg-zinc-950/40 dark:bg-zinc-950/70 backdrop-blur-md" @click="showModal = false"></div>
+            <div class="fixed inset-0 bg-zinc-900/40 dark:bg-black/60 backdrop-blur-sm" @click="showModal = false"></div>
 
             <div x-transition:enter="transition ease-out duration-300"
                  x-transition:enter-start="opacity-0 scale-98 translate-y-2"
@@ -61,7 +61,7 @@
                  x-transition:leave="transition ease-in duration-200"
                  x-transition:leave-start="opacity-100 scale-100 translate-y-0"
                  x-transition:leave-end="opacity-0 scale-98 translate-y-2"
-                 class="relative bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-zinc-200 dark:border-zinc-800/80 w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
+                 class="relative bg-white/90 dark:bg-zinc-900/90 backdrop-blur-2xl rounded-2xl shadow-2xl border border-black/5 dark:border-white/10 w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
 
                 <div class="p-6 overflow-y-auto min-h-0 flex-1" id="modal-inner">
                 </div>

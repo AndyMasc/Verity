@@ -26,8 +26,8 @@
 
         {% for field in form %}
             {% if field.name != 'payment_method' %}
-                <div class="group border-b border-zinc-100 px-6 py-4 transition-all duration-200 focus-within:bg-zinc-50 dark:border-zinc-800 dark:focus-within:bg-zinc-800/40">
-                    <label for="{{ field.id_for_label }}" class="tracking-wider uppercase flex items-center w-full whitespace-nowrap mb-1.5 text-xs text-zinc-500 dark:text-zinc-400">
+                <div class="group border-b border-zinc-100 dark:border-zinc-800/60 px-6 py-4 transition-all duration-200 focus-within:bg-zinc-50 dark:focus-within:bg-zinc-800/40">
+                    <label for="{{ field.id_for_label }}" class="tracking-wider uppercase flex items-center w-full whitespace-nowrap mb-1.5 text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">
                         {% if field.label == 'Title' %}
                             Descriptive title
                         {% else %}
@@ -71,7 +71,7 @@
 
         <div class="flex items-center justify-end gap-3 p-5">
             <div class="flex-1 text-[10px] text-zinc-400 dark:text-zinc-500" id="char-hint"></div>
-            <button type="submit" class="cursor-pointer rounded-2xl bg-zinc-900 px-6 py-2.5 text-sm font-medium text-white transition-all duration-150 hover:bg-zinc-800 active:scale-[0.98] shadow-xs dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200">
+            <button type="submit" class="cursor-pointer rounded-2xl bg-zinc-900 px-6 py-2.5 text-sm font-medium text-white transition-all duration-200 hover:bg-zinc-800 active:scale-[0.98] shadow-xs dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200">
                 Save Record
             </button>
         </div>

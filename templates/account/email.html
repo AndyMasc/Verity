@@ -22,7 +22,7 @@
                     <div class="space-y-2.5">
                         {% for radio in emailaddress_radios %}
                             {% with emailaddress=radio.emailaddress %}
-                                <label class="relative flex items-center gap-4 rounded-2xl border border-zinc-200/50 dark:border-zinc-800/50 bg-white dark:bg-zinc-800/20 p-4 transition-all duration-150 hover:border-zinc-300 dark:hover:border-zinc-700/60 cursor-pointer shadow-xs select-none">
+                                <label class="relative flex items-center gap-4 rounded-2xl border border-zinc-200/50 dark:border-zinc-800/50 bg-white dark:bg-zinc-800/20 p-4 transition-all duration-200 hover:border-zinc-300 dark:hover:border-zinc-700/60 cursor-pointer shadow-xs select-none">
 
                                     <input type="radio" name="email" value="{{ emailaddress.email }}" id="{{ radio.id }}"
                                            class="size-4 rounded-full border-zinc-300 text-zinc-900 focus:ring-zinc-950/10 dark:border-zinc-700 dark:text-white dark:focus:ring-white/10 accent-zinc-900 dark:accent-zinc-100"
@@ -52,7 +52,7 @@
 
                     <div class="grid grid-cols-2 gap-3 pt-2">
                         <button name="action_primary" type="submit" id="btn-primary"
-                                class="action-btn rounded-2xl border border-zinc-200/50 dark:border-zinc-800/50 bg-white dark:bg-zinc-900 px-4 py-2.5 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all duration-150 flex items-center justify-center space-x-2 shadow-xs active:scale-[0.98]
+                                class="action-btn rounded-2xl border border-zinc-200/50 dark:border-zinc-800/50 bg-white dark:bg-zinc-900 px-4 py-2.5 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all duration-200 flex items-center justify-center space-x-2 shadow-xs active:scale-[0.98]
                                        disabled:!bg-zinc-100 disabled:!text-zinc-400 disabled:!border-zinc-200 disabled:cursor-not-allowed disabled:shadow-none
                                        dark:disabled:!bg-zinc-900 dark:disabled:!text-zinc-600 dark:disabled:!border-zinc-800/60">
                             <svg id="spinner-primary" class="hidden animate-spin h-3.5 w-3.5 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -63,7 +63,7 @@
                         </button>
 
                         <button name="action_remove" type="submit" id="btn-remove"
-                                class="action-btn rounded-2xl border border-zinc-200/50 dark:border-zinc-800/50 bg-white dark:bg-zinc-900 px-4 py-2.5 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-rose-500/10 hover:text-rose-500 dark:hover:bg-rose-500/20 transition-all duration-150 flex items-center justify-center space-x-2 shadow-xs active:scale-[0.98]
+                                class="action-btn rounded-2xl border border-zinc-200/50 dark:border-zinc-800/50 bg-white dark:bg-zinc-900 px-4 py-2.5 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-rose-500/10 hover:text-rose-500 dark:hover:bg-rose-500/20 transition-all duration-200 flex items-center justify-center space-x-2 shadow-xs active:scale-[0.98]
                                        disabled:!bg-zinc-100 disabled:!text-zinc-400 disabled:!border-zinc-200 disabled:cursor-not-allowed disabled:shadow-none
                                        dark:disabled:!bg-zinc-900 dark:disabled:!text-zinc-600 dark:disabled:!border-zinc-800/60">
                             <svg id="spinner-remove" class="hidden animate-spin h-3.5 w-3.5 text-rose-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -83,7 +83,7 @@
 
                     <button @click="open = !open"
                             type="button"
-                            class="flex w-full items-center justify-between text-xs font-semibold uppercase tracking-wider text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-all duration-150">
+                            class="flex w-full items-center justify-between text-xs font-semibold uppercase tracking-wider text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-all duration-200">
                         <span>Add email address</span>
                         <span class="transition-transform duration-200 text-sm font-medium" :class="open ? 'rotate-45 scale-110' : 'rotate-0'">+</span>
                     </button>
@@ -104,7 +104,7 @@
                                                 $el.closest('form').appendChild(hiddenInput);
                                                 setTimeout(() => { $el.disabled = true; }, 1);
                                                "
-                                        class="rounded-2xl mb-2 mt-4 w-full py-2 px-4 font-medium text-sm transition-all duration-150 flex items-center justify-center space-x-2 shadow-xs active:scale-[0.98]
+                                        class="rounded-2xl mb-2 mt-4 w-full py-2 px-4 font-medium text-sm transition-all duration-200 flex items-center justify-center space-x-2 shadow-xs active:scale-[0.98]
                                                bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200
                                                disabled:bg-zinc-800 disabled:text-zinc-400 disabled:cursor-not-allowed
                                                dark:disabled:bg-zinc-100 dark:disabled:text-zinc-500">

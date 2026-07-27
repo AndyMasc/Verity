@@ -36,7 +36,7 @@
             <div x-data="{ isOpen: false, openedWithKeyboard: false }" class="absolute top-4 left-4 w-fit z-40" x-on:keydown.esc.window="isOpen = false, openedWithKeyboard = false">
                 <button type="button"
                         x-on:click="isOpen = ! isOpen"
-                        class="inline-flex items-center gap-2 rounded-xl font-semibold tracking-tight text-zinc-800 dark:text-zinc-200 bg-white/90 dark:bg-zinc-950/80 backdrop-blur-md px-4 py-2 text-xs border border-zinc-200/50 dark:border-zinc-800/50 hover:bg-white dark:hover:bg-zinc-800 shadow-xs transition-all duration-150 focus:outline-none select-none active:scale-[0.98]">
+                        class="inline-flex items-center gap-2 rounded-xl font-semibold tracking-tight text-zinc-800 dark:text-zinc-200 bg-white/90 dark:bg-zinc-950/80 backdrop-blur-md px-4 py-2 text-xs border border-zinc-200/50 dark:border-zinc-800/50 hover:bg-white dark:hover:bg-zinc-800 shadow-xs transition-all duration-200 focus:outline-none select-none active:scale-[0.98]">
                     <span>Profile options</span>
                     <svg class="size-3 text-zinc-400 dark:text-zinc-500 transition-transform duration-200" :class="isOpen ? 'rotate-180' : 'rotate-0'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
@@ -56,7 +56,7 @@
 
                     {% url 'account_email' as email_url %}
                     {% if email_url %}
-                        <a href="{{ email_url }}" class="block px-3 py-2 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-800/20 rounded-lg transition-all duration-150">
+                        <a href="{{ email_url }}" class="block px-3 py-2 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-800/20 rounded-lg transition-all duration-200">
                             {% trans "Change Email" %}
                         </a>
                     {% endif %}
@@ -64,25 +64,25 @@
                     {% if user.has_usable_password %}
                         {% url 'account_change_password' as pwd_url %}
                         {% if pwd_url %}
-                            <a href="{{ pwd_url }}" class="block px-3 py-2 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-800/20 rounded-lg transition-all duration-150">
+                            <a href="{{ pwd_url }}" class="block px-3 py-2 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-800/20 rounded-lg transition-all duration-200">
                                 {% trans "Change Password" %}
                             </a>
                         {% endif %}
                     {% endif %}
 
-                    <a href="{% url 'socialaccount_connections' %}" class="block px-3 py-2 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-800/20 rounded-lg transition-all duration-150">
+                    <a href="{% url 'socialaccount_connections' %}" class="block px-3 py-2 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-800/20 rounded-lg transition-all duration-200">
                         Connections
                     </a>
 
                     <div class="h-px bg-zinc-100 dark:bg-zinc-800/60 my-1.5 mx-1"></div>
 
-                    <a href="{% url 'core:dashboard' %}" class="block px-3 py-2 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-800/20 rounded-lg transition-all duration-150">
+                    <a href="{% url 'core:dashboard' %}" class="block px-3 py-2 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-800/20 rounded-lg transition-all duration-200">
                         Dashboard
                     </a>
 
                     {% url 'account_logout' as logout_url %}
                     {% if logout_url %}
-                        <a href="{{ logout_url }}" class="block px-3 py-2 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-all duration-150">
+                        <a href="{{ logout_url }}" class="block px-3 py-2 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-all duration-200">
                             {% trans "Sign Out" %}
                         </a>
                     {% endif %}
