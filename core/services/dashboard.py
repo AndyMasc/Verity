@@ -127,7 +127,7 @@ async def get_dashboard_context(user) -> dict:
         )
         .acount(),
         _fetch_records(
-            active_records_qs.order_by("-last_edited")            .only(
+            active_records_qs.order_by("-last_edited").only(
                 "id",
                 "title",
                 "merchant",

@@ -5,7 +5,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("records", "0035_alter_historicalrecord_currency_and_more"),
         ("reimbursements", "0010_add_payer_currency_to_packagepayment"),

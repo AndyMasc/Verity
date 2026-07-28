@@ -8,13 +8,12 @@ from typing import Any
 
 import jwt
 import requests
+from django.conf import settings
 from django.db import transaction
 from django.http import HttpRequest, HttpResponse, HttpResponseBadRequest, HttpResponseForbidden
 from django.utils import timezone as tz
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
-
-from django.conf import settings
 
 from records.models import Record
 

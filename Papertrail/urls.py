@@ -13,12 +13,17 @@ from django.urls import include, path
 from core.views import safe_webpush_save_info
 
 
+def trigger_error(request):
+    division_by_zero = 1 / 0
+
 def forbidden_view(request, *args, **kwargs):  # noqa: ARG001
     """Return a 403 response for disabled password management endpoints."""
     return HttpResponseForbidden("Password features are disabled.")
 
 
 urlpatterns = [
+    # Trigger error for Sentry testing
+    path('sentry-debug/', trigger_error),
     # Landing page
     path("", include("core.urls")),
     # Admin URLs
