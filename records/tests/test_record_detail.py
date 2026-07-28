@@ -2,12 +2,16 @@ from datetime import date
 from decimal import Decimal
 
 from django.contrib.auth.models import User
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from records.models import Record
 
 
+@override_settings(
+    CACHES={"default": {"BACKEND": "django.core.cache.backends.dummy.DummyCache"}},
+    SESSION_ENGINE="django.contrib.sessions.backends.db",
+)
 class AddRecordViewTest(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(username="adduser", password="pass")
@@ -34,6 +38,7 @@ class AddRecordViewTest(TestCase):
                 "transaction_date": "2024-06-15",
                 "merchant": "Test Merchant",
                 "balance": "25.00",
+                "currency": "usd",
                 "notes": "Business purpose",
                 "payment_method": "Credit Card",
             },
@@ -59,6 +64,7 @@ class AddRecordViewTest(TestCase):
                 "expiry_date": "2024-12-31",
                 "merchant": "Test Merchant",
                 "balance": "100.00",
+                "currency": "usd",
             },
         )
         self.assertIn(response.status_code, [200, 302])
@@ -80,6 +86,7 @@ class AddRecordViewTest(TestCase):
                 "transaction_date": "2024-06-15",
                 "merchant": "Test Merchant",
                 "balance": "50.00",
+                "currency": "usd",
                 "notes": "Business purpose",
                 "payment_method": "Credit Card",
             },
@@ -97,6 +104,7 @@ class AddRecordViewTest(TestCase):
                 "products": "Item",
                 "record_type": "expense_receipt",
                 "balance": "250.00",
+                "currency": "usd",
                 "transaction_date": "2024-06-15",
                 "merchant": "Test Merchant",
                 "notes": "Business purpose",
@@ -152,6 +160,7 @@ class RecordDetailViewTest(TestCase):
                 "transaction_date": "2024-06-15",
                 "merchant": "Test Merchant",
                 "balance": "100.00",
+                "currency": "usd",
             },
             HTTP_HX_REQUEST="true",
         )

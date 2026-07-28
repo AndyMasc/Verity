@@ -10,13 +10,14 @@ import logging
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction
-from django.http import HttpRequest, HttpResponse
+from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.http import require_POST
 from django_ratelimit.decorators import ratelimit
 
+from core.services.dashboard import invalidate_dashboard_cache
 from Papertrail.views import parse_record_ids
 
 from ..models import AuditLog, Record
@@ -35,19 +36,27 @@ class ArchiveRecord(LoginRequiredMixin, View):
 
     @method_decorator(ratelimit(key="user", rate="30/m", method="POST", block=True))
     def post(self, request: HttpRequest, record_id: int) -> HttpResponse:
+        user_id = request.user.id
+
         with transaction.atomic():
             record = get_object_or_404(Record, id=record_id, user=request.user, is_active=True)
             archive_record(record)
-            AuditLog.objects.create(
-                user=request.user,
-                action=AuditLog.Action.ARCHIVE,
-                record=record,
-            )
+            transaction.on_commit(lambda: self._post_archive_tasks(user_id, record.id))
         if request.headers.get("HX-Request") == "true":
-            response = HttpResponse(status=200)
-            response["HX-Trigger"] = "recordChanged"
+            response = HttpResponse(status=204)
+            response["HX-Trigger"] = json.dumps({"recordChanged": {}})
             return response
+
         return redirect("records:view_all_records")
+
+    def _post_archive_tasks(self, user_id: int, record_id: int):
+        """Runs outside the critical database transaction lock."""
+        AuditLog.objects.create(
+            user_id=user_id,
+            action=AuditLog.Action.ARCHIVE,
+            record_id=record_id,
+        )
+        invalidate_dashboard_cache(user_id)
 
 
 class UnarchiveRecord(LoginRequiredMixin, View):
@@ -63,6 +72,11 @@ class UnarchiveRecord(LoginRequiredMixin, View):
                 action=AuditLog.Action.UNARCHIVE,
                 record=record,
             )
+        invalidate_dashboard_cache(request.user.id)
+        if request.headers.get("HX-Request") == "true":
+            response = HttpResponse(status=200)
+            response["HX-Trigger"] = json.dumps({"recordChanged": {}})
+            return response
         return redirect("records:view_all_records")
 
 
@@ -78,6 +92,11 @@ class DeleteRecordView(LoginRequiredMixin, View):
                 action=AuditLog.Action.SOFT_DELETE,
                 record=record,
             )
+        invalidate_dashboard_cache(request.user.id)
+        if request.headers.get("HX-Request") == "true":
+            response = HttpResponse(status=200)
+            response["HX-Trigger"] = json.dumps({"recordChanged": {}})
+            return response
         return redirect("records:view_all_records")
 
 
@@ -100,6 +119,8 @@ def _bulk_response(
             }
         )
         return response
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return JsonResponse({"success": True, "count": count, "verb": verb})
     return redirect("records:view_all_records")
 
 
@@ -123,6 +144,7 @@ def BulkArchiveView(request: HttpRequest) -> HttpResponse:
             json.dumps({"error": str(exc)}), status=400, content_type="application/json"
         )
 
+    invalidate_dashboard_cache(request.user.id)
     return _bulk_response(request, count, verb="archived")
 
 
@@ -146,4 +168,5 @@ def BulkUnarchiveView(request: HttpRequest) -> HttpResponse:
             json.dumps({"error": str(exc)}), status=400, content_type="application/json"
         )
 
+    invalidate_dashboard_cache(request.user.id)
     return _bulk_response(request, count, verb="restored")

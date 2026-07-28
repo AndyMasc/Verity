@@ -11,8 +11,8 @@ from typing import Any
 from django import template
 from django.urls import reverse
 
-from core.currencies import get_currency_symbol as _get_currency_symbol
 from core.currencies import format_currency as _format_currency
+from core.currencies import get_currency_symbol as _get_currency_symbol
 
 register = template.Library()
 

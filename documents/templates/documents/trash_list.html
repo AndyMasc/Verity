@@ -61,7 +61,12 @@
             </form>
         </section>
 
-        <main id="query-results-container" class="relative min-h-0 w-full min-w-0 mt-10">
+        <main id="query-results-container" class="relative min-h-0 w-full min-w-0 mt-10"
+              hx-trigger="documentChanged from:body"
+              hx-get="{% url 'documents:trash_list' %}"
+              hx-target="#query-results-container"
+              hx-include="#search"
+              hx-indicator=".htmx-indicator">
             <div class="htmx-indicator hidden htmx-request:flex absolute inset-0 bg-white/40 dark:bg-zinc-950/40 backdrop-blur-[1px] z-10 items-center justify-center rounded-xl">
                 <div class="animate-pulse text-xs font-medium text-zinc-500 dark:text-zinc-400 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 px-3 py-1.5 rounded-xl shadow-xs">
                     Updating...

@@ -29,7 +29,9 @@ def sync_payment_status(package_uuid: str, payment_id: int) -> None:
     try:
         session = stripe.checkout.Session.retrieve(payment.stripe_checkout_session_id)
     except stripe.error.StripeError:
-        logger.warning("sync_payment_status: failed to retrieve session %s", payment.stripe_checkout_session_id)
+        logger.warning(
+            "sync_payment_status: failed to retrieve session %s", payment.stripe_checkout_session_id
+        )
         return
 
     if session.payment_status == "paid":

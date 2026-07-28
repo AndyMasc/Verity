@@ -1,11 +1,10 @@
 import logging
-from decimal import Decimal, ROUND_HALF_UP
-from core.currencies import get_currency_decimals
+from decimal import ROUND_HALF_UP, Decimal
 
 import httpx
 from django.core.cache import cache
 
-from core.currencies import ZERO_DECIMAL_CURRENCIES
+from core.currencies import get_currency_decimals
 
 logger = logging.getLogger(__name__)
 

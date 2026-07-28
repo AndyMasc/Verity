@@ -1,5 +1,6 @@
 """Record list, detail, and hard-delete views."""
 
+import json
 import logging
 from datetime import timedelta
 
@@ -17,6 +18,7 @@ from django.views.generic.edit import UpdateView
 from django_filters.views import FilterView
 from django_ratelimit.decorators import ratelimit
 
+from core.services.dashboard import invalidate_dashboard_cache
 from Papertrail.views import CachedPaginatorMixin, htmx_response
 
 from ..filters import RecordFilter
@@ -35,6 +37,7 @@ LIST_FIELDS = (
     "transaction_date",
     "date_added",
     "balance",
+    "currency",
     "last_edited",
     "payment_method",
     "nickname",
@@ -63,12 +66,7 @@ class RecordListView(LoginRequiredMixin, CachedPaginatorMixin, FilterView):
         return super().dispatch(*args, **kwargs)
 
     def get_queryset(self):
-        qs = (
-            Record.objects.for_user(self.request.user)
-            .select_related("folder")
-            .prefetch_related("documents", "packages")
-            .defer(*DEFERRED_FIELDS)
-        )
+        qs = Record.objects.for_user(self.request.user).only(*LIST_FIELDS)
         search_query = self.request.GET.get("search", "").strip()
         if search_query:
             return qs.smart_search(search_query)
@@ -127,10 +125,17 @@ class RecordDetailView(LoginRequiredMixin, UpdateView):
     def form_valid(self, form):
         messages.success(self.request, "Record updated successfully.")
         self.object = form.save()
+        invalidate_dashboard_cache(self.request.user.id)
 
-        resp = htmx_response(self.request, toast="Record updated successfully.")
-        if resp is not None:
-            return resp
+        if self.request.headers.get("HX-Request") == "true":
+            response = render(
+                self.request,
+                self.get_template_names(),
+                self.get_context_data(form=form),
+                status=200,
+            )
+            response["HX-Trigger"] = json.dumps({"recordChanged": {}})
+            return response
 
         return redirect("records:record_detail", pk=self.object.pk)
 
@@ -180,12 +185,16 @@ class HardDeleteRecordView(LoginRequiredMixin, View):
             )
             record.hard_delete()
 
-        resp = htmx_response(
-            request,
-            toast="Record permanently deleted.",
-            redirect_url=reverse("records:view_all_records"),
-        )
-        if resp is not None:
-            return resp
+        invalidate_dashboard_cache(request.user.id)
+        if request.headers.get("HX-Request") == "true":
+            response = HttpResponse(status=204)
+            response["HX-Trigger"] = json.dumps(
+                {
+                    "recordChanged": {},
+                    "showToast": {"text": "Record permanently deleted.", "tags": "success"},
+                    "HX-Redirect": reverse("records:view_all_records"),
+                }
+            )
+            return response
         messages.success(request, "Record permanently deleted.")
         return redirect("records:view_all_records")

@@ -122,7 +122,7 @@ class CreatePackageCheckoutView(LoginRequiredMixin, View):
         line_items: list[dict[str, Any]] = []
         actual_total_cents = 0
         actual_total_amount = Decimal("0")
-        for record in package.records.filter(is_active=True):
+        for record in package.records.filter():
             if record.balance and record.balance > 0:
                 converted = convert_currency(
                     record.balance, record.currency, payer_currency, rates=payer_rates

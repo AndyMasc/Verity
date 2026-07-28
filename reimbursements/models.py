@@ -6,7 +6,6 @@ from django.db import models, transaction
 from django.db.models import Q, Sum
 from django.utils import timezone
 
-
 from core.currencies import CURRENCY_CHOICES, DEFAULT_CURRENCY, format_currency, to_stripe_amount
 from records.models import Record
 
@@ -208,12 +207,9 @@ class ReimbursementPackage(models.Model):
     def total_amount(self) -> Decimal:
         if hasattr(self, "_annotated_total") and self._annotated_total is not None:
             return self._annotated_total
-        return (
-            self.records.filter(is_active=True)
-            .exclude(balance__isnull=True)
-            .aggregate(total=Sum("balance"))["total"]
-            or Decimal("0.00")
-        )
+        return self.records.filter(is_active=True).exclude(balance__isnull=True).aggregate(
+            total=Sum("balance")
+        )["total"] or Decimal("0.00")
 
     @property
     def display_total(self) -> Decimal:

@@ -4,6 +4,7 @@ Includes manual merge initiation, undo, and the merge list view. All
 mutation endpoints are rate-limited and create AuditLog entries.
 """
 
+import json
 import logging
 
 from django.contrib import messages
@@ -19,9 +20,10 @@ from django.views.generic.edit import FormView
 from django_filters.views import FilterView
 from django_ratelimit.decorators import ratelimit
 
+from core.services.dashboard import invalidate_dashboard_cache
 from documents.models import DocumentData
 from Papertrail.responses import api_error
-from Papertrail.views import create_audit_log, htmx_response
+from Papertrail.views import create_audit_log
 
 from ..filters import MergeLogFilter, RecordFilter
 from ..forms import ManualMergeForm
@@ -96,6 +98,18 @@ class ManualMergeView(LoginRequiredMixin, FormView):
         document = DocumentData.objects.filter(associated_record=document_record).first()
         result = merge_document_into_plaid(plaid_record, document_record, document)
         if result is None:
+            if self.request.headers.get("HX-Request") == "true":
+                response = HttpResponse(status=409)
+                response["HX-Trigger"] = json.dumps(
+                    {
+                        "recordChanged": {},
+                        "showToast": {
+                            "text": "Could not merge — the receipt may have already been merged.",
+                            "tags": "error",
+                        },
+                    }
+                )
+                return response
             messages.error(
                 self.request, "Could not merge — the receipt may have already been merged."
             )
@@ -112,6 +126,16 @@ class ManualMergeView(LoginRequiredMixin, FormView):
                 merge_log=merge_log,
                 details={"document_record_id": document_record.pk},
             )
+            invalidate_dashboard_cache(self.request.user.id)
+            if self.request.headers.get("HX-Request") == "true":
+                response = HttpResponse(status=204)
+                response["HX-Trigger"] = json.dumps(
+                    {
+                        "recordChanged": {},
+                        "showToast": {"text": "Records merged successfully.", "tags": "success"},
+                    }
+                )
+                return response
             messages.success(self.request, "Records merged successfully.")
         return redirect(self.success_url)
 
@@ -207,7 +231,17 @@ class UndoMergeView(LoginRequiredMixin, View):
             plaid_record__user=request.user,
         )
         restored = undo_merge(merge_log)
+        invalidate_dashboard_cache(request.user.id)
         if restored is None:
+            if request.headers.get("HX-Request") == "true":
+                response = HttpResponse(status=204)
+                response["HX-Trigger"] = json.dumps(
+                    {
+                        "recordChanged": {},
+                        "showToast": {"text": "This merge was already undone.", "tags": "info"},
+                    }
+                )
+                return response
             messages.info(request, "This merge was already undone.")
         else:
             create_audit_log(
@@ -216,8 +250,17 @@ class UndoMergeView(LoginRequiredMixin, View):
                 record=merge_log.plaid_record,
                 merge_log=merge_log,
             )
+            if request.headers.get("HX-Request") == "true":
+                response = HttpResponse(status=204)
+                response["HX-Trigger"] = json.dumps(
+                    {
+                        "recordChanged": {},
+                        "showToast": {
+                            "text": "Merge undone. Records and document restored.",
+                            "tags": "success",
+                        },
+                    }
+                )
+                return response
             messages.success(request, "Merge undone. Records and document restored.")
-        resp = htmx_response(request, toast="Merge undone.")
-        if resp is not None:
-            return resp
         return redirect("records:merge_list")

@@ -1,4 +1,9 @@
 {# bulk_action_js.html #}
+<style>
+    [data-optimistic-removed="true"] {
+        display: none;
+    }
+</style>
 <script>
     function recordBulkActions() {
         return {
@@ -144,8 +149,34 @@
                 }
             },
 
+            _optimisticRemove(ids) {
+                ids.forEach(id => {
+                    const card = document.querySelector(`[data-record-id="${id}"]`);
+                    if (card) card.dataset.optimisticRemoved = 'true';
+                });
+            },
+
+            _rollbackOptimisticRemove(ids) {
+                ids.forEach(id => {
+                    const card = document.querySelector(`[data-record-id="${id}"]`);
+                    if (card) delete card.dataset.optimisticRemoved;
+                });
+            },
+
+            _crossTabSyncTimer: null,
+            _triggerCrossTabSync() {
+                if (this._crossTabSyncTimer) clearTimeout(this._crossTabSyncTimer);
+                this._crossTabSyncTimer = setTimeout(() => {
+                    document.body.dispatchEvent(new Event('recordChanged'));
+                    this._crossTabSyncTimer = null;
+                }, 2000);
+            },
+
             async bulkArchive() {
                 if (!confirm('Archive ' + this.selectedIds.length + ' record(s)?')) return;
+                const ids = [...this.selectedIds];
+                this._optimisticRemove(ids);
+                this.selectedIds = [];
                 this.archiving = true;
                 try {
                     const response = await fetch("{% url 'records:bulk_archive' %}", {
@@ -155,24 +186,28 @@
                             'X-CSRFToken': this._getCsrfToken(),
                             'X-Requested-With': 'XMLHttpRequest',
                         },
-                        body: JSON.stringify({ record_ids: this.selectedIds.map(Number) }),
+                        body: JSON.stringify({ record_ids: ids.map(Number) }),
                     });
                     if (response.ok) {
-                        this.selectedIds = [];
-                        document.body.dispatchEvent(new Event('recordChanged'));
                         this._toast('Records archived.', 25);
                     } else {
+                        this._rollbackOptimisticRemove(ids);
                         this._toast('Failed to archive records.', 40);
                     }
                 } catch {
+                    this._rollbackOptimisticRemove(ids);
                     this._toast('A network error occurred.', 40);
                 } finally {
                     this.archiving = false;
                 }
+                this._triggerCrossTabSync();
             },
 
             async bulkUnarchive() {
                 if (!confirm('Restore ' + this.selectedIds.length + ' record(s)?')) return;
+                const ids = [...this.selectedIds];
+                this._optimisticRemove(ids);
+                this.selectedIds = [];
                 this.unarchiving = true;
                 try {
                     const response = await fetch("{% url 'records:bulk_unarchive' %}", {
@@ -182,20 +217,21 @@
                             'X-CSRFToken': this._getCsrfToken(),
                             'X-Requested-With': 'XMLHttpRequest',
                         },
-                        body: JSON.stringify({ record_ids: this.selectedIds.map(Number) }),
+                        body: JSON.stringify({ record_ids: ids.map(Number) }),
                     });
                     if (response.ok) {
-                        this.selectedIds = [];
-                        document.body.dispatchEvent(new Event('recordChanged'));
                         this._toast('Records restored.', 25);
                     } else {
+                        this._rollbackOptimisticRemove(ids);
                         this._toast('Failed to restore records.', 40);
                     }
                 } catch {
+                    this._rollbackOptimisticRemove(ids);
                     this._toast('A network error occurred.', 40);
                 } finally {
                     this.unarchiving = false;
                 }
+                this._triggerCrossTabSync();
             },
 
             async exportSelected() {

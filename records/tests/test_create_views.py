@@ -49,6 +49,7 @@ class AddRecordViewTest(TestCase):
                 "transaction_date": "2024-06-15",
                 "merchant": "Test Merchant",
                 "balance": "25.00",
+                "currency": "usd",
                 "notes": "Business purpose",
                 "payment_method": "Credit Card",
             },
@@ -74,6 +75,7 @@ class AddRecordViewTest(TestCase):
                 "transaction_date": "2024-06-15",
                 "merchant": "Test",
                 "balance": "10.00",
+                "currency": "usd",
             },
         )
         self.assertIn(response.status_code, [200, 302])

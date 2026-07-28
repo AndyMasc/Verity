@@ -16,10 +16,20 @@ class Migration(migrations.Migration):
             name="access_token",
             field=fernet_fields.fields.EncryptedCharField(max_length=512),
         ),
-        migrations.AlterField(
-            model_name="plaiditem",
-            name="accounts_data",
-            field=plaid_integration.models.EncryptedJSONField(blank=True, null=True),
+        migrations.SeparateDatabaseAndState(
+            database_operations=[
+                migrations.RunSQL(
+                    sql="ALTER TABLE plaid_integration_plaiditem ALTER COLUMN accounts_data TYPE bytea USING accounts_data::text::bytea",
+                    reverse_sql=migrations.RunSQL.noop,
+                ),
+            ],
+            state_operations=[
+                migrations.AlterField(
+                    model_name="plaiditem",
+                    name="accounts_data",
+                    field=plaid_integration.models.EncryptedJSONField(blank=True, null=True),
+                ),
+            ],
         ),
         migrations.AlterField(
             model_name="plaiditem",

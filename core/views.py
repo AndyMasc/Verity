@@ -8,7 +8,8 @@ import json
 import logging
 import time as _time
 from calendar import month_name
-from datetime import datetime as _dt, timedelta
+from datetime import datetime as _dt
+from datetime import timedelta
 from typing import Any
 
 from asgiref.sync import async_to_sync
@@ -194,9 +195,8 @@ def expense_chart_data(request: HttpRequest) -> JsonResponse:
     """
     from collections import defaultdict
 
-    from records.models import Record
-
     from core.exchange_rates import convert, get_rates
+    from records.models import Record
 
     period = request.GET.get("period", "3m")
     months_back = PERIOD_MONTHS.get(period)

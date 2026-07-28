@@ -68,6 +68,7 @@ def stripe_webhook(request):
             )
 
             from .tasks import send_package_paid_notification_task
+
             send_package_paid_notification_task.delay(package.pk, payment.payer.pk)
 
     elif event["type"] == "account.updated":
@@ -132,6 +133,3 @@ def stripe_webhook(request):
                 )
 
     return HttpResponse(status=200)
-
-
-

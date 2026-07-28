@@ -1,5 +1,5 @@
 {% load form_tags %}
-<div class="relative mb-0 group rounded-none {% if not forloop.last %}border-b border-zinc-200/60 dark:border-zinc-800/60{% endif %} bg-transparent hover:bg-white/60 dark:hover:bg-zinc-900/40 transition-all duration-200">
+<div data-record-id="{{ record.pk }}" class="relative mb-0 group rounded-none {% if not forloop.last %}border-b border-zinc-200/60 dark:border-zinc-800/60{% endif %} bg-transparent hover:bg-white/60 dark:hover:bg-zinc-900/40 transition-all duration-200">
     <a href="{% url 'records:record_detail' record.pk %}"
        class="block relative pl-7 pr-14 py-2.5 sm:py-5">
 

@@ -15,7 +15,7 @@
             </div>
 
             <a href="{% url 'documents:upload_document' %}"
-                class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-3.5 py-2 text-xs font-medium text-white bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white rounded-2xl transition-all duration-200 shadow-xs active:scale-[0.98] cursor-pointer">
+               class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-3.5 py-2 text-xs font-medium text-white bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white rounded-2xl transition-all duration-200 shadow-xs active:scale-[0.98] cursor-pointer">
                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                 </svg>
@@ -71,7 +71,12 @@
 
         <main
             id="query-results-container"
-            class="relative min-h-0 w-full min-w-0 mt-10 dark:bg-zinc-900/30 bg-white py-4 px-6 rounded-2xl shadow-sm dark:shadow-none ring-1 ring-inset ring-black/[0.04] dark:ring-white/[0.04]">
+            class="relative min-h-0 w-full min-w-0 mt-10 dark:bg-zinc-900/30 bg-white py-4 px-6 rounded-2xl shadow-sm dark:shadow-none ring-1 ring-inset ring-black/[0.04] dark:ring-white/[0.04]"
+            hx-trigger="documentChanged from:body"
+            hx-get="{% url 'documents:document_list_view' %}"
+            hx-target="#query-results-container"
+            hx-include="#filter-form, #search"
+            hx-indicator=".htmx-indicator">
 
             <div class="htmx-indicator hidden htmx-request:flex absolute inset-0 bg-white/40 dark:bg-zinc-950/40 backdrop-blur-[1px] z-10 items-center justify-center rounded-xl">
                 <div class="animate-pulse text-xs font-medium text-zinc-500 dark:text-zinc-400 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 px-3 py-1.5 rounded-xl shadow-xs">

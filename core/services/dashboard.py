@@ -8,12 +8,11 @@ import asyncio
 import logging
 from datetime import datetime, time, timedelta
 
+from asgiref.sync import sync_to_async
 from django.core.cache import cache
 from django.db.models import Q
 from django.utils import timezone
 from django.utils.timezone import make_aware
-
-from asgiref.sync import sync_to_async
 
 from core.models import Notification
 from documents.models import DocumentData, DocumentStatus
@@ -22,7 +21,11 @@ from reimbursements.models import PackagePayment, ReimbursementPackage
 
 logger = logging.getLogger(__name__)
 
-DASHBOARD_CACHE_TTL = 30
+DASHBOARD_CACHE_TTL = 10
+
+
+def invalidate_dashboard_cache(user_id: int) -> None:
+    cache.delete(f"dashboard:{user_id}")
 
 
 async def _fetch_records(queryset) -> list:
@@ -124,11 +127,12 @@ async def get_dashboard_context(user) -> dict:
         )
         .acount(),
         _fetch_records(
-            active_records_qs.order_by("-last_edited").only(
+            active_records_qs.order_by("-last_edited")            .only(
                 "id",
                 "title",
                 "merchant",
                 "balance",
+                "currency",
                 "expiry_date",
                 "date_added",
                 "last_edited",
@@ -151,6 +155,7 @@ async def get_dashboard_context(user) -> dict:
                 "title",
                 "merchant",
                 "balance",
+                "currency",
                 "expiry_date",
                 "date_added",
                 "last_edited",

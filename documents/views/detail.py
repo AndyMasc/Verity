@@ -14,7 +14,7 @@ from django.views import View
 from django.views.generic import UpdateView
 from django_ratelimit.decorators import ratelimit
 
-from Papertrail.views import htmx_response
+from core.services.dashboard import invalidate_dashboard_cache
 
 from ..forms import DocumentUpdateForm
 from ..models import DocumentData
@@ -62,7 +62,7 @@ class ViewDocument(LoginRequiredMixin, UpdateView):
             DocumentDetailService.associate_record(form.instance, record_id, self.request.user)
 
         form.save()
-        messages.success(self.request, "Updated successfully.")
+        invalidate_dashboard_cache(self.request.user.id)
 
         if self.request.headers.get("HX-Request") == "true":
             if "associated_record" in self.request.POST:
@@ -70,8 +70,11 @@ class ViewDocument(LoginRequiredMixin, UpdateView):
                 response = HttpResponse(status=204)
                 response["HX-Redirect"] = redirect_url
                 return response
-            return HttpResponse(status=204)
+            response = HttpResponse(status=204)
+            response["HX-Trigger"] = json.dumps({"recordChanged": {}, "documentChanged": {}})
+            return response
 
+        messages.success(self.request, "Updated successfully.")
         return redirect("documents:view_document", pk=self.object.pk)
 
     def form_invalid(self, form) -> HttpResponse:
@@ -94,17 +97,38 @@ class DeleteDocument(LoginRequiredMixin, View):
         result = DocumentDeletionService.soft_delete(document)
 
         if not result.success:
+            invalidate_dashboard_cache(request.user.id)
+            if request.headers.get("HX-Request") == "true":
+                response = HttpResponse(status=204)
+                response["HX-Trigger"] = json.dumps(
+                    {
+                        "recordChanged": {},
+                        "documentChanged": {},
+                        "showToast": {
+                            "text": result.error or "An error occurred.",
+                            "tags": "error",
+                        },
+                    }
+                )
+                return response
             messages.error(request, result.error or "An error occurred.")
-            resp = htmx_response(request)
-            if resp is not None:
-                resp["HX-Refresh"] = "true"
-                return resp
             return redirect(
                 reverse("records:record_detail", kwargs={"pk": record.id})
                 if record
                 else reverse("records:view_all_records")
             )
 
+        invalidate_dashboard_cache(request.user.id)
+        if request.headers.get("HX-Request") == "true":
+            response = HttpResponse(status=204)
+            response["HX-Trigger"] = json.dumps(
+                {
+                    "recordChanged": {},
+                    "documentChanged": {},
+                    "showToast": {"text": result.message, "tags": result.message_tag or "success"},
+                }
+            )
+            return response
         messages.add_message(
             request,
             message_constants.SUCCESS
@@ -127,9 +151,17 @@ class UndoDeleteDocument(LoginRequiredMixin, View):
     def post(self, request: HttpRequest, pk: int) -> HttpResponse:
         document = get_object_or_404(DocumentData, pk=pk, user=request.user, is_active=False)
         result = DocumentDeletionService.undo_delete(document)
-        resp = htmx_response(request, toast=result.message)
-        if resp is not None:
-            return resp
+        invalidate_dashboard_cache(request.user.id)
+        if request.headers.get("HX-Request") == "true":
+            response = HttpResponse(status=204)
+            response["HX-Trigger"] = json.dumps(
+                {
+                    "recordChanged": {},
+                    "documentChanged": {},
+                    "showToast": {"text": result.message, "tags": "success"},
+                }
+            )
+            return response
         messages.success(request, result.message)
         return redirect("documents:trash_list")
 
@@ -142,13 +174,17 @@ class HardDeleteDocumentView(LoginRequiredMixin, View):
         document = get_object_or_404(DocumentData, pk=pk, user=request.user)
 
         if not DocumentDeletionService.is_eligible_for_hard_delete(document):
-            resp = htmx_response(
-                request,
-                toast="This document is not old enough for permanent deletion.",
-                toast_tags="error",
-            )
-            if resp is not None:
-                return resp
+            if request.headers.get("HX-Request") == "true":
+                response = HttpResponse(status=409)
+                response["HX-Trigger"] = json.dumps(
+                    {
+                        "showToast": {
+                            "text": "This document is not old enough for permanent deletion.",
+                            "tags": "error",
+                        }
+                    }
+                )
+                return response
             messages.error(request, "This document is not old enough for permanent deletion.")
             return redirect("documents:view_document", pk=pk)
 
@@ -158,12 +194,16 @@ class HardDeleteDocumentView(LoginRequiredMixin, View):
 
             delete_document(result.filepath)
 
-        resp = htmx_response(
-            request,
-            toast=result.message,
-            redirect_url=reverse("documents:trash_list"),
-        )
-        if resp is not None:
-            return resp
+        invalidate_dashboard_cache(request.user.id)
+        if request.headers.get("HX-Request") == "true":
+            response = HttpResponse(status=204)
+            response["HX-Trigger"] = json.dumps(
+                {
+                    "recordChanged": {},
+                    "documentChanged": {},
+                    "showToast": {"text": result.message, "tags": "success"},
+                }
+            )
+            return response
         messages.success(request, result.message)
         return redirect("documents:trash_list")

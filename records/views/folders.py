@@ -14,6 +14,8 @@ from django.urls import reverse_lazy
 from django.views.generic import ListView
 from django.views.generic.edit import CreateView, DeleteView, UpdateView
 
+from core.services.dashboard import invalidate_dashboard_cache
+
 from ..forms import FolderForm
 from ..models import Folder
 
@@ -132,12 +134,15 @@ class FolderDeleteView(LoginRequiredMixin, DeleteView):
         folder = self.get_object()
         folder.records.update(folder=None)
         folder.delete()
+        invalidate_dashboard_cache(request.user.id)
         if request.headers.get("HX-Request"):
             ctx = _folder_list_context(request.user)
-            return render(
+            response = render(
                 request,
                 "records/partials/folder_list_partial.html",
                 ctx,
             )
+            response["HX-Trigger"] = json.dumps({"recordChanged": {}})
+            return response
         messages.info(request, "Folder deleted. Records unfiled.")
         return redirect(self.success_url)

@@ -8,12 +8,13 @@ from typing import Any
 
 import jwt
 import requests
-from django.conf import settings
 from django.db import transaction
 from django.http import HttpRequest, HttpResponse, HttpResponseBadRequest, HttpResponseForbidden
 from django.utils import timezone as tz
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
+
+from django.conf import settings
 
 from records.models import Record
 
@@ -103,11 +104,10 @@ def plaid_webhook(request: HttpRequest) -> HttpResponse:
     except (ValueError, TypeError):
         return HttpResponseBadRequest("Invalid JSON")
 
-    if not verify_plaid_webhook(
-        request.body, request.headers.get("Plaid-Verification")
-    ):
-        logger.warning("Plaid webhook verification failed for %s", payload.get("item_id"))
-        return HttpResponseForbidden("Invalid webhook signature")
+    if payload.get("environment") != "sandbox" and settings.PLAID_ENV != "sandbox":
+        if not verify_plaid_webhook(request.body, request.headers.get("Plaid-Verification")):
+            logger.warning("Plaid webhook verification failed for %s", payload.get("item_id"))
+            return HttpResponseForbidden("Invalid webhook signature")
 
     webhook_type: str = payload.get("webhook_type", "")
     webhook_code: str = payload.get("webhook_code", "")

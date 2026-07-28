@@ -143,7 +143,9 @@ class PackageDetailView(LoginRequiredMixin, DetailView):
                 orig_bal = first.balance if first else rec.balance
                 orig_cc = first.currency if first else rec.currency
 
-                orig_converted = convert_currency(orig_bal, orig_cc, user_currency, rates=user_rates)
+                orig_converted = convert_currency(
+                    orig_bal, orig_cc, user_currency, rates=user_rates
+                )
                 current_converted = (
                     convert_currency(rec.balance, rec.currency, user_currency, rates=user_rates)
                     if rec.balance
