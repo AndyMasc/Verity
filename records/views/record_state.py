@@ -7,6 +7,7 @@ a 204 response so the client can update the UI without a full page reload.
 import json
 import logging
 
+import posthog
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction
@@ -39,6 +40,13 @@ class ArchiveRecord(LoginRequiredMixin, View):
             user=request.user,
             action=AuditLog.Action.ARCHIVE,
             record=record,
+        )
+        posthog.capture(
+            str(request.user.pk),
+            "record_archived",
+            properties={
+                "record_type": record.record_type,
+            },
         )
         if request.headers.get("HX-Request") == "true":
             response = HttpResponse(status=200)
@@ -73,6 +81,13 @@ class DeleteRecordView(LoginRequiredMixin, View):
                 action=AuditLog.Action.SOFT_DELETE,
                 record=record,
             )
+        posthog.capture(
+            str(request.user.pk),
+            "record_deleted",
+            properties={
+                "record_type": record.record_type,
+            },
+        )
         return redirect("records:view_all_records")
 
 

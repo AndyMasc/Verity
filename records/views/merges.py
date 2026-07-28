@@ -6,6 +6,7 @@ mutation endpoints are rate-limited and create AuditLog entries.
 
 import logging
 
+import posthog
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.paginator import InvalidPage, Paginator
@@ -111,6 +112,10 @@ class ManualMergeView(LoginRequiredMixin, FormView):
                 record=plaid_record,
                 merge_log=merge_log,
                 details={"document_record_id": document_record.pk},
+            )
+            posthog.capture(
+                str(self.request.user.pk),
+                "merge_completed",
             )
             messages.success(self.request, "Records merged successfully.")
         return redirect(self.success_url)
@@ -218,6 +223,10 @@ class UndoMergeView(LoginRequiredMixin, View):
                 action=AuditLog.Action.UNDO_MERGE,
                 record=merge_log.plaid_record,
                 merge_log=merge_log,
+            )
+            posthog.capture(
+                str(request.user.pk),
+                "merge_undone",
             )
             messages.success(request, "Merge undone. Records and document restored.")
         resp = htmx_response(request, toast="Merge undone.")

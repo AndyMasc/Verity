@@ -3,6 +3,7 @@
 import logging
 from typing import Any
 
+import posthog
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction
 from django.http import HttpRequest, HttpResponse, JsonResponse
@@ -115,6 +116,14 @@ class ConfirmUploadView(LoginRequiredMixin, View):
             if not result.valid:
                 return JsonResponse({"error": result.error}, status=result.status_code)
 
+        posthog.capture(
+            str(request.user.pk),
+            "document_uploaded",
+            properties={
+                "mime_type": document.mime_type,
+                "file_size_bytes": document.file_size,
+            },
+        )
         return JsonResponse({"status": "confirmed", "document_id": document.id})
 
 
