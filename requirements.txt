@@ -103,6 +103,7 @@ opencv-python-headless==4.13.0.92
 openpyxl==3.1.5
 packageurl-python==0.17.6
 packaging==26.2
+posthog
 parsy==1.1.0
 pathspec==1.1.1
 pillow==12.3.0

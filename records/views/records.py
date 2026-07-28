@@ -3,6 +3,7 @@
 import logging
 from datetime import timedelta
 
+import posthog
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -121,6 +122,14 @@ class RecordDetailView(LoginRequiredMixin, UpdateView):
         messages.success(self.request, "Record updated successfully.")
         self.object = form.save()
 
+        posthog.capture(
+            str(self.request.user.pk),
+            "record_updated",
+            properties={
+                "record_type": self.object.record_type,
+            },
+        )
+
         resp = htmx_response(self.request, toast="Record updated successfully.")
         if resp is not None:
             return resp
@@ -172,6 +181,14 @@ class HardDeleteRecordView(LoginRequiredMixin, View):
                 details={"title": record.title},
             )
             record.hard_delete()
+
+        posthog.capture(
+            str(request.user.pk),
+            "record_hard_deleted",
+            properties={
+                "record_type": record.record_type,
+            },
+        )
 
         resp = htmx_response(
             request,
