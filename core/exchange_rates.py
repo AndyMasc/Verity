@@ -9,7 +9,9 @@ from core.currencies import get_currency_decimals
 logger = logging.getLogger(__name__)
 
 CACHE_KEY = "exchange_rates:v2"
+CACHE_KEY_STALE = "exchange_rates:v2:stale"
 CACHE_TTL = 86_400  # 24 hours
+CACHE_TTL_STALE = 86_400 * 7  # 7 days — kept as fallback when API is unreachable
 CACHE_TTL_EMPTY = 60  # Cache empty results briefly to avoid hammering API
 API_BASE = "https://api.frankfurter.dev"
 
@@ -26,7 +28,7 @@ def _fetch_rates(base: str = "USD") -> dict[str, Decimal]:
     """
     url = f"{API_BASE}/v2/rates?base={base}"
     try:
-        with httpx.Client(timeout=10) as client:
+        with httpx.Client(timeout=3) as client:
             resp = client.get(url)
             resp.raise_for_status()
             data = resp.json()
@@ -53,13 +55,20 @@ def get_rates(base: str = "USD") -> dict[str, Decimal]:
     if cached is not None:
         return {code: Decimal(rate) for code, rate in cached.items()}
 
+    stale_key = f"{CACHE_KEY_STALE}:{base}"
+
     raw_rates = _fetch_rates(base)
     if raw_rates:
         cache_data = {code: str(rate) for code, rate in raw_rates.items()}
         cache.set(cache_key, cache_data, CACHE_TTL)
+        cache.set(stale_key, cache_data, CACHE_TTL_STALE)
         return raw_rates
     else:
         cache.set(cache_key, {}, CACHE_TTL_EMPTY)
+        stale = cache.get(stale_key)
+        if stale:
+            logger.warning("Frankfurter API unavailable — serving stale exchange rates for %s", base)
+            return {code: Decimal(rate) for code, rate in stale.items()}
         return {}
 
 
