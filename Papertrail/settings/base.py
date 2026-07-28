@@ -10,6 +10,11 @@ env_file = BASE_DIR / ".env"
 if env_file.exists():
     env.read_env(str(env_file))
 
+# PostHog
+POSTHOG_PROJECT_TOKEN = env("POSTHOG_PROJECT_TOKEN", default="")
+POSTHOG_HOST = env("POSTHOG_HOST", default="https://us.i.posthog.com")
+POSTHOG_DISABLED = env.bool("POSTHOG_DISABLED", default=False)
+
 # Core
 SECRET_KEY = env("SECRET_KEY")
 DEBUG = env.bool("DEBUG", default=False)
@@ -75,6 +80,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "posthog.integrations.django.PosthogContextMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "simple_history.middleware.HistoryRequestMiddleware",
     "core.middleware.HtmxMessageMiddleware",  # Send messages without reload

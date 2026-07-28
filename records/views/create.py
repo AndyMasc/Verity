@@ -2,6 +2,7 @@
 
 import logging
 
+import posthog
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.cache import cache
@@ -150,6 +151,15 @@ class AddRecordView(LoginRequiredMixin, CreateView):
         if document:
             document.associated_record = self.object
             document.save(update_fields=["associated_record"])
+
+        posthog.capture(
+            "record_created",
+            distinct_id=str(self.request.user.pk),
+            properties={
+                "record_type": self.object.record_type,
+                "has_document": document is not None,
+            },
+        )
 
         merged = try_match_document_record(self.object, document) if document else None
         if merged:

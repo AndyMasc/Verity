@@ -7,6 +7,7 @@ a 204 response so the client can update the UI without a full page reload.
 import json
 import logging
 
+import posthog
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction
@@ -36,27 +37,27 @@ class ArchiveRecord(LoginRequiredMixin, View):
 
     @method_decorator(ratelimit(key="user", rate="30/m", method="POST", block=True))
     def post(self, request: HttpRequest, record_id: int) -> HttpResponse:
-        user_id = request.user.id
-
-        with transaction.atomic():
-            record = get_object_or_404(Record, id=record_id, user=request.user, is_active=True)
-            archive_record(record)
-            transaction.on_commit(lambda: self._post_archive_tasks(user_id, record.id))
+        record = get_object_or_404(Record, id=record_id, user=request.user, is_active=True)
+        archive_record(record)
+        AuditLog.objects.create(
+            user=request.user,
+            action=AuditLog.Action.ARCHIVE,
+            record=record,
+        )
+        invalidate_dashboard_cache(request.user.id)
+        posthog.capture(
+            "record_archived",
+            distinct_id=str(request.user.pk),
+            properties={
+                "record_type": record.record_type,
+            },
+        )
         if request.headers.get("HX-Request") == "true":
             response = HttpResponse(status=204)
             response["HX-Trigger"] = json.dumps({"recordChanged": {}})
             return response
 
         return redirect("records:view_all_records")
-
-    def _post_archive_tasks(self, user_id: int, record_id: int):
-        """Runs outside the critical database transaction lock."""
-        AuditLog.objects.create(
-            user_id=user_id,
-            action=AuditLog.Action.ARCHIVE,
-            record_id=record_id,
-        )
-        invalidate_dashboard_cache(user_id)
 
 
 class UnarchiveRecord(LoginRequiredMixin, View):
@@ -93,6 +94,13 @@ class DeleteRecordView(LoginRequiredMixin, View):
                 record=record,
             )
         invalidate_dashboard_cache(request.user.id)
+        posthog.capture(
+            "record_deleted",
+            distinct_id=str(request.user.pk),
+            properties={
+                "record_type": record.record_type,
+            },
+        )
         if request.headers.get("HX-Request") == "true":
             response = HttpResponse(status=200)
             response["HX-Trigger"] = json.dumps({"recordChanged": {}})

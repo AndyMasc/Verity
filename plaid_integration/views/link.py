@@ -3,6 +3,7 @@
 import logging
 
 import plaid
+import posthog
 from django.conf import settings
 from django.core.cache import cache
 from django.db import transaction
@@ -125,6 +126,14 @@ class PublicTokenExchange(APIView):
 
             _fire_initial_sync_webhook(access_token, item_id)
             cache.delete(f"plaid_status:{request.user.id}")
+            posthog.capture(
+                "bank_linked",
+                distinct_id=str(request.user.id),
+                properties={
+                    "institution_name": institution_name,
+                    "account_count": len(accounts_data),
+                },
+            )
             return Response({"success": "Bank linked successfully! Syncing transactions\u2026"})
         except Exception:
             logger.exception("Failed to exchange public token for user %s", request.user)

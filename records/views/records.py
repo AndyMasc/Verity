@@ -4,6 +4,7 @@ import json
 import logging
 from datetime import timedelta
 
+import posthog
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -127,15 +128,17 @@ class RecordDetailView(LoginRequiredMixin, UpdateView):
         self.object = form.save()
         invalidate_dashboard_cache(self.request.user.id)
 
-        if self.request.headers.get("HX-Request") == "true":
-            response = render(
-                self.request,
-                self.get_template_names(),
-                self.get_context_data(form=form),
-                status=200,
-            )
-            response["HX-Trigger"] = json.dumps({"recordChanged": {}})
-            return response
+        posthog.capture(
+            "record_updated",
+            distinct_id=str(self.request.user.pk),
+            properties={
+                "record_type": self.object.record_type,
+            },
+        )
+
+        resp = htmx_response(self.request, toast="Record updated successfully.")
+        if resp is not None:
+            return resp
 
         return redirect("records:record_detail", pk=self.object.pk)
 
@@ -186,15 +189,20 @@ class HardDeleteRecordView(LoginRequiredMixin, View):
             record.hard_delete()
 
         invalidate_dashboard_cache(request.user.id)
-        if request.headers.get("HX-Request") == "true":
-            response = HttpResponse(status=204)
-            response["HX-Trigger"] = json.dumps(
-                {
-                    "recordChanged": {},
-                    "showToast": {"text": "Record permanently deleted.", "tags": "success"},
-                    "HX-Redirect": reverse("records:view_all_records"),
-                }
-            )
-            return response
+        posthog.capture(
+            "record_hard_deleted",
+            distinct_id=str(request.user.pk),
+            properties={
+                "record_type": record.record_type,
+            },
+        )
+
+        resp = htmx_response(
+            request,
+            toast="Record permanently deleted.",
+            redirect_url=reverse("records:view_all_records"),
+        )
+        if resp is not None:
+            return resp
         messages.success(request, "Record permanently deleted.")
         return redirect("records:view_all_records")

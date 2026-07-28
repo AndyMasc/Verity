@@ -12,6 +12,7 @@ from datetime import datetime as _dt
 from datetime import timedelta
 from typing import Any
 
+import posthog
 from asgiref.sync import async_to_sync
 from django.conf import settings
 from django.contrib import messages
@@ -129,6 +130,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         context = await get_dashboard_context(user)
         if context.get("webpush_warning"):
             messages.warning(self.request, context["webpush_warning"])
+        posthog.capture("dashboard_viewed", distinct_id=str(request.user.pk))
         return self.render_to_response(context)
 
 
