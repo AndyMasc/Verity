@@ -39,6 +39,21 @@ def stripe_webhook(request):
                     stripe_checkout_session_id=session["id"]
                 )
             except PackagePayment.DoesNotExist:
+                # Verify whether this session is known to Stripe at all.
+                # If Stripe itself has no record of it (InvalidRequestError), this
+                # is a permanently unresolvable session — return 400 so Stripe
+                # stops retrying.  If the session is valid but our DB row hasn't
+                # appeared yet (race condition), return 500 to request a retry.
+                try:
+                    stripe.checkout.Session.retrieve(session["id"])
+                except stripe.error.InvalidRequestError:
+                    logger.error(
+                        "PackagePayment not found and session %s is unknown to Stripe — returning 400",
+                        session["id"],
+                    )
+                    return HttpResponse(status=400)
+                except stripe.error.StripeError:
+                    pass  # Network/API issue — fall through to 500 retry below
                 logger.error(
                     "PackagePayment not found for session %s — returning 500 for Stripe retry",
                     session["id"],

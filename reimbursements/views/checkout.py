@@ -224,6 +224,10 @@ class CreatePackageCheckoutView(LoginRequiredMixin, View):
                 reverse("reimbursements:package-detail", kwargs={"package_uuid": package.uuid})
             )
 
+        # Create the PackagePayment record and commit it before redirecting the
+        # user to Stripe.  This ensures the row exists in the database before
+        # Stripe can fire a checkout.session.completed webhook (which happens
+        # only after the user completes payment on Stripe's hosted page).
         with transaction.atomic():
             PackagePayment.objects.create(
                 package=package,
