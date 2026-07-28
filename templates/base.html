@@ -53,7 +53,7 @@
         {% tailwind_css %}
 
         {% load webpush_notifications %}
-        {% if user.is_authenticated %}{% webpush_header %}{% endif %}
+        {% if webpush_enabled %}{% webpush_header %}{% endif %}
 
         <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
         <link rel="icon" href="{% static 'favicon-package/favicon.svg' %}" type="image/svg+xml" sizes="any">
