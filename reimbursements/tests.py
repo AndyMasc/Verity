@@ -449,7 +449,7 @@ class StripeWebhookTest(TestCase):
         self.factory = RequestFactory()
         self.url = reverse("reimbursements:stripe-webhook")
 
-    @patch("reimbursements.webhooks._send_package_paid_notification")
+    @patch("reimbursements.tasks.send_package_paid_notification_task.delay")
     @patch("reimbursements.webhooks.stripe.Webhook.construct_event")
     def test_checkout_session_completed(self, mock_construct, _mock_notify):
         creator = _user("creator@test.com")

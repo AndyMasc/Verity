@@ -4,6 +4,7 @@ from decimal import Decimal
 from django.contrib.auth import get_user_model
 from django.db import models, transaction
 from django.db.models import Q, Sum
+from django.db.models.functions import Concat
 from django.utils import timezone
 
 from core.currencies import CURRENCY_CHOICES, DEFAULT_CURRENCY, format_currency, to_stripe_amount
@@ -194,7 +195,7 @@ class ReimbursementPackage(models.Model):
                     user=previous_payer,
                     title=f"Reimbursement: {self.title}",
                     record_type=Record.RecordTypes.EXPENSE_RECEIPT,
-                ).update(notes=models.F("notes") + " [REFUNDED]")
+                ).update(notes=Concat("notes", models.Value(" [REFUNDED]")))
 
     @property
     def is_expired(self) -> bool:

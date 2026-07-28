@@ -203,7 +203,8 @@ class ArchiveViewHTTPTest(TestCase):
         )
         self.client.force_login(self.user)
         url = reverse("records:archive_record", args=[record.pk])
-        self.client.post(url)
+        with self.captureOnCommitCallbacks(execute=True):
+            self.client.post(url)
         audit = AuditLog.objects.filter(
             user=self.user,
             action=AuditLog.Action.ARCHIVE,
