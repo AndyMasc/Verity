@@ -69,12 +69,12 @@ class DocumentDataFactory(factory.django.DjangoModelFactory):
 
 
 @pytest.fixture
-def user(db) -> User:  # type: ignore[no-untyped-def]
+def user(db) -> User:  # type: ignore[no-untyped-def]  # noqa: ARG001
     """Create and return a test user."""
     return UserFactory()  # type: ignore[return-value]
 
 
 @pytest.fixture
-def other_user(db) -> User:  # type: ignore[no-untyped-def]
+def other_user(db) -> User:  # type: ignore[no-untyped-def]  # noqa: ARG001
     """Create a second test user for isolation tests."""
     return UserFactory()  # type: ignore[return-value]

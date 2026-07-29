@@ -100,13 +100,16 @@ def plaid_webhook(request: HttpRequest) -> HttpResponse:
 
     try:
         payload = json.loads(request.body)
-    except (ValueError, TypeError):
+    except ValueError, TypeError:
         return HttpResponseBadRequest("Invalid JSON")
 
-    if payload.get("environment") != "sandbox" and settings.PLAID_ENV != "sandbox":
-        if not verify_plaid_webhook(request.body, request.headers.get("Plaid-Verification")):
-            logger.warning("Plaid webhook verification failed for %s", payload.get("item_id"))
-            return HttpResponseForbidden("Invalid webhook signature")
+    if (
+        payload.get("environment") != "sandbox"
+        and settings.PLAID_ENV != "sandbox"
+        and not verify_plaid_webhook(request.body, request.headers.get("Plaid-Verification"))
+    ):
+        logger.warning("Plaid webhook verification failed for %s", payload.get("item_id"))
+        return HttpResponseForbidden("Invalid webhook signature")
 
     webhook_type: str = payload.get("webhook_type", "")
     webhook_code: str = payload.get("webhook_code", "")

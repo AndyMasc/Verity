@@ -14,7 +14,7 @@ from posthog import identify_context
 
 
 @receiver(user_logged_in)
-def identify_posthog_user(sender, request, user, **kwargs):  # noqa: ARG001
+def identify_posthog_user(sender, request, user, **kwargs):  # type: ignore[no-untyped-def]  # noqa: ARG001
     identify_context(str(user.pk))
 
     posthog.set(

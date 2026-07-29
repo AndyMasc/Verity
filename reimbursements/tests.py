@@ -1,7 +1,9 @@
 import json
 from datetime import timedelta
 from decimal import Decimal
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
+import stripe
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase, RequestFactory
@@ -491,7 +493,8 @@ class StripeWebhookTest(TestCase):
         self.assertEqual(pkg.status, ReimbursementPackage.Status.PAID)
 
     @patch("reimbursements.webhooks.stripe.Webhook.construct_event")
-    def test_checkout_session_missing_payment_returns_500(self, mock_construct):
+    @patch("reimbursements.webhooks.stripe.checkout.Session.retrieve")
+    def test_checkout_session_missing_payment_returns_500(self, mock_retrieve, mock_construct):
         mock_construct.return_value = {
             "type": "checkout.session.completed",
             "data": {
@@ -501,6 +504,7 @@ class StripeWebhookTest(TestCase):
                 }
             },
         }
+        mock_retrieve.side_effect = stripe.error.StripeError("Network error")
 
         request = self.factory.post(
             self.url,

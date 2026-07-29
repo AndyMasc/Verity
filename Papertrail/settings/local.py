@@ -1,11 +1,11 @@
-from .base import *  # noqa: F401, F403
+from .base import *  # noqa: F401, F403, F405
 
-INSTALLED_APPS.extend(["django_browser_reload", "debug_toolbar"])
+INSTALLED_APPS.extend(["django_browser_reload", "debug_toolbar"])  # noqa: F405
 
-MIDDLEWARE.insert(-1, "django_browser_reload.middleware.BrowserReloadMiddleware")
-MIDDLEWARE.insert(-1, "debug_toolbar.middleware.DebugToolbarMiddleware")
+MIDDLEWARE.insert(-1, "django_browser_reload.middleware.BrowserReloadMiddleware")  # noqa: F405
+MIDDLEWARE.insert(-1, "debug_toolbar.middleware.DebugToolbarMiddleware")  # noqa: F405
 
-CSRF_TRUSTED_ORIGINS = [env("NGROK_HTTPS_TUNNEL_URL", default="http://localhost:8000")]
+CSRF_TRUSTED_ORIGINS = [env("NGROK_HTTPS_TUNNEL_URL", default="http://localhost:8000")]  # noqa: F405
 CORS_ALLOW_ALL_ORIGINS = True
 ALLOWED_HOSTS = ["*"]
 
@@ -13,8 +13,8 @@ SECURE_SSL_REDIRECT = False
 SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_SECURE = False
 
-STORAGES = {
-    "default": STORAGES["default"],
+STORAGES = {  # noqa: F405
+    "default": STORAGES["default"],  # noqa: F405
     "staticfiles": {
         "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
     },

@@ -108,7 +108,7 @@ def fetch_from_r2(filepath: str) -> bytes:
     return b"".join(chunk for chunk in body.iter_chunks(chunk_size=1024 * 1024))
 
 
-def process_image(image_bytes: bytes, filepath: str) -> "types.Part":
+def process_image(image_bytes: bytes, filepath: str) -> types.Part:
     """Convert raw file bytes into a Gemini-compatible Part, preprocessing images."""
     if filepath.lower().endswith(".pdf"):
         return types.Part.from_bytes(data=image_bytes, mime_type="application/pdf")
@@ -117,7 +117,7 @@ def process_image(image_bytes: bytes, filepath: str) -> "types.Part":
     return types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg")
 
 
-def call_gemini(image_part: "types.Part", folder_names: list[str]) -> dict[str, Any]:
+def call_gemini(image_part: types.Part, folder_names: list[str]) -> dict[str, Any]:
     """Send the image to Gemini with folder context and return parsed OCR results."""
     contents = []
 

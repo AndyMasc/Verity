@@ -111,7 +111,7 @@ def parse_record_ids(request: HttpRequest) -> tuple[list[int] | None, HttpRespon
     try:
         data = json.loads(request.body)
         record_ids = data.get("record_ids", [])
-    except (json.JSONDecodeError, AttributeError):
+    except json.JSONDecodeError, AttributeError:
         return None, HttpResponse(
             '{"error": "Invalid request body"}', status=400, content_type="application/json"
         )

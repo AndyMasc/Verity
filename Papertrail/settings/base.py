@@ -219,7 +219,7 @@ else:
         "default": {
             "BACKEND": "django_redis.cache.RedisCache",
             "LOCATION": env("REDIS_URL"),
-            "OPTIONS": {"CLIENT_CLASS": "django_redis.client.DefaultClient"},
+            "OPTIONS": {"CLIENT_CLASS": "django_redis.client.DefaultClient"},  # type: ignore[dict-item]
         },
     }
     SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"

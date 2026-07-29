@@ -1,12 +1,12 @@
 import os
-from locust import HttpUser, task, between
+
+from locust import HttpUser, between, task
 
 
 class PapertrailUser(HttpUser):
     wait_time = between(2, 5)
 
-    def on_start(self):
-        resp = self.client.get("/accounts/login/")
+    def on_start(self) -> None:
         csrf = self.client.cookies.get("csrftoken")
         self.client.post(
             "/accounts/login/",
@@ -19,31 +19,31 @@ class PapertrailUser(HttpUser):
         )
 
     @task(5)
-    def view_dashboard(self):
+    def view_dashboard(self) -> None:
         self.client.get("/dashboard/", name="/dashboard/")
 
     @task(4)
-    def view_records(self):
+    def view_records(self) -> None:
         self.client.get("/records/view_all_records/", name="/records/")
 
     @task(3)
-    def view_folders(self):
+    def view_folders(self) -> None:
         self.client.get("/records/folders/", name="/records/folders/")
 
     @task(2)
-    def view_documents(self):
+    def view_documents(self) -> None:
         self.client.get("/documents/document_lists/", name="/documents/")
 
     @task(2)
-    def view_notifications(self):
+    def view_notifications(self) -> None:
         self.client.get("/notifications/", name="/notifications/")
 
     @task(1)
-    def view_profile(self):
+    def view_profile(self) -> None:
         self.client.get("/profile_page/", name="/profile/")
 
     @task(1)
-    def expense_chart(self):
+    def expense_chart(self) -> None:
         self.client.get(
             "/api/expense-chart/?period=6m",
             name="/api/expense-chart/",

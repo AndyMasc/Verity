@@ -8,6 +8,6 @@ User = get_user_model()
 
 
 @receiver(post_save, sender=User)
-def create_stripe_account(sender, instance, created, **kwargs):
+def create_stripe_account(instance, created, **kwargs):  # noqa: ARG001
     if created:
         StripeAccount.objects.create(user=instance)

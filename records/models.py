@@ -149,7 +149,7 @@ class RecordQuerySet(models.QuerySet):
             try:
                 val = Decimal(clean_num)
                 conditions |= Q(balance__gte=val, balance__lt=val + 1)
-            except (InvalidOperation, ValueError, OverflowError):
+            except InvalidOperation, ValueError, OverflowError:
                 pass
 
         start: datetime.date | None = None

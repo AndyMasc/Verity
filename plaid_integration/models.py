@@ -39,7 +39,7 @@ class EncryptedJSONField(EncryptedTextField):
         if value is not None and isinstance(value, str):
             try:
                 return json.loads(value)
-            except (ValueError, TypeError):
+            except ValueError, TypeError:
                 return value
         return value
 
@@ -48,7 +48,7 @@ class EncryptedJSONField(EncryptedTextField):
         if value is not None and isinstance(value, str):
             try:
                 return json.loads(value)
-            except (ValueError, TypeError):
+            except ValueError, TypeError:
                 return value
         return super().to_python(value)
 

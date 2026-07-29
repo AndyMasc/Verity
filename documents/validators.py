@@ -16,7 +16,7 @@ try:
     import magic as python_magic
 
     HAS_MAGIC = True
-except (ImportError, OSError):
+except ImportError, OSError:
     python_magic = None  # type: ignore[assignment]
     HAS_MAGIC = False
 
@@ -98,8 +98,9 @@ def _validate_file(size: int, detected_mime: str | None) -> ValidationResult:
 
 
 def validate_file_upload(
-    file_obj: IO[bytes], declared_mime_type: str | None = None
-) -> ValidationResult:  # noqa: ARG001
+    file_obj: IO[bytes],
+    declared_mime_type: str | None = None,  # noqa: ARG001
+) -> ValidationResult:
     """Validate a file-like upload object by reading its header and checking constraints.
 
     Args:
