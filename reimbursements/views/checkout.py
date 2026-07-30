@@ -1,3 +1,4 @@
+import hashlib
 import logging
 from decimal import ROUND_DOWN, Decimal
 from typing import Any
@@ -23,8 +24,6 @@ from core.exchange_rates import get_rates
 
 from ..models import STRIPE_MINIMUM_FEE_CENTS, PackagePayment, ReimbursementPackage
 from ..tasks import sync_payment_status
-
-import hashlib
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 logger = logging.getLogger(__name__)
@@ -111,9 +110,7 @@ class CreatePackageCheckoutView(LoginRequiredMixin, View):
                 )
 
             existing_payment = (
-                package.payments.filter(is_completed=False)
-                .order_by("-created_at")
-                .first()
+                package.payments.filter(is_completed=False).order_by("-created_at").first()
             )
             if existing_payment:
                 try:

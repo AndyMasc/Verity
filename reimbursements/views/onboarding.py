@@ -34,7 +34,9 @@ class StripeOnboardView(LoginRequiredMixin, View):
                 stripe_account.stripe_details_submitted = live_account.details_submitted
                 stripe_account.charges_enabled = live_account.charges_enabled
                 stripe_account.payouts_enabled = live_account.payouts_enabled
-                stripe_account.save(update_fields=["stripe_details_submitted", "charges_enabled", "payouts_enabled"])
+                stripe_account.save(
+                    update_fields=["stripe_details_submitted", "charges_enabled", "payouts_enabled"]
+                )
                 if stripe_account.is_active:
                     return redirect(reverse("reimbursements:package-list"))
             except stripe.error.StripeError:
