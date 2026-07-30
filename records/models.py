@@ -15,7 +15,7 @@ from functools import reduce
 from operator import or_
 from typing import TYPE_CHECKING
 
-from django.contrib.auth import get_user_model
+from django.conf import settings
 from django.db import models
 from django.db.models import Count, Q
 from django.utils import timezone
@@ -27,8 +27,6 @@ from .constants import RECORD_TYPE_COLOR_MAP
 
 if TYPE_CHECKING:
     from django.contrib.auth.models import AbstractUser
-
-User = get_user_model()
 
 _MONTH_MAP = {
     "jan": 1,
@@ -194,7 +192,7 @@ class FolderQuerySet(models.QuerySet):
 class Folder(models.Model):
     """User-owned folder for organising records into logical groups."""
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="folders")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="folders")
     name = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -237,7 +235,7 @@ class Record(models.Model):
 
     id = models.BigAutoField(primary_key=True)
     user = models.ForeignKey(
-        User,
+        settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="records",
     )
@@ -445,7 +443,7 @@ class AuditLog(models.Model):
         ARCHIVE = "archive"
         UNARCHIVE = "unarchive"
 
-    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name="audit_logs")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="audit_logs")
     action = models.CharField(max_length=32, choices=Action.choices, db_index=True)
     record = models.ForeignKey(
         Record, on_delete=models.SET_NULL, null=True, related_name="audit_logs"

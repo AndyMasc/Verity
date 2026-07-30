@@ -5,13 +5,11 @@ preferences, and the Notification model for persisting messages that are
 surfaced in the dashboard sidebar.
 """
 
-from django.contrib.auth import get_user_model
+from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
 from core.currencies import CURRENCY_CHOICES, DEFAULT_CURRENCY
-
-User = get_user_model()
 
 
 class UserSettings(models.Model):
@@ -22,7 +20,7 @@ class UserSettings(models.Model):
     """
 
     user = models.OneToOneField(
-        User,
+        settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="settings",
     )
@@ -70,7 +68,7 @@ class Notification(models.Model):
     """
 
     recipient = models.ForeignKey(
-        User,
+        settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="notifications",
     )
