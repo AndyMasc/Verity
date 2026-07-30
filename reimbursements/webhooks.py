@@ -37,10 +37,11 @@ def stripe_webhook(request):
         # Only process when payment has actually settled.
         # For delayed payment methods the session completes first, then
         # async_payment_succeeded fires later.
-        if session.get("payment_status") != "paid":
+        if getattr(session, "payment_status", None) != "paid":
             return HttpResponse(status=200)
 
-        package_uuid = session.get("metadata", {}).get("package_uuid")
+        metadata = getattr(session, "metadata", None) or {}
+        package_uuid = metadata.get("package_uuid")
 
         if package_uuid:
             try:
@@ -70,7 +71,7 @@ def stripe_webhook(request):
                 return HttpResponse(status=500)
 
             payment.is_completed = True
-            payment_intent_id = session.get("payment_intent")
+            payment_intent_id = getattr(session, "payment_intent", None)
             if payment_intent_id:
                 payment.stripe_payment_intent_id = payment_intent_id
             payment.save(update_fields=["is_completed", "stripe_payment_intent_id"])
@@ -100,7 +101,8 @@ def stripe_webhook(request):
         "checkout.session.async_payment_failed",
     ):
         session = event["data"]["object"]
-        package_uuid = session.get("metadata", {}).get("package_uuid")
+        metadata = getattr(session, "metadata", None) or {}
+        package_uuid = metadata.get("package_uuid")
         if not package_uuid:
             return HttpResponse(status=200)
         try:
@@ -112,7 +114,7 @@ def stripe_webhook(request):
 
         if event["type"] == "checkout.session.async_payment_succeeded":
             payment.is_completed = True
-            payment_intent_id = session.get("payment_intent")
+            payment_intent_id = getattr(session, "payment_intent", None)
             if payment_intent_id:
                 payment.stripe_payment_intent_id = payment_intent_id
             payment.save(update_fields=["is_completed", "stripe_payment_intent_id"])
@@ -144,15 +146,15 @@ def stripe_webhook(request):
     elif event["type"] == "account.updated":
         account = event["data"]["object"]
         StripeAccount.objects.filter(stripe_account_id=account["id"]).update(
-            stripe_details_submitted=account.get("details_submitted", False),
-            charges_enabled=account.get("charges_enabled", False),
-            payouts_enabled=account.get("payouts_enabled", False),
+            stripe_details_submitted=getattr(account, "details_submitted", False),
+            charges_enabled=getattr(account, "charges_enabled", False),
+            payouts_enabled=getattr(account, "payouts_enabled", False),
         )
 
     elif event["type"] in ("transfer.failed", "charge.failed"):
         obj = event["data"]["object"]
-        failure_message = obj.get("failure_message", "unknown reason")
-        payment_intent_id = obj.get("payment_intent") or obj.get("id")
+        failure_message = getattr(obj, "failure_message", None) or "unknown reason"
+        payment_intent_id = getattr(obj, "payment_intent", None) or getattr(obj, "id", None)
         logger.error(
             "Stripe %s — payment_intent: %s, reason: %s",
             event["type"],
@@ -182,10 +184,10 @@ def stripe_webhook(request):
 
     elif event["type"] == "charge.refunded":
         charge = event["data"]["object"]
-        payment_intent_id = charge.get("payment_intent")
-        charge_currency = charge.get("currency", "usd")
-        amount_refunded_cents = charge.get("amount_refunded", 0)
-        amount_captured_cents = charge.get("amount_captured", 0)
+        payment_intent_id = getattr(charge, "payment_intent", None)
+        charge_currency = getattr(charge, "currency", None) or "usd"
+        amount_refunded_cents = getattr(charge, "amount_refunded", None) or 0
+        amount_captured_cents = getattr(charge, "amount_captured", None) or 0
         if charge_currency.lower() in ("jpy", "krw", "vnd", "idr", "clp", "ugx"):
             refunded_display = float(amount_refunded_cents)
         else:
