@@ -1,7 +1,8 @@
 import uuid
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
-from django.contrib.auth import get_user_model
+from django.conf import settings
 from django.db import models, transaction
 from django.db.models import Q, Sum
 from django.db.models.functions import Concat
@@ -10,7 +11,8 @@ from django.utils import timezone
 from core.currencies import CURRENCY_CHOICES, DEFAULT_CURRENCY, format_currency, to_stripe_amount
 from records.models import Record
 
-User = get_user_model()
+if TYPE_CHECKING:
+    from django.contrib.auth.base_user import AbstractBaseUser as User
 
 STRIPE_MINIMUM_FEE_CENTS = 50
 
@@ -31,7 +33,7 @@ class StripeAccount(models.Model):
     """Holds Stripe Connect payment and onboarding information for a user."""
 
     user = models.OneToOneField(
-        User,
+        settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="stripe_account",
     )
@@ -63,10 +65,10 @@ class ReimbursementPackage(models.Model):
 
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, db_index=True)
     creator = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="reimbursement_packages"
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="reimbursement_packages"
     )
     recipient = models.ForeignKey(
-        User,
+        settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -87,7 +89,7 @@ class ReimbursementPackage(models.Model):
     expires_at = models.DateTimeField(null=True, blank=True)
 
     paid_by = models.ForeignKey(
-        User,
+        settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -262,7 +264,7 @@ class PackagePayment(models.Model):
         ReimbursementPackage, on_delete=models.CASCADE, related_name="payments"
     )
     payer = models.ForeignKey(
-        User, on_delete=models.SET_NULL, null=True, blank=True, related_name="payments_made"
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="payments_made"
     )
     stripe_checkout_session_id = models.CharField(max_length=255, unique=True)
     stripe_payment_intent_id = models.CharField(

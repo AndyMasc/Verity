@@ -13,8 +13,6 @@ from webpush import send_user_notification
 
 logger = logging.getLogger(__name__)
 
-User = get_user_model()
-
 
 @shared_task
 def send_background_email(subject, message, from_email, recipient_list, html_message=None):
@@ -47,6 +45,7 @@ def fire_single_webpush(user_id: int, payload: dict, ttl: int = 1000) -> None:
     """
     """Async worker task wrapper around the webpush service execution."""
     try:
+        User = get_user_model()
         user = User.objects.get(id=user_id)
         send_user_notification(user=user, payload=payload, ttl=ttl)
         logger.info(f"Dispatched webpush to {user.email}")
