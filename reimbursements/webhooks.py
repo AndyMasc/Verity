@@ -40,7 +40,7 @@ def stripe_webhook(request):
         if getattr(session, "payment_status", None) != "paid":
             return HttpResponse(status=200)
 
-        metadata = getattr(session, "metadata", None) or {}
+        metadata = dict(getattr(session, "metadata", None) or {})
         package_uuid = metadata.get("package_uuid")
 
         if package_uuid:
@@ -101,7 +101,7 @@ def stripe_webhook(request):
         "checkout.session.async_payment_failed",
     ):
         session = event["data"]["object"]
-        metadata = getattr(session, "metadata", None) or {}
+        metadata = dict(getattr(session, "metadata", None) or {})
         package_uuid = metadata.get("package_uuid")
         if not package_uuid:
             return HttpResponse(status=200)
