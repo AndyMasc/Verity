@@ -1,5 +1,5 @@
 {% load form_tags %}
-<main class="flex flex-col max-w-6xl mx-auto justify-center min-h-screen space-y-7"
+<main class="flex flex-col max-w-7xl py-8 mx-auto justify-center min-h-screen space-y-7"
       x-data="recordBulkActions()"
       x-init="$nextTick(() => updateVisibleIds([{% for record in records %}'{{ record.pk }}'{% if not forloop.last %},{% endif %}{% endfor %}]))"
       id="dashboard-content"
@@ -12,7 +12,7 @@
     <header class="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div class="flex flex-col sm:flex-row sm:items-center gap-3">
             <a href="{% url 'core:profile_page' %}"
-               class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md border border-zinc-200/30 dark:border-zinc-800/30 text-xs text-zinc-700 dark:text-zinc-300 shadow-sm">
+               class="inline-flex w-min items-center gap-2 px-3 py-1.5 rounded-xl bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md border border-zinc-200/30 dark:border-zinc-800/30 text-xs text-zinc-700 dark:text-zinc-300 shadow-sm">
                 <span class="relative flex size-2">
                     <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                     <span class="relative inline-flex rounded-full size-2 bg-emerald-500"></span>
