@@ -67,10 +67,11 @@ INSTALLED_APPS = [
     "records.apps.RecordsConfig",
     "accounting.apps.AccountingConfig",
     "reimbursements.apps.ReimbursementsConfig",
+    "plaid_integration.apps.PlaidIntegrationConfig",
     # Webpush
     "webpush",
-    # Plaid
-    "plaid_integration.apps.PlaidIntegrationConfig",
+    # Stripe
+    "djstripe",
 ]
 
 MIDDLEWARE = [
@@ -378,7 +379,7 @@ FERNET_KEYS = [
 STRIPE_SECRET_KEY = env("STRIPE_SECRET_KEY")
 STRIPE_PUBLISHABLE_KEY = env("STRIPE_PUBLISHABLE_KEY")
 STRIPE_WEBHOOK_SECRET = env("STRIPE_WEBHOOK_SECRET")
-
+DJSTRIPE_FOREIGN_KEY_TO_FIELD = env("DJSTRIPE_FOREIGN_KEY_TO_FIELD")
 
 # Sentry
 _is_prod = env("SENTRY_ENVIRONMENT", default="development") == "production"
