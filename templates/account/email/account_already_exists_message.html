@@ -1,28 +1,32 @@
 {% extends "account/email/base_message.html" %}
 {% load i18n %}
-
 {% block content %}
     <p>
         {% blocktrans %}You are receiving this email because you or someone else tried to sign up for an account using email address: {% endblocktrans %}
         <strong>{{ email }}</strong>
     </p>
-
     <p>
         {% blocktrans %}However, an account using that email address already exists. In case you have forgotten about this, you can sign in directly by requesting a secure login link on our sign-in page:{% endblocktrans %}
     </p>
-
     <table cellspacing="0" cellpadding="0" style="margin: 28px 0;">
         <tr>
-            <td align="center" style="border-radius: 9999px; background-color: #18181b;">
-                <a href="{{ login_url }}" style="padding: 10px 20px; display: inline-block; color: #ffffff; font-size: 13px; font-weight: 500; text-decoration: none; border-radius: 9999px;">
-                    {% trans "Sign In to Papertrail" %}
-                </a>
+            <td align="center"
+                style="border-radius: 9999px;
+                       background-color: #18181b">
+                <a href="{{ login_url }}"
+                   style="padding: 10px 20px;
+                          display: inline-block;
+                          color: #ffffff;
+                          font-size: 13px;
+                          font-weight: 500;
+                          text-decoration: none;
+                          border-radius: 9999px">{% trans "Sign In to Papertrail" %}</a>
             </td>
         </tr>
     </table>
-
     <p style="font-size: 12px; color: #71717a; margin-top: 24px;">
-        {% trans "If the button doesn't work, copy and paste this link into your browser:" %}<br>
+        {% trans "If the button doesn't work, copy and paste this link into your browser:" %}
+        <br>
         <a href="{{ login_url }}" style="color: #18181b;">{{ login_url }}</a>
     </p>
 {% endblock content %}

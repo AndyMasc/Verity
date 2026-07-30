@@ -1,18 +1,15 @@
 <div id="query-results-container"
      class="space-y-2"
      x-data="{ selectedRecord: null }">
-
     {% for record in records %}
         <label data-record-id="{{ record.pk }}"
                class="relative block transition-all duration-200 rounded-xl cursor-pointer"
                :class="selectedRecord == '{{ record.pk }}' ? 'ring-2 ring-zinc-900 dark:ring-zinc-100' : 'hover:opacity-80'">
-
             <input type="radio"
                    name="associated_record"
                    value="{{ record.pk }}"
                    x-model="selectedRecord"
                    class="sr-only">
-
             {% include 'documents/partials/record_card_simple.html' %}
         </label>
     {% empty %}
@@ -20,6 +17,5 @@
             No matching records found for this query.
         </div>
     {% endfor %}
-
     {% include 'core/pagination_controls.html' %}
 </div>

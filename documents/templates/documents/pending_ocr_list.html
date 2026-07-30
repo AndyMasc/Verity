@@ -1,31 +1,29 @@
 {% extends "base.html" %}
 {% load static %}
-
 {% block title %}Documents Processing | Papertrail{% endblock %}
-
 {% block content %}
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 min-h-[70vh]">
         <header class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-8 mb-4 border-b border-zinc-200/60 dark:border-zinc-800/80">
             <div>
-                <h1 class="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-                    Documents Processing
-                </h1>
+                <h1 class="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Documents Processing</h1>
                 <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
                     Documents awaiting OCR extraction — click "Continue" to review and save.
                 </p>
             </div>
             <a href="{% url 'documents:upload_document' %}"
                class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-zinc-950 hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-zinc-100 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md hover:-translate-y-[1px] active:translate-y-0 active:scale-[0.98]">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                <svg class="w-4 h-4"
+                     fill="none"
+                     viewBox="0 0 24 24"
+                     stroke-width="2.5"
+                     stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                 </svg>
                 Upload New
             </a>
         </header>
-
         <main class="relative min-h-0 w-full min-w-0 mt-10 dark:bg-zinc-900/30 bg-white py-4 px-6 rounded-2xl shadow-sm dark:shadow-none ring-1 ring-inset ring-black/[0.04] dark:ring-white/[0.04]">
             {% include 'documents/partials/document_list_partial.html' with pending_ocr_view=True %}
         </main>
-
     </main>
 {% endblock %}

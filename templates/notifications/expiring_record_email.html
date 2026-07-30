@@ -1,79 +1,130 @@
 {% extends "account/email/base_message.html" %}
 {% load i18n %}
-
 {% block content %}
-    <h2 style="margin: 0 0 24px 0; font-size: 20px; font-weight: 700; letter-spacing: -0.025em; color: #18181b;">
+    <h2 style="margin: 0 0 24px 0;
+               font-size: 20px;
+               font-weight: 700;
+               letter-spacing: -0.025em;
+               color: #18181b">
         {% blocktrans count counter=total_records_count %}Expiring Record Alert{% plural %}Expiring Records Alert{% endblocktrans %}
     </h2>
-
     <div style="font-size: 14px; line-height: 1.6; color: #52525b;">
         <p style="margin: 0 0 20px 0;">
             {% blocktrans count counter=total_records_count %}You have <strong>{{ counter }}</strong> record expiring soon. If you haven't already, make sure you take action before the expiration date passes:{% plural %}You have <strong>{{ counter }}</strong> records expiring soon. If you haven't already, make sure you take action before the expiration dates pass:{% endblocktrans %}
         </p>
-
-        <table width="100%" cellspacing="0" cellpadding="0" style="margin: 20px 0; border: 1px solid #e4e4e7; border-radius: 12px; border-collapse: separate; overflow: hidden;">
+        <table width="100%"
+               cellspacing="0"
+               cellpadding="0"
+               style="margin: 20px 0;
+                      border: 1px solid #e4e4e7;
+                      border-radius: 12px;
+                      border-collapse: separate;
+                      overflow: hidden">
             <thead>
                 <tr style="background-color: #fafafa;">
-                    <th align="left" style="padding: 12px 16px; font-size: 12px; font-weight: 600; color: #71717a; border-bottom: 1px solid #e4e4e7;">{% trans "Record" %}</th>
-                    <th align="right" style="padding: 12px 16px; font-size: 12px; font-weight: 600; color: #71717a; border-bottom: 1px solid #e4e4e7;">{% trans "Expiry Date" %}</th>
+                    <th align="left"
+                        style="padding: 12px 16px;
+                               font-size: 12px;
+                               font-weight: 600;
+                               color: #71717a;
+                               border-bottom: 1px solid #e4e4e7">{% trans "Record" %}</th>
+                    <th align="right"
+                        style="padding: 12px 16px;
+                               font-size: 12px;
+                               font-weight: 600;
+                               color: #71717a;
+                               border-bottom: 1px solid #e4e4e7">{% trans "Expiry Date" %}</th>
                 </tr>
             </thead>
             <tbody>
                 {% for r in records %}
                     <tr>
-                        <td align="left" style="padding: 14px 16px; font-size: 14px; color: #18181b; border-bottom: {% if forloop.last and remaining_count == 0 %}none{% else %}1px solid #f4f4f5{% endif %};">
-                            <div style="display: block; max-width: 280px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                        <td align="left"
+                            style="padding: 14px 16px;
+                                   font-size: 14px;
+                                   color: #18181b;
+                                   border-bottom: {% if forloop.last and remaining_count == 0 %}none{% else %}1px solid #f4f4f5{% endif %}">
+                            <div style="display: block;
+                                        max-width: 280px;
+                                        white-space: nowrap;
+                                        overflow: hidden;
+                                        text-overflow: ellipsis">
                                 <strong style="font-weight: 600;">{{ r.title }}</strong>
                             </div>
-
                             {% if r.merchant %}
-                                <div style="display: block; max-width: 280px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; color: #71717a; margin-top: 2px;">
-                                    {{ r.merchant }}
-                                </div>
+                                <div style="display: block;
+                                            max-width: 280px;
+                                            white-space: nowrap;
+                                            overflow: hidden;
+                                            text-overflow: ellipsis;
+                                            font-size: 12px;
+                                            color: #71717a;
+                                            margin-top: 2px">{{ r.merchant }}</div>
                             {% endif %}
                         </td>
-                        <td align="right" valign="top" style="padding: 14px 16px; font-size: 14px; font-weight: 600; color: black; border-bottom: {% if forloop.last and remaining_count == 0 %}none{% else %}1px solid #f4f4f5{% endif %};">
+                        <td align="right"
+                            valign="top"
+                            style="padding: 14px 16px;
+                                   font-size: 14px;
+                                   font-weight: 600;
+                                   color: black;
+                                   border-bottom: {% if forloop.last and remaining_count == 0 %}none{% else %}1px solid #f4f4f5{% endif %}">
                             {{ r.expiry_date }}
                         </td>
                     </tr>
                 {% endfor %}
-
                 {% if remaining_count > 0 %}
                     <tr style="background-color: #fafafa;">
-                        <td colspan="2" align="left" style="padding: 12px 16px; font-size: 13px; font-weight: 600; color: black;">
+                        <td colspan="2"
+                            align="left"
+                            style="padding: 12px 16px;
+                                   font-size: 13px;
+                                   font-weight: 600;
+                                   color: black">
                             {% blocktrans count counter=remaining_count %}...and {{ counter }} more record is also expiring soon.{% plural %}...and {{ counter }} more records are also expiring soon.{% endblocktrans %}
                         </td>
                     </tr>
                 {% endif %}
             </tbody>
         </table>
-
         {% if auto_archive_msg %}
-            <table cellspacing="0" cellpadding="0" width="100%" style="margin: 24px 0; background-color: #fafafa; border-left: 4px solid #18181b; border-radius: 4px;">
+            <table cellspacing="0"
+                   cellpadding="0"
+                   width="100%"
+                   style="margin: 24px 0;
+                          background-color: #fafafa;
+                          border-left: 4px solid #18181b;
+                          border-radius: 4px">
                 <tr>
-                    <td style="padding: 14px 16px; font-size: 13px; line-height: 1.5; color: #52525b;">
-                        {{ auto_archive_msg }}
-                    </td>
+                    <td style="padding: 14px 16px;
+                               font-size: 13px;
+                               line-height: 1.5;
+                               color: #52525b">{{ auto_archive_msg }}</td>
                 </tr>
             </table>
         {% endif %}
-
         {% if action_url %}
             <table cellspacing="0" cellpadding="0" style="margin: 28px 0;">
                 <tr>
-                    <td align="center" style="border-radius: 9999px; background-color: #18181b;">
-                        <a href="{{ action_url }}" style="padding: 10px 20px; display: inline-block; color: #ffffff; font-size: 13px; font-weight: 500; text-decoration: none; border-radius: 9999px;">
-                            {% trans "Review Records on Papertrail" %}
-                        </a>
+                    <td align="center"
+                        style="border-radius: 9999px;
+                               background-color: #18181b">
+                        <a href="{{ action_url }}"
+                           style="padding: 10px 20px;
+                                  display: inline-block;
+                                  color: #ffffff;
+                                  font-size: 13px;
+                                  font-weight: 500;
+                                  text-decoration: none;
+                                  border-radius: 9999px">{% trans "Review Records on Papertrail" %}</a>
                     </td>
                 </tr>
             </table>
-
             <p style="font-size: 12px; color: #71717a; margin-top: 24px;">
-                {% trans "If the button doesn't work, copy and paste this link into your browser:" %}<br>
+                {% trans "If the button doesn't work, copy and paste this link into your browser:" %}
+                <br>
                 <a href="{{ action_url }}" style="color: #18181b;">{{ action_url }}</a>
             </p>
         {% endif %}
-
     </div>
 {% endblock content %}

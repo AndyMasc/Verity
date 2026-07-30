@@ -1,60 +1,65 @@
 {% extends "base.html" %}
 {% load widget_tweaks %}
-
 {% block content %}
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-
         <header class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mt-5">
             <div>
-                <h1 class="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 capitalize">
-                    Folders
-                </h1>
-                <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-                    Group related records for quick access.
-                </p>
+                <h1 class="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 capitalize">Folders</h1>
+                <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">Group related records for quick access.</p>
             </div>
-
             <button type="button"
                     hx-get="{% url 'records:create_folder' %}"
                     hx-target="#modal-container"
                     hx-swap="innerHTML"
                     class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-3.5 py-2 text-xs font-medium text-white bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white rounded-2xl transition-all duration-200 shadow-xs active:scale-[0.98] cursor-pointer">
-                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+                <svg class="w-3.5 h-3.5"
+                     fill="none"
+                     viewBox="0 0 24 24"
+                     stroke-width="2.5"
+                     stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
                 New Folder
             </button>
         </header>
-
         <section class="space-y-3" aria-label="Directory Search Matrix">
             <div class="relative w-full">
                 <div class="absolute inset-y-0 left-4 flex items-center pointer-events-none text-zinc-400 dark:text-zinc-600">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.604 10.604z" /></svg>
+                    <svg class="w-4 h-4"
+                         fill="none"
+                         viewBox="0 0 24 24"
+                         stroke-width="2.2"
+                         stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.604 10.604z" />
+                    </svg>
                 </div>
-                <input
-                    class="w-full bg-white dark:bg-zinc-950 border border-zinc-200/50 dark:border-zinc-800/50 py-3 pl-10 pr-4 text-xs rounded-xl dark:text-zinc-100 text-zinc-900 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-600 transition-all duration-200"
-                    placeholder="Search folders by name..."
-                    id="folder-search" type="search" name="search"
-                    hx-get="{% url 'records:view_folders' %}"
-                    hx-trigger="input changed delay:300ms, keyup[key=='Enter']"
-                    hx-target="#directory-results-container"
-                    hx-indicator="#folder-list-indicator">
+                <input class="w-full bg-white dark:bg-zinc-950 border border-zinc-200/50 dark:border-zinc-800/50 py-3 pl-10 pr-4 text-xs rounded-xl dark:text-zinc-100 text-zinc-900 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-600 transition-all duration-200"
+                       placeholder="Search folders by name..."
+                       id="folder-search"
+                       type="search"
+                       name="search"
+                       hx-get="{% url 'records:view_folders' %}"
+                       hx-trigger="input changed delay:300ms, keyup[key=='Enter']"
+                       hx-target="#directory-results-container"
+                       hx-indicator="#folder-list-indicator">
             </div>
         </section>
-
-        <div id="folder-list-indicator" class="htmx-indicator relative z-10 hidden">
-            <div class="absolute inset-0 bg-white/40 dark:bg-zinc-950/40 backdrop-blur-[1px] flex items-center justify-center rounded-xl" style="top: -2rem; bottom: -2rem;">
+        <div id="folder-list-indicator"
+             class="htmx-indicator relative z-10 hidden">
+            <div class="absolute inset-0 bg-white/40 dark:bg-zinc-950/40 backdrop-blur-[1px] flex items-center justify-center rounded-xl"
+                 style="top: -2rem;
+                        bottom: -2rem">
                 <div class="animate-pulse text-xs font-medium text-zinc-500 dark:text-zinc-400 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 px-3 py-1.5 rounded-xl shadow-xs">
                     Syncing Directory...
                 </div>
             </div>
         </div>
-
-        <main id="directory-results-container" class="relative min-h-0 w-full min-w-0 mt-8 space-y-6">
+        <main id="directory-results-container"
+              class="relative min-h-0 w-full min-w-0 mt-8 space-y-6">
             {% include 'records/partials/folder_list_partial.html' %}
         </main>
     </div>
-
     <div id="modal-container"></div>
-
     <script>
         document.body.addEventListener('closeModal', function() {
             document.getElementById('modal-container').innerHTML = '';

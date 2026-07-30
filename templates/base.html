@@ -1,16 +1,13 @@
 {% load static %}
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
     <head>
         <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+        <meta name="viewport"
+              content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
         <meta http-equiv="X-UA-Compatible" content="ie=edge">
-
-        <script
-            src="https://js.sentry-cdn.com/d63e860242f18d1e659b055f82407b13.min.js"
-            crossorigin="anonymous"
-        ></script>
-
+        <script src="https://js.sentry-cdn.com/d63e860242f18d1e659b055f82407b13.min.js"
+                crossorigin="anonymous"></script>
         <script>
             (function() {
                 try {
@@ -32,7 +29,6 @@
                 }
             })();
         </script>
-
         <script>
             !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="init capture register register_once register_for_session unregister unregister_for_session getFeatureFlag getFeatureFlagResult isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey getNextSurveyStep identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException loadToolbar get_property getSessionProperty createPersonProfile opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing clear_opt_in_out_capturing debug".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
             posthog.init('phc_oy6VEbbvbcmCWxhhuQKsiyKP3nCGiMnXK8N4gF4Z93tj', {
@@ -40,72 +36,80 @@
                 defaults: '2026-05-30',
             })
         </script>
-
-        <meta name="htmx-config" content='{"historyCacheSize": 0, "refreshOnHistoryMiss": true, "csrfHeaderName": "X-CSRFToken", "csrfTokenSelector": "meta[name=csrf-token]"}'>
+        <meta name="htmx-config"
+              content='{"historyCacheSize": 0, "refreshOnHistoryMiss": true, "csrfHeaderName": "X-CSRFToken", "csrfTokenSelector": "meta[name=csrf-token]"}'>
         <meta name="csrf-token" content="{{ csrf_token }}">
-
-        <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
-        <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/persist@3.x.x/dist/cdn.min.js"></script>
-        <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.10/dist/htmx.min.js" integrity="sha384-H5SrcfygHmAuTDZphMHqBJLc3FhssKjG7w/CeCpFReSfwBWDTKpkzPP8c+cLsK+V" crossorigin="anonymous"></script>
-
+        <script defer
+                src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
+        <script defer
+                src="https://cdn.jsdelivr.net/npm/@alpinejs/persist@3.x.x/dist/cdn.min.js"></script>
+        <script defer
+                src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.10/dist/htmx.min.js"
+                integrity="sha384-H5SrcfygHmAuTDZphMHqBJLc3FhssKjG7w/CeCpFReSfwBWDTKpkzPP8c+cLsK+V"
+                crossorigin="anonymous"></script>
         {% load tailwind_tags %}
         {% tailwind_css %}
-
         {% load webpush_notifications %}
-        {% if webpush_enabled %}{% webpush_header %}{% endif %}
-
+        {% if webpush_enabled %}
+            {% webpush_header %}
+        {% endif %}
         <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
-        <link rel="icon" href="{% static 'favicon-package/favicon.svg' %}" type="image/svg+xml" sizes="any">
+        <link rel="icon"
+              href="{% static 'favicon-package/favicon.svg' %}"
+              type="image/svg+xml"
+              sizes="any">
         <link rel="icon" href="{% static 'favicon-package/favicon.ico' %}">
         <link rel="apple-touch-icon" href="/apple-touch-icon.png">
         <link rel="manifest" href="/site.webmanifest">
-        <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
-        <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)">
-
+        <meta name="theme-color"
+              content="#ffffff"
+              media="(prefers-color-scheme: light)">
+        <meta name="theme-color"
+              content="#0f172a"
+              media="(prefers-color-scheme: dark)">
         <title>{% block title %}Papertrail{% endblock %}</title>
         {% block head %}{% endblock %}
-
-        {% block extra_head %} {% endblock %}
+        {% block extra_head %}{% endblock %}
     </head>
-
-    <body
-        class="font-sans bg-zinc-50 dark:bg-[#0E0E0E] text-zinc-950 dark:text-zinc-50 min-h-screen antialiased selection:bg-zinc-900/10 dark:selection:bg-zinc-100/10"
-        {% if user.is_authenticated %}
-            x-data="{ open: $persist(true) }"
-        {% endif %}>
-
+    <body class="font-sans bg-zinc-50 dark:bg-[#0E0E0E] text-zinc-950 dark:text-zinc-50 min-h-screen antialiased selection:bg-zinc-900/10 dark:selection:bg-zinc-100/10"
+          {% if user.is_authenticated %} x-data="{ open: $persist(true) }" {% endif %}>
         {% include 'core/toast.html' %}
-
         <noscript>
-            <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 9999; display: flex; align-items: center; justify-content: center; text-align: center; padding: 20px;">
+            <div style="position: fixed;
+                        top: 0;
+                        left: 0;
+                        width: 100%;
+                        height: 100%;
+                        background: white;
+                        z-index: 9999;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        text-align: center;
+                        padding: 20px">
                 <div>
-                    <h1 style="font-size: 24px; font-weight: bold; color: #09090b; margin-bottom: 16px;">JavaScript Required</h1>
-                    <p style="color: #525252;">Papertrail requires JavaScript to manage your files and records properly.<br>Please enable it in your browser settings to continue.</p>
+                    <h1 style="font-size: 24px;
+                               font-weight: bold;
+                               color: #09090b;
+                               margin-bottom: 16px">JavaScript Required</h1>
+                    <p style="color: #525252;">
+                        Papertrail requires JavaScript to manage your files and records properly.
+                        <br>
+                        Please enable it in your browser settings to continue.
+                    </p>
                 </div>
             </div>
         </noscript>
-
         {% if user.is_authenticated %}
-            <div class="relative z-40">
-                {% include 'core/sidebar.html' %}
-            </div>
+            <div class="relative z-40">{% include 'core/sidebar.html' %}</div>
         {% endif %}
-
-        <main
-            {% if user.is_authenticated %}
-                class="relative z-10 transition-all duration-300 ease-out"
-                x-cloak
-                :class="open ? 'sm:pl-64' : 'sm:pl-0'"
-            {% endif %}>
-
+        <main {% if user.is_authenticated %} class="relative z-10 transition-all duration-300 ease-out" x-cloak :class="open ? 'sm:pl-64' : 'sm:pl-0'" {% endif %}>
             <div class="px-4 sm:px-6 lg:px-8">
                 {% block content %}{% endblock %}
             </div>
         </main>
-
     </body>
-
     <script>
         document.addEventListener('htmx:oobBeforeSwap', function(evt) {
             handleHtmxTriggers(evt);
@@ -151,7 +155,6 @@
             }
         });
     </script>
-
     <script type="speculationrules">
         {
             "prefetch": [{
@@ -176,7 +179,6 @@
             }]
         }
     </script>
-
     <script>
         if (!HTMLScriptElement.supports || !HTMLScriptElement.supports('speculationrules')) {
             let prefetchTimer;
@@ -194,5 +196,4 @@
             }, { passive: true });
         }
     </script>
-
 </html>

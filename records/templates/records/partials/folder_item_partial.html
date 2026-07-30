@@ -1,12 +1,17 @@
-<div class="group relative rounded-2xl border border-zinc-200/50 dark:border-zinc-800/50 bg-white/80 dark:bg-zinc-900/20 backdrop-blur-md p-5 transition-all duration-200 hover:border-zinc-300 dark:hover:border-zinc-700/60 hover:shadow-[0_8px_30px_rgba(0,0,0,0.015)] hover:bg-white/90 dark:hover:bg-zinc-900/40 flex flex-col justify-between" id="folder-{{ folder.id }}">
+<div class="group relative rounded-2xl border border-zinc-200/50 dark:border-zinc-800/50 bg-white/80 dark:bg-zinc-900/20 backdrop-blur-md p-5 transition-all duration-200 hover:border-zinc-300 dark:hover:border-zinc-700/60 hover:shadow-[0_8px_30px_rgba(0,0,0,0.015)] hover:bg-white/90 dark:hover:bg-zinc-900/40 flex flex-col justify-between"
+     id="folder-{{ folder.id }}">
     <div>
         <div class="flex items-start justify-between">
             <div class="flex size-10 items-center justify-center rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-700 dark:text-zinc-300 transition-colors duration-200 group-hover:border-zinc-300 dark:group-hover:border-zinc-700">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5">
+                <svg xmlns="http://www.w3.org/2000/svg"
+                     fill="none"
+                     viewBox="0 0 24 24"
+                     stroke-width="1.5"
+                     stroke="currentColor"
+                     class="size-5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9.776c.112-.017.227-.026.344-.026h15.812c.117 0 .232.009.344.026m-16.5 0a2.25 2.25 0 0 0-1.883 2.542l.857 6a2.25 2.25 0 0 0 2.227 1.932H19.05a2.25 2.25 0 0 0 2.227-1.932l.857-6a2.25 2.25 0 0 0-1.883-2.542m-16.5 0V6A2.25 2.25 0 0 1 6 3.75h3.879a1.5 1.5 0 0 1 1.06.44l2.122 2.12a1.5 1.5 0 0 0 1.06.44H18A2.25 2.25 0 0 1 20.25 9v.776" />
                 </svg>
             </div>
-
             <form hx-post="{% url 'records:delete_folder' folder.id %}"
                   hx-confirm="Delete this folder? Contained records will be unfiled, but remain in your workspace."
                   hx-target="#directory-results-container"
@@ -17,23 +22,21 @@
                 <button type="submit"
                         class="opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1 rounded-lg text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer"
                         title="Delete folder">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg>
+                    <svg class="w-4 h-4"
+                         fill="none"
+                         viewBox="0 0 24 24"
+                         stroke-width="2"
+                         stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                    </svg>
                 </button>
             </form>
         </div>
-
-        <h3 class="mt-4 text-sm font-semibold text-zinc-950 dark:text-zinc-100 truncate">
-            {{ folder.name }}
-        </h3>
-        <p class="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">
-            Created {{ folder.created_at|date:"M d, Y" }}
-        </p>
+        <h3 class="mt-4 text-sm font-semibold text-zinc-950 dark:text-zinc-100 truncate">{{ folder.name }}</h3>
+        <p class="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">Created {{ folder.created_at|date:"M d, Y" }}</p>
     </div>
-
     <div class="mt-4 pt-3 border-t border-zinc-100 dark:border-zinc-800/60 flex items-center justify-between">
-        <span class="text-xs font-medium text-zinc-400 dark:text-zinc-500">
-            {{ folder.active_records_count }} records
-        </span>
+        <span class="text-xs font-medium text-zinc-400 dark:text-zinc-500">{{ folder.active_records_count }} records</span>
         <a href="{% url 'records:view_all_records' %}?folder={{ folder.id }}"
            class="text-xs font-medium text-zinc-900 dark:text-zinc-100 hover:underline underline-offset-4">
             View Folder

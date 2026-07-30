@@ -1,17 +1,20 @@
-<a href="{% url 'documents:document_list_view' %}?status=orphaned" class="group relative block rounded-2xl border border-amber-300/40 dark:border-amber-500/15 bg-gradient-to-br from-amber-50/80 to-white dark:from-amber-500/[0.04] dark:to-zinc-900/30 p-4 sm:p-5 hover:from-amber-50 hover:to-amber-50/50 dark:hover:from-amber-500/[0.07] dark:hover:to-zinc-900/60 active:scale-[0.98] transition-all duration-200 shadow-xs hover:shadow-sm overflow-hidden">
+<a href="{% url 'documents:document_list_view' %}?status=orphaned"
+   class="group relative block rounded-2xl border border-amber-300/40 dark:border-amber-500/15 bg-gradient-to-br from-amber-50/80 to-white dark:from-amber-500/[0.04] dark:to-zinc-900/30 p-4 sm:p-5 hover:from-amber-50 hover:to-amber-50/50 dark:hover:from-amber-500/[0.07] dark:hover:to-zinc-900/60 active:scale-[0.98] transition-all duration-200 shadow-xs hover:shadow-sm overflow-hidden">
     <div class="flex items-center justify-between gap-4">
         <div class="flex items-center gap-3.5 min-w-0">
             <div class="shrink-0 w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-500/15 flex items-center justify-center ring-1 ring-inset ring-amber-200/60 dark:ring-amber-500/20">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="w-4 h-4 text-amber-600 dark:text-amber-400">
+                <svg xmlns="http://www.w3.org/2000/svg"
+                     fill="none"
+                     viewBox="0 0 24 24"
+                     stroke-width="1.8"
+                     stroke="currentColor"
+                     class="w-4 h-4 text-amber-600 dark:text-amber-400">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
                 </svg>
             </div>
-
             <div class="min-w-0">
                 <div class="flex items-center gap-2">
-                    <h3 class="text-[13px] font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
-                        Orphaned Files
-                    </h3>
+                    <h3 class="text-[13px] font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">Orphaned Files</h3>
                     <span class="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-md text-[11px] font-bold bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 tabular-nums">
                         {{ orphaned_document_count }}
                     </span>
@@ -21,9 +24,13 @@
                 </p>
             </div>
         </div>
-
         <div class="shrink-0 text-zinc-300 dark:text-zinc-600 group-hover:text-amber-500 dark:group-hover:text-amber-400 group-hover:translate-x-0.5 transition-all duration-200">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+            <svg xmlns="http://www.w3.org/2000/svg"
+                 fill="none"
+                 viewBox="0 0 24 24"
+                 stroke-width="2"
+                 stroke="currentColor"
+                 class="w-4 h-4">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
             </svg>
         </div>

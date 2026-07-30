@@ -1,5 +1,4 @@
 {% extends 'base.html' %}
-
 {% block content %}
     <main class="w-full py-16 px-6">
         <section class="container mx-auto max-w-3xl">
@@ -7,12 +6,10 @@
                 <h1 class="text-4xl md:text-5xl font-semibold mb-4">Privacy Policy</h1>
                 <p class="text-zinc-500 dark:text-zinc-400">Last Updated: July 5, 2026</p>
             </header>
-
             <div class="prose prose-zinc dark:prose-invert max-w-none">
                 <p class="text-lg text-zinc-600 dark:text-zinc-300 mb-8">
                     At Papertrail, we believe your financial records are your private property. We have built this platform with a "privacy-first" architecture, meaning we minimize what we know about your files and maximize your control over them.
                 </p>
-
                 <h2 class="text-2xl font-semibold mt-10 mb-4">1. Data We Collect</h2>
                 <p>We collect only the information necessary to provide our service:</p>
                 <ul class="list-none pl-0 space-y-4">
@@ -21,7 +18,6 @@
                     <li><strong>Technical Logs:</strong> Basic server logs to maintain the security and integrity of our systems.</li>
                     <li><strong>Document Metadata:</strong> We store metadata (filename, timestamp) to help you organize and retrieve your records.</li>
                 </ul>
-
                 <h2 class="text-2xl font-semibold mt-10 mb-4">2. How We Handle Your Files & AI Processing</h2>
                 <p>We use Cloudflare R2 for secure storage and the Gemini API for intelligent organization. Our security standards include:</p>
                 <ul class="list-none pl-0 space-y-4">
@@ -30,25 +26,23 @@
                     <li><strong>Zero-Retention Policy:</strong> Our Gemini API integration is configured to <strong>not</strong> retain your document data or use it to train Google's machine learning models.</li>
                     <li><strong>Private Ownership:</strong> Your files and extracted data are linked exclusively to your unique user ID.</li>
                 </ul>
-
                 <h2 class="text-2xl font-semibold mt-10 mb-4">3. Sharing and Disclosure</h2>
                 <p>We do not sell, rent, or trade your information. Data is shared only if required by law or with our core infrastructure partners (Cloudflare, Google/Gemini, and our hosting provider) to deliver our services.</p>
-
                 <h2 class="text-2xl font-semibold mt-10 mb-4">4. Data Retention and Deletion</h2>
                 <ul class="list-none pl-0 space-y-4">
                     <li><strong>Retention:</strong> We retain your account information and document metadata as long as your account remains active.</li>
                     <li><strong>Permanent Deletion:</strong> You have the right to delete your records at any time. When triggered, your files are permanently scrubbed from our Cloudflare R2 storage and our primary database.</li>
                     <li><strong>Archives:</strong> Archives serve as a "soft delete" feature, allowing you to restore records while helping us maintain accurate, clean statistics for your dashboard.</li>
                 </ul>
-
                 <h2 class="text-2xl font-semibold mt-10 mb-4">5. Your Rights</h2>
                 <ul class="list-none pl-0 space-y-4">
                     <li><strong>Right to be Forgotten:</strong> Upon closing your account, all associated personal data, metadata, and uploaded files are permanently and securely deleted from our systems.</li>
                 </ul>
-
                 <h2 class="text-2xl font-semibold mt-10 mb-4">6. Contact Us</h2>
-                <p>If you have questions about how we handle your data, reach out to our privacy team at:
-                    <a href="mailto:support@papertrail.app" class="text-black dark:text-white underline underline-offset-4 decoration-zinc-400">support@papertrail.app</a>
+                <p>
+                    If you have questions about how we handle your data, reach out to our privacy team at:
+                    <a href="mailto:support@papertrail.app"
+                       class="text-black dark:text-white underline underline-offset-4 decoration-zinc-400">support@papertrail.app</a>
                 </p>
             </div>
         </section>

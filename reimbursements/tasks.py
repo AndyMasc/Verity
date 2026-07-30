@@ -10,7 +10,7 @@ stripe.api_key = settings.STRIPE_SECRET_KEY
 logger = logging.getLogger(__name__)
 
 
-@shared_task
+@shared_task(max_retries=3)
 def sync_payment_status(package_uuid: str, payment_id: int) -> None:
     try:
         package = ReimbursementPackage.objects.get(uuid=package_uuid)
@@ -28,11 +28,13 @@ def sync_payment_status(package_uuid: str, payment_id: int) -> None:
 
     try:
         session = stripe.checkout.Session.retrieve(payment.stripe_checkout_session_id)
-    except stripe.error.StripeError:
+    except stripe.error.StripeError as e:
         logger.warning(
-            "sync_payment_status: failed to retrieve session %s", payment.stripe_checkout_session_id
+            "sync_payment_status: failed to retrieve session %s — %s",
+            payment.stripe_checkout_session_id,
+            e,
         )
-        return
+        raise  # Trigger QStash retry
 
     if session.payment_status == "paid":
         payment.is_completed = True

@@ -48,6 +48,8 @@ def _stripe_account(user, active=True):
     StripeAccount.objects.filter(user=user).update(
         stripe_account_id="acct_test123" if active else None,
         stripe_details_submitted=active,
+        charges_enabled=active,
+        payouts_enabled=active,
     )
     user.stripe_account.refresh_from_db()
     return user.stripe_account
@@ -469,6 +471,7 @@ class StripeWebhookTest(TestCase):
             "data": {
                 "object": {
                     "id": "cs_test123",
+                    "payment_status": "paid",
                     "metadata": {"package_uuid": str(pkg.uuid)},
                 }
             },
@@ -500,6 +503,7 @@ class StripeWebhookTest(TestCase):
             "data": {
                 "object": {
                     "id": "cs_nonexistent",
+                    "payment_status": "paid",
                     "metadata": {"package_uuid": "00000000-0000-0000-0000-000000000000"},
                 }
             },

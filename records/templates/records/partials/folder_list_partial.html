@@ -1,7 +1,12 @@
 <div class="group relative flex items-center justify-between p-4 bg-zinc-50/50 dark:bg-zinc-900/20 border border-dashed border-zinc-200 dark:border-zinc-800/80 rounded-2xl transition-all duration-200 hover:bg-zinc-50 dark:hover:bg-zinc-900/40">
     <div class="flex items-center gap-3.5">
         <div class="flex size-10 items-center justify-center rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+            <svg xmlns="http://www.w3.org/2000/svg"
+                 fill="none"
+                 viewBox="0 0 24 24"
+                 stroke-width="1.5"
+                 stroke="currentColor"
+                 class="size-6">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" />
             </svg>
         </div>
@@ -14,10 +19,10 @@
         <span class="text-xs font-medium text-zinc-400 dark:text-zinc-500 bg-zinc-100 dark:bg-zinc-900/60 px-2 py-0.5 rounded-md border border-zinc-200/40 dark:border-zinc-800/40">
             {{ unfiled_count }} items
         </span>
-        <a href="{% url 'records:view_all_records' %}?folder=none" class="text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors duration-150">Open</a>
+        <a href="{% url 'records:view_all_records' %}?folder=none"
+           class="text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors duration-150">Open</a>
     </div>
 </div>
-
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
     {% for folder in folders %}
         {% include 'records/partials/folder_item_partial.html' %}
@@ -28,9 +33,6 @@
         </div>
     {% endfor %}
 </div>
-
 {% if page_obj.has_other_pages %}
-    <div class="flex items-center justify-center gap-2 mt-6">
-        {% include "core/pagination_controls.html" %}
-    </div>
+    <div class="flex items-center justify-center gap-2 mt-6">{% include "core/pagination_controls.html" %}</div>
 {% endif %}

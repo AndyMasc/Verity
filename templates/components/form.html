@@ -3,22 +3,21 @@
 {% load widget_tweaks %}
 {% var render_fields=render_fields|default:"true" %}
 {% var use_default_button=use_default_button|default:"true" %}
-
-<form
-    class="pt-3 space-y-4"
-    method="post"
-    action="{{ url }}"
-    onsubmit="const btn = document.getElementById('submit-btn'); if(btn) { btn.disabled = true; btn.classList.add('loading-active'); }">
-
+<form class="pt-3 space-y-4"
+      method="post"
+      action="{{ url }}"
+      onsubmit="const btn = document.getElementById('submit-btn'); if(btn) { btn.disabled = true; btn.classList.add('loading-active'); }">
     {% for error in form.non_field_errors %}
         <span class="flex items-center w-full text-xs font-medium tracking-wide bg-rose-500/10 p-3 rounded-xl border border-rose-500/20 text-rose-600 dark:text-rose-400">
-            <svg class="w-4 h-4 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            <svg class="w-4 h-4 mr-2 shrink-0"
+                 fill="none"
+                 stroke="currentColor"
+                 viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
             {{ error }}
         </span>
     {% endfor %}
-
     <div class="space-y-3">
         {% if render_fields == "true" %}
             {% for field in form.visible_fields %}
@@ -29,34 +28,25 @@
             {% endfor %}
         {% endif %}
     </div>
-
     {{ children }}
-
     {% if use_default_button == "true" %}
         <button type="submit"
                 id="submit-btn"
-                class="cursor-pointer mt-2 w-full h-10 flex items-center justify-center rounded-2xl font-medium tracking-wide text-sm transition-all duration-200 shadow-xs
-                       bg-zinc-900 hover:bg-zinc-800 text-zinc-50
-                       dark:bg-zinc-100 dark:hover:bg-zinc-200 dark:text-zinc-950
-                       disabled:bg-zinc-900 disabled:text-zinc-600 disabled:border disabled:border-zinc-800/50 disabled:cursor-not-allowed disabled:pointer-events-none disabled:shadow-none
-                       dark:disabled:bg-zinc-100 dark:disabled:text-zinc-400 dark:disabled:border-zinc-200">
-
-            <span class="auth-btn-text inline-flex items-center">
-                {{ button_text }}
-            </span>
-
+                class="cursor-pointer mt-2 w-full h-10 flex items-center justify-center rounded-2xl font-medium tracking-wide text-sm transition-all duration-200 shadow-xs bg-zinc-900 hover:bg-zinc-800 text-zinc-50 dark:bg-zinc-100 dark:hover:bg-zinc-200 dark:text-zinc-950 disabled:bg-zinc-900 disabled:text-zinc-600 disabled:border disabled:border-zinc-800/50 disabled:cursor-not-allowed disabled:pointer-events-none disabled:shadow-none dark:disabled:bg-zinc-100 dark:disabled:text-zinc-400 dark:disabled:border-zinc-200">
+            <span class="auth-btn-text inline-flex items-center">{{ button_text }}</span>
             <div class="auth-loading-state hidden items-center justify-center gap-2.5">
-                <svg class="animate-spin h-4 w-4 text-current opacity-80" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <svg class="animate-spin h-4 w-4 text-current opacity-80"
+                     xmlns="http://www.w3.org/2000/svg"
+                     fill="none"
+                     viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                    </path>
                 </svg>
-                <span class="text-xs tracking-wider uppercase font-semibold opacity-90 animate-pulse">
-                    Processing...
-                </span>
+                <span class="text-xs tracking-wider uppercase font-semibold opacity-90 animate-pulse">Processing...</span>
             </div>
         </button>
     {% endif %}
-
     <style>
         #submit-btn.loading-active .auth-btn-text {
             display: none !important;

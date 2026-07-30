@@ -4,29 +4,30 @@
 {% load allauth %}
 {% load allauth_ui %}
 {% load widget_tweaks %}
-
 {% block content %}
     {% trans "Sign In" as heading %}
     {% #container heading=heading subheading=subheading %}
-        <div>
-            {% setvar email_link %}
-                <a href="mailto:{{ email }}">{{ email }}</a>
-            {% endsetvar %}
-            {% blocktrans asvar subheading %}
+    <div>
+        {% setvar email_link %}
+        <a href="mailto:{{ email }}">{{ email }}</a>
+    {% endsetvar %}
+    {% blocktrans asvar subheading %}
                 We've sent a code to <a href="mailto:{{ email }}">{{ email }}</a>. The code expires shortly, so please enter it soon.
             {% endblocktrans %}
-        </div>
-        {% url 'account_confirm_login_code' as action_url %}
-        {% #form form=form url=action_url button_text=heading %}
-            {{ redirect_field }}
-            {% csrf_token %}
-        {% /form %}
-        <button type="submit" class="w-full px-4 py-2.5 h-10 flex items-center justify-center rounded-2xl text-sm font-medium text-zinc-900 dark:text-zinc-100 bg-zinc-100 dark:bg-zinc-800/30 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-800/50 transition-all duration-200 active:scale-[0.98]" form="logout-from-stage">{% translate "Cancel" %}</button>
-        <form id="logout-from-stage"
-              method="post"
-              action="{% url 'account_logout' %}">
-            <input type="hidden" name="next" value="{% url 'account_login' %}">
-            {% csrf_token %}
-        </form>
-    {% /container %}
+</div>
+{% url 'account_confirm_login_code' as action_url %}
+{% #form form=form url=action_url button_text=heading %}
+{{ redirect_field }}
+{% csrf_token %}
+{% /form %}
+<button type="submit"
+        class="w-full px-4 py-2.5 h-10 flex items-center justify-center rounded-2xl text-sm font-medium text-zinc-900 dark:text-zinc-100 bg-zinc-100 dark:bg-zinc-800/30 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-800/50 transition-all duration-200 active:scale-[0.98]"
+        form="logout-from-stage">{% translate "Cancel" %}</button>
+<form id="logout-from-stage"
+      method="post"
+      action="{% url 'account_logout' %}">
+    <input type="hidden" name="next" value="{% url 'account_login' %}">
+    {% csrf_token %}
+</form>
+{% /container %}
 {% endblock content %}

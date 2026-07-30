@@ -25,12 +25,21 @@ def stripe_webhook(request):
     try:
         event = stripe.Webhook.construct_event(payload, sig_header, settings.STRIPE_WEBHOOK_SECRET)
     except ValueError:
+        logger.error("Stripe webhook: invalid payload — could not parse")
         return HttpResponse(status=400)
     except stripe.error.SignatureVerificationError:
+        logger.error("Stripe webhook: invalid signature (possible tampering or config mismatch)")
         return HttpResponse(status=400)
 
     if event["type"] == "checkout.session.completed":
         session = event["data"]["object"]
+
+        # Only process when payment has actually settled.
+        # For delayed payment methods the session completes first, then
+        # async_payment_succeeded fires later.
+        if session.get("payment_status") != "paid":
+            return HttpResponse(status=200)
+
         package_uuid = session.get("metadata", {}).get("package_uuid")
 
         if package_uuid:
@@ -86,33 +95,101 @@ def stripe_webhook(request):
 
             send_package_paid_notification_task.delay(package.pk, payment.payer.pk)
 
+    elif event["type"] in (
+        "checkout.session.async_payment_succeeded",
+        "checkout.session.async_payment_failed",
+    ):
+        session = event["data"]["object"]
+        package_uuid = session.get("metadata", {}).get("package_uuid")
+        if not package_uuid:
+            return HttpResponse(status=200)
+        try:
+            payment = PackagePayment.objects.select_related("package", "payer").get(
+                stripe_checkout_session_id=session["id"]
+            )
+        except PackagePayment.DoesNotExist:
+            return HttpResponse(status=200)
+
+        if event["type"] == "checkout.session.async_payment_succeeded":
+            payment.is_completed = True
+            payment_intent_id = session.get("payment_intent")
+            if payment_intent_id:
+                payment.stripe_payment_intent_id = payment_intent_id
+            payment.save(update_fields=["is_completed", "stripe_payment_intent_id"])
+            package = payment.package
+            payer_currency = getattr(payment, "payer_currency", None) or "usd"
+            package.mark_as_paid(payer=payment.payer, payer_currency=payer_currency)
+            AuditLog.objects.create(
+                user=package.creator,
+                action=AuditLog.Action.UPDATE_RECORD,
+                details={
+                    "event": "async_payment_succeeded",
+                    "package_uuid": str(package.uuid),
+                    "stripe_session_id": session["id"],
+                    "payer_email": payment.payer.email if payment.payer else None,
+                },
+            )
+            from .tasks import send_package_paid_notification_task
+
+            send_package_paid_notification_task.delay(package.pk, payment.payer.pk)
+        else:
+            payment.is_completed = False
+            payment.save(update_fields=["is_completed"])
+            logger.warning(
+                "Async payment failed for session %s (package %s)",
+                session["id"],
+                package_uuid,
+            )
+
     elif event["type"] == "account.updated":
         account = event["data"]["object"]
-        if account.get("details_submitted"):
-            StripeAccount.objects.filter(stripe_account_id=account["id"]).update(
-                stripe_details_submitted=True
-            )
+        StripeAccount.objects.filter(stripe_account_id=account["id"]).update(
+            stripe_details_submitted=account.get("details_submitted", False),
+            charges_enabled=account.get("charges_enabled", False),
+            payouts_enabled=account.get("payouts_enabled", False),
+        )
 
     elif event["type"] in ("transfer.failed", "charge.failed"):
         obj = event["data"]["object"]
         failure_message = obj.get("failure_message", "unknown reason")
-        payment_intent_id = obj.get("payment_intent", "N/A")
+        payment_intent_id = obj.get("payment_intent") or obj.get("id")
         logger.error(
             "Stripe %s — payment_intent: %s, reason: %s",
             event["type"],
             payment_intent_id,
             failure_message,
         )
+        if payment_intent_id:
+            payment = (
+                PackagePayment.objects.filter(stripe_payment_intent_id=payment_intent_id)
+                .select_related("package")
+                .first()
+            )
+            if payment:
+                payment.is_completed = False
+                payment.save(update_fields=["is_completed"])
+                payment.package.mark_as_refunded()
+                AuditLog.objects.create(
+                    user=payment.package.creator,
+                    action=AuditLog.Action.UPDATE_RECORD,
+                    details={
+                        "event": event["type"],
+                        "package_uuid": str(payment.package.uuid),
+                        "payment_intent": payment_intent_id,
+                        "failure_message": failure_message,
+                    },
+                )
 
     elif event["type"] == "charge.refunded":
         charge = event["data"]["object"]
         payment_intent_id = charge.get("payment_intent")
         charge_currency = charge.get("currency", "usd")
-        amount_refunded = charge.get("amount_refunded", 0)
+        amount_refunded_cents = charge.get("amount_refunded", 0)
+        amount_captured_cents = charge.get("amount_captured", 0)
         if charge_currency.lower() in ("jpy", "krw", "vnd", "idr", "clp", "ugx"):
-            refunded_display = float(amount_refunded)
+            refunded_display = float(amount_refunded_cents)
         else:
-            refunded_display = amount_refunded / 100
+            refunded_display = amount_refunded_cents / 100
         logger.warning(
             "Charge refunded — payment_intent: %s, amount: %s %.2f",
             payment_intent_id,
@@ -128,9 +205,12 @@ def stripe_webhook(request):
                 .first()
             )
             if payment:
+                # Only fully revert the package if the entire charge was refunded.
+                is_full_refund = amount_refunded_cents >= amount_captured_cents
                 payment.is_completed = False
                 payment.save(update_fields=["is_completed"])
-                payment.package.mark_as_refunded()
+                if is_full_refund:
+                    payment.package.mark_as_refunded()
                 AuditLog.objects.create(
                     user=payment.package.creator,
                     action=AuditLog.Action.UPDATE_RECORD,
@@ -138,7 +218,9 @@ def stripe_webhook(request):
                         "event": "charge_refunded",
                         "package_uuid": str(payment.package.uuid),
                         "payment_intent": payment_intent_id,
-                        "amount_refunded": str(amount_refunded),
+                        "amount_refunded_cents": amount_refunded_cents,
+                        "amount_captured_cents": amount_captured_cents,
+                        "is_full_refund": is_full_refund,
                     },
                 )
             else:

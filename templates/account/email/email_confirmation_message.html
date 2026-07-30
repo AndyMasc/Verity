@@ -1,48 +1,53 @@
 {% extends "account/email/base_message.html" %}
 {% load account %}
 {% load i18n %}
-
 {% block content %}
     {% autoescape off %}
         {% user_display user as user_display %}
-
         <p>
             {% blocktranslate with site_name=current_site.name site_domain=current_site.domain %}
                 You're receiving this email because user <strong>{{ user_display }}</strong> has given your email address to register an account on <strong>{{ site_domain }}</strong>.
             {% endblocktranslate %}
         </p>
-
         {% if code %}
             <p>
                 {% blocktranslate %}Your email verification code is listed below. Please enter it in your open browser window.{% endblocktranslate %}
             </p>
-
-            <div style="margin: 24px 0; padding: 16px; background-color: #f4f4f5; border-radius: 8px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 2px;">
-                {{ code }}
-            </div>
+            <div style="margin: 24px 0;
+                        padding: 16px;
+                        background-color: #f4f4f5;
+                        border-radius: 8px;
+                        text-align: center;
+                        font-size: 24px;
+                        font-weight: bold;
+                        letter-spacing: 2px">{{ code }}</div>
         {% else %}
             <p>
                 {% blocktranslate %}To confirm this is correct, please click the button below to verify your email address.{% endblocktranslate %}
             </p>
-
             <table cellspacing="0" cellpadding="0" style="margin: 28px 0;">
                 <tr>
-                    <td align="center" style="border-radius: 9999px; background-color: #18181b;">
-                        <a href="{{ activate_url }}" style="padding: 10px 20px; display: inline-block; color: #ffffff; font-size: 13px; font-weight: 500; text-decoration: none; border-radius: 9999px;">
-                            {% trans "Verify Email Address" %}
-                        </a>
+                    <td align="center"
+                        style="border-radius: 9999px;
+                               background-color: #18181b">
+                        <a href="{{ activate_url }}"
+                           style="padding: 10px 20px;
+                                  display: inline-block;
+                                  color: #ffffff;
+                                  font-size: 13px;
+                                  font-weight: 500;
+                                  text-decoration: none;
+                                  border-radius: 9999px">{% trans "Verify Email Address" %}</a>
                     </td>
                 </tr>
             </table>
-
             <p style="font-size: 12px; color: #71717a; margin-top: 24px;">
-                {% trans "If the button doesn't work, copy and paste this link into your browser:" %}<br>
+                {% trans "If the button doesn't work, copy and paste this link into your browser:" %}
+                <br>
                 <a href="{{ activate_url }}" style="color: #18181b;">{{ activate_url }}</a>
             </p>
         {% endif %}
-
         <hr style="border: 0; border-top: 1px solid #e4e4e7; margin: 24px 0;">
-
         <p style="font-size: 12px; color: #71717a; margin: 0;">
             {% blocktranslate %}This email was sent because an account registration was initiated. If you did not request this, please ignore this email.{% endblocktranslate %}
         </p>

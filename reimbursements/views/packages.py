@@ -217,7 +217,7 @@ class CreatePackageFromRecordsView(LoginRequiredMixin, StripeAccountRequiredMixi
             recipient_email: str = data.get("recipient_email", "").strip()
             try:
                 days_valid: int = max(1, min(365, int(data.get("days_valid", 7))))
-            except TypeError, ValueError:
+            except (TypeError, ValueError):
                 days_valid = 7
         else:
             record_ids = [
@@ -227,7 +227,7 @@ class CreatePackageFromRecordsView(LoginRequiredMixin, StripeAccountRequiredMixi
             recipient_email = request.POST.get("recipient_email", "").strip()
             try:
                 days_valid = max(1, min(365, int(request.POST.get("days_valid", 7))))
-            except TypeError, ValueError:
+            except (TypeError, ValueError):
                 days_valid = 7
 
         if not record_ids:

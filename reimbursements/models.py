@@ -37,13 +37,20 @@ class StripeAccount(models.Model):
     )
     stripe_account_id = models.CharField(max_length=255, blank=True, null=True)
     stripe_details_submitted = models.BooleanField(default=False)
+    charges_enabled = models.BooleanField(default=False)
+    payouts_enabled = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     @property
     def is_active(self) -> bool:
-        """Returns True if the user has completed Stripe onboarding."""
-        return bool(self.stripe_account_id and self.stripe_details_submitted)
+        """Returns True if the user has completed Stripe onboarding and can receive payouts."""
+        return bool(
+            self.stripe_account_id
+            and self.stripe_details_submitted
+            and self.charges_enabled
+            and self.payouts_enabled
+        )
 
     def __str__(self) -> str:
         return f"Stripe Account for {self.user.email}"

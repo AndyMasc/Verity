@@ -1,56 +1,55 @@
 {% extends "base.html" %}
 {% load widget_tweaks %}
-
 {% block content %}
     <div class="max-w-7xl mx-auto px-4 py-8 space-y-6">
-
         <header class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mt-5">
             <div>
-                <h1 class="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 capitalize">
-                    Documents Index
-                </h1>
+                <h1 class="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 capitalize">Documents Index</h1>
                 <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
                     Centralized view for all your uploaded files and attachments.
                 </p>
             </div>
-
             <a href="{% url 'documents:upload_document' %}"
                class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-3.5 py-2 text-xs font-medium text-white bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white rounded-2xl transition-all duration-200 shadow-xs active:scale-[0.98] cursor-pointer">
-                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                <svg class="w-3.5 h-3.5"
+                     fill="none"
+                     viewBox="0 0 24 24"
+                     stroke-width="2.5"
+                     stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                 </svg>
                 Upload Document
             </a>
         </header>
-
         <section class="space-y-3" aria-label="Query Filters Matrix">
             <div class="relative w-full">
                 <div class="absolute inset-y-0 left-4 flex items-center pointer-events-none text-zinc-400 dark:text-zinc-600">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor">
+                    <svg class="w-4 h-4"
+                         fill="none"
+                         viewBox="0 0 24 24"
+                         stroke-width="2.2"
+                         stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.604 10.604z" />
                     </svg>
                 </div>
-                <input
-                    class="w-full bg-white dark:bg-zinc-950 border border-zinc-200/50 dark:border-zinc-800/50 py-3 pl-10 pr-4 text-xs rounded-xl dark:text-zinc-100 text-zinc-900 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-600 transition-all duration-200"
-                    placeholder="Search documents..."
-                    id="search"
-                    type="search"
-                    name="search"
-                    value="{{ request.GET.search|default:'' }}"
-                    hx-get="{% url 'documents:document_list_view' %}"
-                    hx-trigger="input changed delay:200ms, search"
-                    hx-target="#query-results-container"
-                    hx-include="#filter-form"
-                    hx-indicator=".htmx-indicator">
+                <input class="w-full bg-white dark:bg-zinc-950 border border-zinc-200/50 dark:border-zinc-800/50 py-3 pl-10 pr-4 text-xs rounded-xl dark:text-zinc-100 text-zinc-900 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-600 transition-all duration-200"
+                       placeholder="Search documents..."
+                       id="search"
+                       type="search"
+                       name="search"
+                       value="{{ request.GET.search|default:'' }}"
+                       hx-get="{% url 'documents:document_list_view' %}"
+                       hx-trigger="input changed delay:200ms, search"
+                       hx-target="#query-results-container"
+                       hx-include="#filter-form"
+                       hx-indicator=".htmx-indicator">
             </div>
-
             <form id="filter-form"
                   hx-get="{% url 'documents:document_list_view' %}"
                   hx-trigger="change"
                   hx-target="#query-results-container"
                   hx-include="#search"
                   class="overflow-x-auto flex items-center justify-between gap-4 py-0.5 scrollbar-none">
-
                 <div class="flex items-center gap-2">
                     {% for field in filter.form %}
                         <div class="relative">
@@ -61,29 +60,24 @@
                         </div>
                     {% endfor %}
                 </div>
-
                 <a href="{% url 'documents:document_list_view' %}"
                    class="text-xs font-medium text-zinc-400 dark:text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-all duration-200 whitespace-nowrap cursor-pointer">
                     Clear Filters
                 </a>
             </form>
         </section>
-
-        <main
-            id="query-results-container"
-            class="relative min-h-0 w-full min-w-0 mt-10 dark:bg-zinc-900/30 bg-white py-4 px-6 rounded-2xl shadow-sm dark:shadow-none ring-1 ring-inset ring-black/[0.04] dark:ring-white/[0.04]"
-            hx-trigger="documentChanged from:body"
-            hx-get="{% url 'documents:document_list_view' %}"
-            hx-target="#query-results-container"
-            hx-include="#filter-form, #search"
-            hx-indicator=".htmx-indicator">
-
+        <main id="query-results-container"
+              class="relative min-h-0 w-full min-w-0 mt-10 dark:bg-zinc-900/30 bg-white py-4 px-6 rounded-2xl shadow-sm dark:shadow-none ring-1 ring-inset ring-black/[0.04] dark:ring-white/[0.04]"
+              hx-trigger="documentChanged from:body"
+              hx-get="{% url 'documents:document_list_view' %}"
+              hx-target="#query-results-container"
+              hx-include="#filter-form, #search"
+              hx-indicator=".htmx-indicator">
             <div class="htmx-indicator hidden htmx-request:flex absolute inset-0 bg-white/40 dark:bg-zinc-950/40 backdrop-blur-[1px] z-10 items-center justify-center rounded-xl">
                 <div class="animate-pulse text-xs font-medium text-zinc-500 dark:text-zinc-400 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 px-3 py-1.5 rounded-xl shadow-xs">
                     Updating...
                 </div>
             </div>
-
             {% include 'documents/partials/document_list_partial.html' %}
         </main>
     </div>

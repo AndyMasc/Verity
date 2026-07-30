@@ -11,6 +11,7 @@ from django.db.models import Q
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
+from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.generic import TemplateView
@@ -22,6 +23,8 @@ from core.exchange_rates import get_rates
 
 from ..models import STRIPE_MINIMUM_FEE_CENTS, PackagePayment, ReimbursementPackage
 from ..tasks import sync_payment_status
+
+import hashlib
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 logger = logging.getLogger(__name__)
@@ -93,21 +96,37 @@ class CreatePackageCheckoutView(LoginRequiredMixin, View):
                 reverse("reimbursements:package-detail", kwargs={"package_uuid": package.uuid})
             )
 
-        existing_payment = (
-            package.payments.filter(is_completed=False).order_by("-created_at").first()
-        )
-        if existing_payment:
-            try:
-                session = stripe.checkout.Session.retrieve(
-                    existing_payment.stripe_checkout_session_id
+        # Lock the package row and double-check it's still payable.
+        # This prevents concurrent checkouts from different users.
+        with transaction.atomic():
+            locked_package = (
+                ReimbursementPackage.objects.select_for_update()
+                .filter(pk=package.pk, status=ReimbursementPackage.Status.OPEN)
+                .first()
+            )
+            if not locked_package:
+                messages.error(request, "This package is no longer available for payment.")
+                return redirect(
+                    reverse("reimbursements:package-detail", kwargs={"package_uuid": package.uuid})
                 )
-                if session.status == "open" and session.url:
-                    return redirect(session.url)
-            except stripe.error.StripeError:
-                logger.warning(
-                    "Failed to retrieve existing session %s, creating new one",
-                    existing_payment.stripe_checkout_session_id,
-                )
+
+            existing_payment = (
+                package.payments.filter(is_completed=False)
+                .order_by("-created_at")
+                .first()
+            )
+            if existing_payment:
+                try:
+                    session = stripe.checkout.Session.retrieve(
+                        existing_payment.stripe_checkout_session_id
+                    )
+                    if session.status == "open" and session.url:
+                        return redirect(session.url)
+                except stripe.error.StripeError:
+                    logger.warning(
+                        "Failed to retrieve existing session %s, creating new one",
+                        existing_payment.stripe_checkout_session_id,
+                    )
 
         stripe_account = getattr(package.creator, "stripe_account", None)
         stripe_account_id = (
@@ -122,7 +141,7 @@ class CreatePackageCheckoutView(LoginRequiredMixin, View):
         line_items: list[dict[str, Any]] = []
         actual_total_cents = 0
         actual_total_amount = Decimal("0")
-        for record in package.records.filter():
+        for record in package.records.filter(is_active=True):
             if record.balance and record.balance > 0:
                 converted = convert_currency(
                     record.balance, record.currency, payer_currency, rates=payer_rates
@@ -212,7 +231,12 @@ class CreatePackageCheckoutView(LoginRequiredMixin, View):
             }
 
         try:
-            checkout_session = stripe.checkout.Session.create(**checkout_args)
+            idempotency_key = hashlib.sha256(
+                f"checkout:{package.uuid}:{request.user.id}:{timezone.now().timestamp()}".encode()
+            ).hexdigest()
+            checkout_session = stripe.checkout.Session.create(
+                **checkout_args, idempotency_key=idempotency_key
+            )
         except stripe.error.StripeError:
             logger.exception(
                 "Failed to create Stripe Checkout Session for package %s", package.uuid

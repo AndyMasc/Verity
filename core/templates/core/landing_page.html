@@ -1,43 +1,47 @@
 {% extends "base.html" %}
 {% load static %}
-
 {% block content %}
-    {% block sidebar %} {% endblock %}
+    {% block sidebar %}{% endblock %}
     <nav class="sticky top-0 z-50 w-full border-b border-zinc-200/60 bg-white/80 backdrop-blur-xl dark:border-zinc-800/60 dark:bg-zinc-950/80 transition-colors duration-200">
         <div class="container mx-auto flex w-full items-center justify-between px-6 py-3.5 md:max-w-7xl">
             <div class="flex items-center gap-8">
-                <a href="{% url 'core:landing_page' %}" class="font-bold tracking-tight text-zinc-950 dark:text-white flex items-center gap-2.5 text-lg">
+                <a href="{% url 'core:landing_page' %}"
+                   class="font-bold tracking-tight text-zinc-950 dark:text-white flex items-center gap-2.5 text-lg">
                     <span class="inline-block w-2 h-2 rounded-full bg-zinc-950 dark:bg-white"></span>
                     <span>Papertrail.</span>
                 </a>
-
                 <nav class="hidden items-center md:inline-flex space-x-1 pl-6 border-l border-zinc-200/80 dark:border-zinc-800/80">
                     {% for label, anchor in nav_links %}
-                        <a href="{{ anchor }}" class="rounded-lg px-3.5 py-1.5 text-xs font-medium text-zinc-600 transition-all duration-200 hover:text-zinc-950 hover:bg-zinc-100/80 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-800/60">
+                        <a href="{{ anchor }}"
+                           class="rounded-lg px-3.5 py-1.5 text-xs font-medium text-zinc-600 transition-all duration-200 hover:text-zinc-950 hover:bg-zinc-100/80 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-800/60">
                             {{ label }}
                         </a>
                     {% empty %}
-                        <a href="#features" class="rounded-lg px-3.5 py-1.5 text-xs font-medium text-zinc-600 transition-all duration-200 hover:text-zinc-950 hover:bg-zinc-100/80 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-800/60">Features</a>
-                        <a href="#performance" class="rounded-lg px-3.5 py-1.5 text-xs font-medium text-zinc-600 transition-all duration-200 hover:text-zinc-950 hover:bg-zinc-100/80 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-800/60">Performance</a>
-                        <a href="#reimbursements" class="rounded-lg px-3.5 py-1.5 text-xs font-medium text-zinc-600 transition-all duration-200 hover:text-zinc-950 hover:bg-zinc-100/80 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-800/60">Reimbursements</a>
-                        <a href="#security" class="rounded-lg px-3.5 py-1.5 text-xs font-medium text-zinc-600 transition-all duration-200 hover:text-zinc-950 hover:bg-zinc-100/80 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-800/60">Security</a>
-                        <a href="#faq" class="rounded-lg px-3.5 py-1.5 text-xs font-medium text-zinc-600 transition-all duration-200 hover:text-zinc-950 hover:bg-zinc-100/80 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-800/60">FAQ</a>
+                        <a href="#features"
+                           class="rounded-lg px-3.5 py-1.5 text-xs font-medium text-zinc-600 transition-all duration-200 hover:text-zinc-950 hover:bg-zinc-100/80 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-800/60">Features</a>
+                        <a href="#performance"
+                           class="rounded-lg px-3.5 py-1.5 text-xs font-medium text-zinc-600 transition-all duration-200 hover:text-zinc-950 hover:bg-zinc-100/80 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-800/60">Performance</a>
+                        <a href="#reimbursements"
+                           class="rounded-lg px-3.5 py-1.5 text-xs font-medium text-zinc-600 transition-all duration-200 hover:text-zinc-950 hover:bg-zinc-100/80 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-800/60">Reimbursements</a>
+                        <a href="#security"
+                           class="rounded-lg px-3.5 py-1.5 text-xs font-medium text-zinc-600 transition-all duration-200 hover:text-zinc-950 hover:bg-zinc-100/80 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-800/60">Security</a>
+                        <a href="#faq"
+                           class="rounded-lg px-3.5 py-1.5 text-xs font-medium text-zinc-600 transition-all duration-200 hover:text-zinc-950 hover:bg-zinc-100/80 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-800/60">FAQ</a>
                     {% endfor %}
                 </nav>
             </div>
-
             <div class="inline-flex items-center space-x-3">
-                <a href="{% url 'account_login' %}" class="rounded-full border border-zinc-200 dark:border-zinc-800 px-4 py-1.5 text-xs font-medium text-zinc-700 hover:text-zinc-950 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:text-white dark:hover:bg-zinc-900 transition-all duration-200 active:scale-[0.98]">Sign in</a>
-                <a href="{% url 'account_signup' %}" class="rounded-full bg-zinc-950 px-4 py-1.5 text-xs font-medium text-white transition-all duration-200 hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200 active:scale-[0.98] shadow-sm">Join now</a>
+                <a href="{% url 'account_login' %}"
+                   class="rounded-full border border-zinc-200 dark:border-zinc-800 px-4 py-1.5 text-xs font-medium text-zinc-700 hover:text-zinc-950 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:text-white dark:hover:bg-zinc-900 transition-all duration-200 active:scale-[0.98]">Sign in</a>
+                <a href="{% url 'account_signup' %}"
+                   class="rounded-full bg-zinc-950 px-4 py-1.5 text-xs font-medium text-white transition-all duration-200 hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200 active:scale-[0.98] shadow-sm">Join now</a>
             </div>
         </div>
     </nav>
-
     <section class="relative w-full overflow-hidden bg-white dark:bg-zinc-950 pt-20 md:pt-32 pb-20">
-        <div class="absolute inset-0 bg-[radial-gradient(#e4e4e7_1px,transparent_1px)] dark:bg-[radial-gradient(#27272a_1px,transparent_1px)] [background-size:32px_32px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_40%,#000_70%,transparent_100%)] pointer-events-none opacity-60"></div>
-
+        <div class="absolute inset-0 bg-[radial-gradient(#e4e4e7_1px,transparent_1px)] dark:bg-[radial-gradient(#27272a_1px,transparent_1px)] [background-size:32px_32px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_40%,#000_70%,transparent_100%)] pointer-events-none opacity-60">
+        </div>
         <div class="relative container mx-auto flex flex-col items-center justify-center gap-8 px-6 max-w-7xl text-center">
-
             <div class="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-zinc-50 border border-zinc-200/80 dark:bg-zinc-900/60 dark:border-zinc-800/80 text-xs font-medium tracking-tight text-zinc-600 dark:text-zinc-300 shadow-xs">
                 <span class="flex h-2 w-2 relative">
                     <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -45,46 +49,56 @@
                 </span>
                 <span>v2.0 Global Financial Processing Engine</span>
             </div>
-
             <header class="max-w-4xl space-y-6">
                 <h1 class="text-4xl sm:text-6xl lg:text-7xl font-semibold tracking-tight text-zinc-950 dark:text-white leading-[1.08]">
-                    Papertrail. <br> The intelligent workspace <br class="hidden sm:inline">
+                    Papertrail.
+                    <br>
+                    The intelligent workspace
+                    <br class="hidden sm:inline">
                     <span class="bg-gradient-to-b from-zinc-900 via-zinc-700 to-zinc-500 dark:from-white dark:via-zinc-300 dark:to-zinc-500 bg-clip-text text-transparent">for every purchase.</span>
                 </h1>
                 <p class="mx-auto max-w-2xl text-base sm:text-lg text-zinc-600 dark:text-zinc-400 leading-relaxed font-normal">
                     Centralize every purchase, invoice, and outlay into a single, encrypted, and audit-ready workspace. <span class="text-zinc-900 dark:text-zinc-200 font-medium">Minimal friction. Hyper fast. Private by design.</span>
                 </p>
             </header>
-
             <div class="flex items-center gap-3.5 pt-2">
-                <a href="{% url 'account_signup' %}" class="rounded-full bg-zinc-950 px-7 py-3 text-xs sm:text-sm font-medium text-white transition-all duration-200 hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200 shadow-md hover:shadow-lg active:scale-[0.98]">
+                <a href="{% url 'account_signup' %}"
+                   class="rounded-full bg-zinc-950 px-7 py-3 text-xs sm:text-sm font-medium text-white transition-all duration-200 hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200 shadow-md hover:shadow-lg active:scale-[0.98]">
                     Get Started Free
                 </a>
-                <a href="#features" class="border border-zinc-200 dark:border-zinc-800 flex items-center justify-center gap-2 rounded-full px-7 py-3 text-xs sm:text-sm font-medium text-zinc-700 hover:text-zinc-950 dark:text-zinc-300 dark:hover:text-white hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-all duration-200 active:scale-[0.98]">
+                <a href="#features"
+                   class="border border-zinc-200 dark:border-zinc-800 flex items-center justify-center gap-2 rounded-full px-7 py-3 text-xs sm:text-sm font-medium text-zinc-700 hover:text-zinc-950 dark:text-zinc-300 dark:hover:text-white hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-all duration-200 active:scale-[0.98]">
                     <span>Discover Platform</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="size-4 opacity-70">
+                    <svg xmlns="http://www.w3.org/2000/svg"
+                         fill="none"
+                         viewBox="0 0 24 24"
+                         stroke-width="2"
+                         stroke="currentColor"
+                         class="size-4 opacity-70">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
                     </svg>
                 </a>
             </div>
         </div>
-
         <div class="relative mt-20 w-full overflow-hidden">
             <div class="flex justify-center px-6">
                 <div class="relative w-full max-w-7xl shrink-0 rounded-2xl sm:rounded-3xl border border-zinc-200/80 dark:border-zinc-800/80 p-2 sm:p-3 bg-zinc-100/60 dark:bg-zinc-900/40 backdrop-blur-md shadow-[0_32px_96px_rgba(0,0,0,0.08)] dark:shadow-[0_32px_96px_rgba(0,0,0,0.5)]">
                     <div class="rounded-xl sm:rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 overflow-hidden bg-white dark:bg-zinc-950">
-                        <img src="{% static 'core/images/interface-demo-light.png' %}" alt="App interface preview"
+                        <img src="{% static 'core/images/interface-demo-light.png' %}"
+                             alt="App interface preview"
                              class="w-full object-cover dark:hidden rounded-xl sm:rounded-2xl">
-                        <img src="{% static 'core/images/interface-demo-dark.png' %}" alt="App interface preview (dark)"
+                        <img src="{% static 'core/images/interface-demo-dark.png' %}"
+                             alt="App interface preview (dark)"
                              class="hidden w-full object-cover dark:block rounded-xl sm:rounded-2xl">
                     </div>
                 </div>
             </div>
-            <div class="absolute -inset-x-12 bottom-0 top-1/2 bg-linear-to-t from-white via-white/80 dark:from-zinc-950 dark:via-zinc-950/80 pointer-events-none"></div>
+            <div class="absolute -inset-x-12 bottom-0 top-1/2 bg-linear-to-t from-white via-white/80 dark:from-zinc-950 dark:via-zinc-950/80 pointer-events-none">
+            </div>
         </div>
     </section>
-
-    <section id="features" class="py-28 bg-zinc-50/70 dark:bg-zinc-950/60 border-t border-zinc-200/60 dark:border-zinc-900">
+    <section id="features"
+             class="py-28 bg-zinc-50/70 dark:bg-zinc-950/60 border-t border-zinc-200/60 dark:border-zinc-900">
         <div class="mx-auto max-w-7xl px-6 lg:px-8">
             <div class="max-w-2xl mb-16">
                 <span class="text-xs font-semibold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Architecture</span>
@@ -95,7 +109,6 @@
                     Eliminate manual data entry with autonomous extraction and record merging.
                 </p>
             </div>
-
             <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
                 <div class="md:col-span-2 rounded-3xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-900/40 p-8 sm:p-10 flex flex-col justify-between hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors duration-200">
                     <div>
@@ -106,7 +119,6 @@
                         </p>
                     </div>
                 </div>
-
                 <div class="rounded-3xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-900/40 p-8 sm:p-10 flex flex-col justify-between hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors duration-200">
                     <div>
                         <span class="text-[11px]  uppercase tracking-wider text-zinc-400 dark:text-zinc-500">02 / ORGANIZATION</span>
@@ -116,7 +128,6 @@
                         </p>
                     </div>
                 </div>
-
                 <div class="rounded-3xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-900/40 p-8 sm:p-10 flex flex-col justify-between hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors duration-200">
                     <div>
                         <span class="text-[11px]  uppercase tracking-wider text-zinc-400 dark:text-zinc-500">03 / QUERY</span>
@@ -126,7 +137,6 @@
                         </p>
                     </div>
                 </div>
-
                 <div class="md:col-span-2 rounded-3xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-900/40 p-8 sm:p-10 flex flex-col justify-between hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors duration-200">
                     <div>
                         <span class="text-[11px]  uppercase tracking-wider text-zinc-400 dark:text-zinc-500">04 / SECURITY</span>
@@ -139,8 +149,8 @@
             </div>
         </div>
     </section>
-
-    <section id="performance" class="py-28 border-t border-zinc-200/60 dark:border-zinc-900 bg-white dark:bg-zinc-950">
+    <section id="performance"
+             class="py-28 border-t border-zinc-200/60 dark:border-zinc-900 bg-white dark:bg-zinc-950">
         <div class="mx-auto max-w-7xl px-6 lg:px-8">
             <div class="max-w-2xl mb-16">
                 <span class="text-xs font-semibold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Performance Benchmark</span>
@@ -151,7 +161,6 @@
                     Built from the ground up for high-volume enterprise ingestion.
                 </p>
             </div>
-
             <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
                 <div class="relative rounded-3xl border border-zinc-900/10 dark:border-zinc-700/80 p-8 sm:p-10 bg-gradient-to-b from-zinc-50 to-white dark:from-zinc-900/80 dark:to-zinc-900/40 shadow-sm">
                     <span class="text-xs font-semibold uppercase tracking-wider text-black dark:text-white">Papertrail</span>
@@ -159,14 +168,12 @@
                     <span class="block text-sm font-semibold text-zinc-950 dark:text-zinc-100 mt-4">Papertrail Engine</span>
                     <span class="block text-xs text-zinc-500 dark:text-zinc-400 mt-1 leading-relaxed">Autonomous multi-threaded document parsing and ledger matching.</span>
                 </div>
-
                 <div class="rounded-3xl border border-zinc-200/80 dark:border-zinc-800/80 p-8 sm:p-10 bg-zinc-50/40 dark:bg-zinc-900/20">
                     <span class="text-xs font-medium uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Legacy Tool A</span>
                     <span class="block text-5xl font-bold tracking-tight text-zinc-400 dark:text-zinc-600 mt-4">17s</span>
                     <span class="block text-sm font-medium text-zinc-800 dark:text-zinc-300 mt-4">Standard Cloud Workflow</span>
                     <span class="block text-xs text-zinc-500 dark:text-zinc-400 mt-1 leading-relaxed">Manual queue queuing and basic OCR extraction.</span>
                 </div>
-
                 <div class="rounded-3xl border border-zinc-200/80 dark:border-zinc-800/80 p-8 sm:p-10 bg-zinc-50/40 dark:bg-zinc-900/20">
                     <span class="text-xs font-medium uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Legacy Tool B</span>
                     <span class="block text-5xl font-bold tracking-tight text-zinc-400 dark:text-zinc-600 mt-4">90s+</span>
@@ -176,7 +183,6 @@
             </div>
         </div>
     </section>
-
     <section class="py-28 border-t border-zinc-200/60 dark:border-zinc-900 bg-zinc-50/70 dark:bg-zinc-950">
         <div class="mx-auto max-w-7xl px-6 lg:px-8">
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
@@ -203,7 +209,6 @@
                         </div>
                     </div>
                 </div>
-
                 <div class="rounded-3xl border border-zinc-200/80 dark:border-zinc-800/80 p-6 sm:p-8 bg-white dark:bg-zinc-900/60 shadow-sm">
                     <div class="space-y-5">
                         <div class="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 pb-5">
@@ -232,24 +237,22 @@
             </div>
         </div>
     </section>
-
-    <section id="reimbursements" class="relative overflow-hidden py-32 bg-white dark:bg-zinc-950 text-center border-t border-zinc-200/60 dark:border-zinc-900">
-        <div class="absolute inset-0 bg-[radial-gradient(circle_800px_at_center,rgba(250,250,250,1),transparent)] dark:bg-[radial-gradient(circle_800px_at_center,rgba(18,18,23,0.6),transparent)] pointer-events-none"></div>
-
+    <section id="reimbursements"
+             class="relative overflow-hidden py-32 bg-white dark:bg-zinc-950 text-center border-t border-zinc-200/60 dark:border-zinc-900">
+        <div class="absolute inset-0 bg-[radial-gradient(circle_800px_at_center,rgba(250,250,250,1),transparent)] dark:bg-[radial-gradient(circle_800px_at_center,rgba(18,18,23,0.6),transparent)] pointer-events-none">
+        </div>
         <div class="relative mx-auto max-w-3xl px-6">
             <span class="inline-flex items-center gap-2 rounded-full px-3.5 py-1 text-[11px] font-semibold uppercase tracking-widest text-zinc-800 dark:text-zinc-200 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800">
                 Global Contractor & Team Operations
             </span>
-
             <h3 class="mt-8 text-3xl sm:text-5xl font-light tracking-tight text-zinc-950 dark:text-white leading-[1.12]">
-                Instant expense outlays. <br/>
+                Instant expense outlays.
+                <br />
                 <span class="font-semibold bg-gradient-to-r from-zinc-950 via-zinc-700 to-zinc-900 dark:from-white dark:via-zinc-300 dark:to-zinc-100 bg-clip-text text-transparent">Transparent client settlement.</span>
             </h3>
-
             <p class="mt-6 text-base sm:text-lg text-zinc-600 dark:text-zinc-400 font-normal max-w-2xl mx-auto leading-relaxed">
                 Eliminate reimbursement delays. Direct bank feeds, extracted vendor metadata, and multi-currency items are compiled into clean, shareable digital statements for immediate client sign-off.
             </p>
-
             <div class="mt-14 grid grid-cols-2 gap-6 max-w-lg mx-auto border-t border-zinc-200/80 dark:border-zinc-800/80 pt-8 text-left">
                 <div>
                     <p class="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Compliance Standard</p>
@@ -262,8 +265,8 @@
             </div>
         </div>
     </section>
-
-    <section id="faq" class="py-28 border-t border-zinc-200/60 dark:border-zinc-900 bg-zinc-50/70 dark:bg-zinc-950">
+    <section id="faq"
+             class="py-28 border-t border-zinc-200/60 dark:border-zinc-900 bg-zinc-50/70 dark:bg-zinc-950">
         <div class="mx-auto max-w-3xl px-6">
             <div class="text-center mb-16">
                 <span class="text-xs font-semibold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Support</span>
@@ -271,7 +274,6 @@
                     Frequently asked questions
                 </h2>
             </div>
-
             <div class="space-y-4 text-left">
                 <div class="p-6 sm:p-8 rounded-3xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-900/40">
                     <h3 class="text-sm sm:text-base font-semibold text-zinc-950 dark:text-white">How does Papertrail differ from standard receipt scanners?</h3>
@@ -279,7 +281,6 @@
                         Unlike single-purpose scanning utilities, Papertrail acts as a complete asset dossier and financial clearinghouse—linking bank feeds, warranty records, tax compliance, and client settlements into dynamic workspaces.
                     </p>
                 </div>
-
                 <div class="p-6 sm:p-8 rounded-3xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-900/40">
                     <h3 class="text-sm sm:text-base font-semibold text-zinc-950 dark:text-white">Is my financial data secure across international jurisdictions?</h3>
                     <p class="mt-3 text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
@@ -289,5 +290,4 @@
             </div>
         </div>
     </section>
-
 {% endblock %}

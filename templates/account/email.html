@@ -1,133 +1,130 @@
 {% extends "allauth/layouts/base.html" %}
 {% load i18n %}
 {% load allauth_ui %}
-
 {% block head %}
 {% endblock head %}
-
 {% block content %}
     {# Action URL at the top level scope #}
     {% url 'account_email' as action_url %}
-
     {# Define heading and subheading for the SaaS container #}
     {% trans "Email Addresses" as heading %}
     {% trans "Manage the emails associated with your account." as subheading %}
-
     {% #container heading=heading subheading=subheading %}
-        <section class="mt-4">
-            {% if emailaddresses %}
-                <form id="emailForm" action="{{ action_url }}" method="post" class="space-y-4 transition-all duration-300" hx-post="{{ action_url }}" hx-target="body">
-                    {% csrf_token %}
-
-                    <div class="space-y-2.5">
-                        {% for radio in emailaddress_radios %}
-                            {% with emailaddress=radio.emailaddress %}
-                                <label class="relative flex items-center gap-4 rounded-2xl border border-zinc-200/50 dark:border-zinc-800/50 bg-white dark:bg-zinc-800/20 p-4 transition-all duration-200 hover:border-zinc-300 dark:hover:border-zinc-700/60 cursor-pointer shadow-xs select-none">
-
-                                    <input type="radio" name="email" value="{{ emailaddress.email }}" id="{{ radio.id }}"
-                                           class="size-4 rounded-full border-zinc-300 text-zinc-900 focus:ring-zinc-950/10 dark:border-zinc-700 dark:text-white dark:focus:ring-white/10 accent-zinc-900 dark:accent-zinc-100"
-                                           {% if radio.checked %}checked{% endif %} />
-
-                                    <span class="flex-grow flex items-center justify-between min-w-0">
-                                        <span class="text-sm font-medium text-zinc-800 dark:text-zinc-200 truncate">
-                                            {{ emailaddress.email }}
-                                        </span>
-                                        <span class="flex items-center gap-1.5 shrink-0 ml-3">
-                                            {% if emailaddress.verified %}
-                                                <span class="inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
-                                                    Verified
-                                                </span>
-                                            {% endif %}
-                                            {% if emailaddress.primary %}
-                                                <span class="inline-flex items-center rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] font-semibold text-blue-600 dark:text-blue-400">
-                                                    Primary
-                                                </span>
-                                            {% endif %}
-                                        </span>
+    <section class="mt-4">
+        {% if emailaddresses %}
+            <form id="emailForm"
+                  action="{{ action_url }}"
+                  method="post"
+                  class="space-y-4 transition-all duration-300"
+                  hx-post="{{ action_url }}"
+                  hx-target="body">
+                {% csrf_token %}
+                <div class="space-y-2.5">
+                    {% for radio in emailaddress_radios %}
+                        {% with emailaddress=radio.emailaddress %}
+                            <label class="relative flex items-center gap-4 rounded-2xl border border-zinc-200/50 dark:border-zinc-800/50 bg-white dark:bg-zinc-800/20 p-4 transition-all duration-200 hover:border-zinc-300 dark:hover:border-zinc-700/60 cursor-pointer shadow-xs select-none">
+                                <input type="radio"
+                                       name="email"
+                                       value="{{ emailaddress.email }}"
+                                       id="{{ radio.id }}"
+                                       class="size-4 rounded-full border-zinc-300 text-zinc-900 focus:ring-zinc-950/10 dark:border-zinc-700 dark:text-white dark:focus:ring-white/10 accent-zinc-900 dark:accent-zinc-100"
+                                       {% if radio.checked %}checked{% endif %} />
+                                <span class="flex-grow flex items-center justify-between min-w-0">
+                                    <span class="text-sm font-medium text-zinc-800 dark:text-zinc-200 truncate">{{ emailaddress.email }}</span>
+                                    <span class="flex items-center gap-1.5 shrink-0 ml-3">
+                                        {% if emailaddress.verified %}
+                                            <span class="inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                                                Verified
+                                            </span>
+                                        {% endif %}
+                                        {% if emailaddress.primary %}
+                                            <span class="inline-flex items-center rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] font-semibold text-blue-600 dark:text-blue-400">
+                                                Primary
+                                            </span>
+                                        {% endif %}
                                     </span>
-                                </label>
-                            {% endwith %}
-                        {% endfor %}
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-3 pt-2">
-                        <button name="action_primary" type="submit" id="btn-primary"
-                                class="action-btn rounded-2xl border border-zinc-200/50 dark:border-zinc-800/50 bg-white dark:bg-zinc-900 px-4 py-2.5 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all duration-200 flex items-center justify-center space-x-2 shadow-xs active:scale-[0.98]
-                                       disabled:!bg-zinc-100 disabled:!text-zinc-400 disabled:!border-zinc-200 disabled:cursor-not-allowed disabled:shadow-none
-                                       dark:disabled:!bg-zinc-900 dark:disabled:!text-zinc-600 dark:disabled:!border-zinc-800/60">
-                            <svg id="spinner-primary" class="hidden animate-spin h-3.5 w-3.5 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            <span id="text-primary" class="btn-text">{% trans "Make primary" %}</span>
-                        </button>
-
-                        <button name="action_remove" type="submit" id="btn-remove"
-                                class="action-btn rounded-2xl border border-zinc-200/50 dark:border-zinc-800/50 bg-white dark:bg-zinc-900 px-4 py-2.5 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-rose-500/10 hover:text-rose-500 dark:hover:bg-rose-500/20 transition-all duration-200 flex items-center justify-center space-x-2 shadow-xs active:scale-[0.98]
-                                       disabled:!bg-zinc-100 disabled:!text-zinc-400 disabled:!border-zinc-200 disabled:cursor-not-allowed disabled:shadow-none
-                                       dark:disabled:!bg-zinc-900 dark:disabled:!text-zinc-600 dark:disabled:!border-zinc-800/60">
-                            <svg id="spinner-remove" class="hidden animate-spin h-3.5 w-3.5 text-rose-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            <span id="text-remove" class="btn-text">{% trans "Remove" %}</span>
-                        </button>
-                    </div>
-                </form>
-            {% endif %}
-
-            {% if can_add_email %}
-                <div class="mt-6 border-t border-zinc-100 dark:border-zinc-900 pt-6"
-                     x-data="{ open : $persist(false) }"
-                     x-cloak>
-
-                    <button @click="open = !open"
-                            type="button"
-                            class="flex w-full items-center justify-between text-xs font-semibold uppercase tracking-wider text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-all duration-200">
-                        <span>Add email address</span>
-                        <span class="transition-transform duration-200 text-sm font-medium" :class="open ? 'rotate-45 scale-110' : 'rotate-0'">+</span>
+                                </span>
+                            </label>
+                        {% endwith %}
+                    {% endfor %}
+                </div>
+                <div class="grid grid-cols-2 gap-3 pt-2">
+                    <button name="action_primary"
+                            type="submit"
+                            id="btn-primary"
+                            class="action-btn rounded-2xl border border-zinc-200/50 dark:border-zinc-800/50 bg-white dark:bg-zinc-900 px-4 py-2.5 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all duration-200 flex items-center justify-center space-x-2 shadow-xs active:scale-[0.98] disabled:!bg-zinc-100 disabled:!text-zinc-400 disabled:!border-zinc-200 disabled:cursor-not-allowed disabled:shadow-none dark:disabled:!bg-zinc-900 dark:disabled:!text-zinc-600 dark:disabled:!border-zinc-800/60">
+                        <svg id="spinner-primary"
+                             class="hidden animate-spin h-3.5 w-3.5 text-current"
+                             xmlns="http://www.w3.org/2000/svg"
+                             fill="none"
+                             viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                            </path>
+                        </svg>
+                        <span id="text-primary" class="btn-text">{% trans "Make primary" %}</span>
                     </button>
-
-                    <div x-show="open" x-collapse>
-                        <div class="pt-2">
-                            {% #form form=form url=action_url use_default_button="false" render_fields="true" %}
-                                {% csrf_token %}
-
-                                <button type="submit" name="action_add"
-                                        x-data="{ loading: false }"
-                                        @click="
-                                                loading = true;
-                                                const hiddenInput = document.createElement('input');
-                                                hiddenInput.type = 'hidden';
-                                                hiddenInput.name = 'action_add';
-                                                hiddenInput.value = 'true';
-                                                $el.closest('form').appendChild(hiddenInput);
-                                                setTimeout(() => { $el.disabled = true; }, 1);
-                                               "
-                                        class="rounded-2xl mb-2 mt-4 w-full py-2 px-4 font-medium text-sm transition-all duration-200 flex items-center justify-center space-x-2 shadow-xs active:scale-[0.98]
-                                               bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200
-                                               disabled:bg-zinc-800 disabled:text-zinc-400 disabled:cursor-not-allowed
-                                               dark:disabled:bg-zinc-100 dark:disabled:text-zinc-500">
-
-                                    <svg x-show="loading" class="animate-spin h-4 w-4 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" style="display: none;">
-                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                    </svg>
-
-                                    <span x-text="loading ? 'Processing...' : 'Add email'">Add email</span>
-                                </button>
-                            {% /form %}
-                        </div>
+                    <button name="action_remove"
+                            type="submit"
+                            id="btn-remove"
+                            class="action-btn rounded-2xl border border-zinc-200/50 dark:border-zinc-800/50 bg-white dark:bg-zinc-900 px-4 py-2.5 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-rose-500/10 hover:text-rose-500 dark:hover:bg-rose-500/20 transition-all duration-200 flex items-center justify-center space-x-2 shadow-xs active:scale-[0.98] disabled:!bg-zinc-100 disabled:!text-zinc-400 disabled:!border-zinc-200 disabled:cursor-not-allowed disabled:shadow-none dark:disabled:!bg-zinc-900 dark:disabled:!text-zinc-600 dark:disabled:!border-zinc-800/60">
+                        <svg id="spinner-remove"
+                             class="hidden animate-spin h-3.5 w-3.5 text-rose-500"
+                             xmlns="http://www.w3.org/2000/svg"
+                             fill="none"
+                             viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                            </path>
+                        </svg>
+                        <span id="text-remove" class="btn-text">{% trans "Remove" %}</span>
+                    </button>
+                </div>
+            </form>
+        {% endif %}
+        {% if can_add_email %}
+            <div class="mt-6 border-t border-zinc-100 dark:border-zinc-900 pt-6"
+                 x-data="{ open : $persist(false) }"
+                 x-cloak>
+                <button @click="open = !open"
+                        type="button"
+                        class="flex w-full items-center justify-between text-xs font-semibold uppercase tracking-wider text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-all duration-200">
+                    <span>Add email address</span>
+                    <span class="transition-transform duration-200 text-sm font-medium"
+                          :class="open ? 'rotate-45 scale-110' : 'rotate-0'">+</span>
+                </button>
+                <div x-show="open" x-collapse>
+                    <div class="pt-2">
+                        {% #form form=form url=action_url use_default_button="false" render_fields="true" %}
+                        {% csrf_token %}
+                        <button type="submit"
+                                name="action_add"
+                                x-data="{ loading: false }"
+                                @click=" loading = true; const hiddenInput = document.createElement('input'); hiddenInput.type = 'hidden'; hiddenInput.name = 'action_add'; hiddenInput.value = 'true'; $el.closest('form').appendChild(hiddenInput); setTimeout(() => { $el.disabled = true; }, 1); "
+                                class="rounded-2xl mb-2 mt-4 w-full py-2 px-4 font-medium text-sm transition-all duration-200 flex items-center justify-center space-x-2 shadow-xs active:scale-[0.98] bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200 disabled:bg-zinc-800 disabled:text-zinc-400 disabled:cursor-not-allowed dark:disabled:bg-zinc-100 dark:disabled:text-zinc-500">
+                            <svg x-show="loading"
+                                 class="animate-spin h-4 w-4 text-current"
+                                 xmlns="http://www.w3.org/2000/svg"
+                                 fill="none"
+                                 viewBox="0 0 24 24"
+                                 style="display: none">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                                </path>
+                            </svg>
+                            <span x-text="loading ? 'Processing...' : 'Add email'">Add email</span>
+                        </button>
+                        {% /form %}
                     </div>
                 </div>
-            {% else %}
-                <div class="text-center text-xs text-zinc-400 dark:text-zinc-500 pt-6 border-t border-zinc-100 dark:border-zinc-900 mt-6">
-                    You have reached the limit of email addresses.
-                </div>
-            {% endif %}
-        </section>
+            </div>
+        {% else %}
+            <div class="text-center text-xs text-zinc-400 dark:text-zinc-500 pt-6 border-t border-zinc-100 dark:border-zinc-900 mt-6">
+                You have reached the limit of email addresses.
+            </div>
+        {% endif %}
+    </section>
     {% /container %}
-
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const emailForm = document.getElementById('emailForm');

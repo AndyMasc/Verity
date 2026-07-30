@@ -1,33 +1,33 @@
 {% extends "account/email/base_message.html" %}
 {% load i18n %}
-
 {% block content %}
     {% autoescape off %}
         <p>
             {% blocktranslate %}You are receiving this email because you, or someone else, tried to access an account with email <strong>{{ email }}</strong>{% endblocktranslate %}. {% blocktranslate %}However, we do not have any record of such an account in our database.{% endblocktranslate %}
         </p>
-
-        <p>
-            {% blocktranslate %}If it was you, you can sign up for an account using the link below:{% endblocktranslate %}
-        </p>
-
+        <p>{% blocktranslate %}If it was you, you can sign up for an account using the link below:{% endblocktranslate %}</p>
         <table cellspacing="0" cellpadding="0" style="margin: 28px 0;">
             <tr>
-                <td align="center" style="border-radius: 9999px; background-color: #18181b;">
-                    <a href="{{ signup_url }}" style="padding: 10px 20px; display: inline-block; color: #ffffff; font-size: 13px; font-weight: 500; text-decoration: none; border-radius: 9999px;">
-                        {% trans "Create an Account" %}
-                    </a>
+                <td align="center"
+                    style="border-radius: 9999px;
+                           background-color: #18181b">
+                    <a href="{{ signup_url }}"
+                       style="padding: 10px 20px;
+                              display: inline-block;
+                              color: #ffffff;
+                              font-size: 13px;
+                              font-weight: 500;
+                              text-decoration: none;
+                              border-radius: 9999px">{% trans "Create an Account" %}</a>
                 </td>
             </tr>
         </table>
-
         <p style="font-size: 12px; color: #71717a; margin-top: 24px;">
-            {% trans "If the button doesn't work, copy and paste this link into your browser:" %}<br>
+            {% trans "If the button doesn't work, copy and paste this link into your browser:" %}
+            <br>
             <a href="{{ signup_url }}" style="color: #18181b;">{{ signup_url }}</a>
         </p>
-
         <hr style="border: 0; border-top: 1px solid #e4e4e7; margin: 24px 0;">
-
         <p style="font-size: 12px; color: #71717a; margin: 0;">
             {% blocktranslate %}This mail can be safely ignored if you did not initiate this action.{% endblocktranslate %}
         </p>

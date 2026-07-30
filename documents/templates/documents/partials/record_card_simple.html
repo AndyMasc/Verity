@@ -1,27 +1,27 @@
 {% load form_tags %}
 <div class="block group relative rounded-2xl last:mb-0 mb-2 overflow-hidden border border-zinc-200/50 bg-white dark:border-zinc-800 dark:bg-zinc-800/20 hover:bg-zinc-100/50 dark:hover:bg-zinc-800/30 hover:border-zinc-300 dark:hover:border-zinc-700/60 transition-all duration-200">
-
-    <div class="absolute left-0 top-0 bottom-0 w-1 transition-colors duration-200 {% if not record.is_active %}bg-zinc-300/80 dark:bg-zinc-700/80{% elif record.expiry_date %}bg-black dark:bg-white{% else %}bg-zinc-200 dark:bg-zinc-800{% endif %}"></div>
-
+    <div class="absolute left-0 top-0 bottom-0 w-1 transition-colors duration-200 {% if not record.is_active %}bg-zinc-300/80 dark:bg-zinc-700/80{% elif record.expiry_date %}bg-black dark:bg-white{% else %}bg-zinc-200 dark:bg-zinc-800{% endif %}">
+    </div>
     <div class="grid grid-cols-1 sm:grid-cols-[1fr_auto] items-center pl-5 pr-4 py-3">
-
         <div class="grid grid-cols-1 sm:grid-cols-[150px_1fr_110px_60px_80px] items-center gap-3 sm:gap-4 pr-2 min-w-0 flex-1">
-
             <div class="min-w-0 flex items-center gap-x-2">
                 <span class="font-medium text-zinc-900 dark:text-zinc-100 text-sm truncate shrink-0 max-w-[120px] md:max-w-[180px]">
                     {{ record.title }}
                 </span>
-
                 {% if record.merchant %}
                     <span class="hidden sm:inline text-zinc-300 dark:text-zinc-700 text-xs font-light shrink-0">│</span>
                     <span class="inline-flex items-center gap-1.5 text-zinc-500 dark:text-zinc-400 text-xs truncate max-w-[100px] md:max-w-[140px]">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="w-3.5 h-3.5 opacity-70 shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg"
+                             fill="none"
+                             viewBox="0 0 24 24"
+                             stroke-width="1.8"
+                             stroke="currentColor"
+                             class="w-3.5 h-3.5 opacity-70 shrink-0">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 21v-7.5a.75.75 0 0 1 .75-.75h3a.75.75 0 0 1 .75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349M3.75 21V9.349m0 0a3.001 3.001 0 0 0 3.75-.615A2.993 2.993 0 0 0 9.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 0 0 2.25 1.016c.896 0 1.7-.393 2.25-1.015a3.001 3.001 0 0 0 3.75.614m-16.5 0a3.004 3.004 0 0 1-.621-4.72l1.189-1.19A1.5 1.5 0 0 1 5.378 3h13.243a1.5 1.5 0 0 1 1.06.44l1.19 1.189a3 3 0 0 1-.621 4.72M6.75 18h3.75a.75.75 0 0 0 .75-.75V13.5a.75.75 0 0 0-.75-.75H6.75a.75.75 0 0 0-.75.75v3.75c0 .414.336.75.75.75Z" />
                         </svg>
                         {{ record.merchant }}
                     </span>
                 {% endif %}
-
                 {% if record.products %}
                     <span class="hidden md:inline text-zinc-300 dark:text-zinc-700 text-xs shrink-0">·</span>
                     <span class="hidden md:inline text-zinc-400 dark:text-zinc-500 text-xs truncate max-w-[120px] lg:max-w-[180px]">
@@ -29,10 +29,13 @@
                     </span>
                 {% endif %}
             </div>
-
             <div class="flex items-center gap-1.5 text-zinc-500 dark:text-zinc-400 text-xs font-normal sm:justify-start">
                 <div class="flex items-center gap-1.5 shrink-0 px-1.5 py-0.5 rounded text-[11px] {% if record.expiry_date %}bg-zinc-100 dark:bg-zinc-800/20 text-zinc-600 dark:text-zinc-300{% else %}text-zinc-400 dark:text-zinc-500{% endif %}">
-                    <svg class="w-3.5 h-3.5 opacity-65 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <svg class="w-3.5 h-3.5 opacity-65 shrink-0"
+                         fill="none"
+                         viewBox="0 0 24 24"
+                         stroke-width="2"
+                         stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                     </svg>
                     <span class="truncate max-w-[85px]">
@@ -40,11 +43,9 @@
                     </span>
                 </div>
             </div>
-
             <div class="hidden sm:block text-zinc-400 dark:text-zinc-500 text-[11px] text-left font-normal">
                 {{ record.transaction_date|default:record.date_added|date:"b d" }}
             </div>
-
             <div class="text-left sm:text-right text-zinc-900 dark:text-zinc-50 font-semibold text-sm tracking-tight sm:pr-2">
                 {% if record.balance %}{{ record.balance|currency_format:record.currency }}{% else %}<span class="text-zinc-300 dark:text-zinc-700">—</span>{% endif %}
             </div>

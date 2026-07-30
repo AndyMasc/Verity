@@ -2,11 +2,9 @@
     {% for document in documents %}
         <div class="group relative rounded-xl border border-zinc-200/60 dark:border-zinc-800/60 bg-white/60 dark:bg-zinc-900/40 hover:bg-white dark:hover:bg-zinc-900/80 hover:border-zinc-300 dark:hover:border-zinc-700/80 hover:shadow-lg hover:shadow-zinc-900/[0.02] dark:hover:shadow-black/30 transition-all duration-200 overflow-hidden">
             <div class="flex items-center justify-between gap-3 px-3.5 py-3 sm:px-4 sm:py-3.5">
-
                 <!-- Left Content Area -->
                 <a href="{% url 'documents:view_document' document.pk %}"
                    class="flex-1 min-w-0 flex items-center gap-3">
-
                     <!-- File Type / Status Badge -->
                     <div class="flex items-center shrink-0">
                         {% if document.did_ocr %}
@@ -19,25 +17,25 @@
                             </span>
                         {% endif %}
                     </div>
-
                     <!-- Title & Metadata Line -->
                     <div class="min-w-0 flex items-center gap-2.5 flex-1">
                         <span class="font-medium text-zinc-900 dark:text-zinc-100 text-[13px] sm:text-sm truncate group-hover:text-zinc-950 dark:group-hover:text-white transition-colors tracking-tight">
                             {{ document.title }}
                         </span>
-
                         {% if document.associated_record %}
                             <span class="hidden md:inline text-zinc-300 dark:text-zinc-700 text-xs">/</span>
                             <span class="hidden md:inline-flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400 truncate max-w-[180px] font-normal">
-                                <svg class="w-3 h-3 opacity-40 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                <svg class="w-3 h-3 opacity-40 shrink-0"
+                                     fill="none"
+                                     viewBox="0 0 24 24"
+                                     stroke-width="2"
+                                     stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
                                 </svg>
                                 {{ document.associated_record.title }}
                             </span>
                         {% endif %}
-
                         <span class="text-zinc-300 dark:text-zinc-700 text-[10px] hidden sm:inline">·</span>
-
                         <div class="hidden sm:flex items-center gap-2 text-xs text-zinc-400 dark:text-zinc-500 shrink-0">
                             <span class="tabular-nums">{{ document.date_added|date:"M d, Y" }}</span>
                             <span class=" text-[10px] uppercase px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800/50 text-zinc-500 dark:text-zinc-400 border border-zinc-200/50 dark:border-zinc-800">
@@ -46,46 +44,57 @@
                         </div>
                     </div>
                 </a>
-
                 <!-- Right Action Bar (Linear-style hover reveal) -->
                 <div class="flex items-center gap-1 shrink-0 relative z-20 sm:opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-150">
                     {% if pending_ocr_view %}
                         <a href="{% url 'records:add_record' document.id %}"
                            class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg transition-all shadow-xs">
                             Continue
-                            <svg class="w-3 h-3 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                            <svg class="w-3 h-3 text-zinc-400"
+                                 fill="none"
+                                 viewBox="0 0 24 24"
+                                 stroke-width="2.5"
+                                 stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
                             </svg>
                         </a>
                     {% endif %}
-
-                    <form action="{% url 'documents:delete_document' document.pk %}" method="POST" onsubmit="return confirm('Delete this document permanently?');" class="inline">
+                    <form action="{% url 'documents:delete_document' document.pk %}"
+                          method="POST"
+                          onsubmit="return confirm('Delete this document permanently?');"
+                          class="inline">
                         {% csrf_token %}
-                        <button type="submit" class="p-1.5 rounded-lg text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-all cursor-pointer" title="Delete document">
-                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <button type="submit"
+                                class="p-1.5 rounded-lg text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-all cursor-pointer"
+                                title="Delete document">
+                            <svg class="w-3.5 h-3.5"
+                                 fill="none"
+                                 viewBox="0 0 24 24"
+                                 stroke-width="2"
+                                 stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                             </svg>
                         </button>
                     </form>
                 </div>
-
             </div>
         </div>
     {% empty %}
         <div class="flex flex-col items-center justify-center text-center py-16 px-4 rounded-xl border border-dashed border-zinc-200 dark:border-zinc-800/80 bg-zinc-50/50 dark:bg-zinc-900/20">
             <div class="p-2.5 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl mb-2 text-zinc-400 shadow-xs">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <svg class="w-4 h-4"
+                     fill="none"
+                     viewBox="0 0 24 24"
+                     stroke-width="2"
+                     stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.604 10.604z" />
                 </svg>
             </div>
-            <p class="text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                No documents found
-            </p>
+            <p class="text-xs font-medium text-zinc-600 dark:text-zinc-400">No documents found</p>
             <p class="text-[11px] text-zinc-400 dark:text-zinc-500 mt-0.5">
                 Adjust your search or filter parameters to find what you're looking for.
             </p>
         </div>
     {% endfor %}
-
     {% include "core/pagination_controls.html" %}
 </div>

@@ -1,8 +1,10 @@
 {% load widget_tweaks %}
-<div id="UserSettingsForm" class="divide-y divide-zinc-100 dark:divide-zinc-800/60">
+<div id="UserSettingsForm"
+     class="divide-y divide-zinc-100 dark:divide-zinc-800/60">
     <div class="flex items-start justify-between px-6 py-4 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/10 transition-all duration-200">
         <div class="flex flex-col pr-4">
-            <label for="{{ form.default_currency.id_for_label }}" class="text-xs font-medium text-zinc-800 dark:text-zinc-200 cursor-pointer select-none">
+            <label for="{{ form.default_currency.id_for_label }}"
+                   class="text-xs font-medium text-zinc-800 dark:text-zinc-200 cursor-pointer select-none">
                 {{ form.default_currency.label }}
             </label>
             <span class="text-[11px] text-zinc-400 dark:text-zinc-500 mt-0.5">
@@ -13,10 +15,10 @@
             {% render_field form.default_currency class="w-40 rounded border-zinc-300 dark:border-zinc-700 text-sm bg-transparent cursor-pointer px-2 py-1" %}
         </div>
     </div>
-
     <div class="flex items-start justify-between px-6 py-4 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/10 transition-all duration-200">
         <div class="flex flex-col pr-4">
-            <label for="{{ form.auto_archive_expired_records.id_for_label }}" class="text-xs font-medium text-zinc-800 dark:text-zinc-200 cursor-pointer select-none">
+            <label for="{{ form.auto_archive_expired_records.id_for_label }}"
+                   class="text-xs font-medium text-zinc-800 dark:text-zinc-200 cursor-pointer select-none">
                 {{ form.auto_archive_expired_records.label }}
             </label>
             <span class="text-[11px] text-zinc-400 dark:text-zinc-500 mt-0.5">
@@ -27,10 +29,10 @@
             {% render_field form.auto_archive_expired_records class="size-4 rounded border-zinc-300 dark:border-zinc-700 text-emerald-500 focus:ring-emerald-500/20 bg-transparent cursor-pointer" %}
         </div>
     </div>
-
     <div class="flex items-start justify-between px-6 py-4 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/10 transition-all duration-200">
         <div class="flex flex-col pr-4">
-            <label for="{{ form.auto_delete_archived_records.id_for_label }}" class="text-xs font-medium text-zinc-800 dark:text-zinc-200 cursor-pointer select-none">
+            <label for="{{ form.auto_delete_archived_records.id_for_label }}"
+                   class="text-xs font-medium text-zinc-800 dark:text-zinc-200 cursor-pointer select-none">
                 {{ form.auto_delete_archived_records.label }}
             </label>
             <span class="text-[11px] text-zinc-400 dark:text-zinc-500 mt-0.5">
@@ -41,10 +43,10 @@
             {% render_field form.auto_delete_archived_records class="size-4 rounded border-zinc-300 dark:border-zinc-700 text-emerald-500 focus:ring-emerald-500/20 bg-transparent cursor-pointer" %}
         </div>
     </div>
-
     <div class="flex items-start justify-between px-6 py-4 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/10 transition-all duration-200">
         <div class="flex flex-col pr-4">
-            <label for="{{ form.expiring_notifications_advance_time.id_for_label }}" class="text-xs font-medium text-zinc-800 dark:text-zinc-200 cursor-pointer select-none">
+            <label for="{{ form.expiring_notifications_advance_time.id_for_label }}"
+                   class="text-xs font-medium text-zinc-800 dark:text-zinc-200 cursor-pointer select-none">
                 {{ form.expiring_notifications_advance_time.label }}
             </label>
             <span class="text-[11px] text-zinc-400 dark:text-zinc-500 mt-0.5">
@@ -55,10 +57,10 @@
             {% render_field form.expiring_notifications_advance_time class="w-24 rounded border-zinc-300 dark:border-zinc-700 text-center text-sm bg-transparent cursor-pointer px-2 py-1" %}
         </div>
     </div>
-
     <div class="flex items-start justify-between px-6 py-4 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/10 transition-all duration-200">
         <div class="flex flex-col pr-4">
-            <label for="{{ form.auto_delete_deleted_documents.id_for_label }}" class="text-xs font-medium text-zinc-800 dark:text-zinc-200 cursor-pointer select-none">
+            <label for="{{ form.auto_delete_deleted_documents.id_for_label }}"
+                   class="text-xs font-medium text-zinc-800 dark:text-zinc-200 cursor-pointer select-none">
                 {{ form.auto_delete_deleted_documents.label }}
             </label>
             <span class="text-[11px] text-zinc-400 dark:text-zinc-500 mt-0.5">
@@ -69,10 +71,10 @@
             {% render_field form.auto_delete_deleted_documents class="size-4 rounded border-zinc-300 dark:border-zinc-700 text-emerald-500 focus:ring-emerald-500/20 bg-transparent cursor-pointer" %}
         </div>
     </div>
-
     <div class="flex items-start justify-between px-6 py-4 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/10 transition-all duration-200">
         <div class="flex flex-col pr-4">
-            <label for="{{ form.auto_create_and_organize_folders.id_for_label }}" class="text-xs font-medium text-zinc-800 dark:text-zinc-200 cursor-pointer select-none">
+            <label for="{{ form.auto_create_and_organize_folders.id_for_label }}"
+                   class="text-xs font-medium text-zinc-800 dark:text-zinc-200 cursor-pointer select-none">
                 {{ form.auto_create_and_organize_folders.label }}
             </label>
             <span class="text-[11px] text-zinc-400 dark:text-zinc-500 mt-0.5">

@@ -1,25 +1,42 @@
 {% extends "account/email/base_notification.html" %}
 {% load i18n %}
-
 {% block notification_message %}
     <p style="margin: 0 0 20px 0;">
         {% blocktrans %}Your account security settings were recently updated. Your email address has been changed successfully:{% endblocktrans %}
     </p>
-
-    <table cellspacing="0" cellpadding="0" style="width: 100%; background-color: #f4f4f5; border: 1px solid #e4e4e7; border-radius: 8px; margin: 20px 0;">
+    <table cellspacing="0"
+           cellpadding="0"
+           style="width: 100%;
+                  background-color: #f4f4f5;
+                  border: 1px solid #e4e4e7;
+                  border-radius: 8px;
+                  margin: 20px 0">
         <tr>
             <td style="padding: 16px 20px;">
-                <div style="font-size: 12px; color: #71717a; text-transform: uppercase; font-weight: 600; tracking: 0.05em; margin-bottom: 4px;">{% trans "Previous Email" %}</div>
-                <div style="font-family: monospace; font-size: 14px; color: #71717a; text-decoration: line-through;">{{ from_email }}</div>
-
+                <div style="font-size: 12px;
+                            color: #71717a;
+                            text-transform: uppercase;
+                            font-weight: 600;
+                            tracking: 0.05em;
+                            margin-bottom: 4px">{% trans "Previous Email" %}</div>
+                <div style="font-family: monospace;
+                            font-size: 14px;
+                            color: #71717a;
+                            text-decoration: line-through">{{ from_email }}</div>
                 <div style="margin: 12px 0; border-top: 1px solid #e4e4e7;"></div>
-
-                <div style="font-size: 12px; color: #18181b; text-transform: uppercase; font-weight: 600; tracking: 0.05em; margin-bottom: 4px;">{% trans "New Email" %}</div>
-                <div style="font-family: monospace; font-size: 14px; color: #18181b; font-weight: 600;">{{ to_email }}</div>
+                <div style="font-size: 12px;
+                            color: #18181b;
+                            text-transform: uppercase;
+                            font-weight: 600;
+                            tracking: 0.05em;
+                            margin-bottom: 4px">{% trans "New Email" %}</div>
+                <div style="font-family: monospace;
+                            font-size: 14px;
+                            color: #18181b;
+                            font-weight: 600">{{ to_email }}</div>
             </td>
         </tr>
     </table>
-
     <p style="font-size: 13px; color: #71717a; margin: 20px 0 0 0;">
         {% blocktrans %}If you did not authorize this change, please contact our support team immediately to secure your account.{% endblocktrans %}
     </p>

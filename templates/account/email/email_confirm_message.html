@@ -1,26 +1,39 @@
 {% extends "account/email/base_notification.html" %}
 {% load i18n %}
-
 {% block notification_message %}
-    <table cellspacing="0" cellpadding="0" style="width: 100%; background-color: #f4f4f5; border: 1px solid #e4e4e7; border-radius: 8px; margin: 0 0 20px 0;">
+    <table cellspacing="0"
+           cellpadding="0"
+           style="width: 100%;
+                  background-color: #f4f4f5;
+                  border: 1px solid #e4e4e7;
+                  border-radius: 8px;
+                  margin: 0 0 20px 0">
         <tr>
-            <td style="padding: 16px 20px; font-size: 14px; color: #18181b; font-weight: 500;">
+            <td style="padding: 16px 20px;
+                       font-size: 14px;
+                       color: #18181b;
+                       font-weight: 500">
                 <span style="color: #10b981; margin-right: 6px;" aria-hidden="true">✓</span>
                 {% blocktrans %}Your email has been successfully confirmed.{% endblocktrans %}
             </td>
         </tr>
     </table>
-
     <p style="margin: 0 0 24px 0;">
         {% blocktrans %}Thank you for verifying your identity. Your email configuration is now complete, and your Papertrail workspace is fully accessible.{% endblocktrans %}
     </p>
-
     <table cellspacing="0" cellpadding="0" style="margin: 24px 0;">
         <tr>
-            <td align="center" style="border-radius: 9999px; background-color: #18181b;">
-                <a href="http://{{ current_site.domain }}" style="padding: 10px 20px; display: inline-block; color: #ffffff; font-size: 13px; font-weight: 500; text-decoration: none; border-radius: 9999px;">
-                    {% trans "Go to Dashboard" %}
-                </a>
+            <td align="center"
+                style="border-radius: 9999px;
+                       background-color: #18181b">
+                <a href="http://{{ current_site.domain }}"
+                   style="padding: 10px 20px;
+                          display: inline-block;
+                          color: #ffffff;
+                          font-size: 13px;
+                          font-weight: 500;
+                          text-decoration: none;
+                          border-radius: 9999px">{% trans "Go to Dashboard" %}</a>
             </td>
         </tr>
     </table>

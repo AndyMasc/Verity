@@ -1,55 +1,68 @@
 {% extends "account/email/base_message.html" %}
 {% load account %}
 {% load i18n %}
-
 {% block content %}
     {% autoescape off %}
-
         <p>
             {% blocktrans %}You are receiving this mail because the following change was made to your account:{% endblocktrans %}
         </p>
-
-        <table cellspacing="0" cellpadding="0" style="width: 100%; background-color: #f4f4f5; border: 1px solid #e4e4e7; border-radius: 8px; margin: 20px 0;">
+        <table cellspacing="0"
+               cellpadding="0"
+               style="width: 100%;
+                      background-color: #f4f4f5;
+                      border: 1px solid #e4e4e7;
+                      border-radius: 8px;
+                      margin: 20px 0">
             <tr>
-                <td style="padding: 16px 20px; font-size: 14px; color: #18181b; font-weight: 500;">
-                    {% block notification_message %}{% endblock notification_message %}
+                <td style="padding: 16px 20px;
+                           font-size: 14px;
+                           color: #18181b;
+                           font-weight: 500">
+                    {% block notification_message %}
+                    {% endblock notification_message %}
                 </td>
             </tr>
         </table>
-
         <p style="margin-bottom: 20px;">
             {% blocktrans %}
                 If you do not recognize this change then please take proper security precautions immediately.
                 The change to your account originates from:
             {% endblocktrans %}
         </p>
-
-        <table cellspacing="0" cellpadding="0" style="width: 100%; border: 1px solid #e4e4e7; border-radius: 8px; font-size: 13px; color: #52525b; margin: 20px 0;">
+        <table cellspacing="0"
+               cellpadding="0"
+               style="width: 100%;
+                      border: 1px solid #e4e4e7;
+                      border-radius: 8px;
+                      font-size: 13px;
+                      color: #52525b;
+                      margin: 20px 0">
             <tr>
-                <td style="padding: 12px 16px; border-bottom: 1px solid #f4f4f5; background-color: #fafafa; font-weight: 600; color: #18181b; width: 30%;">
-                    {% trans "IP address" %}
-                </td>
-                <td style="padding: 12px 16px; border-bottom: 1px solid #f4f4f5; font-family: monospace;">
-                    {{ ip }}
-                </td>
+                <td style="padding: 12px 16px;
+                           border-bottom: 1px solid #f4f4f5;
+                           background-color: #fafafa;
+                           font-weight: 600;
+                           color: #18181b;
+                           width: 30%">{% trans "IP address" %}</td>
+                <td style="padding: 12px 16px;
+                           border-bottom: 1px solid #f4f4f5;
+                           font-family: monospace">{{ ip }}</td>
             </tr>
             <tr>
-                <td style="padding: 12px 16px; border-bottom: 1px solid #f4f4f5; background-color: #fafafa; font-weight: 600; color: #18181b;">
-                    {% trans "Browser" %}
-                </td>
-                <td style="padding: 12px 16px; border-bottom: 1px solid #f4f4f5;">
-                    {{ user_agent }}
-                </td>
+                <td style="padding: 12px 16px;
+                           border-bottom: 1px solid #f4f4f5;
+                           background-color: #fafafa;
+                           font-weight: 600;
+                           color: #18181b">{% trans "Browser" %}</td>
+                <td style="padding: 12px 16px; border-bottom: 1px solid #f4f4f5;">{{ user_agent }}</td>
             </tr>
             <tr>
-                <td style="padding: 12px 16px; background-color: #fafafa; font-weight: 600; color: #18181b;">
-                    {% trans "Date" %}
-                </td>
-                <td style="padding: 12px 16px;">
-                    {{ timestamp|date:"jS F Y H:i T" }}
-                </td>
+                <td style="padding: 12px 16px;
+                           background-color: #fafafa;
+                           font-weight: 600;
+                           color: #18181b">{% trans "Date" %}</td>
+                <td style="padding: 12px 16px;">{{ timestamp|date:"jS F Y H:i T" }}</td>
             </tr>
         </table>
-
     {% endautoescape %}
 {% endblock content %}

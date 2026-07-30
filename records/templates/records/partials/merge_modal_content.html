@@ -5,26 +5,36 @@
         <button type="button"
                 @click="showModal = false"
                 class="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer">
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+            <svg class="w-4 h-4"
+                 fill="none"
+                 viewBox="0 0 24 24"
+                 stroke-width="2"
+                 stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
             </svg>
         </button>
     </div>
-
     <div class="relative">
         <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none text-zinc-400 dark:text-zinc-500">
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.604 10.604z" /></svg>
+            <svg class="w-4 h-4"
+                 fill="none"
+                 viewBox="0 0 24 24"
+                 stroke-width="2.2"
+                 stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.604 10.604z" />
+            </svg>
         </div>
         <input class="w-full bg-zinc-100 dark:bg-zinc-800/40 border border-zinc-200 dark:border-zinc-700 py-2.5 pl-9 pr-3.5 text-xs rounded-xl dark:text-zinc-100 text-zinc-900 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-600 transition-all duration-200"
                placeholder="Search {{ label|lower }}..."
-               id="modal-{{ mode }}-search" type="search" name="search"
+               id="modal-{{ mode }}-search"
+               type="search"
+               name="search"
                hx-get="{% url 'records:manual_merge_search' mode %}"
                hx-trigger="input changed delay:300ms, keyup[key=='Enter']"
                hx-target="#modal-{{ mode }}-results"
                hx-indicator="#modal-{{ mode }}-indicator"
                hx-include="#modal-{{ mode }}-filter-form">
     </div>
-
     <form id="modal-{{ mode }}-filter-form"
           hx-get="{% url 'records:manual_merge_search' mode %}"
           hx-trigger="change"
@@ -45,8 +55,8 @@
             Clear
         </button>
     </form>
-
-    <div id="modal-{{ mode }}-results" class="relative min-h-0 max-h-[45vh] overflow-y-auto">
+    <div id="modal-{{ mode }}-results"
+         class="relative min-h-0 max-h-[45vh] overflow-y-auto">
         <div id="modal-{{ mode }}-indicator"
              class="htmx-indicator absolute inset-0 bg-white/40 dark:bg-zinc-950/40 backdrop-blur-[1px] z-10 hidden items-center justify-center rounded-xl">
             <div class="animate-pulse text-xs font-medium text-zinc-500 dark:text-zinc-400 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 px-3 py-1.5 rounded-xl shadow-xs">
