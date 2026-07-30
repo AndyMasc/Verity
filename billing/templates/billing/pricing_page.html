@@ -1,0 +1,11 @@
+<section>
+  <p class="title">Pricing Plans</p>
+  <div class="columns">
+    {% for product in products %}
+      <div class="column">
+        <p class="subtitle">{{ product.name }}</p>
+        <p>{{ product.default_price }}</p>
+        <p>{{ product.description }}</p>
+    {% endfor %}
+  </div>
+</section>

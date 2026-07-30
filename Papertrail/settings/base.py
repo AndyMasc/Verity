@@ -68,6 +68,7 @@ INSTALLED_APPS = [
     "accounting.apps.AccountingConfig",
     "reimbursements.apps.ReimbursementsConfig",
     "plaid_integration.apps.PlaidIntegrationConfig",
+    "billing.apps.BillingConfig",
     # Webpush
     "webpush",
     # Stripe

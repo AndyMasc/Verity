@@ -41,6 +41,7 @@ urlpatterns = [
     path("records/", include("records.urls")),
     path("accounting/", include("accounting.urls")),
     path("reimbursements/", include("reimbursements.urls")),
+    path("billing/", include("billing.urls")),
     # Webpush
     path(
         "webpush/save_information", safe_webpush_save_info, name="save_webpush_info"

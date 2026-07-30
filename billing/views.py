@@ -1,3 +1,8 @@
 from django.shortcuts import render
+from djstripe.models import Product
 
-# Create your views here.
+
+def pricing_page(request):
+    return render(request, 'billing/pricing_page.html', {
+        'products': Product.objects.all()
+    })
