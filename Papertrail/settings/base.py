@@ -203,7 +203,6 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "core.context_processors.webpush_status",  # Check user webpush status
-                "billing.context_processors.subscription_status",  # Check user subscription status
             ],
             "builtins": [
                 "django.templatetags.static",
@@ -386,6 +385,8 @@ STRIPE_SECRET_KEY = env("STRIPE_SECRET_KEY")
 STRIPE_PUBLISHABLE_KEY = env("STRIPE_PUBLISHABLE_KEY")
 STRIPE_WEBHOOK_SECRET = env("STRIPE_WEBHOOK_SECRET")
 DJSTRIPE_FOREIGN_KEY_TO_FIELD = env("DJSTRIPE_FOREIGN_KEY_TO_FIELD")
+STRIPE_PRICING_TABLE_ID = env("STRIPE_PRICING_TABLE_ID")
+STRIPE_PRICING_TABLE_KEY = env("STRIPE_PRICING_TABLE_KEY")
 
 # Sentry
 _is_prod = env("SENTRY_ENVIRONMENT", default="development") == "production"

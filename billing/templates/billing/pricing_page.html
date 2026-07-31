@@ -33,4 +33,13 @@
     </div>
     {% endfor %}
     </div>
+
+    <div>
+        <script async src="https://js.stripe.com/v3/pricing-table.js"></script>
+        <stripe-pricing-table
+         pricing-table-id="{{ stripe_pricing_table_id }}"
+         publishable-key="{{ stripe_public_key }}"
+        >
+        </stripe-pricing-table>
+    </div>
 {% endblock %}
