@@ -39,6 +39,7 @@
         <stripe-pricing-table
          pricing-table-id="{{ stripe_pricing_table_id }}"
          publishable-key="{{ stripe_public_key }}"
+         client-reference-id="{{ request.user.id }}"
         >
         </stripe-pricing-table>
     </div>
