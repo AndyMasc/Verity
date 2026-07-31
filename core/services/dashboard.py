@@ -14,7 +14,7 @@ from django.db.models import Q
 from django.utils import timezone
 from django.utils.timezone import make_aware
 
-from core.models import Notification
+from core.models import Notification, UserSettings
 from documents.models import DocumentData, DocumentStatus
 from records.models import MergeLog, Record
 from reimbursements.models import PackagePayment, ReimbursementPackage
@@ -76,7 +76,8 @@ async def get_dashboard_context(user) -> dict:
         timezone=timezone.get_current_timezone(),
     )
     expiring_cutoff = now + timedelta(days=30)
-    user_currency = getattr(user.settings, "default_currency", "usd")
+    user_settings = await sync_to_async(UserSettings.objects.get_or_create)(user=user)
+    user_currency = user_settings[0].default_currency
 
     all_user_records = Record.objects.for_user(user)
     active_records_qs = all_user_records.active()

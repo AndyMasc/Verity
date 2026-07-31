@@ -5,7 +5,7 @@ sensible set of default preferences. Also invalidates the webpush
 subscription count cache when subscriptions change.
 """
 
-from django.contrib.auth.models import User
+from django.conf import settings
 from django.core.cache import cache
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
@@ -13,7 +13,7 @@ from django.dispatch import receiver
 from .models import UserSettings
 
 
-@receiver(post_save, sender=User)
+@receiver(post_save, sender=settings.AUTH_USER_MODEL)
 def create_user_settings(sender, instance, created, **kwargs):  # noqa: ARG001
     """Create a default UserSettings row whenever a new User is saved."""
     if created:

@@ -186,6 +186,10 @@ AUTHENTICATION_BACKENDS = [
 # Password validation (disabled — project uses passwordless auth via allauth login-by-code)
 AUTH_PASSWORD_VALIDATORS: list = []
 
+# Custom user model to check for subscription and customer
+AUTH_USER_MODEL = "billing.CustomUser"
+
+
 # Templates
 TEMPLATES = [
     {
@@ -199,6 +203,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "core.context_processors.webpush_status",  # Check user webpush status
+                "billing.context_processors.subscription_status",  # Check user subscription status
             ],
             "builtins": [
                 "django.templatetags.static",

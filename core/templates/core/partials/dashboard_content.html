@@ -17,7 +17,7 @@
                     <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                     <span class="relative inline-flex rounded-full size-2 bg-emerald-500"></span>
                 </span>
-                <span class="truncate">{{ request.user.email }}</span>
+                <span class="truncate">{{ request.user.email }} {{ subscription_status }}</span>
             </a>
             {% if orphaned_document_count %}
                 <span class="px-3 py-1 rounded-xl bg-white/40 dark:bg-zinc-800/40 backdrop-blur-md text-xs text-zinc-600 dark:text-zinc-400 border border-zinc-200/30 dark:border-zinc-700/30">
