@@ -1,11 +1,32 @@
-<section>
-  <p class="title">Pricing Plans</p>
-  <div class="columns">
-    {% for product in products %}
-      <div class="column">
-        <p class="subtitle">{{ product.name }}</p>
-        <p>{{ product.default_price }}</p>
-        <p>{{ product.description }}</p>
-    {% endfor %}
+<div class="columns plan-selector">
+{% for product in products %}
+  <div class="column">
+    <div {% if product.metadata.is_default == "true" %}class="is-selected"{% endif %}>
+      <span class="icon">
+        <i class="fa {% if product.metadata.is_default == "true" %}fa-check{% else %}fa-circle{% endif %}">
+        </i>
+      </span>
+      
+      <p class="plan-name">{{ product.name }}</p>
+      <p class="plan-description">{{ product.description }}</p>
+
+      <div class="plan-price">
+        {% for price in product.prices.all %}
+          {% if price.active and price.recurring.interval == "month" %}
+            <span class="price">{{ price.human_readable_price }}</span>
+          {% endif %}
+        {% endfor %}
+      </div>
+
+      <ul class="features">
+         {% for feature in product.features_list %}
+         <li>
+           <span class="icon"><i class="fa fa-check"></i></span>
+           <span class="feature">{{ feature }}</span>
+         </li>
+         {% endfor %}
+      </ul>
+    </div>
   </div>
-</section>
+{% endfor %}
+</div>
