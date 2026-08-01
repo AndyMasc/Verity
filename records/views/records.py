@@ -116,8 +116,12 @@ class RecordDetailView(LoginRequiredMixin, UpdateView):
             )
             if active_merge:
                 context["active_merge"] = active_merge
-                context["plaid_snapshot"] = active_merge.plaid_snapshot
-                context["document_snapshot"] = active_merge.document_snapshot
+                plaid_snap = active_merge.plaid_snapshot or {}
+                plaid_snap.setdefault("currency", "usd")
+                context["plaid_snapshot"] = plaid_snap
+                doc_snap = active_merge.document_snapshot or {}
+                doc_snap.setdefault("currency", "usd")
+                context["document_snapshot"] = doc_snap
 
         return context
 
