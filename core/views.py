@@ -216,11 +216,15 @@ def expense_chart_data(request: HttpRequest) -> JsonResponse:
         )
         start = earliest or (now - timedelta(days=365))
 
+    # Normalise start to a plain date so .date() is never called on a date object
+    if isinstance(start, _dt):
+        start = start.date()
+
     # Fetch raw rows: one DB query, no aggregation
     rows = list(
         Record.objects.filter(
             user=request.user,
-            transaction_date__gte=start.date(),
+            transaction_date__gte=start,
             transaction_date__lte=now.date(),
             balance__isnull=False,
         ).values_list("balance", "currency", "transaction_date")
