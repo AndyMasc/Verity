@@ -123,6 +123,41 @@
                             </div>
                         </div>
                     </div>
+                    <div class="rounded-2xl border border-zinc-200/60 dark:border-zinc-800/60 bg-white/80 dark:bg-zinc-800/30 backdrop-blur-md overflow-hidden shadow-xs">
+                        <div class="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800/60">
+                            <h3 class="text-xs font-medium text-zinc-900 dark:text-zinc-200">Subscription</h3>
+                        </div>
+                        <div class="p-6 flex items-center justify-between">
+                            <div class="min-w-0">
+                                {% if is_subscribed %}
+                                    <span class="font-bold">{{ subscription.items.first.price.product.name }}<br></span>
+                                    <span class="inline-flex items-center gap-1 text-xs font-medium tracking-tight text-emerald-600 dark:text-emerald-400">
+                                        <span class="size-1.5 rounded-full bg-emerald-500"></span>
+                                        Active 
+                                    </span>
+                                {% else %}
+                                    <span class="block text-xs text-zinc-600 dark:text-zinc-400 font-medium">Free plan</span>
+                                    <p class="text-xs text-zinc-400 dark:text-zinc-500">Upgrade to unlock premium features.</p>
+                                {% endif %}
+                            </div>
+                            <div class="shrink-0">
+                                {% if is_subscribed %}
+                                    <form method="post" action="{% url 'portal_session' %}">
+                                        {% csrf_token %}
+                                        <button type="submit"
+                                                class="bg-zinc-900 dark:bg-white text-white dark:text-black font-semibold py-2 px-4 text-xs rounded-xl transition-all duration-200 hover:bg-zinc-700 dark:hover:bg-zinc-200 active:scale-[0.98] cursor-pointer">
+                                            Manage subscription
+                                        </button>
+                                    </form>
+                                {% else %}
+                                    <a href="{% url 'pricing_page' %}"
+                                       class="bg-zinc-900 dark:bg-white text-white dark:text-black font-semibold py-2 px-4 text-xs rounded-xl transition-all duration-200 hover:bg-zinc-700 dark:hover:bg-zinc-200 active:scale-[0.98]">
+                                        View plans
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
                     <div class="w-full mt-5 flex flex-col gap-5 rounded-2xl border border-zinc-200/60 dark:border-zinc-800/60 bg-white/80 dark:bg-zinc-800/30 backdrop-blur-md p-4">
                         <h3 class="font-semibold text-xs text-zinc-900 dark:text-zinc-200">Export all records</h3>
                         <a href="{% url 'accounting:export_all_to_excel' %}"
@@ -184,6 +219,8 @@
                             {{ form.auto_delete_archived_records.as_hidden }}
                             {{ form.auto_delete_deleted_documents.as_hidden }}
                             {{ form.expiring_notifications_advance_time.as_hidden }}
+                            {{ form.default_currency.as_hidden }}
+                            {{ form.auto_create_and_organize_folders.as_hidden }}
                             <div class="divide-y divide-zinc-100 dark:divide-zinc-800/60">
                                 <div class="flex items-start justify-between px-6 py-4 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/10 transition-colors">
                                     <div class="flex flex-col pr-4">

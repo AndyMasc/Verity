@@ -259,6 +259,21 @@ class ReimbursementPackage(models.Model):
         return list(self.records.filter(is_active=True))
 
 
+class ProcessedStripeEvent(models.Model):
+    """Records Stripe webhook events already applied to the reimbursements flow.
+
+    Stripe redelivers webhook events and QStash retries on transient failure, so
+    event handling must be idempotent. The event id is the stable key across
+    every delivery/retry of the same event.
+    """
+
+    event_id = models.CharField(max_length=255, primary_key=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self) -> str:
+        return self.event_id
+
+
 class PackagePayment(models.Model):
     package = models.ForeignKey(
         ReimbursementPackage, on_delete=models.CASCADE, related_name="payments"

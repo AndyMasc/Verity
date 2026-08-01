@@ -12,7 +12,8 @@ from django.utils import timezone
 
 from reimbursements.models import ReimbursementPackage, PackagePayment, StripeAccount
 from reimbursements.views import validate_recipient_email
-from records.models import Record
+from reimbursements.webhooks import process_stripe_event
+from records.models import AuditLog, Record
 
 User = get_user_model()
 
@@ -449,13 +450,12 @@ class MarkAsPaidTransactionTest(TestCase):
 # Webhook tests
 # ---------------------------------------------------------------------------
 class StripeWebhookTest(TestCase):
-    def setUp(self):
-        self.factory = RequestFactory()
-        self.url = reverse("reimbursements:stripe-webhook")
+    def _event(self, event_type, payload, event_id="evt_test"):
+        return {"id": event_id, "type": event_type, "data": {"object": payload}}
 
-    @patch("reimbursements.tasks.send_package_paid_notification_task.delay")
-    @patch("reimbursements.webhooks.stripe.Webhook.construct_event")
-    def test_checkout_session_completed(self, mock_construct, _mock_notify):
+    @patch("reimbursements.webhooks.transaction.on_commit", side_effect=lambda fn: fn())
+    @patch("reimbursements.webhooks._notify_package_paid")
+    def test_checkout_session_completed(self, mock_notify, mock_on_commit):
         creator = _user("creator@test.com")
         payer = _user("payer@test.com")
         pkg = _package(creator, payer)
@@ -466,107 +466,159 @@ class StripeWebhookTest(TestCase):
             amount_paid=Decimal("50.00"),
         )
 
-        mock_construct.return_value = {
-            "type": "checkout.session.completed",
-            "data": {
-                "object": {
-                    "id": "cs_test123",
-                    "payment_status": "paid",
-                    "metadata": {"package_uuid": str(pkg.uuid)},
-                }
+        event = self._event(
+            "checkout.session.completed",
+            {
+                "id": "cs_test123",
+                "payment_status": "paid",
+                "payment_intent": "pi_test123",
+                "metadata": {"package_uuid": str(pkg.uuid)},
             },
-        }
-
-        request = self.factory.post(
-            self.url,
-            data=b"{}",
-            content_type="application/json",
-            HTTP_STRIPE_SIGNATURE="sig_test",
         )
-        with patch("reimbursements.webhooks.settings") as mock_settings:
-            mock_settings.STRIPE_WEBHOOK_SECRET = "whsec_test_fake"
-            from reimbursements.webhooks import stripe_webhook
+        process_stripe_event(event)
 
-            response = stripe_webhook(request)
+        payment.refresh_from_db()
+        pkg.refresh_from_db()
+        self.assertTrue(payment.is_completed)
+        self.assertEqual(payment.stripe_payment_intent_id, "pi_test123")
+        self.assertEqual(pkg.status, ReimbursementPackage.Status.PAID)
+        mock_notify.assert_called_once_with(pkg.pk, payer.pk)
 
-        self.assertEqual(response.status_code, 200)
+    def test_checkout_session_not_paid_is_noop(self):
+        creator = _user("creator@test.com")
+        payer = _user("payer@test.com")
+        pkg = _package(creator, payer)
+        PackagePayment.objects.create(
+            package=pkg,
+            payer=payer,
+            stripe_checkout_session_id="cs_unpaid",
+            amount_paid=Decimal("50.00"),
+        )
+
+        process_stripe_event(
+            self._event(
+                "checkout.session.completed",
+                {
+                    "id": "cs_unpaid",
+                    "payment_status": "unpaid",
+                    "metadata": {"package_uuid": str(pkg.uuid)},
+                },
+            )
+        )
+
+        pkg.refresh_from_db()
+        self.assertEqual(pkg.status, ReimbursementPackage.Status.OPEN)
+
+    @patch("reimbursements.webhooks.stripe.checkout.Session.retrieve")
+    def test_checkout_session_missing_payment_raises_on_transient_error(self, mock_retrieve):
+        mock_retrieve.side_effect = stripe.error.StripeError("Network error")
+
+        with self.assertRaises(PackagePayment.DoesNotExist):
+            process_stripe_event(
+                self._event(
+                    "checkout.session.completed",
+                    {
+                        "id": "cs_nonexistent",
+                        "payment_status": "paid",
+                        "metadata": {"package_uuid": "00000000-0000-0000-0000-000000000000"},
+                    },
+                )
+            )
+
+    @patch("reimbursements.webhooks.stripe.checkout.Session.retrieve")
+    def test_checkout_session_unknown_to_stripe_is_skipped(self, mock_retrieve):
+        mock_retrieve.side_effect = stripe.error.InvalidRequestError(
+            "No such checkout session: cs_nonexistent", "id"
+        )
+
+        process_stripe_event(
+            self._event(
+                "checkout.session.completed",
+                {
+                    "id": "cs_nonexistent",
+                    "payment_status": "paid",
+                    "metadata": {"package_uuid": "00000000-0000-0000-0000-000000000000"},
+                },
+            )
+        )
+
+    def test_checkout_session_completed_is_idempotent(self):
+        creator = _user("creator@test.com")
+        payer = _user("payer@test.com")
+        pkg = _package(creator, payer)
+        PackagePayment.objects.create(
+            package=pkg,
+            payer=payer,
+            stripe_checkout_session_id="cs_test123",
+            amount_paid=Decimal("50.00"),
+        )
+
+        event = self._event(
+            "checkout.session.completed",
+            {
+                "id": "cs_test123",
+                "payment_status": "paid",
+                "metadata": {"package_uuid": str(pkg.uuid)},
+            },
+            event_id="evt_dup",
+        )
+        process_stripe_event(event)
+        process_stripe_event(event)
+
+        self.assertEqual(
+            AuditLog.objects.filter(details__event="package_paid").count(), 1
+        )
+
+    def test_async_payment_succeeded(self):
+        creator = _user("creator@test.com")
+        payer = _user("payer@test.com")
+        pkg = _package(creator, payer)
+        payment = PackagePayment.objects.create(
+            package=pkg,
+            payer=payer,
+            stripe_checkout_session_id="cs_async",
+            amount_paid=Decimal("50.00"),
+        )
+
+        process_stripe_event(
+            self._event(
+                "checkout.session.async_payment_succeeded",
+                {
+                    "id": "cs_async",
+                    "payment_intent": "pi_async",
+                    "metadata": {"package_uuid": str(pkg.uuid)},
+                },
+            )
+        )
+
         payment.refresh_from_db()
         pkg.refresh_from_db()
         self.assertTrue(payment.is_completed)
         self.assertEqual(pkg.status, ReimbursementPackage.Status.PAID)
 
-    @patch("reimbursements.webhooks.stripe.Webhook.construct_event")
-    @patch("reimbursements.webhooks.stripe.checkout.Session.retrieve")
-    def test_checkout_session_missing_payment_returns_500(self, mock_retrieve, mock_construct):
-        mock_construct.return_value = {
-            "type": "checkout.session.completed",
-            "data": {
-                "object": {
-                    "id": "cs_nonexistent",
-                    "payment_status": "paid",
-                    "metadata": {"package_uuid": "00000000-0000-0000-0000-000000000000"},
-                }
-            },
-        }
-        mock_retrieve.side_effect = stripe.error.StripeError("Network error")
-
-        request = self.factory.post(
-            self.url,
-            data=b"{}",
-            content_type="application/json",
-            HTTP_STRIPE_SIGNATURE="sig_test",
-        )
-        with patch("reimbursements.webhooks.settings") as mock_settings:
-            mock_settings.STRIPE_WEBHOOK_SECRET = "whsec_test_fake"
-            from reimbursements.webhooks import stripe_webhook
-
-            response = stripe_webhook(request)
-
-        self.assertEqual(response.status_code, 500)
-
-    @patch("reimbursements.webhooks.stripe.Webhook.construct_event")
-    def test_account_updated(self, mock_construct):
+    def test_account_updated(self):
         user = _user("stripe@test.com")
         user.stripe_account.stripe_account_id = "acct_test"
         user.stripe_account.save(update_fields=["stripe_account_id"])
 
-        mock_construct.return_value = {
-            "type": "account.updated",
-            "data": {"object": {"id": "acct_test", "details_submitted": True}},
-        }
-
-        request = self.factory.post(
-            self.url,
-            data=b"{}",
-            content_type="application/json",
-            HTTP_STRIPE_SIGNATURE="sig_test",
+        process_stripe_event(
+            self._event(
+                "account.updated",
+                {
+                    "id": "acct_test",
+                    "details_submitted": True,
+                    "charges_enabled": True,
+                    "payouts_enabled": False,
+                },
+            )
         )
-        with patch("reimbursements.webhooks.settings") as mock_settings:
-            mock_settings.STRIPE_WEBHOOK_SECRET = "whsec_test_fake"
-            from reimbursements.webhooks import stripe_webhook
 
-            response = stripe_webhook(request)
-
-        self.assertEqual(response.status_code, 200)
         user.stripe_account.refresh_from_db()
         self.assertTrue(user.stripe_account.stripe_details_submitted)
+        self.assertTrue(user.stripe_account.charges_enabled)
+        self.assertFalse(user.stripe_account.payouts_enabled)
 
-    @patch("reimbursements.webhooks.stripe.Webhook.construct_event")
-    def test_invalid_signature(self, mock_construct):
-        mock_construct.side_effect = MagicMock(side_effect=ValueError("Invalid signature"))
-        request = self.factory.post(
-            self.url,
-            data=b"{}",
-            content_type="application/json",
-            HTTP_STRIPE_SIGNATURE="sig_bad",
-        )
-        from reimbursements.webhooks import stripe_webhook
-
-        response = stripe_webhook(request)
-        self.assertEqual(response.status_code, 400)
-
-    @patch("reimbursements.webhooks.stripe.Webhook.construct_event")
-    def test_charge_refunded(self, mock_construct):
+    def test_charge_refunded_full(self):
         creator = _user("creator@test.com")
         payer = _user("payer@test.com")
         pkg = _package(creator, payer)
@@ -574,7 +626,7 @@ class StripeWebhookTest(TestCase):
         pkg.refresh_from_db()
         self.assertEqual(pkg.status, ReimbursementPackage.Status.PAID)
 
-        payment = PackagePayment.objects.create(
+        PackagePayment.objects.create(
             package=pkg,
             payer=payer,
             stripe_checkout_session_id="cs_refund_test",
@@ -583,28 +635,40 @@ class StripeWebhookTest(TestCase):
             is_completed=True,
         )
 
-        mock_construct.return_value = {
-            "type": "charge.refunded",
-            "data": {
-                "object": {
-                    "payment_intent": "pi_refund_test",
-                    "amount_refunded": 5000,
-                }
-            },
-        }
-
-        request = self.factory.post(
-            self.url,
-            data=b"{}",
-            content_type="application/json",
-            HTTP_STRIPE_SIGNATURE="sig_test",
+        process_stripe_event(
+            self._event(
+                "charge.refunded",
+                {"payment_intent": "pi_refund_test", "amount_refunded": 5000, "amount_captured": 5000},
+            )
         )
-        with patch("reimbursements.webhooks.settings") as mock_settings:
-            mock_settings.STRIPE_WEBHOOK_SECRET = "whsec_test_fake"
-            from reimbursements.webhooks import stripe_webhook
 
-            response = stripe_webhook(request)
-
-        self.assertEqual(response.status_code, 200)
         pkg.refresh_from_db()
         self.assertEqual(pkg.status, ReimbursementPackage.Status.OPEN)
+
+    def test_charge_refunded_partial_keeps_package_paid(self):
+        creator = _user("creator@test.com")
+        payer = _user("payer@test.com")
+        pkg = _package(creator, payer)
+        pkg.mark_as_paid(payer)
+        pkg.refresh_from_db()
+
+        payment = PackagePayment.objects.create(
+            package=pkg,
+            payer=payer,
+            stripe_checkout_session_id="cs_refund_partial",
+            stripe_payment_intent_id="pi_refund_partial",
+            amount_paid=Decimal("50.00"),
+            is_completed=True,
+        )
+
+        process_stripe_event(
+            self._event(
+                "charge.refunded",
+                {"payment_intent": "pi_refund_partial", "amount_refunded": 2500, "amount_captured": 5000},
+            )
+        )
+
+        payment.refresh_from_db()
+        pkg.refresh_from_db()
+        self.assertFalse(payment.is_completed)
+        self.assertEqual(pkg.status, ReimbursementPackage.Status.PAID)

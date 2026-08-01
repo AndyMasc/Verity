@@ -2,12 +2,37 @@ import logging
 
 import stripe
 from django.conf import settings
+from django.db import transaction
 from django_qstash import shared_task
 
 from .models import PackagePayment, ReimbursementPackage
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 logger = logging.getLogger(__name__)
+
+
+@shared_task(max_retries=3)
+def process_stripe_event_task(trigger_id: int) -> None:
+    """Applies a Stripe webhook event to the reimbursements flow, off the
+    request path.
+
+    Enqueued from the djstripe ``webhook_post_process`` signal. Transient
+    failures raise out of ``process_stripe_event`` so QStash retries; the
+    surrounding transaction guarantees the event-id dedupe marker rolls back
+    with any partial work.
+    """
+    from djstripe.models import WebhookEventTrigger
+
+    from .webhooks import process_stripe_event
+
+    try:
+        trigger = WebhookEventTrigger.objects.get(pk=trigger_id)
+    except WebhookEventTrigger.DoesNotExist:
+        logger.warning("process_stripe_event_task: trigger %s not found", trigger_id)
+        return
+
+    with transaction.atomic():
+        process_stripe_event(trigger.json_body)
 
 
 @shared_task(max_retries=3)

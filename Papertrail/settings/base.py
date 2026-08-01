@@ -27,7 +27,24 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # Database
 DATABASES = {"default": env.db("DATABASE_URL", default="sqlite:///db.sqlite3")}
 DATABASES["default"].setdefault("CONN_MAX_AGE", env.int("DB_CONN_MAX_AGE", default=60))
-if DATABASES["default"]["ENGINE"] != "django.db.backends.sqlite3":
+if DATABASES["default"]["ENGINE"] == "django.db.backends.sqlite3":
+    # Concurrent writers (webhooks, QStash workers, web requests) must queue
+    # rather than fail with "database is locked". WAL allows a reader while a
+    # writer is active; busy_timeout makes writers wait; IMMEDIATE takes the
+    # write lock up front so we never block mid-transaction. Dev-only — the
+    # production Postgres connection needs connect_timeout instead.
+    DATABASES["default"].setdefault(
+        "OPTIONS",
+        {
+            "init_command": (
+                "PRAGMA journal_mode=WAL;"
+                "PRAGMA busy_timeout=20000;"
+                "PRAGMA synchronous=NORMAL;"
+            ),
+            "transaction_mode": "IMMEDIATE",
+        },
+    )
+else:
     DATABASES["default"].setdefault("OPTIONS", {"connect_timeout": 10})
 
 # Apps
@@ -203,6 +220,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "core.context_processors.webpush_status",  # Check user webpush status
+                "billing.context_processors.subscription_status",  # Subscription status for all templates
             ],
             "builtins": [
                 "django.templatetags.static",
@@ -387,6 +405,11 @@ STRIPE_WEBHOOK_SECRET = env("STRIPE_WEBHOOK_SECRET")
 DJSTRIPE_FOREIGN_KEY_TO_FIELD = env("DJSTRIPE_FOREIGN_KEY_TO_FIELD")
 STRIPE_PRICING_TABLE_ID = env("STRIPE_PRICING_TABLE_ID")
 STRIPE_PRICING_TABLE_KEY = env("STRIPE_PRICING_TABLE_KEY")
+
+# One Stripe webhook serves both pipelines: djstripe (billing/subscriptions) and
+# reimbursements (see billing/webhooks.py signal receiver). In local dev the
+# signing secret of the "stripe listen" webhook is stored on the djstripe
+# WebhookEndpoint row (djstripe_validation_method="verify_signature").
 
 # Sentry
 _is_prod = env("SENTRY_ENVIRONMENT", default="development") == "production"

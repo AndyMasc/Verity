@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from django.contrib.auth.models import User
 from django.test import TestCase
@@ -18,6 +18,47 @@ class CoreTasksTest(TestCase):
         )
         mock_email_cls.assert_called_once()
         mock_email_cls.return_value.send.assert_called_once()
+
+    @patch("core.tasks.EmailMultiAlternatives")
+    def test_send_background_email_permanent_rejection_no_retry(self, mock_email_cls):
+        from anymail.exceptions import AnymailRequestsAPIError
+
+        from core.tasks import send_background_email
+
+        mock_email_cls.return_value.send.side_effect = AnymailRequestsAPIError(
+            email_message=mock_email_cls.return_value,
+            payload={},
+            response=Mock(status_code=422),
+            backend=None,
+        )
+
+        send_background_email(
+            subject="Test",
+            message="Text body",
+            from_email="from@example.com",
+            recipient_list=["to@example.com"],
+        )
+
+    @patch("core.tasks.EmailMultiAlternatives")
+    def test_send_background_email_transient_raises_for_retry(self, mock_email_cls):
+        from anymail.exceptions import AnymailRequestsAPIError
+
+        from core.tasks import send_background_email
+
+        mock_email_cls.return_value.send.side_effect = AnymailRequestsAPIError(
+            email_message=mock_email_cls.return_value,
+            payload={},
+            response=Mock(status_code=500),
+            backend=None,
+        )
+
+        with self.assertRaises(AnymailRequestsAPIError):
+            send_background_email(
+                subject="Test",
+                message="Text body",
+                from_email="from@example.com",
+                recipient_list=["to@example.com"],
+            )
 
     @patch("core.tasks.send_user_notification")
     def test_fire_single_webpush(self, mock_send):
