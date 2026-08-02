@@ -12,6 +12,8 @@ from django.views.decorators.http import require_POST
 from django_ratelimit.decorators import ratelimit
 from djstripe.models import Product, Subscription
 from djstripe.settings import djstripe_settings
+from django.contrib import messages
+from django.shortcuts import redirect
 
 from . import metadata
 from .models import CustomUser
@@ -127,13 +129,15 @@ def subscription_confirm(request: HttpRequest) -> HttpResponse:
             logger.info(
                 "Canceled previous subscription %s for user %s", old_sub_id, subscription_holder.pk
             )
+            messages.success(request, "Your subscription has been updated successfully!")
         except stripe.error.StripeError as e:
             logger.error("Failed to cancel old subscription %s: %s", old_sub_id, e)
-
+            messages.error(request, "Failed to cancel your subscription. Please try again later.")
     # Attach new relations
     subscription_holder.subscription = djstripe_subscription
     subscription_holder.customer = djstripe_subscription.customer
     subscription_holder.save()
+    return redirect("core:dashboard")
 
 
 @login_required

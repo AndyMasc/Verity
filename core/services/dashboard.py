@@ -45,7 +45,7 @@ async def _fetch_notifications(user) -> list:
         async for n in Notification.objects.filter(
             recipient=user,
             is_read=False,
-        ).order_by("-sent_at")[:3]
+        ).order_by("-sent_at")[:2]
     ]
 
 

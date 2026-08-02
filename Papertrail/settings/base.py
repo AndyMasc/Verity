@@ -138,6 +138,7 @@ CONTENT_SECURITY_POLICY = {
             "https://*.plaid.com",
             "https://js.stripe.com",
         ),
+        "worker-src": ("'self'", "blob:"),
         "style-src": (
             "'self'",
             "'unsafe-inline'",
