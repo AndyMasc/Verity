@@ -2,7 +2,7 @@
 {% load static %}
 {% block content %}
     {% block sidebar %}{% endblock %}
-    <nav class="sticky top-0 z-50 w-full border-b border-zinc-200/60 bg-white/80 backdrop-blur-xl dark:border-zinc-800/60 dark:bg-zinc-950/80 transition-colors duration-200">
+    <nav class="sticky top-0 z-50 w-full border-b border-zinc-200/60 bg-white/85 backdrop-blur-xl dark:border-zinc-800/60 dark:bg-zinc-950/85 transition-colors duration-200">
         <div class="container mx-auto flex w-full items-center justify-between px-6 py-3.5 md:max-w-7xl">
             <div class="flex items-center gap-8">
                 <a href="{% url 'core:landing_page' %}"
@@ -38,6 +38,8 @@
             </div>
         </div>
     </nav>
+
+    <!-- HERO SECTION (Left Intact) -->
     <section class="relative w-full overflow-hidden bg-white dark:bg-zinc-950 pt-20 md:pt-32 pb-20">
         <div class="absolute inset-0 bg-[radial-gradient(#e4e4e7_1px,transparent_1px)] dark:bg-[radial-gradient(#27272a_1px,transparent_1px)] [background-size:32px_32px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_40%,#000_70%,transparent_100%)] pointer-events-none opacity-60">
         </div>
@@ -47,7 +49,7 @@
                     <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                     <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                 </span>
-                <span>v2.0 Global Financial Processing Engine</span>
+                <span>Automated Purchase Intelligence</span>
             </div>
             <header class="max-w-4xl space-y-6">
                 <h1 class="text-4xl sm:text-6xl lg:text-7xl font-semibold tracking-tight text-zinc-950 dark:text-white leading-[1.08]">
@@ -93,143 +95,148 @@
                     </div>
                 </div>
             </div>
-            <div class="absolute -inset-x-12 bottom-0 top-1/2 bg-linear-to-t from-white via-white/80 dark:from-zinc-950 dark:via-zinc-950/80 pointer-events-none">
+            <div class="absolute -inset-x-12 bottom-0 top-1/2 bg-gradient-to-t from-white via-white/80 dark:from-zinc-950 dark:via-zinc-950/80 pointer-events-none">
             </div>
         </div>
     </section>
-    <section id="features"
-             class="py-28 bg-zinc-50/70 dark:bg-zinc-950/60 border-t border-zinc-200/60 dark:border-zinc-900">
+
+    <!-- CONTENT SECTION: Refined, Linear, Restrained Color, Simple Wording -->
+
+    <!-- Features Section -->
+    <section id="features" class="py-24 bg-zinc-50/50 dark:bg-zinc-950/50 border-t border-zinc-200/50 dark:border-zinc-900/50">
         <div class="mx-auto max-w-7xl px-6 lg:px-8">
-            <div class="max-w-2xl mb-16">
-                <span class="text-xs font-semibold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Architecture</span>
-                <h2 class="mt-2 text-3xl md:text-4xl font-semibold tracking-tight text-zinc-950 dark:text-white">
-                    Engineered for flow-state workflows.
+            <div class="max-w-xl mb-14">
+                <span class="text-[11px] tracking-widest text-zinc-400 dark:text-zinc-500 uppercase">Platform</span>
+                <h2 class="mt-2 text-2xl md:text-3xl font-medium tracking-tight text-zinc-950 dark:text-white">
+                    Beyond simple receipt storage.
                 </h2>
-                <p class="mt-3 text-sm md:text-base text-zinc-600 dark:text-zinc-400 font-normal">
-                    Eliminate manual data entry with autonomous extraction and record merging.
+                <p class="mt-2 text-sm text-zinc-500 dark:text-zinc-400 font-normal">
+                    Every purchase becomes an organized record complete with invoices, warranties, and supporting documents.
                 </p>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-                <div class="md:col-span-2 rounded-3xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-900/40 p-8 sm:p-10 flex flex-col justify-between hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors duration-200">
+
+            <!-- Linear, Restrained Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="rounded-2xl border border-zinc-200/70 dark:border-zinc-800/70 bg-white dark:bg-zinc-900/30 p-7 flex flex-col justify-between">
                     <div>
-                        <span class="text-[11px]  uppercase tracking-wider text-zinc-400 dark:text-zinc-500">01 / CAPTURE</span>
-                        <h3 class="mt-4 text-xl font-semibold text-zinc-950 dark:text-white">Rapid Document Extraction</h3>
-                        <p class="mt-3 text-sm text-zinc-600 dark:text-zinc-400 max-w-lg leading-relaxed">
-                            Multimodal LLMs parse line items, tax IDs, VAT/GST registrations, and line details from global vendors instantly in any currency.
+                        <span class="text-[11px] text-zinc-400 dark:text-zinc-500">01</span>
+                        <h3 class="mt-4 text-base font-medium text-zinc-950 dark:text-white">AI Extraction</h3>
+                        <p class="mt-2 text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                            Google’s latest Gemini models parse merchants, dates, totals, and metadata in seconds.
                         </p>
                     </div>
                 </div>
-                <div class="rounded-3xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-900/40 p-8 sm:p-10 flex flex-col justify-between hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors duration-200">
+                <div class="rounded-2xl border border-zinc-200/70 dark:border-zinc-800/70 bg-white dark:bg-zinc-900/30 p-7 flex flex-col justify-between">
                     <div>
-                        <span class="text-[11px]  uppercase tracking-wider text-zinc-400 dark:text-zinc-500">02 / ORGANIZATION</span>
-                        <h3 class="mt-4 text-xl font-semibold text-zinc-950 dark:text-white">Digital Vaults</h3>
-                        <p class="mt-3 text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                            Replace physical receipt chaos with immutable digital twins built for global tax audits.
+                        <span class="text-[11px] text-zinc-400 dark:text-zinc-500">02</span>
+                        <h3 class="mt-4 text-base font-medium text-zinc-950 dark:text-white">Unified Records</h3>
+                        <p class="mt-2 text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                            Keep warranties, manuals, and repair bills permanently attached to their original purchase.
                         </p>
                     </div>
                 </div>
-                <div class="rounded-3xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-900/40 p-8 sm:p-10 flex flex-col justify-between hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors duration-200">
+                <div class="rounded-2xl border border-zinc-200/70 dark:border-zinc-800/70 bg-white dark:bg-zinc-900/30 p-7 flex flex-col justify-between">
                     <div>
-                        <span class="text-[11px]  uppercase tracking-wider text-zinc-400 dark:text-zinc-500">03 / QUERY</span>
-                        <h3 class="mt-4 text-xl font-semibold text-zinc-950 dark:text-white">Instant Global Search</h3>
-                        <p class="mt-3 text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                            Query millions of line items dynamically by vendor, jurisdiction, currency, or project tags.
-                        </p>
-                    </div>
-                </div>
-                <div class="md:col-span-2 rounded-3xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-900/40 p-8 sm:p-10 flex flex-col justify-between hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors duration-200">
-                    <div>
-                        <span class="text-[11px]  uppercase tracking-wider text-zinc-400 dark:text-zinc-500">04 / SECURITY</span>
-                        <h3 class="mt-4 text-xl font-semibold text-zinc-950 dark:text-white">Cryptographic Data Isolation</h3>
-                        <p class="mt-3 text-sm text-zinc-600 dark:text-zinc-400 max-w-lg leading-relaxed">
-                            Every record is encrypted at rest and in transit. Time-bound signed storage access guarantees privacy and compliance across global jurisdictions.
+                        <span class="text-[11px] text-zinc-400 dark:text-zinc-500">03</span>
+                        <h3 class="mt-4 text-base font-medium text-zinc-950 dark:text-white">Bank Matching</h3>
+                        <p class="mt-2 text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                            Connect purchases directly with bank transactions to eliminate missing documentation.
                         </p>
                     </div>
                 </div>
             </div>
         </div>
     </section>
-    <section id="performance"
-             class="py-28 border-t border-zinc-200/60 dark:border-zinc-900 bg-white dark:bg-zinc-950">
+
+    <!-- Performance Section -->
+    <section id="performance" class="py-24 border-t border-zinc-200/50 dark:border-zinc-900/50 bg-white dark:bg-zinc-950">
         <div class="mx-auto max-w-7xl px-6 lg:px-8">
-            <div class="max-w-2xl mb-16">
-                <span class="text-xs font-semibold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Performance Benchmark</span>
-                <h2 class="mt-2 text-3xl md:text-4xl font-semibold tracking-tight text-zinc-950 dark:text-white">
-                    Unmatched execution velocity.
+            <div class="max-w-xl mb-14">
+                <span class="text-[11px] tracking-widest text-zinc-400 dark:text-zinc-500 uppercase">Speed</span>
+                <h2 class="mt-2 text-2xl md:text-3xl font-medium tracking-tight text-zinc-950 dark:text-white">
+                    Fast by design.
                 </h2>
-                <p class="mt-3 text-sm md:text-base text-zinc-600 dark:text-zinc-400">
-                    Built from the ground up for high-volume enterprise ingestion.
+                <p class="mt-2 text-sm text-zinc-500 dark:text-zinc-400 font-normal">
+                    Optimized for quick extraction and record creation.
                 </p>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-                <div class="relative rounded-3xl border border-zinc-900/10 dark:border-zinc-700/80 p-8 sm:p-10 bg-gradient-to-b from-zinc-50 to-white dark:from-zinc-900/80 dark:to-zinc-900/40 shadow-sm">
-                    <span class="text-xs font-semibold uppercase tracking-wider text-black dark:text-white">Papertrail</span>
-                    <span class="block text-5xl font-bold tracking-tight text-zinc-950 dark:text-white mt-4">~3.8s</span>
-                    <span class="block text-sm font-semibold text-zinc-950 dark:text-zinc-100 mt-4">Papertrail Engine</span>
-                    <span class="block text-xs text-zinc-500 dark:text-zinc-400 mt-1 leading-relaxed">Autonomous multi-threaded document parsing and ledger matching.</span>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="rounded-2xl border border-zinc-900 dark:border-zinc-100 p-7 bg-zinc-950 text-white dark:bg-white dark:text-zinc-950">
+                    <span class="text-[11px] opacity-60 uppercase tracking-wider">Papertrail</span>
+                    <span class="block text-4xl font-semibold tracking-tight mt-3">~4s*</span>
+                    <span class="block text-xs font-medium mt-3 opacity-90">Rapid AI Extraction</span>
+                    <span class="block text-xs opacity-60 mt-1">Autonomous multi-threaded processing.</span>
                 </div>
-                <div class="rounded-3xl border border-zinc-200/80 dark:border-zinc-800/80 p-8 sm:p-10 bg-zinc-50/40 dark:bg-zinc-900/20">
-                    <span class="text-xs font-medium uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Legacy Tool A</span>
-                    <span class="block text-5xl font-bold tracking-tight text-zinc-400 dark:text-zinc-600 mt-4">17s</span>
-                    <span class="block text-sm font-medium text-zinc-800 dark:text-zinc-300 mt-4">Standard Cloud Workflow</span>
-                    <span class="block text-xs text-zinc-500 dark:text-zinc-400 mt-1 leading-relaxed">Manual queue queuing and basic OCR extraction.</span>
+                <div class="rounded-2xl border border-zinc-200/70 dark:border-zinc-800/70 p-7 bg-zinc-50/50 dark:bg-zinc-900/20">
+                    <span class="text-[11px] text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Expensify</span>
+                    <span class="block text-4xl font-semibold tracking-tight text-zinc-400 dark:text-zinc-600 mt-3">~17s</span>
+                    <span class="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mt-3">Manual Queue Processing</span>
+                    <span class="block text-xs text-zinc-400 dark:text-zinc-500 mt-1">Basic OCR tools and standard queues.</span>
                 </div>
-                <div class="rounded-3xl border border-zinc-200/80 dark:border-zinc-800/80 p-8 sm:p-10 bg-zinc-50/40 dark:bg-zinc-900/20">
-                    <span class="text-xs font-medium uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Legacy Tool B</span>
-                    <span class="block text-5xl font-bold tracking-tight text-zinc-400 dark:text-zinc-600 mt-4">90s+</span>
-                    <span class="block text-sm font-medium text-zinc-800 dark:text-zinc-300 mt-4">Enterprise Legacy Portals</span>
-                    <span class="block text-xs text-zinc-500 dark:text-zinc-400 mt-1 leading-relaxed">Multi-tier manual approval workflows and approval delays.</span>
+                <div class="rounded-2xl border border-zinc-200/70 dark:border-zinc-800/70 p-7 bg-zinc-50/50 dark:bg-zinc-900/20">
+                    <span class="text-[11px] text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Zoho Expense</span>
+                    <span class="block text-4xl font-semibold tracking-tight text-zinc-400 dark:text-zinc-600 mt-3">~110s</span>
+                    <span class="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mt-3">Enterprise Systems</span>
+                    <span class="block text-xs text-zinc-400 dark:text-zinc-500 mt-1">Multi-tier manual reviews and delays.</span>
                 </div>
+            </div>
+
+            <!-- Detailed Asterisked Disclaimer -->
+            <div class="mt-6 text-xs text-zinc-400 dark:text-zinc-500 leading-relaxed space-y-1">
+                <p>* Performance benchmarks based on internal controlled testing comparing standard mobile receipt upload to full data field extraction under identical network conditions. Competitor names (Expensify, Zoho Expense) are registered trademarks of their respective owners. Use of these names is for identification purposes only and does not imply any affiliation, sponsorship, or endorsement. Individual results may vary based on file format, document complexity, and network environment.</p>
             </div>
         </div>
     </section>
-    <section class="py-28 border-t border-zinc-200/60 dark:border-zinc-900 bg-zinc-50/70 dark:bg-zinc-950">
+
+    <!-- Dossier / Security Section -->
+    <section class="py-24 border-t border-zinc-200/50 dark:border-zinc-900/50 bg-zinc-50/50 dark:bg-zinc-950">
         <div class="mx-auto max-w-7xl px-6 lg:px-8">
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-                <div class="space-y-6">
-                    <span class="text-xs font-semibold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Compliance & Proof</span>
-                    <h2 class="text-3xl md:text-4xl font-semibold tracking-tight text-zinc-950 dark:text-white leading-tight">
-                        Complete, audit-proof asset evidence dossiers.
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                <div class="space-y-4">
+                    <span class="text-[11px] tracking-widest text-zinc-400 dark:text-zinc-500 uppercase">Retention</span>
+                    <h2 class="text-2xl md:text-3xl font-medium tracking-tight text-zinc-950 dark:text-white leading-snug">
+                        Built for long-term records.
                     </h2>
-                    <p class="text-sm md:text-base text-zinc-600 dark:text-zinc-400 leading-relaxed font-normal">
-                        Automatically link tax invoices, warranty agreements, proof of payment, and asset identifiers directly into unified digital folders.
+                    <p class="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed font-normal">
+                        Receipts and documents are organized into permanent purchase histories. Keep everything searchable for warranty claims, taxes, and audits years down the road.
                     </p>
-                    <div class="pt-2 space-y-3 text-xs sm:text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                        <div class="flex items-center gap-3">
-                            <span class="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold">✓</span>
-                            <span>Global bank transaction matching & reconciliation</span>
+                    <div class="pt-2 space-y-2.5 text-xs font-medium text-zinc-700 dark:text-zinc-300">
+                        <div class="flex items-center gap-2.5">
+                            <span class="text-zinc-400">—</span>
+                            <span>Encrypted storage and secure signed links</span>
                         </div>
-                        <div class="flex items-center gap-3">
-                            <span class="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold">✓</span>
-                            <span>Cryptographically verified record snapshots</span>
+                        <div class="flex items-center gap-2.5">
+                            <span class="text-zinc-400">—</span>
+                            <span>Chronological timelines for every item</span>
                         </div>
-                        <div class="flex items-center gap-3">
-                            <span class="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold">✓</span>
+                        <div class="flex items-center gap-2.5">
+                            <span class="text-zinc-400">—</span>
                             <span>Multi-year regulatory tax retention compliance</span>
                         </div>
                     </div>
                 </div>
-                <div class="rounded-3xl border border-zinc-200/80 dark:border-zinc-800/80 p-6 sm:p-8 bg-white dark:bg-zinc-900/60 shadow-sm">
-                    <div class="space-y-5">
-                        <div class="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 pb-5">
+                <div class="rounded-2xl border border-zinc-200/70 dark:border-zinc-800/70 p-6 bg-white dark:bg-zinc-900/40">
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 pb-4">
                             <div>
-                                <span class="block text-sm font-semibold text-zinc-950 dark:text-white">MacBook Pro 16" M3 Max</span>
-                                <span class="block text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">Apple Store Direct • USD $3,499.00</span>
+                                <span class="block text-sm font-medium text-zinc-950 dark:text-white">MacBook Pro 16" M3</span>
+                                <span class="block text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">USD $3,499.00 • Apple Store</span>
                             </div>
-                            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">Reconciled</span>
+                            <span class="text-xs text-zinc-500 dark:text-zinc-400">Reconciled</span>
                         </div>
-                        <div class="space-y-2.5 text-xs">
-                            <div class="flex items-center justify-between p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200/60 dark:border-zinc-800">
-                                <span class="font-medium text-zinc-700 dark:text-zinc-300">Commercial Invoice (Tax PDF)</span>
-                                <span class="text-emerald-600 dark:text-emerald-400 font-medium">Verified</span>
+                        <div class="space-y-2 text-xs">
+                            <div class="flex items-center justify-between p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950/50 border border-zinc-200/50 dark:border-zinc-800/50">
+                                <span class="text-zinc-600 dark:text-zinc-400">Original Tax Invoice</span>
+                                <span class="text-zinc-950 dark:text-white">Attached</span>
                             </div>
-                            <div class="flex items-center justify-between p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200/60 dark:border-zinc-800">
-                                <span class="font-medium text-zinc-700 dark:text-zinc-300">AppleCare+ Extended Warranty</span>
-                                <span class="text-emerald-600 dark:text-emerald-400 font-medium">Attached</span>
+                            <div class="flex items-center justify-between p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950/50 border border-zinc-200/50 dark:border-zinc-800/50">
+                                <span class="text-zinc-600 dark:text-zinc-400">AppleCare Warranty</span>
+                                <span class="text-zinc-950 dark:text-white">Verified</span>
                             </div>
-                            <div class="flex items-center justify-between p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200/60 dark:border-zinc-800">
-                                <span class="font-medium text-zinc-700 dark:text-zinc-300">Bank Settlement Record</span>
-                                <span class="text-emerald-600 dark:text-emerald-400 font-medium">Matched</span>
+                            <div class="flex items-center justify-between p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950/50 border border-zinc-200/50 dark:border-zinc-800/50">
+                                <span class="text-zinc-600 dark:text-zinc-400">Bank Settlement Record</span>
+                                <span class="text-zinc-950 dark:text-white">Matched</span>
                             </div>
                         </div>
                     </div>
@@ -237,54 +244,54 @@
             </div>
         </div>
     </section>
-    <section id="reimbursements"
-             class="relative overflow-hidden py-32 bg-white dark:bg-zinc-950 text-center border-t border-zinc-200/60 dark:border-zinc-900">
-        <div class="absolute inset-0 bg-[radial-gradient(circle_800px_at_center,rgba(250,250,250,1),transparent)] dark:bg-[radial-gradient(circle_800px_at_center,rgba(18,18,23,0.6),transparent)] pointer-events-none">
-        </div>
-        <div class="relative mx-auto max-w-3xl px-6">
-            <span class="inline-flex items-center gap-2 rounded-full px-3.5 py-1 text-[11px] font-semibold uppercase tracking-widest text-zinc-800 dark:text-zinc-200 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800">
-                Global Contractor & Team Operations
-            </span>
-            <h3 class="mt-8 text-3xl sm:text-5xl font-light tracking-tight text-zinc-950 dark:text-white leading-[1.12]">
-                Instant expense outlays.
-                <br />
-                <span class="font-semibold bg-gradient-to-r from-zinc-950 via-zinc-700 to-zinc-900 dark:from-white dark:via-zinc-300 dark:to-zinc-100 bg-clip-text text-transparent">Transparent client settlement.</span>
+
+    <!-- Reimbursements Section -->
+    <section id="reimbursements" class="py-24 bg-white dark:bg-zinc-950 text-center border-t border-zinc-200/50 dark:border-zinc-900/50">
+        <div class="relative mx-auto max-w-2xl px-6">
+            <span class="text-[11px] tracking-widest text-zinc-400 dark:text-zinc-500 uppercase">Reimbursements</span>
+            <h3 class="mt-2 text-2xl sm:text-3xl font-medium tracking-tight text-zinc-950 dark:text-white">
+                Simple peer-to-peer expense settlement.
             </h3>
-            <p class="mt-6 text-base sm:text-lg text-zinc-600 dark:text-zinc-400 font-normal max-w-2xl mx-auto leading-relaxed">
-                Eliminate reimbursement delays. Direct bank feeds, extracted vendor metadata, and multi-currency items are compiled into clean, shareable digital statements for immediate client sign-off.
+            <p class="mt-3 text-sm text-zinc-500 dark:text-zinc-400 font-normal leading-relaxed">
+                Generate clean reimbursement statements directly from existing purchase records. Share items instantly for review without duplicate data entry.
             </p>
-            <div class="mt-14 grid grid-cols-2 gap-6 max-w-lg mx-auto border-t border-zinc-200/80 dark:border-zinc-800/80 pt-8 text-left">
+            <div class="mt-10 grid grid-cols-2 gap-6 max-w-md mx-auto border-t border-zinc-200/70 dark:border-zinc-800/70 pt-6 text-left">
                 <div>
-                    <p class="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Compliance Standard</p>
-                    <p class="mt-1 text-sm text-zinc-950 dark:text-zinc-200 font-semibold">SOC-2 & Global Tax ID Compliant</p>
+                    <p class="text-[11px] text-zinc-400 dark:text-zinc-500 uppercase">Standard</p>
+                    <p class="mt-1 text-xs text-zinc-950 dark:text-zinc-200 font-medium">Encrypted by design</p>
                 </div>
                 <div>
-                    <p class="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Settlement Network</p>
-                    <p class="mt-1 text-sm text-zinc-950 dark:text-zinc-200 font-semibold">Instant Multi-Currency Payouts</p>
+                    <p class="text-[11px] text-zinc-400 dark:text-zinc-500 uppercase">Payouts</p>
+                    <p class="mt-1 text-xs text-zinc-950 dark:text-zinc-200 font-medium">Multi-Currency Support</p>
                 </div>
             </div>
         </div>
     </section>
-    <section id="faq"
-             class="py-28 border-t border-zinc-200/60 dark:border-zinc-900 bg-zinc-50/70 dark:bg-zinc-950">
-        <div class="mx-auto max-w-3xl px-6">
-            <div class="text-center mb-16">
-                <span class="text-xs font-semibold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Support</span>
-                <h2 class="mt-2 text-3xl md:text-4xl font-semibold tracking-tight text-zinc-950 dark:text-white">
+    
+    <section id="pricing">
+        {% include "billing/pricing_page.html" %}
+    </section>
+    
+    <!-- FAQ Section -->
+    <section id="faq" class="py-24 border-t border-zinc-200/50 dark:border-zinc-900/50 bg-zinc-50/50 dark:bg-zinc-950">
+        <div class="mx-auto max-w-2xl px-6">
+            <div class="text-center mb-12">
+                <span class="text-[11px] tracking-widest text-zinc-400 dark:text-zinc-500 uppercase">FAQ</span>
+                <h2 class="mt-2 text-2xl md:text-3xl font-medium tracking-tight text-zinc-950 dark:text-white">
                     Frequently asked questions
                 </h2>
             </div>
-            <div class="space-y-4 text-left">
-                <div class="p-6 sm:p-8 rounded-3xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-900/40">
-                    <h3 class="text-sm sm:text-base font-semibold text-zinc-950 dark:text-white">How does Papertrail differ from standard receipt scanners?</h3>
-                    <p class="mt-3 text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                        Unlike single-purpose scanning utilities, Papertrail acts as a complete asset dossier and financial clearinghouse—linking bank feeds, warranty records, tax compliance, and client settlements into dynamic workspaces.
+            <div class="space-y-3 text-left">
+                <div class="p-6 rounded-2xl border border-zinc-200/70 dark:border-zinc-800/70 bg-white dark:bg-zinc-900/30">
+                    <h3 class="text-xs sm:text-sm font-medium text-zinc-950 dark:text-white">How does Papertrail differ from standard receipt scanners?</h3>
+                    <p class="mt-2 text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                        Papertrail goes beyond basic scanning by linking bank feeds, warranty records, invoices, and supporting documents into an organized, unified purchase record.
                     </p>
                 </div>
-                <div class="p-6 sm:p-8 rounded-3xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-900/40">
-                    <h3 class="text-sm sm:text-base font-semibold text-zinc-950 dark:text-white">Is my financial data secure across international jurisdictions?</h3>
-                    <p class="mt-3 text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                        Yes. All credentials and documents are protected with enterprise-grade encryption. Data is stored in secure, geographically isolated serverless storage buckets with strict cryptographic access limits.
+                <div class="p-6 rounded-2xl border border-zinc-200/70 dark:border-zinc-800/70 bg-white dark:bg-zinc-900/30">
+                    <h3 class="text-xs sm:text-sm font-medium text-zinc-950 dark:text-white">Is my financial data secure?</h3>
+                    <p class="mt-2 text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                        Yes. All documents and sensitive data are encrypted at rest and in transit, stored securely with strict cryptographic access limits.
                     </p>
                 </div>
             </div>

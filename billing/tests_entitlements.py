@@ -1,7 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.utils import timezone
-
 from djstripe.models import Customer, Subscription
 
 from . import entitlements, features
@@ -85,9 +84,7 @@ class ScanUsageTests(TestCase):
 
 class ContextProcessorTests(TestCase):
     def setUp(self):
-        self.customer = Customer.objects.create(
-            id="cus_cp", livemode=False, created=timezone.now()
-        )
+        self.customer = Customer.objects.create(id="cus_cp", livemode=False, created=timezone.now())
         self.user = get_user_model().objects.create_user(
             username="cp",
             email="cp@example.com",

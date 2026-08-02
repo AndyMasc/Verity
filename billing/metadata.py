@@ -34,6 +34,7 @@ PAPERTRAIL_PRO = ProductMetadata(
     description="For small businesses and teams",
     is_default=True,
     features=[
+        features.INCLUDES_ALL_FREE,
         features.UNLIMITED_SCANS,
         features.BANK_TRANSACTION_SYNC,
         features.QUICK_REIMBURSEMENT_REQUEST,

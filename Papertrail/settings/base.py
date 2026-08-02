@@ -3,9 +3,6 @@ from pathlib import Path
 import environ
 import sentry_sdk
 
-from django.urls import reverse_lazy
-from django.utils.translation import gettext_lazy as _
-
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 env = environ.Env()
@@ -237,6 +234,7 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 "core.context_processors.webpush_status",  # Check user webpush status
                 "billing.context_processors.subscription_status",  # Subscription status for all templates
+                "billing.context_processors.scan_usage",  # Scan usage for all templates
             ],
             "builtins": [
                 "django.templatetags.static",
@@ -453,26 +451,24 @@ sentry_sdk.init(
 )
 
 # Unfold customization
-# Unfold customization
 UNFOLD = {
     "SITE_TITLE": "Papertrail Portal",
     "SITE_HEADER": "Papertrail",
     "SITE_SYMBOL": "description",  # Material Symbol
     "SHOW_HISTORY": True,
     "SHOW_VIEW_ON_SITE": True,
-
     "COLORS": {
         "primary": {
-            "50": "236 253 245",    # Emerald 50
-            "100": "209 250 229",   # Emerald 100
-            "200": "167 243 208",   # Emerald 200
-            "300": "110 231 183",   # Emerald 300
-            "400": "52 211 153",    # Emerald 400
-            "500": "16 185 129",    # #10B981 (Papertrail primary)
-            "600": "5 150 105",     # Emerald 600
-            "700": "4 120 87",      # Emerald 700
-            "800": "6 95 70",       # Emerald 800
-            "900": "6 78 59",       # Emerald 900
+            "50": "236 253 245",  # Emerald 50
+            "100": "209 250 229",  # Emerald 100
+            "200": "167 243 208",  # Emerald 200
+            "300": "110 231 183",  # Emerald 300
+            "400": "52 211 153",  # Emerald 400
+            "500": "16 185 129",  # #10B981 (Papertrail primary)
+            "600": "5 150 105",  # Emerald 600
+            "700": "4 120 87",  # Emerald 700
+            "800": "6 95 70",  # Emerald 800
+            "900": "6 78 59",  # Emerald 900
         },
     },
 }

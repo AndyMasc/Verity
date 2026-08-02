@@ -3,7 +3,6 @@
 import logging
 
 import posthog
-from billing import entitlements
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.cache import cache
@@ -14,6 +13,7 @@ from django.utils.functional import cached_property
 from django.views.generic.base import View
 from django.views.generic.edit import CreateView
 
+from billing import entitlements
 from documents.models import DocumentData, DocumentStatus
 from documents.ocr_helpers import ocr_data_to_form_initial
 from documents.services.ocr import set_document_status

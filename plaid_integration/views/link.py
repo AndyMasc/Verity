@@ -4,9 +4,6 @@ import logging
 
 import plaid
 import posthog
-from billing import features
-from billing.entitlements import has_feature
-from billing.mixins import FeatureRequiredMixin
 from django.conf import settings
 from django.core.cache import cache
 from django.db import transaction
@@ -26,6 +23,10 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+from billing import features
+from billing.entitlements import has_feature
+from billing.mixins import FeatureRequiredMixin
 
 from ..models import PlaidItem
 from ..plaid_client import client

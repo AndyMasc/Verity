@@ -3,52 +3,73 @@
 {% block title %}Choose Your Plan | Papertrail{% endblock %}
 
 {% block content %}
-  <main class="min-h-screen w-full max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-20 selection:bg-zinc-900 selection:text-white dark:selection:bg-white dark:selection:text-zinc-900 font-sans"
-        x-data="{ billingInterval: 'month' }">
+<main class="min-h-screen flex flex-col items-center justify-center w-full max-w-5xl mx-auto px-6 py-12 sm:py-16 font-sans antialiased" x-data="{ openModal: false }" @open-pricing-modal.window="openModal = true">
 
-    <!-- Header Section -->
-    <header class="text-center max-w-2xl mx-auto mb-12 sm:mb-16">
-      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 ring-1 ring-inset ring-zinc-500/20 text-[11px] tracking-wider uppercase font-medium mb-4">
-        Pricing
-      </div>
-      <h1 class="text-3xl sm:text-5xl font-semibold tracking-tighter text-zinc-900 dark:text-zinc-50 mb-4">
-        Scale your expense workflow.
-      </h1>
-      <p class="text-sm sm:text-base text-zinc-500 dark:text-zinc-400 leading-relaxed">
-        Choose the plan that fits your team.
-      </p>
-    </header>
+  <header class="text-center max-w-xl mx-auto mb-12">
+    <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 text-[11px] font-medium text-zinc-500 dark:text-zinc-400 mb-4">
+      <span class="size-1 rounded-full bg-zinc-400 dark:bg-zinc-500"></span>
+      Plans & Pricing
+    </div>
+    <h1 class="text-2xl sm:text-3xl font-medium tracking-tight text-zinc-900 dark:text-zinc-100">
+      Scale your expense workflow
+    </h1>
+  </header>
 
-    <!-- Custom Pricing Cards Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 mb-20">
+  <div class="flex justify-center w-full mb-16">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl w-full">
       {% for product in products %}
         {% with is_default=product.is_default %}
-            {% include 'billing/partials/plan_card.html' %}
+          {% include 'billing/partials/plan_card.html' %}
         {% endwith %}
       {% endfor %}
     </div>
+  </div>
 
-    <!-- Stripe Pricing Table Embed Section -->
-    <section class="mt-16 pt-16 border-t border-black/[0.06] dark:border-white/[0.06]">
-      <div class="text-center max-w-xl mx-auto mb-10">
-        <h2 class="text-xl sm:text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50 mb-2">
-          Or view full interactive pricing
-        </h2>
-        <p class="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400">
-          Manage your subscription directly through our secure Stripe portal.
-        </p>
+  <!-- Full-Screen Modal containing the Stripe Pricing Table -->
+  <div 
+    x-show="openModal" 
+    x-cloak
+    @keydown.escape.window="openModal = false"
+    class="absolute inset-0 z-50 flex items-center justify-center bg-zinc-950/80 backdrop-blur-sm p-4 sm:p-6"
+    x-transition:enter="transition ease-out duration-300"
+    x-transition:enter-start="opacity-0"
+    x-transition:enter-end="opacity-100"
+    x-transition:leave="transition ease-in duration-200"
+    x-transition:leave-start="opacity-100"
+    x-transition:leave-end="opacity-0"
+  >
+    <div 
+      @click.away="openModal = false"
+      class="relative bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+    >
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between px-6 py-4 border-b border-zinc-200 dark:border-zinc-800">
+        <h3 class="text-sm font-medium text-zinc-900 dark:text-zinc-100">Plan Comparison & Checkout</h3>
+        <button 
+          @click="openModal = false"
+          class="text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition"
+          aria-label="Close modal"
+        >
+          <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
       </div>
 
-      <div class="rounded-3xl bg-white/70 dark:bg-zinc-900/40 backdrop-blur-xl ring-1 ring-inset ring-black/[0.05] dark:ring-white/[0.06] p-6 sm:p-8 shadow-[0_4px_24px_rgba(0,0,0,0.02)] overflow-hidden">
+      <!-- Modal Body (Stripe Pricing Table) -->
+      <div class="flex-1 overflow-y-auto p-4 sm:p-6">
         <script async src="https://js.stripe.com/v3/pricing-table.js"></script>
         <stripe-pricing-table
           pricing-table-id="{{ stripe_pricing_table_id }}"
           publishable-key="{{ stripe_public_key }}"
-          client-reference-id="{{ request.user.id }}"
+          {% if request.user.is_authenticated %}
+            client-reference-id="{{ request.user.id }}"
+          {% endif %}
         >
         </stripe-pricing-table>
       </div>
-    </section>
+    </div>
+  </div>
 
-  </main>
+</main>
 {% endblock %}

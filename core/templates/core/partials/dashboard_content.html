@@ -11,9 +11,6 @@
     <!-- Header -->
     <header class="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div class="flex flex-col sm:flex-row sm:items-center gap-3">
-                <span class="text-xs text-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 rounded-xl bg-white py-1.5 dark:border-zinc-800 font-bold px-4 border border-zinc-200">
-                    {{ plan_name }}
-                </span>
                 <a href="{% if is_subscribed %}{% url 'portal_session' %}{% else %}{% url 'pricing_page' %}{% endif %}"
                    class="inline-flex w-min items-center gap-2 px-3 py-1.5 rounded-xl bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border border-zinc-200/60 dark:border-zinc-800/60 text-xs font-medium text-zinc-800 dark:text-zinc-200 shadow-sm">
                     <span class="relative flex size-2">

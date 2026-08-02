@@ -3,7 +3,6 @@ from typing import cast
 
 import stripe
 from django.conf import settings
-from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.http import HttpRequest, HttpResponse, HttpResponseBadRequest, HttpResponseRedirect
@@ -22,8 +21,11 @@ logger = logging.getLogger(__name__)
 
 @login_required
 def pricing_page(request: HttpRequest) -> HttpResponse:
-    products = list(Product.objects.filter(active=True).prefetch_related("prices"))
+    user = cast(CustomUser, request.user)
 
+    has_active_sub = user.has_active_subscription
+
+    products = list(Product.objects.filter(active=True).prefetch_related("prices"))
     for product in products:
         meta = metadata.PRODUCTS.get(product.id)
         product.features_list = meta.features if meta else []
@@ -43,6 +45,7 @@ def pricing_page(request: HttpRequest) -> HttpResponse:
             "stripe_pricing_table_id": settings.STRIPE_PRICING_TABLE_ID,
             "products": products,
             "free_plan": free_plan,
+            "has_active_subscription": has_active_sub,
         },
     )
 
@@ -112,13 +115,25 @@ def subscription_confirm(request: HttpRequest) -> HttpResponse:
     subscription = stripe.Subscription.retrieve(str(session.subscription))
     djstripe_subscription = Subscription.sync_from_stripe_data(subscription)
 
-    # Attach relations to custom user model
+    # Cancel previous active subscription if a new one is being confirmed
+    if (
+        subscription_holder.subscription
+        and subscription_holder.subscription.id != djstripe_subscription.id
+    ):
+        old_sub_id = subscription_holder.subscription.id
+        try:
+            # Immediately cancel the older subscription in Stripe
+            stripe.Subscription.cancel(old_sub_id)
+            logger.info(
+                "Canceled previous subscription %s for user %s", old_sub_id, subscription_holder.pk
+            )
+        except stripe.error.StripeError as e:
+            logger.error("Failed to cancel old subscription %s: %s", old_sub_id, e)
+
+    # Attach new relations
     subscription_holder.subscription = djstripe_subscription
     subscription_holder.customer = djstripe_subscription.customer
     subscription_holder.save()
-
-    messages.success(request, "You're account was successfully upgraded!")
-    return HttpResponseRedirect(reverse("core:dashboard"))
 
 
 @login_required

@@ -26,8 +26,11 @@ from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 from django.views.generic import ListView, TemplateView, UpdateView
 from django_ratelimit.decorators import ratelimit
+from djstripe.models import Product
 from webpush.models import SubscriptionInfo
 from webpush.views import save_info
+
+from billing import metadata
 
 from .forms import UpdateUserSettingsForm
 from .models import Notification, UserSettings
@@ -40,7 +43,28 @@ def index(request: HttpRequest) -> HttpResponse:
     """Redirect authenticated users to the dashboard; serve the landing page otherwise."""
     if request.user.is_authenticated:
         return redirect("core:dashboard")
-    return render(request, "core/landing_page.html")
+
+    products = Product.objects.filter(active=True).prefetch_related("prices").all()
+
+    products = list(Product.objects.filter(active=True).prefetch_related("prices"))
+    for product in products:
+        meta = metadata.PRODUCTS.get(product.id)
+        product.features_list = meta.features if meta else []
+        product.is_default = meta.is_default if meta else False
+
+    free_plan = metadata.PAPERTRAIL_FREE
+    free_plan.features_list = free_plan.features
+    free_plan.prices = []
+    free_plan.is_default = False
+    products.insert(0, free_plan)
+
+    context = {
+        "stripe_public_key": settings.STRIPE_PRICING_TABLE_KEY,
+        "stripe_pricing_table_id": settings.STRIPE_PRICING_TABLE_ID,
+        "products": products,
+    }
+
+    return render(request, "core/landing_page.html", context)
 
 
 def privacy_policy(request: HttpRequest) -> HttpResponse:
@@ -225,7 +249,8 @@ def expense_chart_data(request: HttpRequest) -> JsonResponse:
             transaction_date__gte=start.date(),
             transaction_date__lte=now.date(),
             balance__isnull=False,
-        ).values_list("balance", "currency", "transaction_date")
+        )
+        .values_list("balance", "currency", "transaction_date")
     )
 
     # Pre-fetch USD-based rates once for the entire batch

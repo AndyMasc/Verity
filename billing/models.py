@@ -4,11 +4,12 @@ from django.db import models
 
 
 class CustomUser(AbstractUser):
-    subscription = models.ForeignKey(
+    subscription = models.OneToOneField(
         "djstripe.Subscription",
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
+        related_name="user",
         help_text="The user's Stripe Subscription object, if it exists",
     )
     customer = models.ForeignKey(
@@ -18,6 +19,13 @@ class CustomUser(AbstractUser):
         on_delete=models.SET_NULL,
         help_text="The user's Stripe Customer object, if it exists",
     )
+
+    @property
+    def has_active_subscription(self) -> bool:
+        if not self.subscription:
+            return False
+        # Valid Stripe active/trialing statuses
+        return self.subscription.status in ["active", "trialing"]
 
 
 class ScanUsage(models.Model):

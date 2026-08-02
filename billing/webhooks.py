@@ -55,3 +55,27 @@ def report_webhook_processing_error(**kwargs: Any) -> None:
         exception,
         exc_info=exception,
     )
+
+
+@receiver(djstripe_signals.WEBHOOK_SIGNALS["customer.subscription.deleted"])
+def handle_subscription_deleted(sender: Any, **kwargs: Any) -> None:
+    """Clears the user's subscription relation when cancelled in Stripe."""
+    event = kwargs.get("event")
+    if not event:
+        return
+
+    stripe_sub = event.data["object"]
+    sub_id = stripe_sub.get("id")
+
+    if not sub_id:
+        return
+
+    # Defer execution until the current webhook database transaction commits
+    def _clear_user_subscription() -> None:
+        from .models import CustomUser
+
+        updated_count = CustomUser.objects.filter(subscription_id=sub_id).update(subscription=None)
+        if updated_count:
+            logger.info("Cleared subscription %s from %d user(s).", sub_id, updated_count)
+
+    transaction.on_commit(_clear_user_subscription)

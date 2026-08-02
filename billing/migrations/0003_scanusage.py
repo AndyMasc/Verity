@@ -6,7 +6,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
         ("billing", "0002_customuser_customer_customuser_subscription"),
@@ -27,9 +26,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "period",
-                    models.CharField(
-                        help_text="Calendar month, e.g. 2026-08", max_length=7
-                    ),
+                    models.CharField(help_text="Calendar month, e.g. 2026-08", max_length=7),
                 ),
                 ("count", models.PositiveIntegerField(default=0)),
                 (
