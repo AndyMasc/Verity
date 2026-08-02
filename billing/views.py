@@ -72,11 +72,6 @@ def subscription_confirm(request: HttpRequest) -> HttpResponse:
     if not session.subscription:
         return HttpResponseBadRequest("Session is not a subscription checkout.")
 
-    # Ownership check. The embedded pricing table can reuse a cached Checkout
-    # Session whose client_reference_id was captured for a different user, so
-    # prefer matching the actual payer: the session's Stripe customer or the
-    # email used at checkout. Fall back to client_reference_id for payers who
-    # have no customer record yet.
     customer_email = (getattr(session, "customer_details", None) or {}).get("email")
     session_customer_matches = (
         session.customer and user.customer is not None and session.customer == user.customer.id
