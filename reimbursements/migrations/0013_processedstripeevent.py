@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("reimbursements", "0012_add_stripe_account_charge_payout_flags"),
     ]

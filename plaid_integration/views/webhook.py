@@ -103,10 +103,11 @@ def plaid_webhook(request: HttpRequest) -> HttpResponse:
     except ValueError, TypeError:
         return HttpResponseBadRequest("Invalid JSON")
 
-    if (
-        payload.get("environment") != "sandbox"
-        and settings.PLAID_ENV != "sandbox"
-        and not verify_plaid_webhook(request.body, request.headers.get("Plaid-Verification"))
+    # Only skip signature verification when we are running against Plaid's
+    # sandbox. An attacker-supplied "environment": "sandbox" in the payload
+    # must never disable verification in a live environment.
+    if settings.PLAID_ENV != "sandbox" and not verify_plaid_webhook(
+        request.body, request.headers.get("Plaid-Verification")
     ):
         logger.warning("Plaid webhook verification failed for %s", payload.get("item_id"))
         return HttpResponseForbidden("Invalid webhook signature")
@@ -128,10 +129,36 @@ def plaid_webhook(request: HttpRequest) -> HttpResponse:
     return HttpResponse("OK")
 
 
+def _dispatch_sync(plaid_item: PlaidItem) -> bool:
+    """Enqueue a transaction sync for an item, debounced by a per-item cooldown.
+
+    Plaid may deliver several SYNC_UPDATES_AVAILABLE webhooks for the same
+    item within seconds. Only the first one within
+    ``PLAID_SYNC_COOLDOWN_SECONDS`` triggers a task; the rest are dropped to
+    avoid redundant (and potentially expensive) sync runs.
+    """
+    now = tz.now()
+    last_synced_at = plaid_item.last_synced_at
+    if last_synced_at is not None:
+        elapsed = (now - last_synced_at).total_seconds()
+        if elapsed < settings.PLAID_SYNC_COOLDOWN_SECONDS:
+            logger.info(
+                "Skipping sync for item %s: last sync %.1fs ago (cooldown %ss)",
+                plaid_item.item_id,
+                elapsed,
+                settings.PLAID_SYNC_COOLDOWN_SECONDS,
+            )
+            return False
+
+    PlaidItem.objects.filter(id=plaid_item.id).update(last_synced_at=now)
+    sync_and_convert_for_item_task.delay(plaid_item.id)
+    return True
+
+
 def _route_webhook(webhook_code: str, plaid_item: PlaidItem, payload: dict[str, Any]) -> None:
     """Dispatch a webhook to the appropriate handler based on the code."""
     if webhook_code in ("SYNC_UPDATES_AVAILABLE", "HISTORICAL_UPDATE"):
-        sync_and_convert_for_item_task.delay(plaid_item.id)
+        _dispatch_sync(plaid_item)
 
     elif webhook_code in ("ITEM_LOGIN_REQUIRED", "ITEM_REQUIRES_UPDATE", "PENDING_EXPIRATION"):
         logger.warning(

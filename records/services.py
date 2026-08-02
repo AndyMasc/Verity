@@ -4,8 +4,9 @@ Keeps archive/unarchive logic out of views so it can be reused from
 signals, tasks, or management commands without duplicating business rules.
 """
 
-from django.contrib.auth.models import User
 from django.db import transaction
+
+from billing.models import CustomUser as User
 
 from .models import AuditLog, Record
 

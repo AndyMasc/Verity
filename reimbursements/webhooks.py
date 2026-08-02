@@ -1,9 +1,11 @@
 import logging
+from decimal import Decimal
 
 import stripe
 from django.conf import settings
 from django.db import transaction
 
+from core.currencies import from_stripe_amount
 from records.models import AuditLog
 
 from .models import PackagePayment, ProcessedStripeEvent, StripeAccount
@@ -19,6 +21,49 @@ def _as_dict(obj):
     if hasattr(obj, "to_dict_recursive"):
         return obj.to_dict_recursive()
     return dict(obj)
+
+
+def _session_amount_matches(session: dict, payment: PackagePayment) -> bool:
+    """Cross-check the settled checkout amount against the expected package total.
+
+    Prevents a session for a different/edited amount from being treated as a
+    completed payment. A small tolerance absorbs the rounding difference
+    between Stripe's per-line-item cent rounding and the stored converted
+    total.
+    """
+    session_currency = (session.get("currency") or payment.payer_currency).lower()
+    amount_total = session.get("amount_total")
+    if session_currency != payment.payer_currency.lower():
+        logger.error(
+            "Package %s: session %s currency mismatch (%s vs %s) — refusing to mark as paid",
+            payment.package_id,
+            session.get("id"),
+            session_currency,
+            payment.payer_currency,
+        )
+        return False
+    if amount_total is None:
+        logger.error(
+            "Package %s: session %s has no amount_total — refusing to mark as paid",
+            payment.package_id,
+            session.get("id"),
+        )
+        return False
+    settled = from_stripe_amount(amount_total, session_currency)
+    expected = payment.amount_paid
+    tolerance = max(Decimal("0.02"), expected * Decimal("0.01"))
+    if abs(settled - expected) > tolerance:
+        logger.error(
+            "Package %s: session %s settled amount %s %s does not match expected %s %s — refusing to mark as paid",
+            payment.package_id,
+            session.get("id"),
+            settled,
+            session_currency,
+            expected,
+            payment.payer_currency,
+        )
+        return False
+    return True
 
 
 def process_stripe_event(event):
@@ -77,6 +122,14 @@ def process_stripe_event(event):
                 )
                 raise
 
+            if not _session_amount_matches(session, payment):
+                logger.error(
+                    "Package %s: session %s amount check failed — skipping mark-as-paid",
+                    package_uuid,
+                    session["id"],
+                )
+                return
+
             payment.is_completed = True
             payment_intent_id = session.get("payment_intent")
             if payment_intent_id:
@@ -99,9 +152,7 @@ def process_stripe_event(event):
                 },
             )
 
-            transaction.on_commit(
-                lambda: _notify_package_paid(package.pk, payment.payer.pk)
-            )
+            transaction.on_commit(lambda: _notify_package_paid(package.pk, payment.payer.pk))
 
     elif event["type"] in (
         "checkout.session.async_payment_succeeded",
@@ -120,6 +171,13 @@ def process_stripe_event(event):
             return
 
         if event["type"] == "checkout.session.async_payment_succeeded":
+            if not _session_amount_matches(session, payment):
+                logger.error(
+                    "Package %s: session %s amount check failed — skipping mark-as-paid",
+                    package_uuid,
+                    session["id"],
+                )
+                return
             payment.is_completed = True
             payment_intent_id = session.get("payment_intent")
             if payment_intent_id:
@@ -138,9 +196,7 @@ def process_stripe_event(event):
                     "payer_email": payment.payer.email if payment.payer else None,
                 },
             )
-            transaction.on_commit(
-                lambda: _notify_package_paid(package.pk, payment.payer.pk)
-            )
+            transaction.on_commit(lambda: _notify_package_paid(package.pk, payment.payer.pk))
         else:
             payment.is_completed = False
             payment.save(update_fields=["is_completed"])

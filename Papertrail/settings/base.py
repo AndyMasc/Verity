@@ -37,9 +37,7 @@ if DATABASES["default"]["ENGINE"] == "django.db.backends.sqlite3":
         "OPTIONS",
         {
             "init_command": (
-                "PRAGMA journal_mode=WAL;"
-                "PRAGMA busy_timeout=20000;"
-                "PRAGMA synchronous=NORMAL;"
+                "PRAGMA journal_mode=WAL;PRAGMA busy_timeout=20000;PRAGMA synchronous=NORMAL;"
             ),
             "transaction_mode": "IMMEDIATE",
         },
@@ -130,7 +128,13 @@ if not DEBUG:
 CONTENT_SECURITY_POLICY = {
     "DIRECTIVES": {
         "default-src": ("'self'",),
-        "script-src": ("'self'", "'unsafe-inline'", "https://cdn.plaid.com", "https://*.plaid.com"),
+        "script-src": (
+            "'self'",
+            "'unsafe-inline'",
+            "https://cdn.plaid.com",
+            "https://*.plaid.com",
+            "https://js.stripe.com",
+        ),
         "style-src": (
             "'self'",
             "'unsafe-inline'",
@@ -144,8 +148,14 @@ CONTENT_SECURITY_POLICY = {
             "https://*.resend.com",
             "https://*.plaid.com",
             "https://cdn.plaid.com",
+            "https://api.stripe.com",
         ),
-        "frame-src": ("'self'", "https://cdn.plaid.com", "https://*.plaid.com"),
+        "frame-src": (
+            "'self'",
+            "https://cdn.plaid.com",
+            "https://*.plaid.com",
+            "https://js.stripe.com",
+        ),
         "frame-ancestors": ("'none'",),
         "base-uri": ("'self'",),
         "form-action": ("'self'",),
@@ -387,6 +397,10 @@ PLAID_CLIENT_ID = env("PLAID_CLIENT_ID")
 PLAID_SECRET = env("PLAID_SECRET")
 PLAID_ENV = env("PLAID_ENV")
 PLAID_WEBHOOK_URL = env("PLAID_WEBHOOK_URL")
+# Minimum seconds between transaction syncs per item. Plaid may fire multiple
+# SYNC_UPDATES_AVAILABLE webhooks in quick succession for the same item; the
+# webhook debounces dispatches within this window to avoid redundant syncs.
+PLAID_SYNC_COOLDOWN_SECONDS = env.int("PLAID_SYNC_COOLDOWN_SECONDS", default=60)
 
 # Accounting
 IMPORT_EXPORT_ESCAPE_FORMULAE_ON_EXPORT = (
@@ -418,7 +432,7 @@ sentry_sdk.init(
     environment=env("SENTRY_ENVIRONMENT", default="development"),
     # Add data like request headers and IP for users,
     # see https://docs.sentry.io/platforms/python/data-management/data-collected/ for more info
-    send_default_pii=True,
+    send_default_pii=False,
     # Enable sending logs to Sentry
     enable_logs=True,
     # Set traces_sample_rate to 1.0 to capture 100%

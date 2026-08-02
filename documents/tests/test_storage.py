@@ -2,7 +2,9 @@ import hashlib
 import io
 from unittest.mock import MagicMock, patch
 
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 from django.test import TestCase
 
 from documents.models import DocumentData, DocumentStatus

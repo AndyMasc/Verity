@@ -279,7 +279,11 @@ class PackagePayment(models.Model):
         ReimbursementPackage, on_delete=models.CASCADE, related_name="payments"
     )
     payer = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="payments_made"
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="payments_made",
     )
     stripe_checkout_session_id = models.CharField(max_length=255, unique=True)
     stripe_payment_intent_id = models.CharField(

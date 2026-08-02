@@ -20,7 +20,7 @@ class Command(BaseCommand):
             help="Log what would be updated without modifying the database",
         )
 
-    def handle(self, *args, **options):
+    def handle(self, *args, **options):  # noqa: ARG002 - Django BaseCommand signature
         dry_run = options["dry_run"]
         accounts = StripeAccount.objects.filter(
             stripe_account_id__isnull=False,

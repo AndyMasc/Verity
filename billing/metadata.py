@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+
 from . import features
 
 
@@ -7,6 +8,7 @@ class ProductMetadata:
     """
     Metadata for a Stripe product.
     """
+
     stripe_id: str
     name: str
     features: list[str]
@@ -22,7 +24,7 @@ PAPERTRAIL_PRO = ProductMetadata(
     features=[
         features.UNLIMITED_SCANS,
         features.BANK_TRANSACTION_SYNC,
-        features.QUICK_REIMBURSEMENT_REQUEST
+        features.QUICK_REIMBURSEMENT_REQUEST,
     ],
 )
 

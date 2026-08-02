@@ -138,7 +138,7 @@ ignore_missing_imports = true
 disable_error_code = ["no-untyped-def", "return-value", "arg-type", "union-attr", "assignment", "unused-ignore", "attr-defined", "var-annotated", "dict-item"]
 
 [tool.bandit]
-exclude_dirs = ["tests", "venv"]
+exclude_dirs = ["tests", "venv", "*/migrations/*"]
 skips = ["B101"]  # assert used - common in tests
 
 [tool.coverage.run]

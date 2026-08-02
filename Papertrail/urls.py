@@ -9,10 +9,10 @@ from django.conf import settings
 from django.contrib import admin
 from django.http import HttpResponseForbidden
 from django.urls import include, path
+from webpush.views import ServiceWorkerView
 
 from billing.views import subscription_confirm
 from core.views import safe_webpush_save_info
-from webpush.views import ServiceWorkerView
 
 
 def trigger_error(request):  # noqa: ARG001

@@ -10,6 +10,7 @@ from documents.models import DocumentData
 
 from ..models import MergeLog, Record
 from ..types import HistoryEntry
+from .records import snapshot_with_currency
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +46,9 @@ class RecordHistoryView(LoginRequiredMixin, ListView):
 
         self._record = get_object_or_404(Record, pk=self.kwargs["pk"], user=self.request.user)
 
-        record_entries = list(self._record.history.all()[:_HISTORY_MAX_ENTRIES_PER_SOURCE])
+        record_entries = list(
+            self._record.history.select_related("history_user")[:_HISTORY_MAX_ENTRIES_PER_SOURCE]
+        )
         for h in record_entries:
             h.source_type = "record"
 
@@ -76,6 +79,12 @@ class RecordHistoryView(LoginRequiredMixin, ListView):
             Q(plaid_record=self._record) | Q(document_record=self._record)
         )[:_HISTORY_MAX_ENTRIES_PER_SOURCE]
         for merge in merges:
+            merge.plaid_snapshot = snapshot_with_currency(
+                merge.plaid_snapshot, self._record.currency
+            )
+            merge.document_snapshot = snapshot_with_currency(
+                merge.document_snapshot, self._record.currency
+            )
             merged.append(
                 HistoryEntry(
                     source_type="merge",

@@ -4,7 +4,9 @@ Covers archive_record, unarchive_record, bulk_toggle_archive, and
 BulkLimitExceededError boundary conditions.
 """
 
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 from django.test import TestCase
 
 from records.models import AuditLog, Record

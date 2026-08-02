@@ -67,7 +67,7 @@ class PackageListView(LoginRequiredMixin, ListView):
             ReimbursementPackage.objects.filter(paid_by=self.request.user, deleted_at__isnull=True)
             .with_annotated_total()
             .with_prefetched_active_records()
-            .select_related("creator", "recipient")
+            .select_related("creator", "recipient", "paid_by")
             .order_by("-paid_at")[:25]
         )
         sent_to_me = list(
@@ -76,7 +76,7 @@ class PackageListView(LoginRequiredMixin, ListView):
             )
             .with_annotated_total()
             .with_prefetched_active_records()
-            .select_related("creator")
+            .select_related("creator", "paid_by")
             .order_by("-created_at")[:25]
         )
 
@@ -177,7 +177,7 @@ class PackageDetailView(LoginRequiredMixin, DetailView):
         return context
 
 
-@method_decorator(ratelimit(key="user", rate="10/m", method="POST"), name="dispatch")
+@method_decorator(ratelimit(key="user", rate="10/m", method="POST", block=True), name="dispatch")
 class PackageDeleteView(LoginRequiredMixin, View):
     def post(self, request: HttpRequest, package_uuid: str) -> HttpResponse:
         package = get_object_or_404(
@@ -203,7 +203,7 @@ class PackageDeleteView(LoginRequiredMixin, View):
         return redirect(reverse("reimbursements:package-list"))
 
 
-@method_decorator(ratelimit(key="user", rate="5/m", method="POST"), name="dispatch")
+@method_decorator(ratelimit(key="user", rate="5/m", method="POST", block=True), name="dispatch")
 class CreatePackageFromRecordsView(LoginRequiredMixin, StripeAccountRequiredMixin, View):
     def post(self, request: HttpRequest) -> HttpResponse:
         if request.content_type and "application/json" in request.content_type:

@@ -6,7 +6,8 @@ from datetime import date
 
 import factory
 import pytest
-from django.contrib.auth.models import User
+
+from billing.models import CustomUser as User
 
 
 class UserFactory(factory.django.DjangoModelFactory):

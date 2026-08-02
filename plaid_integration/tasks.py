@@ -10,7 +10,6 @@ import logging
 from datetime import date
 from typing import Any
 
-from django.contrib.auth.models import User
 from django.db import IntegrityError
 from django.db import transaction as db_transaction
 from django.db.models import Q
@@ -18,6 +17,7 @@ from django.utils import timezone
 from django_qstash import shared_task
 from plaid.model.transactions_sync_request import TransactionsSyncRequest
 
+from billing.models import CustomUser as User
 from records.models import Folder, Record
 
 from .models import PlaidItem

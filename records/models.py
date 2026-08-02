@@ -192,7 +192,9 @@ class FolderQuerySet(models.QuerySet):
 class Folder(models.Model):
     """User-owned folder for organising records into logical groups."""
 
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="folders")
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="folders"
+    )
     name = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -443,7 +445,9 @@ class AuditLog(models.Model):
         ARCHIVE = "archive"
         UNARCHIVE = "unarchive"
 
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="audit_logs")
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="audit_logs"
+    )
     action = models.CharField(max_length=32, choices=Action.choices, db_index=True)
     record = models.ForeignKey(
         Record, on_delete=models.SET_NULL, null=True, related_name="audit_logs"

@@ -19,6 +19,8 @@ __pycache__/
 *.db
 *.db.sqlite3
 *.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
 media/
 staticfiles/
 

@@ -472,6 +472,8 @@ class StripeWebhookTest(TestCase):
                 "id": "cs_test123",
                 "payment_status": "paid",
                 "payment_intent": "pi_test123",
+                "amount_total": 5000,
+                "currency": "usd",
                 "metadata": {"package_uuid": str(pkg.uuid)},
             },
         )
@@ -558,6 +560,8 @@ class StripeWebhookTest(TestCase):
             {
                 "id": "cs_test123",
                 "payment_status": "paid",
+                "amount_total": 5000,
+                "currency": "usd",
                 "metadata": {"package_uuid": str(pkg.uuid)},
             },
             event_id="evt_dup",
@@ -565,9 +569,7 @@ class StripeWebhookTest(TestCase):
         process_stripe_event(event)
         process_stripe_event(event)
 
-        self.assertEqual(
-            AuditLog.objects.filter(details__event="package_paid").count(), 1
-        )
+        self.assertEqual(AuditLog.objects.filter(details__event="package_paid").count(), 1)
 
     def test_async_payment_succeeded(self):
         creator = _user("creator@test.com")
@@ -586,6 +588,8 @@ class StripeWebhookTest(TestCase):
                 {
                     "id": "cs_async",
                     "payment_intent": "pi_async",
+                    "amount_total": 5000,
+                    "currency": "usd",
                     "metadata": {"package_uuid": str(pkg.uuid)},
                 },
             )
@@ -638,7 +642,11 @@ class StripeWebhookTest(TestCase):
         process_stripe_event(
             self._event(
                 "charge.refunded",
-                {"payment_intent": "pi_refund_test", "amount_refunded": 5000, "amount_captured": 5000},
+                {
+                    "payment_intent": "pi_refund_test",
+                    "amount_refunded": 5000,
+                    "amount_captured": 5000,
+                },
             )
         )
 
@@ -664,7 +672,11 @@ class StripeWebhookTest(TestCase):
         process_stripe_event(
             self._event(
                 "charge.refunded",
-                {"payment_intent": "pi_refund_partial", "amount_refunded": 2500, "amount_captured": 5000},
+                {
+                    "payment_intent": "pi_refund_partial",
+                    "amount_refunded": 2500,
+                    "amount_captured": 5000,
+                },
             )
         )
 

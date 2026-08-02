@@ -86,7 +86,7 @@ class PendingOCRListView(LoginRequiredMixin, ListView):
                     DocumentStatus.ERROR,
                 ],
             )
-            .only("id", "title", "status", "date_added")
+            .only(*LIST_FIELDS, "associated_record__title")
             .order_by("-date_added")
         )
 

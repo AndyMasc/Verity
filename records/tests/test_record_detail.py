@@ -1,11 +1,13 @@
 from datetime import date
 from decimal import Decimal
 
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
-from records.models import Record
+from records.models import MergeLog, Record
 
 
 @override_settings(
@@ -144,10 +146,76 @@ class RecordDetailViewTest(TestCase):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 404)
 
+    def test_legacy_merge_snapshot_without_currency_renders(self):
+        from records.models import MergeLog
+
+        plaid_record = Record.objects.create(
+            user=self.user,
+            title="Bank Tx",
+            record_type="expense_receipt",
+            transaction_date=date(2024, 6, 15),
+            plaid_transaction_id="txn_snap_1",
+            balance=Decimal("1000.00"),
+            currency="eur",
+        )
+        doc_record = Record.objects.create(
+            user=self.user,
+            title="Receipt",
+            record_type="expense_receipt",
+            transaction_date=date(2024, 6, 15),
+        )
+        MergeLog.objects.create(
+            plaid_record=plaid_record,
+            document_record=doc_record,
+            plaid_snapshot={
+                "title": "Bank Tx",
+                "merchant": "Bank",
+                "balance": "1000.00",
+                "payment_method": "Card",
+            },
+            document_snapshot={"title": "Receipt", "balance": "10.00"},
+        )
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("records:record_detail", args=[plaid_record.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "€")
+
     def test_nonexistent_record(self):
         self.client.force_login(self.user)
         response = self.client.get(reverse("records:record_detail", args=[99999]))
         self.assertEqual(response.status_code, 404)
+
+    def test_legacy_merge_snapshot_without_currency_renders(self):
+        plaid_record = Record.objects.create(
+            user=self.user,
+            title="Bank Tx",
+            record_type="expense_receipt",
+            transaction_date=date(2024, 6, 15),
+            plaid_transaction_id="txn_snap_1",
+            balance=Decimal("1000.00"),
+            currency="eur",
+        )
+        doc_record = Record.objects.create(
+            user=self.user,
+            title="Receipt",
+            record_type="expense_receipt",
+            transaction_date=date(2024, 6, 15),
+        )
+        MergeLog.objects.create(
+            plaid_record=plaid_record,
+            document_record=doc_record,
+            plaid_snapshot={
+                "title": "Bank Tx",
+                "merchant": "Bank",
+                "balance": "1000.00",
+                "payment_method": "Card",
+            },
+            document_snapshot={"title": "Receipt", "balance": "10.00"},
+        )
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("records:record_detail", args=[plaid_record.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "€")
 
     def test_update_via_post_with_hx(self):
         self.client.force_login(self.user)

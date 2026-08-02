@@ -65,7 +65,7 @@ class PaymentSuccessView(LoginRequiredMixin, TemplateView):
         sync_payment_status.delay(str(package.uuid), payment.pk)
 
 
-@method_decorator(ratelimit(key="user", rate="10/m", method="POST"), name="dispatch")
+@method_decorator(ratelimit(key="user", rate="10/m", method="POST", block=True), name="dispatch")
 class CreatePackageCheckoutView(LoginRequiredMixin, View):
     def post(self, request: HttpRequest, package_uuid: str) -> HttpResponse:
         package = get_object_or_404(
@@ -131,6 +131,19 @@ class CreatePackageCheckoutView(LoginRequiredMixin, View):
             if stripe_account and stripe_account.is_active
             else None
         )
+
+        # The platform routes payment straight to the recipient's connected
+        # Stripe account. Without one there is no payout path for the creator,
+        # so refuse to take money we cannot deliver.
+        if not stripe_account_id:
+            messages.error(
+                request,
+                "This package's recipient has not set up payouts yet. "
+                "Please ask them to complete Stripe onboarding first.",
+            )
+            return redirect(
+                reverse("reimbursements:package-detail", kwargs={"package_uuid": package.uuid})
+            )
 
         payer_currency = getattr(request.user.settings, "default_currency", "usd")
         payer_rates = get_rates("USD")

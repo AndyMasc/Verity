@@ -1,4 +1,9 @@
-def subscription_status(request):
+from typing import Any
+
+from django.http import HttpRequest
+
+
+def subscription_status(request: HttpRequest) -> dict[str, Any]:
     user = request.user
     if not user.is_authenticated:
         return {

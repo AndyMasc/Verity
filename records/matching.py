@@ -196,6 +196,7 @@ def _record_snapshot(record: Record) -> dict[str, Any]:
         "transaction_date": record.transaction_date.isoformat()
         if record.transaction_date
         else None,
+        "currency": record.currency,
         "payment_method": record.payment_method,
     }
 
