@@ -209,7 +209,8 @@ def expense_chart_data(request: HttpRequest) -> JsonResponse:
         start = now - timedelta(days=months_back * 30)
     else:
         earliest = (
-            Record.objects.filter(user=request.user, balance__isnull=False)
+            Record.objects.active()
+            .filter(user=request.user, balance__isnull=False)
             .order_by("transaction_date")
             .values_list("transaction_date", flat=True)
             .first()
@@ -218,7 +219,8 @@ def expense_chart_data(request: HttpRequest) -> JsonResponse:
 
     # Fetch raw rows: one DB query, no aggregation
     rows = list(
-        Record.objects.filter(
+        Record.objects.active()
+        .filter(
             user=request.user,
             transaction_date__gte=start.date(),
             transaction_date__lte=now.date(),
@@ -300,7 +302,5 @@ def notification_mark_read(request: HttpRequest, notification_id: int) -> HttpRe
 def notification_mark_all_read(request: HttpRequest) -> HttpResponse:
     """Mark all unread notifications as read."""
     count = Notification.objects.filter(recipient=request.user, is_read=False).update(is_read=True)
-    if request.headers.get("HX-Request"):
-        return HttpResponse(status=200)
     messages.success(request, f"Marked {count} notification{'s' if count != 1 else ''} as read.")
     return redirect("core:notifications")

@@ -62,15 +62,17 @@ class DocumentFilter(django_filters.FilterSet):
     def _get_cached_extensions(self):
         """Return distinct file extensions for the user, using cache to avoid repeated queries."""
         if self.request and self.request.user.is_authenticated:
-            cache_key = f"de_v2_{self.request.user.id}"
+            cache_key = f"de_v3_{self.request.user.id}"
             extensions = cache.get(cache_key)
             if extensions is None:
                 extensions = sorted(
-                    ext.strip().lower()[:10]
-                    for ext in DocumentData.objects.filter(user=self.request.user)
-                    .values_list("file_extension", flat=True)
-                    .distinct()
-                    if ext and ext.strip()
+                    {
+                        ext.strip().lower()[:10]
+                        for ext in DocumentData.objects.filter(user=self.request.user)
+                        .values_list("file_extension", flat=True)
+                        .distinct()
+                        if ext and ext.strip()
+                    }
                 )
                 cache.set(cache_key, extensions, FILTER_CHOICES_CACHE_TTL)
             return extensions

@@ -217,7 +217,23 @@ def process_stripe_event(event):
     elif event["type"] in ("transfer.failed", "charge.failed"):
         obj = _as_dict(event["data"]["object"])
         failure_message = obj.get("failure_message") or "unknown reason"
-        payment_intent_id = obj.get("payment_intent") or obj.get("id")
+        payment_intent_id = obj.get("payment_intent")
+        if not payment_intent_id and event["type"] == "transfer.failed":
+            # Destination-charge transfers carry no payment_intent on the
+            # Transfer object; resolve it via the source charge so the
+            # package payment can be found and reverted.
+            source_transaction = obj.get("source_transaction")
+            if source_transaction:
+                try:
+                    charge = stripe.Charge.retrieve(source_transaction)
+                except stripe.error.StripeError:
+                    logger.exception(
+                        "Failed to retrieve source charge %s for %s",
+                        source_transaction,
+                        event["type"],
+                    )
+                    raise
+                payment_intent_id = charge.get("payment_intent")
         logger.error(
             "Stripe %s — payment_intent: %s, reason: %s",
             event["type"],

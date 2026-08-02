@@ -221,3 +221,26 @@ class DocumentFilterTest(TestCase):
         qs = DocumentData.objects.filter(user=self.user)
         f = DocumentFilter({}, queryset=qs, request=_make_doc_filter_request(self.user))
         self.assertEqual(f.qs.count(), 1)
+
+    def test_file_type_choices_dedupe_case_insensitive(self):
+        from django.core.cache import cache
+
+        cache.clear()
+        DocumentData.objects.create(
+            user=self.user,
+            filepath="users/1/a.PNG",
+            file_hash=_make_hash(b"a"),
+            file_extension="PNG",
+        )
+        DocumentData.objects.create(
+            user=self.user,
+            filepath="users/1/b.png",
+            file_hash=_make_hash(b"b"),
+            file_extension="png",
+        )
+        qs = DocumentData.objects.filter(user=self.user)
+        f = DocumentFilter({}, queryset=qs, request=_make_doc_filter_request(self.user))
+        choices = f.filters["file_type"].extra["choices"]
+        labels = [label for value, label in choices]
+        self.assertEqual(labels.count("PNG"), 1)
+        self.assertIn(("png", "PNG"), choices)

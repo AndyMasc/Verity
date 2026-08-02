@@ -684,3 +684,86 @@ class StripeWebhookTest(TestCase):
         pkg.refresh_from_db()
         self.assertFalse(payment.is_completed)
         self.assertEqual(pkg.status, ReimbursementPackage.Status.PAID)
+
+    @patch("reimbursements.webhooks.stripe.Charge.retrieve")
+    def test_transfer_failed_resolves_via_source_charge(self, mock_retrieve):
+        creator = _user("creator@test.com")
+        payer = _user("payer@test.com")
+        pkg = _package(creator, payer)
+        pkg.mark_as_paid(payer)
+        pkg.refresh_from_db()
+        self.assertEqual(pkg.status, ReimbursementPackage.Status.PAID)
+
+        PackagePayment.objects.create(
+            package=pkg,
+            payer=payer,
+            stripe_checkout_session_id="cs_transfer_test",
+            stripe_payment_intent_id="pi_transfer_test",
+            amount_paid=Decimal("50.00"),
+            is_completed=True,
+        )
+
+        mock_retrieve.return_value = {"payment_intent": "pi_transfer_test"}
+
+        process_stripe_event(
+            self._event(
+                "transfer.failed",
+                {
+                    "id": "tr_transfer_test",
+                    "source_transaction": "ch_transfer_test",
+                    "failure_message": "Insufficient funds",
+                },
+            )
+        )
+
+        mock_retrieve.assert_called_once_with("ch_transfer_test")
+        payment = PackagePayment.objects.get(stripe_checkout_session_id="cs_transfer_test")
+        self.assertFalse(payment.is_completed)
+        pkg.refresh_from_db()
+        self.assertEqual(pkg.status, ReimbursementPackage.Status.OPEN)
+
+    def test_transfer_failed_without_resolvable_payment_is_noop(self):
+        creator = _user("creator@test.com")
+        payer = _user("payer@test.com")
+        pkg = _package(creator, payer)
+        pkg.mark_as_paid(payer)
+        pkg.refresh_from_db()
+
+        process_stripe_event(
+            self._event("transfer.failed", {"id": "tr_unknown", "failure_message": "unknown"})
+        )
+
+        pkg.refresh_from_db()
+        self.assertEqual(pkg.status, ReimbursementPackage.Status.PAID)
+
+    def test_charge_failed_marks_package_refunded(self):
+        creator = _user("creator@test.com")
+        payer = _user("payer@test.com")
+        pkg = _package(creator, payer)
+        pkg.mark_as_paid(payer)
+        pkg.refresh_from_db()
+
+        payment = PackagePayment.objects.create(
+            package=pkg,
+            payer=payer,
+            stripe_checkout_session_id="cs_charge_fail",
+            stripe_payment_intent_id="pi_charge_fail",
+            amount_paid=Decimal("50.00"),
+            is_completed=True,
+        )
+
+        process_stripe_event(
+            self._event(
+                "charge.failed",
+                {
+                    "id": "ch_charge_fail",
+                    "payment_intent": "pi_charge_fail",
+                    "failure_message": "Card declined",
+                },
+            )
+        )
+
+        payment.refresh_from_db()
+        pkg.refresh_from_db()
+        self.assertFalse(payment.is_completed)
+        self.assertEqual(pkg.status, ReimbursementPackage.Status.OPEN)

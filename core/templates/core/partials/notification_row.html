@@ -50,7 +50,7 @@
             </form>
             <form method="post"
                   action="{% url 'core:notification-delete' notification.id %}"
-                  hx-delete="{% url 'core:notification-delete' notification.id %}"
+                  hx-post="{% url 'core:notification-delete' notification.id %}"
                   hx-target="#notification-{{ notification.id }}"
                   hx-swap="outerHTML swap:1s"
                   hx-confirm="Delete this notification?">

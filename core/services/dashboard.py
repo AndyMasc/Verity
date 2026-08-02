@@ -99,7 +99,7 @@ async def get_dashboard_context(user) -> dict:
     ) = await asyncio.gather(
         MergeLog.objects.filter(plaid_record__user=user, undone_at__isnull=True).acount(),
         _fetch_values_list(
-            all_user_records.filter(
+            active_records_qs.filter(
                 transaction_date__gte=start_of_month,
                 transaction_date__lte=now,
                 balance__isnull=False,
