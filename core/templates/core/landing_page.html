@@ -23,8 +23,8 @@
                            class="rounded-lg px-3.5 py-1.5 text-xs font-medium text-zinc-600 transition-all duration-200 hover:text-zinc-950 hover:bg-zinc-100/80 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-800/60">Performance</a>
                         <a href="#reimbursements"
                            class="rounded-lg px-3.5 py-1.5 text-xs font-medium text-zinc-600 transition-all duration-200 hover:text-zinc-950 hover:bg-zinc-100/80 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-800/60">Reimbursements</a>
-                        <a href="#security"
-                           class="rounded-lg px-3.5 py-1.5 text-xs font-medium text-zinc-600 transition-all duration-200 hover:text-zinc-950 hover:bg-zinc-100/80 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-800/60">Security</a>
+                        <a href="#pricing"
+                           class="rounded-lg px-3.5 py-1.5 text-xs font-medium text-zinc-600 transition-all duration-200 hover:text-zinc-950 hover:bg-zinc-100/80 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-800/60">Pricing</a>
                         <a href="#faq"
                            class="rounded-lg px-3.5 py-1.5 text-xs font-medium text-zinc-600 transition-all duration-200 hover:text-zinc-950 hover:bg-zinc-100/80 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-800/60">FAQ</a>
                     {% endfor %}
@@ -39,7 +39,6 @@
         </div>
     </nav>
 
-    <!-- HERO SECTION (Left Intact) -->
     <section class="relative w-full overflow-hidden bg-white dark:bg-zinc-950 pt-20 md:pt-32 pb-20">
         <div class="absolute inset-0 bg-[radial-gradient(#e4e4e7_1px,transparent_1px)] dark:bg-[radial-gradient(#27272a_1px,transparent_1px)] [background-size:32px_32px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_40%,#000_70%,transparent_100%)] pointer-events-none opacity-60">
         </div>
@@ -82,25 +81,20 @@
                 </a>
             </div>
         </div>
-        <div class="relative mt-20 w-full overflow-hidden">
-            <div class="flex justify-center px-6">
-                <div class="relative w-full max-w-7xl shrink-0 rounded-2xl sm:rounded-3xl border border-zinc-200/80 dark:border-zinc-800/80 p-2 sm:p-3 bg-zinc-100/60 dark:bg-zinc-900/40 backdrop-blur-md shadow-[0_32px_96px_rgba(0,0,0,0.08)] dark:shadow-[0_32px_96px_rgba(0,0,0,0.5)]">
-                    <div class="rounded-xl sm:rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 overflow-hidden bg-white dark:bg-zinc-950">
+
+        <div class="relative mt-16 md:mt-20 w-full overflow-hidden">
+            <div class="flex justify-start md:justify-center">
+                <div class="relative w-[92vw] sm:w-[85vw] md:w-full max-w-7xl ml-6 md:ml-0 shrink-0 rounded-l-2xl sm:rounded-l-3xl md:rounded-3xl border-y md:border border-l border-zinc-200/80 dark:border-zinc-800/80 p-2 sm:p-3 bg-zinc-100/60 dark:bg-zinc-900/40 backdrop-blur-md shadow-[0_32px_96px_rgba(0,0,0,0.08)] dark:shadow-[0_32px_96px_rgba(0,0,0,0.5)]">
+                    <div class="rounded-l-xl sm:rounded-l-2xl md:rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 overflow-hidden bg-white dark:bg-zinc-950">
                         <img src="{% static 'core/images/interface-demo-light.png' %}"
                              alt="App interface preview"
-                             class="w-full object-cover dark:hidden rounded-xl sm:rounded-2xl">
+                             class="w-full object-cover object-left dark:hidden rounded-l-xl sm:rounded-l-2xl md:rounded-2xl">
                         <img src="{% static 'core/images/interface-demo-dark.png' %}"
                              alt="App interface preview (dark)"
-                             class="hidden w-full object-cover dark:block rounded-xl sm:rounded-2xl">
+                             class="hidden w-full object-cover object-left dark:block rounded-l-xl sm:rounded-l-2xl md:rounded-2xl">
                     </div>
                 </div>
-            </div>
-            <div class="absolute -inset-x-12 bottom-0 top-1/2 bg-gradient-to-t from-white via-white/80 dark:from-zinc-950 dark:via-zinc-950/80 pointer-events-none">
-            </div>
-        </div>
     </section>
-
-    <!-- CONTENT SECTION: Refined, Linear, Restrained Color, Simple Wording -->
 
     <!-- Features Section -->
     <section id="features" class="py-24 bg-zinc-50/50 dark:bg-zinc-950/50 border-t border-zinc-200/50 dark:border-zinc-900/50">
@@ -165,20 +159,16 @@
                 <div class="rounded-2xl border border-zinc-900 dark:border-zinc-100 p-7 bg-zinc-950 text-white dark:bg-white dark:text-zinc-950">
                     <span class="text-[11px] opacity-60 uppercase tracking-wider">Papertrail</span>
                     <span class="block text-4xl font-semibold tracking-tight mt-3">~4s*</span>
-                    <span class="block text-xs font-medium mt-3 opacity-90">Rapid AI Extraction</span>
-                    <span class="block text-xs opacity-60 mt-1">Autonomous multi-threaded processing.</span>
+                    <span class="block text-xs font-medium mt-3 opacity-90">Rapid AI Powered Extraction</span>
+                    <span class="block text-xs opacity-60 mt-1">Produced the richest, structured data.</span>
                 </div>
                 <div class="rounded-2xl border border-zinc-200/70 dark:border-zinc-800/70 p-7 bg-zinc-50/50 dark:bg-zinc-900/20">
                     <span class="text-[11px] text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Expensify</span>
-                    <span class="block text-4xl font-semibold tracking-tight text-zinc-400 dark:text-zinc-600 mt-3">~17s</span>
-                    <span class="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mt-3">Manual Queue Processing</span>
-                    <span class="block text-xs text-zinc-400 dark:text-zinc-500 mt-1">Basic OCR tools and standard queues.</span>
+                    <span class="block text-4xl font-semibold tracking-tight text-zinc-400 dark:text-zinc-600 mt-3">~17s*</span>
                 </div>
                 <div class="rounded-2xl border border-zinc-200/70 dark:border-zinc-800/70 p-7 bg-zinc-50/50 dark:bg-zinc-900/20">
                     <span class="text-[11px] text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Zoho Expense</span>
-                    <span class="block text-4xl font-semibold tracking-tight text-zinc-400 dark:text-zinc-600 mt-3">~110s</span>
-                    <span class="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mt-3">Enterprise Systems</span>
-                    <span class="block text-xs text-zinc-400 dark:text-zinc-500 mt-1">Multi-tier manual reviews and delays.</span>
+                    <span class="block text-4xl font-semibold tracking-tight text-zinc-400 dark:text-zinc-600 mt-3">~110s*</span>
                 </div>
             </div>
 
