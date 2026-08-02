@@ -4,6 +4,9 @@ import logging
 
 import plaid
 import posthog
+from billing import features
+from billing.entitlements import has_feature
+from billing.mixins import FeatureRequiredMixin
 from django.conf import settings
 from django.core.cache import cache
 from django.db import transaction
@@ -35,13 +38,20 @@ logger: logging.Logger = logging.getLogger(__name__)
 @permission_classes([permissions.IsAuthenticated])
 def plaid_connect_page(request: Request) -> HttpResponse:
     """Render the bank connection management page for the authenticated user."""
+    if not has_feature(request.user, features.BANK_TRANSACTION_SYNC):
+        return render(
+            request,
+            "plaid/connect.html",
+            {"plaid_items": [], "upgrade_required": True},
+        )
     plaid_items = PlaidItem.objects.filter(user=request.user).prefetch_related("records")
     return render(request, "plaid/connect.html", {"plaid_items": plaid_items})
 
 
-class CreateLinkTokenView(APIView):
+class CreateLinkTokenView(FeatureRequiredMixin, APIView):
     """Create a Plaid Link token for a new bank connection."""
 
+    required_feature = features.BANK_TRANSACTION_SYNC
     authentication_classes = [authentication.SessionAuthentication]
     permission_classes = [permissions.IsAuthenticated]
 
@@ -63,9 +73,10 @@ class CreateLinkTokenView(APIView):
             return Response({"error": str(e)}, status=400)
 
 
-class CreateUpdateLinkTokenView(APIView):
+class CreateUpdateLinkTokenView(FeatureRequiredMixin, APIView):
     """Create a Plaid Link token to update credentials for an existing bank item."""
 
+    required_feature = features.BANK_TRANSACTION_SYNC
     authentication_classes = [authentication.SessionAuthentication]
     permission_classes = [permissions.IsAuthenticated]
 
@@ -93,7 +104,7 @@ class CreateUpdateLinkTokenView(APIView):
             return Response({"error": str(e)}, status=400)
 
 
-class PublicTokenExchange(APIView):
+class PublicTokenExchange(FeatureRequiredMixin, APIView):
     """Exchange a Plaid public token for a persistent access token.
 
     Completes the bank linking flow: exchanges the short-lived public token,
@@ -101,6 +112,7 @@ class PublicTokenExchange(APIView):
     fires an initial sync webhook.
     """
 
+    required_feature = features.BANK_TRANSACTION_SYNC
     authentication_classes = [authentication.SessionAuthentication]
     permission_classes = [permissions.IsAuthenticated]
 

@@ -3,6 +3,7 @@
 import logging
 
 import posthog
+from billing import entitlements
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.cache import cache
@@ -15,6 +16,7 @@ from django.views.generic.edit import CreateView
 
 from documents.models import DocumentData, DocumentStatus
 from documents.ocr_helpers import ocr_data_to_form_initial
+from documents.services.ocr import set_document_status
 from documents.tasks import extract_document
 from Papertrail.responses import api_error
 
@@ -81,11 +83,33 @@ class AddRecordView(LoginRequiredMixin, CreateView):
                 cache_key = f"ocr_status_{document.id}"
                 current_cached = cache.get(cache_key)
                 if current_cached is None:
-                    if document.did_ocr:
-                        document.did_ocr = False
-                        document.save(update_fields=["did_ocr"])
-                    cache.set(cache_key, "processing", timeout=600)
-                    extract_document.delay(document.id)
+                    if not entitlements.can_scan(self.request.user):
+                        logger.info(
+                            "OCR scan skipped for user %s: free plan scan limit reached",
+                            self.request.user.id,
+                        )
+                        message = (
+                            "Quick Scan limit reached. Upgrade to Papertrail Pro for "
+                            "unlimited Quick Scans, or enter the details manually."
+                        )
+                        cache.set(
+                            cache_key,
+                            {"error": message},
+                            timeout=600,
+                        )
+                        set_document_status(
+                            document.id,
+                            DocumentStatus.ERROR,
+                            ocr_error="scan_limit_reached",
+                        )
+                        messages.warning(self.request, message)
+                    else:
+                        if document.did_ocr:
+                            document.did_ocr = False
+                            document.save(update_fields=["did_ocr"])
+                        cache.set(cache_key, "processing", timeout=600)
+                        entitlements.record_scan(self.request.user)
+                        extract_document.delay(document.id)
 
         return super().get(request, *args, **kwargs)
 

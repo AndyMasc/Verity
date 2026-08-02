@@ -30,13 +30,19 @@
 
     <div class="mb-8 pb-6 border-b border-black/[0.04] dark:border-white/[0.04]">
       <div class="flex items-baseline gap-1">
-        {% for price in product.prices.all %}
-          {% if price.active and price.recurring.interval == "month" %}
-            <span class="text-4xl font-semibold tracking-tighter text-zinc-900 dark:text-zinc-50 tabular-nums">
-              {{ price.human_readable_price }}
-            </span>
-          {% endif %}
-        {% endfor %}
+        {% if product.prices %}
+          {% for price in product.prices.all %}
+            {% if price.active and price.recurring.interval == "month" %}
+              <span class="text-4xl font-semibold tracking-tighter text-zinc-900 dark:text-zinc-50 tabular-nums">
+                {{ price.human_readable_price }}
+              </span>
+            {% endif %}
+          {% endfor %}
+        {% else %}
+          <span class="text-4xl font-semibold tracking-tighter text-zinc-900 dark:text-zinc-50 tabular-nums">
+            Free
+          </span>
+        {% endif %}
       </div>
     </div>
 

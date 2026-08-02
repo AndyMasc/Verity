@@ -18,11 +18,12 @@ from django.views import View
 from django.views.generic import DetailView, ListView
 from django_ratelimit.decorators import ratelimit
 
+from billing import features
 from core.exchange_rates import convert as convert_currency
 from core.exchange_rates import get_rates
 from records.models import Record
 
-from ..mixins import StripeAccountRequiredMixin
+from ..mixins import ReimbursementRequestRequiredMixin
 from ..models import ReimbursementPackage
 
 logger = logging.getLogger(__name__)
@@ -204,7 +205,9 @@ class PackageDeleteView(LoginRequiredMixin, View):
 
 
 @method_decorator(ratelimit(key="user", rate="5/m", method="POST", block=True), name="dispatch")
-class CreatePackageFromRecordsView(LoginRequiredMixin, StripeAccountRequiredMixin, View):
+class CreatePackageFromRecordsView(LoginRequiredMixin, ReimbursementRequestRequiredMixin, View):
+    required_feature = features.QUICK_REIMBURSEMENT_REQUEST
+
     def post(self, request: HttpRequest) -> HttpResponse:
         if request.content_type and "application/json" in request.content_type:
             try:

@@ -22,12 +22,18 @@ logger = logging.getLogger(__name__)
 
 @login_required
 def pricing_page(request: HttpRequest) -> HttpResponse:
-    products = Product.objects.filter(active=True).prefetch_related("prices")
+    products = list(Product.objects.filter(active=True).prefetch_related("prices"))
 
     for product in products:
         meta = metadata.PRODUCTS.get(product.id)
         product.features_list = meta.features if meta else []
         product.is_default = meta.is_default if meta else False
+
+    free_plan = metadata.PAPERTRAIL_FREE
+    free_plan.features_list = free_plan.features
+    free_plan.prices = []
+    free_plan.is_default = False
+    products.insert(0, free_plan)
 
     return render(
         request,
@@ -36,6 +42,7 @@ def pricing_page(request: HttpRequest) -> HttpResponse:
             "stripe_public_key": settings.STRIPE_PRICING_TABLE_KEY,
             "stripe_pricing_table_id": settings.STRIPE_PRICING_TABLE_ID,
             "products": products,
+            "free_plan": free_plan,
         },
     )
 

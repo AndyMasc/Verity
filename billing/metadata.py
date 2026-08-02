@@ -16,6 +16,18 @@ class ProductMetadata:
     is_default: bool = False
 
 
+PAPERTRAIL_FREE = ProductMetadata(
+    stripe_id="free",
+    name="Free",
+    description="For personal use",
+    features=[
+        features.LIMITED_SCANS,
+        features.SUPPORTING_FILE_UPLOAD,
+        features.EXPIRY_REMINDERS,
+        features.REIMBURSEMENT_PAYMENTS,
+    ],
+)
+
 PAPERTRAIL_PRO = ProductMetadata(
     stripe_id="prod_UynmT2hCmUF08u",
     name="Papertrail Pro",
@@ -30,4 +42,5 @@ PAPERTRAIL_PRO = ProductMetadata(
 
 PRODUCTS = {
     PAPERTRAIL_PRO.stripe_id: PAPERTRAIL_PRO,
+    PAPERTRAIL_FREE.stripe_id: PAPERTRAIL_FREE,
 }
