@@ -49,6 +49,8 @@ else:
 INSTALLED_APPS = [
     # Unfold
     "unfold",
+    # Cachalot
+    "cachalot",
     # Admin apps
     "django.contrib.admin",
     "django.contrib.auth",

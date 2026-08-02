@@ -10,7 +10,7 @@ from datetime import datetime, time, timedelta
 
 from asgiref.sync import sync_to_async
 from django.core.cache import cache
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.utils import timezone
 from django.utils.timezone import make_aware
 
@@ -29,12 +29,12 @@ def invalidate_dashboard_cache(user_id: int) -> None:
 
 
 async def _fetch_records(queryset) -> list:
-    """Helper to evaluate an async queryset into a concrete list."""
+    """Evaluate an async queryset into a concrete list."""
     return [r async for r in queryset]
 
 
 async def _fetch_values_list(queryset) -> list:
-    """Async helper to evaluate a values_list queryset into a list of tuples."""
+    """Evaluate a values_list queryset into a list of tuples asynchronously."""
     return [row async for row in queryset]
 
 
@@ -49,12 +49,16 @@ async def _fetch_notifications(user) -> list:
     ]
 
 
-def _convert_total(raw_items: list[tuple], to_currency: str) -> float:
-    """Convert a list of (amount, currency) tuples to *to_currency* and sum.
+async def _fetch_unread_notifications_count(user) -> int:
+    """Fetch total count of unread notifications for the user."""
+    return await Notification.objects.filter(
+        recipient=user,
+        is_read=False,
+    ).acount()
 
-    Fetches exchange rates once, then converts each amount in a tight loop.
-    Returns 0.0 if the list is empty.
-    """
+
+def _convert_total(raw_items: list[tuple], to_currency: str) -> float:
+    """Convert and sum a list of (amount, currency) tuples to a target currency."""
     if not raw_items:
         return 0.0
     from core.exchange_rates import convert_batch
@@ -63,7 +67,7 @@ def _convert_total(raw_items: list[tuple], to_currency: str) -> float:
 
 
 async def get_dashboard_context(user) -> dict:
-    """Return aggregated dashboard statistics for *user*, using cache when available."""
+    """Return aggregated dashboard statistics for a user, using cache when available."""
     cache_key = f"dashboard:{user.id}"
     cached = await cache.aget(cache_key)
     if cached is not None:
@@ -76,6 +80,7 @@ async def get_dashboard_context(user) -> dict:
         timezone=timezone.get_current_timezone(),
     )
     expiring_cutoff = now + timedelta(days=30)
+
     user_settings = await sync_to_async(UserSettings.objects.get_or_create)(user=user)
     user_currency = user_settings[0].default_currency
 
@@ -85,17 +90,14 @@ async def get_dashboard_context(user) -> dict:
     (
         merge_count,
         monthly_expense_rows,
-        orphaned_count,
-        pending_ocr_count,
         recent_records,
         expiring_soon,
         webpush_warning,
         sent_payment_rows,
-        sent_pending_count,
+        reimb_stats,
         received_payment_rows,
-        received_count,
-        has_packages,
         notifications,
+        unread_notifications_count,
     ) = await asyncio.gather(
         MergeLog.objects.filter(plaid_record__user=user, undone_at__isnull=True).acount(),
         _fetch_values_list(
@@ -105,28 +107,6 @@ async def get_dashboard_context(user) -> dict:
                 balance__isnull=False,
             ).values_list("balance", "currency")
         ),
-        DocumentData.objects.for_user(user)
-        .orphaned()
-        .exclude(
-            status__in=[
-                DocumentStatus.COMPLETED,
-                DocumentStatus.PENDING_UPLOAD,
-                DocumentStatus.DELETING,
-            ]
-        )
-        .acount(),
-        DocumentData.objects.for_user(user)
-        .filter(
-            did_ocr=True,
-            associated_record__isnull=True,
-            status__in=[
-                DocumentStatus.UPLOADED,
-                DocumentStatus.PROCESSING,
-                DocumentStatus.COMPLETED,
-                DocumentStatus.ERROR,
-            ],
-        )
-        .acount(),
         _fetch_records(
             active_records_qs.order_by("-last_edited").only(
                 "id",
@@ -176,20 +156,55 @@ async def get_dashboard_context(user) -> dict:
                 is_completed=True,
             ).values_list("amount_paid", "payer_currency")
         ),
-        ReimbursementPackage.objects.filter(
-            creator=user, status=ReimbursementPackage.Status.OPEN
-        ).acount(),
+        sync_to_async(
+            lambda: ReimbursementPackage.objects.filter(
+                Q(creator=user) | Q(recipient=user)
+            ).aggregate(
+                sent_pending_count=Count(
+                    "id", filter=Q(creator=user, status=ReimbursementPackage.Status.OPEN)
+                ),
+                received_count=Count(
+                    "id", filter=Q(recipient=user, status=ReimbursementPackage.Status.PAID)
+                ),
+                has_packages=Count("id"),
+            )
+        )(),
         _fetch_values_list(
             PackagePayment.objects.filter(
                 package__recipient=user,
                 is_completed=True,
             ).values_list("amount_paid", "payer_currency")
         ),
-        ReimbursementPackage.objects.filter(
-            recipient=user, status=ReimbursementPackage.Status.PAID
-        ).acount(),
-        ReimbursementPackage.objects.filter(Q(creator=user) | Q(recipient=user)).aexists(),
         _fetch_notifications(user),
+        _fetch_unread_notifications_count(user),
+    )
+
+    orphaned_count = (
+        await DocumentData.objects.for_user(user)
+        .orphaned()
+        .exclude(
+            status__in=[
+                DocumentStatus.COMPLETED,
+                DocumentStatus.PENDING_UPLOAD,
+                DocumentStatus.DELETING,
+            ]
+        )
+        .acount()
+    )
+
+    pending_ocr_count = (
+        await DocumentData.objects.for_user(user)
+        .filter(
+            did_ocr=True,
+            associated_record__isnull=True,
+            status__in=[
+                DocumentStatus.UPLOADED,
+                DocumentStatus.PROCESSING,
+                DocumentStatus.COMPLETED,
+                DocumentStatus.ERROR,
+            ],
+        )
+        .acount()
     )
 
     context = {
@@ -204,15 +219,16 @@ async def get_dashboard_context(user) -> dict:
         "pending_ocr_count": pending_ocr_count,
         "webpush_warning": webpush_warning,
         "notifications": notifications,
+        "unread_notifications_count": unread_notifications_count,
         "reimbursements_sent_total": await sync_to_async(_convert_total)(
             [(a, c) for a, c in sent_payment_rows], user_currency
         ),
-        "reimbursements_sent_pending_count": sent_pending_count,
+        "reimbursements_sent_pending_count": reimb_stats["sent_pending_count"],
         "reimbursements_received_total": await sync_to_async(_convert_total)(
             [(a, c) for a, c in received_payment_rows], user_currency
         ),
-        "reimbursements_received_count": received_count,
-        "has_packages": has_packages,
+        "reimbursements_received_count": reimb_stats["received_count"],
+        "has_packages": reimb_stats["has_packages"] > 0,
     }
 
     await cache.aset(cache_key, context, DASHBOARD_CACHE_TTL)

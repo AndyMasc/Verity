@@ -3,17 +3,16 @@ from typing import cast
 
 import stripe
 from django.conf import settings
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.http import HttpRequest, HttpResponse, HttpResponseBadRequest, HttpResponseRedirect
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 from django_ratelimit.decorators import ratelimit
 from djstripe.models import Product, Subscription
 from djstripe.settings import djstripe_settings
-from django.contrib import messages
-from django.shortcuts import redirect
 
 from . import metadata
 from .models import CustomUser

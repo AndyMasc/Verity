@@ -12,9 +12,7 @@
                             </span>
                             <h2 class="text-base font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">Merged Evidence</h2>
                         </div>
-                        <p class="text-xs text-zinc-500 dark:text-zinc-400">
-                            Matched data from bank import and scanned document.
-                        </p>
+                        <p class="text-xs text-zinc-500 dark:text-zinc-400">Matched data from bank import and scanned document.</p>
                     </div>
                     <form method="POST"
                           action="{% url 'records:undo_merge' active_merge.pk %}"
@@ -179,12 +177,12 @@
         </section>
     </div>
     <script>
-    document.body.addEventListener('htmx:beforeSwap', function(evt) {
-      if (evt.detail.xhr.status === 422) {
-        evt.detail.shouldSwap = true;
-        evt.detail.isError = false;
-      }
-    });
+        document.body.addEventListener('htmx:beforeSwap', function(evt) {
+            if (evt.detail.xhr.status === 422) {
+                evt.detail.shouldSwap = true;
+                evt.detail.isError = false;
+            }
+        });
     </script>
     {% include 'core/toast.html' %}
 {% endblock %}

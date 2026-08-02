@@ -130,10 +130,12 @@
                         <div class="p-6 flex items-center justify-between">
                             <div class="min-w-0">
                                 {% if is_subscribed %}
-                                    <span class="font-bold">{{ subscription.items.first.price.product.name }}<br></span>
+                                    <span class="font-bold">{{ subscription.items.first.price.product.name }}
+                                        <br>
+                                    </span>
                                     <span class="inline-flex items-center gap-1 text-xs font-medium tracking-tight text-emerald-600 dark:text-emerald-400">
                                         <span class="size-1.5 rounded-full bg-emerald-500"></span>
-                                        Active 
+                                        Active
                                     </span>
                                 {% else %}
                                     <span class="block text-xs text-zinc-600 dark:text-zinc-400 font-medium">Free plan</span>

@@ -2,11 +2,11 @@
      x-cloak
      x-init="init()"
      class="relative flex flex-col h-full w-full">
-    
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 shrink-0">
         <div>
             <h3 class="text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">Expense Trends</h3>
-            <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5" x-text="summary"></p>
+            <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5"
+               x-text="summary"></p>
         </div>
         <div class="flex items-center gap-1 p-1 rounded-xl bg-zinc-100/80 dark:bg-zinc-800/50 border border-zinc-200/50 dark:border-zinc-700/40 self-start sm:self-auto">
             <template x-for="p in periods" :key="p.value">
@@ -17,13 +17,11 @@
             </template>
         </div>
     </div>
-
     <div class="relative flex-1 w-full min-h-[220px]">
         <canvas x-ref="canvas"
                 class="absolute inset-0 w-full h-full cursor-crosshair"
                 @mousemove="onHover($event)"
                 @mouseleave="tooltip.visible = false"></canvas>
-
         {# Tooltip #}
         <div x-show="tooltip.visible"
              x-transition:enter="transition ease-out duration-150"
@@ -36,17 +34,20 @@
              class="absolute z-20 pointer-events-none"
              :style="`left: ${tooltip.x}px; top: ${tooltip.y}px; transform: translate(-50%, -100%) translateY(-8px);`">
             <div class="px-3 py-1.5 rounded-xl bg-zinc-900 dark:bg-zinc-800 text-white shadow-xl border border-zinc-700/50 dark:border-zinc-700">
-                <div class="text-[10px] font-medium text-zinc-400 uppercase tracking-wider" x-text="tooltip.label"></div>
-                <div class="text-xs font-semibold tabular-nums mt-0.5" x-text="tooltip.value"></div>
+                <div class="text-[10px] font-medium text-zinc-400 uppercase tracking-wider"
+                     x-text="tooltip.label"></div>
+                <div class="text-xs font-semibold tabular-nums mt-0.5"
+                     x-text="tooltip.value"></div>
             </div>
         </div>
     </div>
-
     {# Loading overlay #}
     <div x-show="loading"
          class="absolute inset-0 flex items-center justify-center bg-white/40 dark:bg-zinc-900/40 backdrop-blur-xs z-10 rounded-2xl transition-opacity">
         <div class="flex items-center gap-2 text-xs font-medium text-zinc-700 dark:text-zinc-300 px-3 py-1.5 bg-white dark:bg-zinc-800 rounded-full shadow-sm border border-zinc-200/60 dark:border-zinc-700/60">
-            <svg class="animate-spin h-3.5 w-3.5 text-zinc-600 dark:text-zinc-300" viewBox="0 0 24 24" fill="none">
+            <svg class="animate-spin h-3.5 w-3.5 text-zinc-600 dark:text-zinc-300"
+                 viewBox="0 0 24 24"
+                 fill="none">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
             </svg>
@@ -54,101 +55,100 @@
         </div>
     </div>
 </div>
-
 <script>
-function expenseChart() {
-    return {
-        period: '3m',
-        loading: false,
-        summary: 'Monthly performance',
-        periods: [
-            { label: '3M', value: '3m' },
-            { label: '6M', value: '6m' },
-            { label: '1Y', value: '1y' }
-        ],
-        tooltip: { visible: false, x: 0, y: 0, label: '', value: '' },
-        chart: null,
+    function expenseChart() {
+        return {
+            period: '3m',
+            loading: false,
+            summary: 'Monthly performance',
+            periods: [
+                { label: '3M', value: '3m' },
+                { label: '6M', value: '6m' },
+                { label: '1Y', value: '1y' }
+            ],
+            tooltip: { visible: false, x: 0, y: 0, label: '', value: '' },
+            chart: null,
 
-        init() {
-            this.renderChart();
-        },
+            init() {
+                this.renderChart();
+            },
 
-        renderChart() {
-            const ctx = this.$refs.canvas.getContext('2d');
-            const isDark = document.documentElement.classList.contains('dark');
+            renderChart() {
+                const ctx = this.$refs.canvas.getContext('2d');
+                const isDark = document.documentElement.classList.contains('dark');
 
             // Subtle vertical gradient fill
-            const gradient = ctx.createLinearGradient(0, 0, 0, 250);
-            gradient.addColorStop(0, isDark ? 'rgba(168, 85, 247, 0.18)' : 'rgba(147, 51, 234, 0.12)');
-            gradient.addColorStop(1, isDark ? 'rgba(168, 85, 247, 0.0)' : 'rgba(147, 51, 234, 0.0)');
+                const gradient = ctx.createLinearGradient(0, 0, 0, 250);
+                gradient.addColorStop(0, isDark ? 'rgba(168, 85, 247, 0.18)' : 'rgba(147, 51, 234, 0.12)');
+                gradient.addColorStop(1, isDark ? 'rgba(168, 85, 247, 0.0)' : 'rgba(147, 51, 234, 0.0)');
 
             // Placeholder datasets (replace or sync with backend AJAX call)
-            const dataPoints = [2400, 1800, 3200, 2900, 4100, 1900];
-            const labels = ['Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'];
+                const dataPoints = [2400, 1800, 3200, 2900, 4100, 1900];
+                const labels = ['Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'];
 
-            if (this.chart) this.chart.destroy();
+                if (this.chart) this.chart.destroy();
 
-            this.chart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: dataPoints,
-                        borderColor: isDark ? '#c084fc' : '#9333ea',
-                        borderWidth: 2,
-                        tension: 0.4, // Cubic smoothing curve
-                        fill: true,
-                        backgroundColor: gradient,
-                        pointBackgroundColor: isDark ? '#c084fc' : '#9333ea',
-                        pointHoverRadius: 5,
-                        pointRadius: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false }, tooltip: { enabled: false } },
-                    scales: {
-                        x: {
-                            grid: { display: false },
-                            ticks: {
-                                color: isDark ? '#71717a' : '#a1a1aa',
-                                font: { size: 10, family: 'sans-serif' }
-                            }
-                        },
-                        y: {
-                            border: { dash: [4, 4] },
-                            grid: { color: isDark ? 'rgba(39, 39, 42, 0.6)' : 'rgba(244, 244, 245, 1)' },
-                            ticks: {
-                                color: isDark ? '#71717a' : '#a1a1aa',
-                                font: { size: 10, family: 'sans-serif' }
+                this.chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: dataPoints,
+                            borderColor: isDark ? '#c084fc' : '#9333ea',
+                            borderWidth: 2,
+                            tension: 0.4, // Cubic smoothing curve
+                            fill: true,
+                            backgroundColor: gradient,
+                            pointBackgroundColor: isDark ? '#c084fc' : '#9333ea',
+                            pointHoverRadius: 5,
+                            pointRadius: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                        scales: {
+                            x: {
+                                grid: { display: false },
+                                ticks: {
+                                    color: isDark ? '#71717a' : '#a1a1aa',
+                                    font: { size: 10, family: 'sans-serif' }
+                                }
+                            },
+                            y: {
+                                border: { dash: [4, 4] },
+                                grid: { color: isDark ? 'rgba(39, 39, 42, 0.6)' : 'rgba(244, 244, 245, 1)' },
+                                ticks: {
+                                    color: isDark ? '#71717a' : '#a1a1aa',
+                                    font: { size: 10, family: 'sans-serif' }
+                                }
                             }
                         }
                     }
-                }
-            });
-        },
+                });
+            },
 
-        onHover(e) {
-            if (!this.chart) return;
-            const points = this.chart.getElementsAtEventForMode(e, 'nearest', { intersect: false }, true);
-            if (points.length) {
-                const firstPoint = points[0];
-                const label = this.chart.data.labels[firstPoint.index];
-                const value = this.chart.data.datasets[0].data[firstPoint.index];
-                this.tooltip = {
-                    visible: true,
-                    x: firstPoint.element.x,
-                    y: firstPoint.element.y,
-                    label: label,
-                    value: '$' + value.toLocaleString()
-                };
-            } else {
-                this.tooltip.visible = false;
+            onHover(e) {
+                if (!this.chart) return;
+                const points = this.chart.getElementsAtEventForMode(e, 'nearest', { intersect: false }, true);
+                if (points.length) {
+                    const firstPoint = points[0];
+                    const label = this.chart.data.labels[firstPoint.index];
+                    const value = this.chart.data.datasets[0].data[firstPoint.index];
+                    this.tooltip = {
+                        visible: true,
+                        x: firstPoint.element.x,
+                        y: firstPoint.element.y,
+                        label: label,
+                        value: '$' + value.toLocaleString()
+                    };
+                } else {
+                    this.tooltip.visible = false;
+                }
             }
         }
     }
-}
 </script>
 <script>
     function expenseChart() {
