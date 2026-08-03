@@ -24,7 +24,10 @@ def _make_hash(content: bytes = b"test") -> str:
 
 @pytest.mark.django_db
 class TestBuildContext:
-    @patch("documents.services.detail.generate_read_presigned_url", return_value="https://view.url")
+    @patch(
+        "documents.services.detail.generate_read_presigned_url",
+        return_value="https://view.url",
+    )
     def test_returns_document_context(self, mock_url, user):
         doc = DocumentData.objects.create(
             user=user,
@@ -39,7 +42,10 @@ class TestBuildContext:
         assert ctx.seven_years_ago_unix > 0
         assert ctx.is_paginated is False
 
-    @patch("documents.services.detail.generate_read_presigned_url", return_value="https://view.url")
+    @patch(
+        "documents.services.detail.generate_read_presigned_url",
+        return_value="https://view.url",
+    )
     def test_search_filters_by_user(self, mock_url, user):
         other = User.objects.create_user(username="other", password="pass")
         Record.objects.create(

@@ -112,7 +112,8 @@ class ManualMergeView(LoginRequiredMixin, FormView):
                 )
                 return response
             messages.error(
-                self.request, "Could not merge — the receipt may have already been merged."
+                self.request,
+                "Could not merge — the receipt may have already been merged.",
             )
         else:
             merge_log = MergeLog.objects.filter(
@@ -137,7 +138,10 @@ class ManualMergeView(LoginRequiredMixin, FormView):
                 response["HX-Trigger"] = json.dumps(
                     {
                         "recordChanged": {},
-                        "showToast": {"text": "Records merged successfully.", "tags": "success"},
+                        "showToast": {
+                            "text": "Records merged successfully.",
+                            "tags": "success",
+                        },
                     }
                 )
                 return response
@@ -243,7 +247,10 @@ class UndoMergeView(LoginRequiredMixin, View):
                 response["HX-Trigger"] = json.dumps(
                     {
                         "recordChanged": {},
-                        "showToast": {"text": "This merge was already undone.", "tags": "info"},
+                        "showToast": {
+                            "text": "This merge was already undone.",
+                            "tags": "info",
+                        },
                     }
                 )
                 return response

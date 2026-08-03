@@ -11,7 +11,6 @@ from django.urls import reverse
 
 from records.models import Record
 
-
 EXPORT_URL = reverse("accounting:export_all_to_excel")
 EXPORT_SELECTED_URL = reverse("accounting:export_selected_to_excel")
 

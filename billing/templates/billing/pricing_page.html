@@ -2,8 +2,8 @@
 {% block title %}Choose Your Plan | Papertrail{% endblock %}
 {% block content %}
     <main class="min-h-screen flex flex-col items-center justify-center w-full max-w-5xl mx-auto px-6 py-12 sm:py-16 font-sans antialiased"
-          x-data="{ openModal: false }"
-          @open-pricing-modal.window="openModal = true">
+          x-data="{ openModal: false, selectedTableId: null }"
+          @open-pricing-modal.window="selectedTableId = $event.detail.tableId || null; openModal = true">
         <header class="text-center max-w-xl mx-auto mb-12">
             <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 text-[11px] font-medium text-zinc-500 dark:text-zinc-400 mb-4">
                 <span class="size-1 rounded-full bg-zinc-400 dark:bg-zinc-500"></span>
@@ -22,7 +22,6 @@
                 {% endfor %}
             </div>
         </div>
-        <!-- Full-Screen Modal containing the Stripe Pricing Table -->
         <div x-show="openModal"
              x-cloak
              @keydown.escape.window="openModal = false"
@@ -35,7 +34,6 @@
              x-transition:leave-end="opacity-0">
             <div @click.away="openModal = false"
                  class="relative bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
-                <!-- Modal Header -->
                 <div class="flex items-center justify-between px-6 py-4 border-b border-zinc-200 dark:border-zinc-800">
                     <h3 class="text-sm font-medium text-zinc-900 dark:text-zinc-100">Plan Comparison & Checkout</h3>
                     <button @click="openModal = false"
@@ -46,11 +44,14 @@
                         </svg>
                     </button>
                 </div>
-                <!-- Modal Body (Stripe Pricing Table) -->
                 <div class="flex-1 overflow-y-auto p-4 sm:p-6">
                     <script async src="https://js.stripe.com/v3/pricing-table.js"></script>
-                    <stripe-pricing-table pricing-table-id="{{ stripe_pricing_table_id }}" publishable-key="{{ stripe_public_key }}" {% if request.user.is_authenticated %}client-reference-id="{{ request.user.id }}"{% endif %}>
-                    </stripe-pricing-table>
+                    {% for table_key, table in pricing_tables.items %}
+                        <div x-show="selectedTableId === '{{ table.id }}'" x-cloak>
+                            <stripe-pricing-table pricing-table-id="{{ table.id }}" publishable-key="{{ table.key }}" {% if request.user.is_authenticated %}client-reference-id="{{ request.user.id }}"{% endif %}>
+                            </stripe-pricing-table>
+                        </div>
+                    {% endfor %}
                 </div>
             </div>
         </div>

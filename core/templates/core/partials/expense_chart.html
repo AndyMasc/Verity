@@ -58,101 +58,6 @@
 <script>
     function expenseChart() {
         return {
-            period: '3m',
-            loading: false,
-            summary: 'Monthly performance',
-            periods: [
-                { label: '3M', value: '3m' },
-                { label: '6M', value: '6m' },
-                { label: '1Y', value: '1y' }
-            ],
-            tooltip: { visible: false, x: 0, y: 0, label: '', value: '' },
-            chart: null,
-
-            init() {
-                this.renderChart();
-            },
-
-            renderChart() {
-                const ctx = this.$refs.canvas.getContext('2d');
-                const isDark = document.documentElement.classList.contains('dark');
-
-            // Subtle vertical gradient fill
-                const gradient = ctx.createLinearGradient(0, 0, 0, 250);
-                gradient.addColorStop(0, isDark ? 'rgba(168, 85, 247, 0.18)' : 'rgba(147, 51, 234, 0.12)');
-                gradient.addColorStop(1, isDark ? 'rgba(168, 85, 247, 0.0)' : 'rgba(147, 51, 234, 0.0)');
-
-            // Placeholder datasets (replace or sync with backend AJAX call)
-                const dataPoints = [2400, 1800, 3200, 2900, 4100, 1900];
-                const labels = ['Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'];
-
-                if (this.chart) this.chart.destroy();
-
-                this.chart = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            data: dataPoints,
-                            borderColor: isDark ? '#c084fc' : '#9333ea',
-                            borderWidth: 2,
-                            tension: 0.4, // Cubic smoothing curve
-                            fill: true,
-                            backgroundColor: gradient,
-                            pointBackgroundColor: isDark ? '#c084fc' : '#9333ea',
-                            pointHoverRadius: 5,
-                            pointRadius: 0
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { display: false }, tooltip: { enabled: false } },
-                        scales: {
-                            x: {
-                                grid: { display: false },
-                                ticks: {
-                                    color: isDark ? '#71717a' : '#a1a1aa',
-                                    font: { size: 10, family: 'sans-serif' }
-                                }
-                            },
-                            y: {
-                                border: { dash: [4, 4] },
-                                grid: { color: isDark ? 'rgba(39, 39, 42, 0.6)' : 'rgba(244, 244, 245, 1)' },
-                                ticks: {
-                                    color: isDark ? '#71717a' : '#a1a1aa',
-                                    font: { size: 10, family: 'sans-serif' }
-                                }
-                            }
-                        }
-                    }
-                });
-            },
-
-            onHover(e) {
-                if (!this.chart) return;
-                const points = this.chart.getElementsAtEventForMode(e, 'nearest', { intersect: false }, true);
-                if (points.length) {
-                    const firstPoint = points[0];
-                    const label = this.chart.data.labels[firstPoint.index];
-                    const value = this.chart.data.datasets[0].data[firstPoint.index];
-                    this.tooltip = {
-                        visible: true,
-                        x: firstPoint.element.x,
-                        y: firstPoint.element.y,
-                        label: label,
-                        value: '$' + value.toLocaleString()
-                    };
-                } else {
-                    this.tooltip.visible = false;
-                }
-            }
-        }
-    }
-</script>
-<script>
-    function expenseChart() {
-        return {
             data: [],
             currencySymbol: '$',
             period: '1y',
@@ -212,7 +117,7 @@
                 if (this.animation.frame) cancelAnimationFrame(this.animation.frame);
                 this.animation.progress = 0;
                 const start = performance.now();
-                const duration = 800; // slightly longer, smoother ease
+                const duration = 800; 
                 const tick = (now) => {
                     const elapsed = now - start;
                     this.animation.progress = Math.min(elapsed / duration, 1);
@@ -255,10 +160,9 @@
 
                 const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
-            // Restrained color palette
                 const textColor = isDark ? '#71717a' : '#a1a1aa';
                 const gridColor = isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)';
-                const lineColor = isDark ? '#5A67FF' : '#5A67FF';
+                const lineColor = '#5A67FF';
 
                 const step = chartW / Math.max(this.data.length - 1, 1);
                 const ease = this.easeOutExpo(this.animation.progress);
@@ -274,7 +178,7 @@
 
                 ctx.save();
 
-            // Background Grid Lines
+                // Background Grid Lines
                 const gridSteps = 4;
                 for (let i = 0; i <= gridSteps; i++) {
                     const y = padTop + (chartH / gridSteps) * i;
@@ -290,23 +194,16 @@
                     ctx.font = '500 10px "Inter", system-ui, sans-serif';
                     ctx.textAlign = 'right';
                     ctx.textBaseline = 'middle';
-                // Move text up slightly to sit exactly on the line
                     ctx.fillText(this.formatNum(val), padLeft + chartW, y - 6);
                 }
 
-            // Single Point State
                 if (this.points.length < 2) {
                     if (this.points.length === 1) {
                         const p = this.points[0];
-
                         const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 50);
-                        if (isDark) {
-                            glow.addColorStop(0, 'rgba(255,255,255,0.15)');
-                            glow.addColorStop(1, 'rgba(255,255,255,0)');
-                        } else {
-                            glow.addColorStop(0, 'rgba(0,0,0,0.08)');
-                            glow.addColorStop(1, 'rgba(0,0,0,0)');
-                        }
+                        glow.addColorStop(0, isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.08)');
+                        glow.addColorStop(1, isDark ? 'rgba(255,255,255,0)' : 'rgba(0,0,0,0)');
+                        
                         ctx.beginPath();
                         ctx.arc(p.x, p.y, 50, 0, Math.PI * 2);
                         ctx.fillStyle = glow;
@@ -327,14 +224,16 @@
                     return;
                 }
 
-            // Gradient Fill beneath the line
+                // Enhanced High-Visibility Vertical Gradient Fill
                 const grad = ctx.createLinearGradient(0, padTop, 0, padTop + chartH);
                 if (isDark) {
-                    grad.addColorStop(0, 'rgba(255,255,255,0.1)');
-                    grad.addColorStop(1, 'rgba(255,255,255,0)');
+                    grad.addColorStop(0, 'rgba(90, 103, 255, 0.45)'); // Much richer color intensity near top
+                    grad.addColorStop(0.5, 'rgba(90, 103, 255, 0.15)');
+                    grad.addColorStop(1, 'rgba(90, 103, 255, 0)');     // Fades completely clear at the X-axis
                 } else {
-                    grad.addColorStop(0, 'rgba(0,0,0,0.06)');
-                    grad.addColorStop(1, 'rgba(0,0,0,0)');
+                    grad.addColorStop(0, 'rgba(90, 103, 255, 0.32)');
+                    grad.addColorStop(0.5, 'rgba(90, 103, 255, 0.10)');
+                    grad.addColorStop(1, 'rgba(90, 103, 255, 0)');
                 }
 
                 ctx.beginPath();
@@ -355,7 +254,7 @@
                 ctx.fillStyle = grad;
                 ctx.fill();
 
-            // Main Spline
+                // Main Spline Line
                 ctx.beginPath();
                 for (let i = 0; i < this.points.length; i++) {
                     const p = this.points[i];
@@ -369,11 +268,11 @@
                     }
                 }
                 ctx.strokeStyle = lineColor;
-                ctx.lineWidth = 2.5; // Slightly thicker
+                ctx.lineWidth = 2.5;
                 ctx.lineCap = 'round';
                 ctx.stroke();
 
-            // X-Axis Labels
+                // X-Axis Labels
                 const maxLabels = Math.min(this.data.length, Math.floor(chartW / 70));
                 const labelInterval = Math.max(1, Math.ceil(this.data.length / maxLabels));
                 ctx.fillStyle = textColor;
@@ -437,18 +336,12 @@
                         value: this.formatCurrency(closest.data.total),
                     };
 
-                    this.draw(); // Redraw base
-                    const ctx = this.$refs.canvas.getContext('2d');
-                    const dpr = window.devicePixelRatio || 1;
-                    ctx.save();
-                    ctx.scale(dpr, dpr);
-                    const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-
+                    this.draw(); 
                 } else {
                     this.tooltip.visible = false;
-                    this.draw(); // Clear indicator
+                    this.draw(); 
                 }
-            },
+            }
         }
     }
 </script>

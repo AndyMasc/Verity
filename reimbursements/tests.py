@@ -1,19 +1,18 @@
 import json
 from datetime import timedelta
 from decimal import Decimal
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import stripe
-
 from django.contrib.auth import get_user_model
-from django.test import TestCase, RequestFactory
+from django.test import RequestFactory, TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from reimbursements.models import ReimbursementPackage, PackagePayment, StripeAccount
+from records.models import AuditLog, Record
+from reimbursements.models import PackagePayment, ReimbursementPackage, StripeAccount
 from reimbursements.views import validate_recipient_email
 from reimbursements.webhooks import process_stripe_event
-from records.models import AuditLog, Record
 
 User = get_user_model()
 

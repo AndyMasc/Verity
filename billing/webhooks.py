@@ -4,6 +4,8 @@ from typing import Any
 import djstripe.signals as djstripe_signals
 from django.db import transaction
 from django.dispatch import receiver
+from djstripe.event_handlers import djstripe_receiver
+from djstripe.models import Subscription
 
 logger = logging.getLogger(__name__)
 
@@ -47,8 +49,10 @@ def enqueue_reimbursement_processing(**kwargs: Any) -> None:
 @receiver(djstripe_signals.webhook_processing_error)
 def report_webhook_processing_error(**kwargs: Any) -> None:
     """Logs (and surfaces to Sentry) djstripe webhook processing failures."""
-    trigger = kwargs.get("instance")
-    exception = kwargs.get("exception")
+    trigger = kwargs.get(
+        "instance"
+    )  # which specific endpoint or webhook transmission attempt failed.
+    exception = kwargs.get("exception")  # python traceback and error message
     logger.error(
         "djstripe webhook processing failed (trigger=%s): %s",
         trigger,
@@ -57,8 +61,11 @@ def report_webhook_processing_error(**kwargs: Any) -> None:
     )
 
 
-@receiver(djstripe_signals.WEBHOOK_SIGNALS["customer.subscription.deleted"])
-def handle_subscription_deleted(sender: Any, **kwargs: Any) -> None:
+ACTIVE_SUBSCRIPTION_STATUSES = frozenset({"active", "trialing"})
+
+
+@djstripe_receiver("customer.subscription.deleted")
+def handle_subscription_deleted(_sender: Any, **kwargs: Any) -> None:
     """Clears the user's subscription relation when cancelled in Stripe."""
     event = kwargs.get("event")
     if not event:
@@ -70,11 +77,15 @@ def handle_subscription_deleted(sender: Any, **kwargs: Any) -> None:
     if not sub_id:
         return
 
-    # Defer execution until the current webhook database transaction commits
     def _clear_user_subscription() -> None:
         from .models import CustomUser
 
-        updated_count = CustomUser.objects.filter(subscription_id=sub_id).update(subscription=None)
+        subscription = Subscription.objects.only("id").filter(id=sub_id).first()
+        if subscription is None:
+            return
+        updated_count = CustomUser.objects.filter(subscription_id=subscription.pk).update(
+            subscription=None
+        )
         if updated_count:
             logger.info("Cleared subscription %s from %d user(s).", sub_id, updated_count)
 

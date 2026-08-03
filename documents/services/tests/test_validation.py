@@ -91,7 +91,10 @@ class TestDocumentUploadServiceValidate:
     )
     @patch("documents.services.validation.verify_r2_object_exists", return_value=True)
     def test_validate_success_returns_metadata(self, mock_verify, mock_gk, mock_head, user):
-        mock_head.return_value = {"ContentLength": 1234, "ContentType": "application/pdf"}
+        mock_head.return_value = {
+            "ContentLength": 1234,
+            "ContentType": "application/pdf",
+        }
         doc = DocumentData.objects.create(
             user=user,
             filepath="users/1/doc.pdf",
@@ -143,7 +146,10 @@ class TestDocumentUploadServiceConfirm:
 
     def test_confirm_strips_semicolon_from_content_type(self, user):
         mock_head = MagicMock(
-            return_value={"ContentLength": 100, "ContentType": "image/png; charset=utf-8"}
+            return_value={
+                "ContentLength": 100,
+                "ContentType": "image/png; charset=utf-8",
+            }
         )
         with (
             patch("documents.services.validation.get_r2_object_head", mock_head),
@@ -151,7 +157,10 @@ class TestDocumentUploadServiceConfirm:
                 "documents.services.validation.gatekeeper_validate_r2_object",
                 return_value={"valid": True},
             ),
-            patch("documents.services.validation.verify_r2_object_exists", return_value=True),
+            patch(
+                "documents.services.validation.verify_r2_object_exists",
+                return_value=True,
+            ),
         ):
             doc = DocumentData.objects.create(
                 user=user,

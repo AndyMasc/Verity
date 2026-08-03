@@ -14,14 +14,14 @@ from .list import DocumentListView, PendingOCRListView, TrashDocumentListView
 from .upload import AddSupportDocuments, ConfirmUploadView, UploadView
 
 __all__ = [
+    "AddSupportDocuments",
+    "ConfirmUploadView",
+    "DeleteDocument",
     "DocumentListView",
+    "HardDeleteDocumentView",
     "PendingOCRListView",
     "TrashDocumentListView",
-    "UploadView",
-    "ConfirmUploadView",
-    "AddSupportDocuments",
-    "ViewDocument",
-    "DeleteDocument",
     "UndoDeleteDocument",
-    "HardDeleteDocumentView",
+    "UploadView",
+    "ViewDocument",
 ]

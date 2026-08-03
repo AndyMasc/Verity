@@ -1,7 +1,10 @@
 """Plan entitlements: which features a user is allowed to use."""
 
 from django.db import models
+from django.db.models import Sum
 from django.utils import timezone
+
+from documents.models import DocumentData
 
 from . import features
 
@@ -24,15 +27,30 @@ PAID_ONLY_FEATURES = frozenset(
 PAID_FEATURES = FREE_FEATURES | PAID_ONLY_FEATURES
 
 ACTIVE_SUBSCRIPTION_STATUSES = {"active", "trialing"}
-FREE_MONTHLY_SCAN_LIMIT = 30
+FREE_MONTHLY_SCAN_LIMIT = features.FREE_MONTHLY_SCAN_LIMIT
 
 
 def get_plan(user) -> str:
-    """Return 'paid' or 'free' for the given user."""
-    subscription = getattr(user, "subscription", None)
-    if subscription is not None and subscription.status in ACTIVE_SUBSCRIPTION_STATUSES:
-        return "paid"
-    return "free"
+    """Return 'paid' or 'free' based on the user's active base plan.
+
+    Storage add-ons alone never unlock paid features; only a base-plan
+    product (e.g. Papertrail Pro) does.
+    """
+    from .metadata import PAPERTRAIL_FREE, plan_for_user
+
+    plan = plan_for_user(user)
+    return "paid" if plan.stripe_id != PAPERTRAIL_FREE.stripe_id else "free"
+
+
+def get_monthly_scan_limit(user) -> int | None:
+    """Return the user's monthly Quick Scan allowance, or None if unlimited.
+
+    Driven by the user's base plan metadata, so new tiers only need to set
+    ``monthly_scan_limit`` in their product definition.
+    """
+    from .metadata import plan_for_user
+
+    return plan_for_user(user).monthly_scan_limit
 
 
 def get_features(user) -> frozenset[str]:
@@ -42,30 +60,29 @@ def get_features(user) -> frozenset[str]:
 
 def has_feature(user, feature: str) -> bool:
     """Return whether the user's plan includes the given feature."""
-    if not user.is_authenticated:
+    if user is None or not getattr(user, "is_authenticated", False):
         return False
     return feature in get_features(user)
 
 
 def get_storage_limit(user) -> int:
-    """Return the user's storage limit in GB, from their current plan's metadata."""
-    from .metadata import plan_for_user
+    """Return the user's storage limit in GB: base plan limit plus any storage add-ons."""
+    from .metadata import plan_for_user, storage_addons_for_user
 
-    return plan_for_user(user).storage_limit_gb
+    limit = plan_for_user(user).storage_limit_gb
+    limit += sum(addon.storage_limit_gb for addon in storage_addons_for_user(user))
+    return limit
 
 
 def get_storage_usage_bytes(user) -> int:
     """Return total stored bytes directly querying DocumentData."""
-    from documents.models import DocumentData
-    from django.db.models import Sum
-
     result = DocumentData.objects.filter(user=user).aggregate(total=Sum("file_size"))
     return result["total"] or 0
 
 
 def get_storage_usage_gb(user) -> float:
     """Return total stored gigabytes (GB)."""
-    return get_storage_usage_bytes(user) / (1024 ** 3)
+    return get_storage_usage_bytes(user) / (1024**3)
 
 
 def is_storage_limit_exceeded(user) -> bool:
@@ -84,10 +101,11 @@ def can_scan(user) -> bool:
     if is_storage_limit_exceeded(user):
         return False
 
-    if get_plan(user) == "paid":
+    limit = get_monthly_scan_limit(user)
+    if limit is None:
         return True
 
-    return get_monthly_scan_count(user) < FREE_MONTHLY_SCAN_LIMIT
+    return get_monthly_scan_count(user) < limit
 
 
 def get_monthly_scan_count(user) -> int:

@@ -3,7 +3,7 @@ from typing import Any
 
 from django.http import HttpRequest
 
-from . import entitlements, features
+from . import entitlements, metadata
 
 
 def subscription_status(request: HttpRequest) -> dict[str, Any]:
@@ -14,8 +14,9 @@ def subscription_status(request: HttpRequest) -> dict[str, Any]:
             "is_subscribed": False,
             "subscription_cancel_at_period_end": False,
             "plan": "free",
-            "plan_name": "Free",
-            "features": list(entitlements.FREE_FEATURES),
+            "plan_name": metadata.PAPERTRAIL_FREE.name,
+            "monthly_scan_limit": metadata.PAPERTRAIL_FREE.monthly_scan_limit,
+            "features": list(entitlements.get_features(user)),
         }
 
     subscription = getattr(user, "subscription", None)
@@ -24,15 +25,20 @@ def subscription_status(request: HttpRequest) -> dict[str, Any]:
         and subscription.status in entitlements.ACTIVE_SUBSCRIPTION_STATUSES
     )
 
-    plan = entitlements.get_plan(user)
+    active_products = metadata.active_products_for_user(user)
+    plan_name = " + ".join(product.name for product in active_products) or (
+        metadata.PAPERTRAIL_FREE.name
+    )
+
     return {
         "subscription": subscription if is_subscribed else None,
         "is_subscribed": is_subscribed,
         "subscription_cancel_at_period_end": (
             subscription.cancel_at_period_end if subscription is not None else False
         ),
-        "plan": plan,
-        "plan_name": "Papertrail Pro" if plan == "paid" else "Free",
+        "plan": entitlements.get_plan(user),
+        "plan_name": plan_name,
+        "monthly_scan_limit": entitlements.get_monthly_scan_limit(user),
         "features": list(entitlements.get_features(user)),
     }
 
@@ -42,7 +48,8 @@ def scan_usage(request: HttpRequest) -> dict[str, Any]:
     if not user.is_authenticated:
         return {}
 
-    if entitlements.has_feature(user, features.UNLIMITED_SCANS):
+    monthly_scan_limit = entitlements.get_monthly_scan_limit(user)
+    if monthly_scan_limit is None:
         return {}  # hide counter for unlimited users
 
     period = date.today().strftime("%Y-%m")
@@ -51,7 +58,7 @@ def scan_usage(request: HttpRequest) -> dict[str, Any]:
     return {
         "scan_usage_count": count,
         "scan_usage_period": period,
-        "free_monthly_scan_limit": entitlements.FREE_MONTHLY_SCAN_LIMIT,
+        "free_monthly_scan_limit": monthly_scan_limit,
     }
 
 

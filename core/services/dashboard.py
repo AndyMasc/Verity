@@ -161,10 +161,12 @@ async def get_dashboard_context(user) -> dict:
                 Q(creator=user) | Q(recipient=user)
             ).aggregate(
                 sent_pending_count=Count(
-                    "id", filter=Q(creator=user, status=ReimbursementPackage.Status.OPEN)
+                    "id",
+                    filter=Q(creator=user, status=ReimbursementPackage.Status.OPEN),
                 ),
                 received_count=Count(
-                    "id", filter=Q(recipient=user, status=ReimbursementPackage.Status.PAID)
+                    "id",
+                    filter=Q(recipient=user, status=ReimbursementPackage.Status.PAID),
                 ),
                 has_packages=Count("id"),
             )

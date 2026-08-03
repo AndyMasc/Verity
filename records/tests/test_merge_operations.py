@@ -258,7 +258,10 @@ class TryMatchTest(TestCase):
         plaid = make_plaid_record(self.user, "Multi Store")
         make_doc_record(self.user, "Multi Store")
         make_doc_record(
-            self.user, "Multi Store", balance=Decimal("100.00"), transaction_date=date(2024, 6, 15)
+            self.user,
+            "Multi Store",
+            balance=Decimal("100.00"),
+            transaction_date=date(2024, 6, 15),
         )
         merged = try_match_plaid_record(plaid)
         self.assertEqual(len(merged), 2)

@@ -130,24 +130,26 @@
                         <div class="p-6 flex items-center justify-between">
                             <div class="min-w-0">
                                 {% if is_subscribed %}
-                                    <span class="font-bold">{{ subscription.items.first.price.product.name }}
-                                        <br>
-                                    </span>
+                                    <span class="font-bold">{{ plan_name }}</span>
                                     <span class="inline-flex items-center gap-1 text-xs font-medium tracking-tight text-emerald-600 dark:text-emerald-400">
                                         <span class="size-1.5 rounded-full bg-emerald-500"></span>
                                         Active
                                     </span>
                                 {% else %}
-                                    <span class="block text-xs text-zinc-600 dark:text-zinc-400 font-medium">Free plan</span>
+                                    <span class="block text-xs text-zinc-600 dark:text-zinc-400 font-medium">{{ plan_name }}</span>
                                     <p class="text-xs text-zinc-400 dark:text-zinc-500">Upgrade to unlock premium features.</p>
                                 {% endif %}
                             </div>
-                            <div class="shrink-0">
+                            <div class="shrink-0 flex items-center gap-2">
                                 {% if is_subscribed %}
+                                    <a href="{% url 'pricing_page' %}"
+                                       class="bg-zinc-900 dark:bg-white text-white dark:text-black font-semibold py-2 px-4 text-xs rounded-xl transition-all duration-200 hover:bg-zinc-700 dark:hover:bg-zinc-200 active:scale-[0.98]">
+                                        Change plan
+                                    </a>
                                     <form method="post" action="{% url 'portal_session' %}">
                                         {% csrf_token %}
                                         <button type="submit"
-                                                class="bg-zinc-900 dark:bg-white text-white dark:text-black font-semibold py-2 px-4 text-xs rounded-xl transition-all duration-200 hover:bg-zinc-700 dark:hover:bg-zinc-200 active:scale-[0.98] cursor-pointer">
+                                                class="border border-zinc-200/70 dark:border-zinc-700/60 text-zinc-700 dark:text-zinc-300 font-semibold py-2 px-4 text-xs rounded-xl transition-all duration-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 active:scale-[0.98] cursor-pointer">
                                             Manage subscription
                                         </button>
                                     </form>

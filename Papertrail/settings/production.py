@@ -1,7 +1,7 @@
 from django.core.exceptions import ImproperlyConfigured
 from pythonjsonlogger.json import JsonFormatter
 
-from .base import *  # noqa: F401, F403
+from .base import *  # noqa: F403
 from .base import env
 
 # Fail fast: production must never run with DEBUG enabled.
@@ -28,7 +28,7 @@ CSRF_COOKIE_SECURE = env.bool("CSRF_COOKIE_SECURE", default=True)
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # Override base LOGGING with production JSON formatter
-LOGGING = {  # noqa: F811
+LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
     "filters": {

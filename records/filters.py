@@ -72,7 +72,7 @@ class RecordFilter(django_filters.FilterSet):
                         Folder.objects.filter(user=self.request.user).values_list("id", "name")
                     )
                     cache.set(cache_key, user_folders, FILTER_CHOICES_CACHE_TTL)
-                folder_filter.extra["choices"] = [("none", "All folders")] + user_folders
+                folder_filter.extra["choices"] = [("none", "All folders"), *user_folders]
 
             cache_key = f"rt_{self.request.user.id}"
             user_record_types = cache.get(cache_key)
@@ -94,7 +94,7 @@ class RecordFilter(django_filters.FilterSet):
 
             type_filter = self.filters.get("record_type") or self.base_filters.get("record_type")
             if type_filter:
-                type_filter.extra["choices"] = [("", "All Types")] + filtered
+                type_filter.extra["choices"] = [("", "All Types"), *filtered]
 
     def filter_by_folder(self, queryset, name, value):  # noqa: ARG002
         """Filter by folder ID, or return unfiled records when *value* is ``"none"``."""

@@ -97,7 +97,10 @@ class TestUploadServiceHandle:
         result = svc.handle()
         assert result.status == "error"
 
-    @patch("documents.services.upload.generate_presigned_post", return_value="https://upload.url")
+    @patch(
+        "documents.services.upload.generate_presigned_post",
+        return_value="https://upload.url",
+    )
     def test_new_upload_returns_url(self, mock_presign, user):
         request = HttpRequest()
         request.content_type = "application/x-www-form-urlencoded"
@@ -109,7 +112,10 @@ class TestUploadServiceHandle:
         assert result.upload_url == "https://upload.url"
         assert result.document_id is not None
 
-    @patch("documents.services.upload.generate_presigned_post", return_value="https://upload.url")
+    @patch(
+        "documents.services.upload.generate_presigned_post",
+        return_value="https://upload.url",
+    )
     def test_duplicate_detection(self, mock_presign, user):
         h = _make_hash()
         DocumentData.objects.create(
@@ -125,7 +131,10 @@ class TestUploadServiceHandle:
         result = svc.handle()
         assert result.status == "duplicate_confirmed"
 
-    @patch("documents.services.upload.generate_presigned_post", return_value="https://upload.url")
+    @patch(
+        "documents.services.upload.generate_presigned_post",
+        return_value="https://upload.url",
+    )
     def test_force_upload_skips_duplicate(self, mock_presign, user):
         h = _make_hash()
         DocumentData.objects.create(
@@ -143,7 +152,10 @@ class TestUploadServiceHandle:
         result = svc.handle()
         assert result.status == "upload_url"
 
-    @patch("documents.services.upload.generate_presigned_post", return_value="https://upload.url")
+    @patch(
+        "documents.services.upload.generate_presigned_post",
+        return_value="https://upload.url",
+    )
     def test_creates_document_with_correct_status(self, mock_presign, user):
         request = HttpRequest()
         request.content_type = "application/x-www-form-urlencoded"
@@ -154,7 +166,10 @@ class TestUploadServiceHandle:
         doc = DocumentData.objects.get(id=result.document_id)
         assert doc.status == DocumentStatus.PENDING_UPLOAD
 
-    @patch("documents.services.upload.generate_presigned_post", return_value="https://upload.url")
+    @patch(
+        "documents.services.upload.generate_presigned_post",
+        return_value="https://upload.url",
+    )
     def test_sets_did_ocr_when_no_record(self, mock_presign, user):
         request = HttpRequest()
         request.content_type = "application/x-www-form-urlencoded"
@@ -165,7 +180,10 @@ class TestUploadServiceHandle:
         doc = DocumentData.objects.get(id=result.document_id)
         assert doc.did_ocr is True
 
-    @patch("documents.services.upload.generate_presigned_post", return_value="https://upload.url")
+    @patch(
+        "documents.services.upload.generate_presigned_post",
+        return_value="https://upload.url",
+    )
     def test_duplicate_result_includes_record_info(self, mock_presign, user):
         from records.models import Record
 

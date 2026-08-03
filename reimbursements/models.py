@@ -8,7 +8,12 @@ from django.db.models import Q, Sum
 from django.db.models.functions import Concat
 from django.utils import timezone
 
-from core.currencies import CURRENCY_CHOICES, DEFAULT_CURRENCY, format_currency, to_stripe_amount
+from core.currencies import (
+    CURRENCY_CHOICES,
+    DEFAULT_CURRENCY,
+    format_currency,
+    to_stripe_amount,
+)
 from records.models import Record
 
 if TYPE_CHECKING:
@@ -65,7 +70,9 @@ class ReimbursementPackage(models.Model):
 
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, db_index=True)
     creator = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="reimbursement_packages"
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="reimbursement_packages",
     )
     recipient = models.ForeignKey(
         settings.AUTH_USER_MODEL,

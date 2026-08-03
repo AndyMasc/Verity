@@ -5,7 +5,7 @@ explicit ALLOWED_HOSTS, CSRF_TRUSTED_ORIGINS, and a default SQLite
 database when DATABASE_URL is not provided.
 """
 
-from .base import *  # noqa: F401, F403
+from .base import *  # noqa: F403
 
 DEBUG = False
 

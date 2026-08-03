@@ -10,7 +10,12 @@ import jwt
 import requests
 from django.conf import settings
 from django.db import transaction
-from django.http import HttpRequest, HttpResponse, HttpResponseBadRequest, HttpResponseForbidden
+from django.http import (
+    HttpRequest,
+    HttpResponse,
+    HttpResponseBadRequest,
+    HttpResponseForbidden,
+)
 from django.utils import timezone as tz
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
@@ -116,7 +121,12 @@ def plaid_webhook(request: HttpRequest) -> HttpResponse:
     webhook_code: str = payload.get("webhook_code", "")
     item_id: str = payload.get("item_id", "")
 
-    logger.info("Plaid webhook received: %s / %s for item %s", webhook_type, webhook_code, item_id)
+    logger.info(
+        "Plaid webhook received: %s / %s for item %s",
+        webhook_type,
+        webhook_code,
+        item_id,
+    )
 
     try:
         plaid_item = PlaidItem.objects.get(item_id=item_id)
@@ -160,9 +170,15 @@ def _route_webhook(webhook_code: str, plaid_item: PlaidItem, payload: dict[str, 
     if webhook_code in ("SYNC_UPDATES_AVAILABLE", "HISTORICAL_UPDATE"):
         _dispatch_sync(plaid_item)
 
-    elif webhook_code in ("ITEM_LOGIN_REQUIRED", "ITEM_REQUIRES_UPDATE", "PENDING_EXPIRATION"):
+    elif webhook_code in (
+        "ITEM_LOGIN_REQUIRED",
+        "ITEM_REQUIRES_UPDATE",
+        "PENDING_EXPIRATION",
+    ):
         logger.warning(
-            "Item %s requires manual user intervention: %s", plaid_item.item_id, webhook_code
+            "Item %s requires manual user intervention: %s",
+            plaid_item.item_id,
+            webhook_code,
         )
         PlaidItem.objects.filter(id=plaid_item.id).update(
             last_error_code=webhook_code,
@@ -174,7 +190,11 @@ def _route_webhook(webhook_code: str, plaid_item: PlaidItem, payload: dict[str, 
 
     elif webhook_code == "ERROR":
         error: dict[str, Any] = payload.get("error", {})
-        logger.error("Plaid error for item %s: %s", plaid_item.item_id, error.get("error_message"))
+        logger.error(
+            "Plaid error for item %s: %s",
+            plaid_item.item_id,
+            error.get("error_message"),
+        )
         PlaidItem.objects.filter(id=plaid_item.id).update(
             last_error_code=error.get("error_code", webhook_code),
             last_error_message=error.get("error_message", "Unknown error"),

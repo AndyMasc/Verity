@@ -80,23 +80,31 @@ class CreatePackageCheckoutView(LoginRequiredMixin, View):
         if request.user == package.creator:
             messages.error(request, "You cannot pay for your own reimbursement package.")
             return redirect(
-                reverse("reimbursements:package-detail", kwargs={"package_uuid": package.uuid})
+                reverse(
+                    "reimbursements:package-detail",
+                    kwargs={"package_uuid": package.uuid},
+                )
             )
 
         if package.is_expired:
             messages.error(request, "This reimbursement package has expired.")
             return redirect(
-                reverse("reimbursements:package-detail", kwargs={"package_uuid": package.uuid})
+                reverse(
+                    "reimbursements:package-detail",
+                    kwargs={"package_uuid": package.uuid},
+                )
             )
 
         if package.status == ReimbursementPackage.Status.PAID:
             messages.error(request, "This package has already been paid.")
             return redirect(
-                reverse("reimbursements:package-detail", kwargs={"package_uuid": package.uuid})
+                reverse(
+                    "reimbursements:package-detail",
+                    kwargs={"package_uuid": package.uuid},
+                )
             )
 
-        # Lock the package row and double-check it's still payable.
-        # This prevents concurrent checkouts from different users.
+        # Lock the package row and double-check it's still payable. Prevents concurrent checkouts from different users.
         with transaction.atomic():
             locked_package = (
                 ReimbursementPackage.objects.select_for_update()
@@ -106,7 +114,10 @@ class CreatePackageCheckoutView(LoginRequiredMixin, View):
             if not locked_package:
                 messages.error(request, "This package is no longer available for payment.")
                 return redirect(
-                    reverse("reimbursements:package-detail", kwargs={"package_uuid": package.uuid})
+                    reverse(
+                        "reimbursements:package-detail",
+                        kwargs={"package_uuid": package.uuid},
+                    )
                 )
 
             existing_payment = (
@@ -131,10 +142,6 @@ class CreatePackageCheckoutView(LoginRequiredMixin, View):
             if stripe_account and stripe_account.is_active
             else None
         )
-
-        # The platform routes payment straight to the recipient's connected
-        # Stripe account. Without one there is no payout path for the creator,
-        # so refuse to take money we cannot deliver.
         if not stripe_account_id:
             messages.error(
                 request,
@@ -142,7 +149,10 @@ class CreatePackageCheckoutView(LoginRequiredMixin, View):
                 "Please ask them to complete Stripe onboarding first.",
             )
             return redirect(
-                reverse("reimbursements:package-detail", kwargs={"package_uuid": package.uuid})
+                reverse(
+                    "reimbursements:package-detail",
+                    kwargs={"package_uuid": package.uuid},
+                )
             )
 
         payer_currency = getattr(request.user.settings, "default_currency", "usd")
@@ -184,7 +194,10 @@ class CreatePackageCheckoutView(LoginRequiredMixin, View):
             if fallback_cents <= 0:
                 messages.error(request, "This package has no payable items.")
                 return redirect(
-                    reverse("reimbursements:package-detail", kwargs={"package_uuid": package.uuid})
+                    reverse(
+                        "reimbursements:package-detail",
+                        kwargs={"package_uuid": package.uuid},
+                    )
                 )
             line_items.append(
                 {
@@ -210,7 +223,10 @@ class CreatePackageCheckoutView(LoginRequiredMixin, View):
                 reverse("reimbursements:payment-success") + f"?package={package.uuid}"
             ),
             "cancel_url": request.build_absolute_uri(
-                reverse("reimbursements:package-detail", kwargs={"package_uuid": package.uuid})
+                reverse(
+                    "reimbursements:package-detail",
+                    kwargs={"package_uuid": package.uuid},
+                )
             ),
         }
 
@@ -252,10 +268,14 @@ class CreatePackageCheckoutView(LoginRequiredMixin, View):
                 "Failed to create Stripe Checkout Session for package %s", package.uuid
             )
             messages.error(
-                request, "Unable to initiate payment session with Stripe. Please try again later."
+                request,
+                "Unable to initiate payment session with Stripe. Please try again later.",
             )
             return redirect(
-                reverse("reimbursements:package-detail", kwargs={"package_uuid": package.uuid})
+                reverse(
+                    "reimbursements:package-detail",
+                    kwargs={"package_uuid": package.uuid},
+                )
             )
 
         # Create the PackagePayment record and commit it before redirecting the

@@ -102,7 +102,9 @@ def create_audit_log(
     return AuditLog.objects.create(**kwargs)
 
 
-def parse_record_ids(request: HttpRequest) -> tuple[list[int] | None, HttpResponse | None]:
+def parse_record_ids(
+    request: HttpRequest,
+) -> tuple[list[int] | None, HttpResponse | None]:
     """Parse and validate record_ids from a JSON request body.
 
     Returns ``(ids, None)`` on success or ``(None, error_response)`` on failure.
@@ -113,7 +115,9 @@ def parse_record_ids(request: HttpRequest) -> tuple[list[int] | None, HttpRespon
         record_ids = data.get("record_ids", [])
     except json.JSONDecodeError, AttributeError:
         return None, HttpResponse(
-            '{"error": "Invalid request body"}', status=400, content_type="application/json"
+            '{"error": "Invalid request body"}',
+            status=400,
+            content_type="application/json",
         )
 
     if not isinstance(record_ids, list) or not all(isinstance(rid, int) for rid in record_ids):

@@ -53,7 +53,11 @@ class CalculateMatchScoreTest(TestCase):
 
     def test_merchant_partial_match(self):
         doc = make_doc_record(
-            self.user, "Something", merchant="amazon", balance=None, transaction_date=None
+            self.user,
+            "Something",
+            merchant="amazon",
+            balance=None,
+            transaction_date=None,
         )
         score = calculate_match_score(self.plaid, doc)
         self.assertEqual(score, 10)
@@ -145,7 +149,10 @@ class FindBestPlaidMatchTest(TestCase):
 
     def test_best_score_wins(self):
         make_plaid_record(
-            self.user, "Worse Match", balance=Decimal("50.00"), transaction_date=date(2024, 1, 1)
+            self.user,
+            "Worse Match",
+            balance=Decimal("50.00"),
+            transaction_date=date(2024, 1, 1),
         )
         match = find_best_plaid_match(self.doc)
         self.assertEqual(match.pk, self.plaid.pk)

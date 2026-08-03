@@ -111,6 +111,8 @@ MIDDLEWARE = [
     "csp.middleware.CSPMiddleware",
     "core.middleware.TimezoneMiddleware",  # Get user timezone via cookie
     "allauth.account.middleware.AccountMiddleware",
+    # Crum
+    "crum.CurrentRequestUserMiddleware",
 ]
 
 if not DEBUG:
@@ -428,6 +430,8 @@ STRIPE_WEBHOOK_SECRET = env("STRIPE_WEBHOOK_SECRET")
 DJSTRIPE_FOREIGN_KEY_TO_FIELD = env("DJSTRIPE_FOREIGN_KEY_TO_FIELD")
 STRIPE_PRICING_TABLE_ID = env("STRIPE_PRICING_TABLE_ID")
 STRIPE_PRICING_TABLE_KEY = env("STRIPE_PRICING_TABLE_KEY")
+STRIPE_STORAGE_TABLE_ID = env("STRIPE_STORAGE_TABLE_ID")
+STRIPE_STORAGE_TABLE_KEY = env("STRIPE_STORAGE_TABLE_KEY")
 
 # One Stripe webhook serves both pipelines: djstripe (billing/subscriptions) and
 # reimbursements (see billing/webhooks.py signal receiver). In local dev the

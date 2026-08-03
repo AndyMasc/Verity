@@ -35,7 +35,11 @@ class StripeOnboardView(LoginRequiredMixin, View):
                 stripe_account.charges_enabled = live_account.charges_enabled
                 stripe_account.payouts_enabled = live_account.payouts_enabled
                 stripe_account.save(
-                    update_fields=["stripe_details_submitted", "charges_enabled", "payouts_enabled"]
+                    update_fields=[
+                        "stripe_details_submitted",
+                        "charges_enabled",
+                        "payouts_enabled",
+                    ]
                 )
                 if stripe_account.is_active:
                     return redirect(reverse("reimbursements:package-list"))
@@ -53,7 +57,8 @@ class StripeOnboardView(LoginRequiredMixin, View):
                 stripe_account.save(update_fields=["stripe_account_id"])
             except stripe.error.StripeError:
                 logger.exception(
-                    "Failed to create Stripe express account for user %s", request.user.id
+                    "Failed to create Stripe express account for user %s",
+                    request.user.id,
                 )
                 messages.error(request, "Unable to initiate Stripe onboarding. Please try again.")
                 return redirect(reverse("reimbursements:package-list"))
@@ -72,6 +77,7 @@ class StripeOnboardView(LoginRequiredMixin, View):
         except stripe.error.StripeError:
             logger.exception("Failed to create Stripe account link for user %s", request.user.id)
             messages.error(
-                request, "Something went wrong connecting your Stripe account. Please try again."
+                request,
+                "Something went wrong connecting your Stripe account. Please try again.",
             )
             return redirect(reverse("reimbursements:package-list"))

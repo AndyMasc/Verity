@@ -4,7 +4,6 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
-
 from djstripe.models import Customer, Subscription
 
 
@@ -12,12 +11,14 @@ class FakeSession:
     def __init__(
         self,
         *,
+        id="cs_test",
         payment_status="paid",
         customer=None,
         customer_details=None,
         client_reference_id=None,
         subscription="sub_test",
     ):
+        self.id = id
         self.payment_status = payment_status
         self.customer = customer
         self.customer_details = customer_details or {}
@@ -40,7 +41,7 @@ class SubscriptionConfirmTests(TestCase):
             livemode=False,
             created=timezone.now(),
             customer=self.customer,
-            stripe_data={},
+            stripe_data={"status": "active"},
         )
         self.user = get_user_model().objects.create_user(
             username="andy",
@@ -110,7 +111,7 @@ class SubscriptionConfirmTests(TestCase):
         self.user.refresh_from_db()
         self.assertEqual(self.user.subscription_id, self.subscription.djstripe_id)
 
-    def test_permission_denied_when_no_match(self):
+    def test_rejects_when_no_match(self):
         session = FakeSession(
             customer="cus_someone_else",
             customer_details={"email": "someone@example.com"},
@@ -121,7 +122,7 @@ class SubscriptionConfirmTests(TestCase):
 
         response = client.get(self.url, {"session_id": "cs_test"})
 
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 400)
         self.user.refresh_from_db()
         self.assertIsNone(self.user.subscription_id)
 

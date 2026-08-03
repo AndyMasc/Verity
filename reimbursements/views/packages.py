@@ -191,7 +191,10 @@ class PackageDeleteView(LoginRequiredMixin, View):
         if not package.can_delete(request.user):
             messages.error(request, "You do not have permission to delete this package.")
             return redirect(
-                reverse("reimbursements:package-detail", kwargs={"package_uuid": package.uuid})
+                reverse(
+                    "reimbursements:package-detail",
+                    kwargs={"package_uuid": package.uuid},
+                )
             )
 
         package.delete_package(request.user)

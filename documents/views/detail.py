@@ -126,15 +126,20 @@ class DeleteDocument(LoginRequiredMixin, View):
                 {
                     "recordChanged": {},
                     "documentChanged": {},
-                    "showToast": {"text": result.message, "tags": result.message_tag or "success"},
+                    "showToast": {
+                        "text": result.message,
+                        "tags": result.message_tag or "success",
+                    },
                 }
             )
             return response
         messages.add_message(
             request,
-            message_constants.SUCCESS
-            if result.message_tag == "success"
-            else message_constants.INFO,
+            (
+                message_constants.SUCCESS
+                if result.message_tag == "success"
+                else message_constants.INFO
+            ),
             result.message,
         )
         url = (

@@ -7,7 +7,9 @@ a short-lived Link token into a persistent credential stored server-side.
 import logging
 
 import plaid
-from plaid.model.item_public_token_exchange_request import ItemPublicTokenExchangeRequest
+from plaid.model.item_public_token_exchange_request import (
+    ItemPublicTokenExchangeRequest,
+)
 
 from .plaid_client import client as plaid_client
 

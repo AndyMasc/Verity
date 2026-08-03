@@ -9,12 +9,12 @@ from .packages import (
 from .validation import validate_recipient_email
 
 __all__ = [
+    "CreatePackageCheckoutView",
+    "CreatePackageFromRecordsView",
+    "PackageDeleteView",
+    "PackageDetailView",
+    "PackageListView",
+    "PaymentSuccessView",
     "StripeOnboardView",
     "validate_recipient_email",
-    "PackageListView",
-    "PackageDetailView",
-    "PackageDeleteView",
-    "CreatePackageFromRecordsView",
-    "PaymentSuccessView",
-    "CreatePackageCheckoutView",
 ]

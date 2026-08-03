@@ -131,7 +131,9 @@ class DocumentDataModelTest(TestCase):
             file_hash=_make_hash(),
         )
         orphan = DocumentData.objects.create(
-            user=self.user, filepath="users/1/orphan.pdf", file_hash=_make_hash(b"orphan")
+            user=self.user,
+            filepath="users/1/orphan.pdf",
+            file_hash=_make_hash(b"orphan"),
         )
         qs = DocumentData.objects.orphaned()
         self.assertIn(orphan, qs)
@@ -145,7 +147,9 @@ class DocumentDataModelTest(TestCase):
             file_hash=_make_hash(),
         )
         DocumentData.objects.create(
-            user=self.user, filepath="users/1/orphan.pdf", file_hash=_make_hash(b"orphan")
+            user=self.user,
+            filepath="users/1/orphan.pdf",
+            file_hash=_make_hash(b"orphan"),
         )
         qs = DocumentData.objects.linked()
         self.assertEqual(qs.count(), 1)
@@ -256,7 +260,9 @@ class DocumentDataManagerTest(TestCase):
             file_hash=_make_hash(),
         )
         orphan = DocumentData.objects.create(
-            user=self.user, filepath="users/1/orphan.pdf", file_hash=_make_hash(b"orphan")
+            user=self.user,
+            filepath="users/1/orphan.pdf",
+            file_hash=_make_hash(b"orphan"),
         )
         qs = DocumentData.objects.orphaned()
         self.assertIn(orphan, qs)

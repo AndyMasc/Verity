@@ -8,33 +8,42 @@ line-length = 100
 
 [tool.ruff.lint]
 select = [
-    "E",   # pycodestyle errors
-    "W",   # pycodestyle warnings
-    "F",   # pyflakes
-    "I",   # isort
-    "N",   # pep8-naming
-    "UP",  # pyupgrade
-    "B",   # flake8-bugbear
-    "SIM", # flake8-simplify
-    "ARG", # flake8-unused-arguments
-    "RSE", # flake8-raise
-    "C4",  # flake8-comprehensions
-    "T20", # flake8-print
-    "Q",   # flake8-quotes
-    "PIE", # flake8-pie
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort (import sorting)
+    "N",    # pep8-naming
+    "UP",   # pyupgrade (upgrades syntax to Python 3.14 rules)
+    "B",    # flake8-bugbear
+    "SIM",  # flake8-simplify
+    "ARG",  # flake8-unused-arguments
+    "RSE",  # flake8-raise
+    "C4",   # flake8-comprehensions
+    "T20",  # flake8-print
+    "Q",    # flake8-quotes
+    "PIE",  # flake8-pie
+    "DJ",   # flake8-django (Optimised rules specifically for Django)
+    "S",    # flake8-bandit (Replaces the standalone tool.bandit configuration)
+    "PERF", # Perflint (Finds performance antipatterns in loops)
+    "RUF",  # Ruff-specific rules
 ]
 ignore = [
-    "E501",  # line too long (handled by formatter)
+    "E501",  # line too long (handled automatically by format section)
     "N802",  # function name should be lowercase (Django views use snake_case)
     "N803",  # argument name should be lowercase
     "N806",  # variable in function should be lowercase
-    "N999",  # Papertrail is the Django project package name
+    "N999",  # Papertrail package name exception
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"*/migrations/*" = ["ALL"]
-"*/tests.py" = ["ALL"]
-"*test_*" = ["ALL"]
+# Added trailing asterisks so nested migration folders and test files match completely
+"**/migrations/**" = ["ALL"]
+"**/tests/**" = ["ALL"]
+"**/test_*.py" = ["ALL"]
+
+[tool.ruff.lint.isort]
+force-single-line = false
+known-first-party = ["core", "documents", "records", "plaid_integration", "Papertrail", "accounting", "billing"]
 
 [tool.ruff.format]
 quote-style = "double"
@@ -47,15 +56,16 @@ disallow_untyped_defs = true
 no_implicit_optional = true
 warn_redundant_casts = true
 warn_unused_ignores = true
-ignore_missing_imports = true
+# Use valid relative path regex syntax for Mypy exclusions
 exclude = [
-    ".*migrations.*",
-    ".*tests.*",
+    "migrations/",
+    "tests/",
     "venv/",
     "__pycache__/",
-    "manage.py",
+    "manage.py"
 ]
 
+# Structural catch-all for untyped third-party libraries missing stubs
 [[tool.mypy.overrides]]
 module = [
     "django.*",
@@ -72,74 +82,36 @@ module = [
     "numpy.*",
     "cv2.*",
     "deskew.*",
+    "reimbursements.*"
 ]
 ignore_missing_imports = true
 
+# Catch-all for internal Django modules to suppress specific framework noise
 [[tool.mypy.overrides]]
 module = [
     "*.models",
-    "Papertrail.settings.*",
-    "Papertrail.views",
-    "Papertrail.utils",
+    "Papertrail.*",
+    "documents.*",
+    "core.*",
+    "records.*",
+    "plaid_integration.*",
+    "accounting.*",
+    "billing.*"
 ]
 ignore_missing_imports = true
-# Django model fields are self-describing descriptors; mypy cannot infer their types.
-# Django ForeignKey automatically creates _id attributes which mypy doesn't know about.
-# User = get_user_model() is a runtime variable, not a type alias.
-# Many model methods and __str__ lack annotations in typical Django projects.
-disable_error_code = ["var-annotated", "attr-defined", "valid-type", "misc", "no-untyped-def", "return-value"]
-
-[[tool.mypy.overrides]]
-module = [
-    "documents.storage",
-    "documents.validators",
-    "documents.apps",
-    "documents.admin",
-    "documents.forms",
-    "documents.filters",
-    "documents.signals",
-    "documents.services.*",
-    "documents.views",
-    "documents.views.*",
-    "documents.tasks",
-    "documents.ocr_helpers",
-    "core.apps",
-    "core.middleware",
-    "core.templatetags.*",
-    "records.templatetags.*",
-    "core.context_processors",
-    "core.signals",
-    "core.tasks",
-    "core.forms",
-    "core.views",
-    "core.backends",
-    "core.services.*",
-    "Papertrail.urls",
-    "records.filters",
-    "records.forms",
-    "records.views",
-    "records.views.*",
-    "records.services",
-    "records.matching",
-    "records.admin",
-    "records.signals",
-    "records.apps",
-    "plaid_integration.admin",
-    "plaid_integration.views.*",
-    "plaid_integration.tasks",
-    "reimbursements",
-    "reimbursements.*",
+disable_error_code = [
+    "no-untyped-def", 
+    "return-value", 
+    "arg-type", 
+    "union-attr", 
+    "assignment", 
+    "unused-ignore", 
+    "attr-defined", 
+    "var-annotated", 
+    "dict-item",
+    "valid-type",
+    "misc"
 ]
-ignore_missing_imports = true
-# Functions in these modules are Django views, signal handlers, template tags,
-# admin classes, and form/filter classes where the function signatures are
-# constrained by Django's framework contracts. Adding full type annotations
-# provides minimal safety benefit compared to the maintenance cost.
-disable_error_code = ["no-untyped-def", "return-value", "arg-type", "union-attr", "assignment", "unused-ignore", "attr-defined", "var-annotated", "dict-item"]
-
-[tool.bandit]
-exclude_dirs = ["tests", "venv", "*/migrations/*"]
-skips = ["B101"]  # assert used - common in tests
 
 [tool.coverage.run]
 source = ["core", "documents", "records", "plaid_integration"]
@@ -159,7 +131,7 @@ exclude_lines = [
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "Papertrail.settings.local"
-python_files = ["tests.py", "test_*.py", "*_tests.py"]
+python_files = ["tests.py", "test_*.py", "tests_*.py", "*_tests.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = [

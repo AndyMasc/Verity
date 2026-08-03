@@ -56,7 +56,7 @@ def choose_folder(
 
     if not folder:
         try:
-            folder, created = Folder.objects.get_or_create(user=user, name=category_clean)
+            folder, _created = Folder.objects.get_or_create(user=user, name=category_clean)
         except IntegrityError:
             folder = Folder.objects.filter(user=user, name=category_clean).first()
 
@@ -165,7 +165,8 @@ def sync_and_convert_for_item_task(self, plaid_item_id: int | str) -> dict[str, 
             )
         except Exception as e:
             logger.warning(
-                "Plaid API error or rate limit hit for item %s. Retrying task.", plaid_item_id
+                "Plaid API error or rate limit hit for item %s. Retrying task.",
+                plaid_item_id,
             )
             countdown = self.default_retry_delay * (2**self.request.retries)
             raise self.retry(exc=e, countdown=countdown) from None

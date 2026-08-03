@@ -12,7 +12,9 @@ from django.shortcuts import render
 from plaid.model.accounts_get_request import AccountsGetRequest
 from plaid.model.country_code import CountryCode
 from plaid.model.institutions_get_by_id_request import InstitutionsGetByIdRequest
-from plaid.model.institutions_get_by_id_request_options import InstitutionsGetByIdRequestOptions
+from plaid.model.institutions_get_by_id_request_options import (
+    InstitutionsGetByIdRequestOptions,
+)
 from plaid.model.item_get_request import ItemGetRequest
 from plaid.model.link_token_create_request import LinkTokenCreateRequest
 from plaid.model.link_token_create_request_user import LinkTokenCreateRequestUser

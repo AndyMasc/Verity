@@ -5,8 +5,12 @@ import stripe
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import PermissionDenied
-from django.http import HttpRequest, HttpResponse, HttpResponseBadRequest, HttpResponseRedirect
+from django.http import (
+    HttpRequest,
+    HttpResponse,
+    HttpResponseBadRequest,
+    HttpResponseRedirect,
+)
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
@@ -26,11 +30,29 @@ def pricing_page(request: HttpRequest) -> HttpResponse:
 
     has_active_sub = user.has_active_subscription
 
+    # Map Stripe product metadata category -> pricing table config. Add a new category + env key here to surface another pricing table.
+    pricing_tables = {
+        "base_plan": {
+            "id": settings.STRIPE_PRICING_TABLE_ID,
+            "key": settings.STRIPE_PRICING_TABLE_KEY,
+        },
+        "storage_plan": {
+            "id": settings.STRIPE_STORAGE_TABLE_ID,
+            "key": settings.STRIPE_STORAGE_TABLE_KEY,
+        },
+    }
+    default_table = pricing_tables["base_plan"]
+
     products = list(Product.objects.filter(active=True).prefetch_related("prices"))
     for product in products:
         meta = metadata.PRODUCTS.get(product.id)
         product.features_list = meta.features if meta else []
         product.is_default = meta.is_default if meta else False
+
+        category = (product.metadata or {}).get("category")
+        table = pricing_tables.get(category, default_table)
+        product.pricing_table_id = table["id"]
+        product.pricing_table_key = table["key"]
 
     free_plan = metadata.PAPERTRAIL_FREE
     free_plan.features_list = free_plan.features
@@ -38,99 +60,67 @@ def pricing_page(request: HttpRequest) -> HttpResponse:
     free_plan.is_default = False
     products.insert(0, free_plan)
 
+    base_plans = [
+        p
+        for p in products
+        if hasattr(p, "metadata")
+        and isinstance(p.metadata, dict)
+        and p.metadata.get("category") == "base_plan"
+    ]
+
+    storage_plans = [
+        p
+        for p in products
+        if hasattr(p, "metadata")
+        and isinstance(p.metadata, dict)
+        and p.metadata.get("category") == "storage_plan"
+    ]
+
     return render(
         request,
         "billing/pricing_page.html",
         context={
-            "stripe_public_key": settings.STRIPE_PRICING_TABLE_KEY,
-            "stripe_pricing_table_id": settings.STRIPE_PRICING_TABLE_ID,
+            "pricing_tables": pricing_tables,
             "products": products,
             "free_plan": free_plan,
             "has_active_subscription": has_active_sub,
+            "base_plans": base_plans,
+            "storage_plans": storage_plans,
         },
     )
 
 
 @login_required
-@ratelimit(key="user", rate="10/m", method="GET", block=True)
+@ratelimit(key="user", rate="10/m", method=["GET"], block=True)
 def subscription_confirm(request: HttpRequest) -> HttpResponse:
-    user = cast(CustomUser, request.user)
     stripe.api_key = djstripe_settings.STRIPE_SECRET_KEY
 
     session_id = request.GET.get("session_id")
     if not session_id:
         return HttpResponseBadRequest("Missing session ID.")
 
-    # Retrieve checkout session from Stripe
-    session = stripe.checkout.Session.retrieve(session_id)
+    try:
+        session = stripe.checkout.Session.retrieve(session_id)
+        if session.payment_status != "paid":
+            return HttpResponseBadRequest("Subscription is not paid.")
+        if not session.subscription:
+            return HttpResponseBadRequest("Session is not a subscription checkout.")
 
-    if session.payment_status != "paid":
-        return HttpResponseBadRequest("Subscription is not paid.")
+        subscription = stripe.Subscription.retrieve(str(session.subscription))
+    except stripe.error.StripeError as e:
+        logger.error("Stripe API error during subscription confirmation: %s", e)
+        messages.error(request, "We encountered an error confirming your subscription. Please contact support.")
+        return redirect("core:dashboard")
 
-    # A checkout session without a subscription (e.g. a one-off payment) has
-    # nothing to confirm here.
-    if not session.subscription:
-        return HttpResponseBadRequest("Session is not a subscription checkout.")
-
-    customer_email = (getattr(session, "customer_details", None) or {}).get("email")
-    session_customer_matches = (
-        session.customer and user.customer is not None and session.customer == user.customer.id
-    )
-    email_matches = customer_email and customer_email == user.email
-    if session_customer_matches or email_matches:
-        subscription_holder = user
-    else:
-        if not session.client_reference_id:
-            return HttpResponseBadRequest("Invalid session payload.")
-
-        try:
-            client_reference_id = int(session.client_reference_id)
-        except TypeError, ValueError:
-            return HttpResponseBadRequest("Invalid session payload.")
-
-        try:
-            subscription_holder = CustomUser.objects.get(id=client_reference_id)
-        except CustomUser.DoesNotExist:
-            raise PermissionDenied(
-                "You do not have permission to confirm this subscription."
-            ) from None
-
-        # Secure check: ensure logged-in user matches the session owner
-        if subscription_holder != user:
-            logger.warning(
-                "Subscription confirm ownership mismatch: session=%s holder=%s user=%s customer=%s email=%s",
-                session_id,
-                subscription_holder.pk,
-                user.pk,
-                user.customer,
-                customer_email,
-            )
-            raise PermissionDenied("You do not have permission to confirm this subscription.")
-
-    # Sync subscription data with djstripe
-    subscription = stripe.Subscription.retrieve(str(session.subscription))
     djstripe_subscription = Subscription.sync_from_stripe_data(subscription)
 
-    # Cancel previous active subscription if a new one is being confirmed
-    if (
-        subscription_holder.subscription
-        and subscription_holder.subscription.id != djstripe_subscription.id
-    ):
-        old_sub_id = subscription_holder.subscription.id
-        try:
-            # Immediately cancel the older subscription in Stripe
-            stripe.Subscription.cancel(old_sub_id)
-            logger.info(
-                "Canceled previous subscription %s for user %s", old_sub_id, subscription_holder.pk
-            )
-            messages.success(request, "Your subscription has been updated successfully!")
-        except stripe.error.StripeError as e:
-            logger.error("Failed to cancel old subscription %s: %s", old_sub_id, e)
-            messages.error(request, "Failed to cancel your subscription. Please try again later.")
-    # Attach new relations
-    subscription_holder.subscription = djstripe_subscription
-    subscription_holder.customer = djstripe_subscription.customer
-    subscription_holder.save()
+    subscription_holder = request.user.get_verified_session_holder(session)
+    if subscription_holder is None:
+        return HttpResponseBadRequest("Invalid session payload.")
+
+    subscription_holder.handle_new_subscription(djstripe_subscription)
+
+    messages.success(request, "Your subscription has been updated successfully!")
     return redirect("core:dashboard")
 
 
