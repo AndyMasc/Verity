@@ -220,7 +220,7 @@ def expense_chart_data(request: HttpRequest) -> JsonResponse:
     rows = list(
         Record.objects.filter(
             user=request.user,
-            transaction_date__gte=start.date(),
+            transaction_date__gte=start.date() if isinstance(start, _dt) else start,
             transaction_date__lte=now.date(),
             balance__isnull=False,
         ).values_list("balance", "currency", "transaction_date")
