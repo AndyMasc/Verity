@@ -53,3 +53,19 @@ def scan_usage(request: HttpRequest) -> dict[str, Any]:
         "scan_usage_period": period,
         "free_monthly_scan_limit": entitlements.FREE_MONTHLY_SCAN_LIMIT,
     }
+
+
+def storage_usage(request: HttpRequest) -> dict[str, Any]:
+    user = request.user
+    if not user.is_authenticated:
+        return {}
+
+    usage_bytes = entitlements.get_storage_usage_bytes(user)
+    limit_gb = entitlements.get_storage_limit(user)
+
+    return {
+        "storage_usage_gb": usage_bytes / (1024**3),
+        "storage_usage_bytes": usage_bytes,
+        "storage_limit_gb": limit_gb,
+        "is_storage_limit_exceeded": usage_bytes / (1024**3) >= limit_gb,
+    }

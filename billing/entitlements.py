@@ -1,10 +1,6 @@
-"""Plan entitlements: which features a user is allowed to use.
+"""Plan entitlements: which features a user is allowed to use."""
 
-A user is on the paid (Pro) plan when they hold an active or trialing
-dj-stripe subscription. Paid users inherit every free feature plus the
-paid-only features defined here.
-"""
-
+from django.db import models
 from django.utils import timezone
 
 from . import features
@@ -14,7 +10,6 @@ FREE_FEATURES = frozenset(
         features.LIMITED_SCANS,
         features.SUPPORTING_FILE_UPLOAD,
         features.EXPIRY_REMINDERS,
-        features.REIMBURSEMENT_PAYMENTS,
     }
 )
 
@@ -28,15 +23,12 @@ PAID_ONLY_FEATURES = frozenset(
 
 PAID_FEATURES = FREE_FEATURES | PAID_ONLY_FEATURES
 
-# dj-stripe Subscription statuses that confer paid entitlements.
 ACTIVE_SUBSCRIPTION_STATUSES = {"active", "trialing"}
-
-# Monthly Quick Scan allowance for free users (LIMITED_SCANS).
 FREE_MONTHLY_SCAN_LIMIT = 30
 
 
 def get_plan(user) -> str:
-    """Return ``"paid"`` or ``"free"`` for the given user."""
+    """Return 'paid' or 'free' for the given user."""
     subscription = getattr(user, "subscription", None)
     if subscription is not None and subscription.status in ACTIVE_SUBSCRIPTION_STATUSES:
         return "paid"
@@ -55,12 +47,46 @@ def has_feature(user, feature: str) -> bool:
     return feature in get_features(user)
 
 
+def get_storage_limit(user) -> int:
+    """Return the user's storage limit in GB, from their current plan's metadata."""
+    from .metadata import plan_for_user
+
+    return plan_for_user(user).storage_limit_gb
+
+
+def get_storage_usage_bytes(user) -> int:
+    """Return total stored bytes directly querying DocumentData."""
+    from documents.models import DocumentData
+    from django.db.models import Sum
+
+    result = DocumentData.objects.filter(user=user).aggregate(total=Sum("file_size"))
+    return result["total"] or 0
+
+
+def get_storage_usage_gb(user) -> float:
+    """Return total stored gigabytes (GB)."""
+    return get_storage_usage_bytes(user) / (1024 ** 3)
+
+
+def is_storage_limit_exceeded(user) -> bool:
+    """Check whether the user has exceeded their assigned storage limit in GB."""
+    limit_gb = get_storage_limit(user)
+    usage_gb = get_storage_usage_gb(user)
+    return usage_gb >= limit_gb
+
+
 def can_scan(user) -> bool:
     """Return whether the user may run another Quick Scan this month."""
     if not user.is_authenticated:
         return False
+
+    # Storage limit block applies to both free and paid plans
+    if is_storage_limit_exceeded(user):
+        return False
+
     if get_plan(user) == "paid":
         return True
+
     return get_monthly_scan_count(user) < FREE_MONTHLY_SCAN_LIMIT
 
 
@@ -79,4 +105,4 @@ def record_scan(user) -> None:
 
     period = timezone.now().strftime("%Y-%m")
     usage, _ = ScanUsage.objects.get_or_create(user=user, period=period)
-    ScanUsage.objects.filter(pk=usage.pk).update(count=usage.count + 1)
+    ScanUsage.objects.filter(pk=usage.pk).update(count=models.F("count") + 1)

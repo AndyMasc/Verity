@@ -4,7 +4,7 @@ from django.db import models
 
 
 class CustomUser(AbstractUser):
-    subscription = models.OneToOneField(
+    subscription = models.ForeignKey(
         "djstripe.Subscription",
         null=True,
         blank=True,
@@ -24,7 +24,6 @@ class CustomUser(AbstractUser):
     def has_active_subscription(self) -> bool:
         if not self.subscription:
             return False
-        # Valid Stripe active/trialing statuses
         return self.subscription.status in ["active", "trialing"]
 
 
@@ -41,7 +40,9 @@ class ScanUsage(models.Model):
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=["user", "period"], name="unique_scan_usage_period"),
+            models.UniqueConstraint(
+                fields=["user", "period"], name="unique_scan_usage_period"
+            ),
         ]
 
     def __str__(self):

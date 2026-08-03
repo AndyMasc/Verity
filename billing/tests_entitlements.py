@@ -1,9 +1,10 @@
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.utils import timezone
-from djstripe.models import Customer, Subscription
+from djstripe.models import Customer, Price, Product, Subscription, SubscriptionItem
 
-from . import entitlements, features
+from . import entitlements, features, metadata
+from .models import CustomUser
 
 
 class EntitlementTests(TestCase):
@@ -128,3 +129,83 @@ class ContextProcessorTests(TestCase):
         )
         self.user.subscription = sub
         self.user.save()
+
+
+class StorageLimitTests(TestCase):
+    def setUp(self):
+        self.user = CustomUser.objects.create_user(
+            username="storage",
+            email="storage@example.com",
+            password="password",
+        )
+
+    def _add_subscription_with_product(self, product_id):
+        customer = Customer.objects.create(
+            id="cus_storage", livemode=False, created=timezone.now()
+        )
+        product = Product.objects.create(
+            id=product_id,
+            livemode=False,
+            active=True,
+            name="Test",
+        )
+        price = Price.objects.create(
+            id=f"price_{product_id}",
+            livemode=False,
+            active=True,
+            product=product,
+            currency="usd",
+            unit_amount=1000,
+        )
+        sub = Subscription.objects.create(
+            id=f"sub_storage_{product_id}",
+            livemode=False,
+            created=timezone.now(),
+            customer=customer,
+            status="active",
+            stripe_data={},
+        )
+        SubscriptionItem.objects.create(
+            id=f"si_{product_id}",
+            livemode=False,
+            created=timezone.now(),
+            subscription=sub,
+            price=price,
+        )
+        self.user.subscription = sub
+        self.user.save()
+        return sub
+
+    def test_free_user_gets_free_storage_limit(self):
+        self.assertEqual(entitlements.get_storage_limit(self.user), 1)
+        self.assertEqual(metadata.plan_for_user(self.user).stripe_id, "free")
+
+    def test_paid_user_gets_pro_storage_limit(self):
+        self._add_subscription_with_product(metadata.PAPERTRAIL_PRO.stripe_id)
+        self.assertEqual(entitlements.get_storage_limit(self.user), 25)
+        self.assertEqual(metadata.plan_for_user(self.user).stripe_id, metadata.PAPERTRAIL_PRO.stripe_id)
+
+    def test_storage_usage_counts_document_sizes(self):
+        from documents.models import DocumentData
+
+        for size in (1024**3, 2 * 1024**3):
+            DocumentData.objects.create(
+                user=self.user,
+                filepath=f"users/{self.user.pk}/doc-{size}.pdf",
+                file_hash="x",
+                file_size=size,
+            )
+        self.assertEqual(entitlements.get_storage_usage_gb(self.user), 3.0)
+        self.assertFalse(entitlements.is_storage_limit_exceeded(self.user))
+
+    def test_storage_limit_exceeded_blocks_scans(self):
+        from documents.models import DocumentData
+
+        DocumentData.objects.create(
+            user=self.user,
+            filepath=f"users/{self.user.pk}/big.pdf",
+            file_hash="x",
+            file_size=2 * 1024**3,
+        )
+        self.assertTrue(entitlements.is_storage_limit_exceeded(self.user))
+        self.assertFalse(entitlements.can_scan(self.user))

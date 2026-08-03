@@ -236,8 +236,10 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "core.context_processors.webpush_status",  # Check user webpush status
+                # Billing template context_processors
                 "billing.context_processors.subscription_status",  # Subscription status for all templates
                 "billing.context_processors.scan_usage",  # Scan usage for all templates
+                "billing.context_processors.storage_usage",  # Storage usage for all templates
             ],
             "builtins": [
                 "django.templatetags.static",

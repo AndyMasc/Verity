@@ -101,7 +101,9 @@ class DocumentUploadService:
 
         if transition:
             self.document.status = DocumentStatus.UPLOADED
-            self.document.save(update_fields=["status"])
+            self.document.file_size = file_size
+            self.document.mime_type = mime_type or self.document.mime_type
+            self.document.save(update_fields=["status", "file_size", "mime_type"])
 
         return UploadResult(
             valid=True,
