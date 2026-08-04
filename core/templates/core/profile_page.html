@@ -131,10 +131,6 @@
                             <div class="min-w-0">
                                 {% if is_subscribed %}
                                     <span class="font-bold">{{ plan_name }}</span>
-                                    <span class="inline-flex items-center gap-1 text-xs font-medium tracking-tight text-emerald-600 dark:text-emerald-400">
-                                        <span class="size-1.5 rounded-full bg-emerald-500"></span>
-                                        Active
-                                    </span>
                                 {% else %}
                                     <span class="block text-xs text-zinc-600 dark:text-zinc-400 font-medium">{{ plan_name }}</span>
                                     <p class="text-xs text-zinc-400 dark:text-zinc-500">Upgrade to unlock premium features.</p>
@@ -165,7 +161,7 @@
                     <div class="w-full mt-5 flex flex-col gap-5 rounded-2xl border border-zinc-200/60 dark:border-zinc-800/60 bg-white/80 dark:bg-zinc-800/30 backdrop-blur-md p-4">
                         <h3 class="font-semibold text-xs text-zinc-900 dark:text-zinc-200">Export all records</h3>
                         <a href="{% url 'accounting:export_all_to_excel' %}"
-                           class="text-center bg-zinc-900 dark:bg-white text-white dark:text-black font-bold w-full py-2 text-xs px-4 rounded-2xl transition-all duration-200 hover:bg-zinc-800 dark:hover:bg-zinc-200 active:scale-[0.98]">
+                           class="text-center bg-zinc-900 dark:bg-white text-white dark:text-black w-full py-2 text-xs px-4 rounded-lg transition-all duration-200 hover:bg-zinc-800 dark:hover:bg-zinc-200 active:scale-[0.98]">
                             Download all data
                         </a>
                         <span class="text-xs text-right text-zinc-500 dark:text-zinc-500">

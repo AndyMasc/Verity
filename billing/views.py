@@ -109,7 +109,9 @@ def subscription_confirm(request: HttpRequest) -> HttpResponse:
         subscription = stripe.Subscription.retrieve(str(session.subscription))
     except stripe.error.StripeError as e:
         logger.error("Stripe API error during subscription confirmation: %s", e)
-        messages.error(request, "We encountered an error confirming your subscription. Please contact support.")
+        messages.error(
+            request, "We encountered an error confirming your subscription. Please contact support."
+        )
         return redirect("core:dashboard")
 
     djstripe_subscription = Subscription.sync_from_stripe_data(subscription)
@@ -139,3 +141,34 @@ def create_portal_session(request: HttpRequest) -> HttpResponse:
         return_url=request.build_absolute_uri(reverse("core:profile_page")),
     )
     return HttpResponseRedirect(portal_session.url)
+
+
+@login_required
+@require_POST
+@ratelimit(key="user", rate="10/m", method="POST", block=True)
+def create_checkout_session(request: HttpRequest) -> HttpResponse:
+    base_price_id = request.POST.get("base_price_id") if request.POST.get("base_price_id") else None
+    storage_price_id = (
+        request.POST.get("storage_price_id") if request.POST.get("storage_price_id") else None
+    )
+
+    if not base_price_id and not storage_price_id:
+        return HttpResponseBadRequest("Select a plan to proceed to checkout.")
+
+    line_items = []
+    if base_price_id:
+        line_items.append({"price": base_price_id, "quantity": 1})
+    if storage_price_id:
+        quantity = request.POST.get("quantity") if request.POST.get("quantity") else 0
+        line_items.append({"price": storage_price_id, "quantity": quantity})
+
+    stripe.api_key = djstripe_settings.STRIPE_SECRET_KEY
+    checkout_session = stripe.checkout.Session.create(
+        line_items=line_items,
+        mode="subscription",
+        success_url=(
+            request.build_absolute_uri(reverse("subscription_confirm")) + "?session_id={CHECKOUT_SESSION_ID}"
+        ),
+        cancel_url=request.build_absolute_uri(reverse("pricing_page")),
+    )
+    return HttpResponseRedirect(checkout_session.url)

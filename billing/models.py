@@ -4,9 +4,6 @@ import stripe
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-from djstripe.models import Subscription
-
-from . import metadata
 
 logger = logging.getLogger(__name__)
 
@@ -77,53 +74,8 @@ class CustomUser(AbstractUser):
 
         return subscription_holder
 
-    def handle_new_subscription(self, djstripe_subscription: Subscription) -> None:
-        stripe.api_key = settings.STRIPE_SECRET_KEY
-        raw_subscription = stripe.Subscription.retrieve(str(djstripe_subscription.id))
-
-        # Determine the category of the newly purchased subscription item(s)
-        new_category = None
-        for item in raw_subscription.get("items", {}).get("data", []):
-            product_id = item.get("price", {}).get("product")
-            meta = metadata.PRODUCTS.get(product_id)
-            if meta and hasattr(meta, "category"):
-                new_category = meta.category
-                break
-
-        # Check existing active subscriptions for the user and cancel duplicates in the SAME category
-        if self.customer:
-            active_subs = Subscription.objects.filter(customer=self.customer)
-            for old_sub in active_subs:
-                if getattr(old_sub, "status", None) not in ["active", "trialing"]:
-                    continue
-
-                if old_sub.id == djstripe_subscription.id:
-                    continue
-
-                for old_item in old_sub.items.select_related("price__product").all():
-                    old_product = old_item.price.product if old_item.price else None
-                    old_meta = metadata.PRODUCTS.get(old_product.id) if old_product else None
-                    old_cat = (
-                        old_meta.category if old_meta and hasattr(old_meta, "category") else None
-                    ) or (
-                        old_product.metadata.get("category")
-                        if old_product and old_product.metadata
-                        else None
-                    )
-
-                    if new_category and old_cat == new_category:
-                        try:
-                            stripe.Subscription.cancel(old_sub.id)
-                            logger.info(
-                                "Canceled previous conflicting subscription %s (category: %s) for user %s",
-                                old_sub.id,
-                                old_cat,
-                                self.pk,
-                            )
-                        except stripe.error.StripeError as e:
-                            logger.error("Failed to cancel old subscription %s: %s", old_sub.id, e)
-
-        # Attach new relations:
+    def handle_new_subscription(self, djstripe_subscription) -> None:
+        """Associate a subscription with the user."""
         self.subscription = djstripe_subscription
         self.customer = djstripe_subscription.customer
         self.save()
