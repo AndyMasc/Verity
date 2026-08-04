@@ -18,12 +18,15 @@ from plaid_integration.views import (
 )
 from records.models import Record
 
+from billing.tests_helpers import give_pro_subscription
+
 
 class PlaidViewsTest(TestCase):
     """Tests for Plaid integration API views."""
 
     def setUp(self):
         self.user = User.objects.create_user(username="testuser", password="pass")
+        give_pro_subscription(self.user)
         self.client.login(username="testuser", password="pass")
         self.plaid_item = PlaidItem.objects.create(
             user=self.user,

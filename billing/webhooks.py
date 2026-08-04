@@ -61,9 +61,6 @@ def report_webhook_processing_error(**kwargs: Any) -> None:
     )
 
 
-ACTIVE_SUBSCRIPTION_STATUSES = frozenset({"active", "trialing"})
-
-
 @djstripe_receiver("customer.subscription.deleted")
 def handle_subscription_deleted(_sender: Any, **kwargs: Any) -> None:
     """Clears the user's subscription relation when cancelled in Stripe."""

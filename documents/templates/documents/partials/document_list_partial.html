@@ -1,56 +1,51 @@
-<div class="space-y-2.5">
+<div class="divide-y divide-zinc-200/80 dark:divide-zinc-800">
     {% for document in documents %}
-        <div class="group relative rounded-xl border border-zinc-200/60 dark:border-zinc-800/60 bg-white/60 dark:bg-zinc-900/40 hover:bg-white dark:hover:bg-zinc-900/80 hover:border-zinc-300 dark:hover:border-zinc-700/80 hover:shadow-lg hover:shadow-zinc-900/[0.02] dark:hover:shadow-black/30 transition-all duration-200 overflow-hidden">
-            <div class="flex items-center justify-between gap-3 px-3.5 py-3 sm:px-4 sm:py-3.5">
-                <!-- Left Content Area -->
+        <div class="group relative py-3 sm:py-4 bg-transparent hover:bg-zinc-50/80 dark:hover:bg-zinc-900/90 transition-all duration-200 -mx-6 px-6">
+            <div class="flex items-center justify-between gap-4">
                 <a href="{% url 'documents:view_document' document.pk %}"
                    class="flex-1 min-w-0 flex items-center gap-3">
-                    <!-- File Type / Status Badge -->
                     <div class="flex items-center shrink-0">
                         {% if document.did_ocr %}
-                            <span class="inline-flex items-center justify-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 uppercase tracking-wider shadow-xs">
+                            <span class="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg text-[10px] font-bold bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 border border-zinc-900 dark:border-zinc-100 uppercase tracking-wider shrink-0 text-center shadow-xs">
                                 OCR
                             </span>
                         {% else %}
-                            <span class="inline-flex items-center justify-center px-2 py-0.5 rounded-md text-[10px] font-medium bg-zinc-100 text-zinc-600 dark:bg-zinc-800/80 dark:text-zinc-400 border border-zinc-200/80 dark:border-zinc-700/50 uppercase tracking-wider">
+                            <span class="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg text-[10px] font-bold bg-zinc-100 text-zinc-600 dark:bg-zinc-800/80 dark:text-zinc-400 border border-zinc-200/80 dark:border-zinc-700/50 uppercase tracking-wider shrink-0 text-center">
                                 File
                             </span>
                         {% endif %}
                     </div>
-                    <!-- Title & Metadata Line -->
-                    <div class="min-w-0 flex items-center gap-2.5 flex-1">
-                        <span class="font-medium text-zinc-900 dark:text-zinc-100 text-[13px] sm:text-sm truncate group-hover:text-zinc-950 dark:group-hover:text-white transition-colors tracking-tight">
+                    <div class="min-w-0 flex flex-col sm:flex-row sm:items-center sm:gap-3 flex-1">
+                        <span class="font-medium text-zinc-950 dark:text-zinc-50 text-sm truncate group-hover:text-black dark:group-hover:text-white transition-colors">
                             {{ document.title }}
                         </span>
-                        {% if document.associated_record %}
-                            <span class="hidden md:inline text-zinc-300 dark:text-zinc-700 text-xs">/</span>
-                            <span class="hidden md:inline-flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400 truncate max-w-[180px] font-normal">
-                                <svg class="w-3 h-3 opacity-40 shrink-0"
-                                     fill="none"
-                                     viewBox="0 0 24 24"
-                                     stroke-width="2"
-                                     stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-                                </svg>
-                                {{ document.associated_record.title }}
-                            </span>
-                        {% endif %}
-                        <span class="text-zinc-300 dark:text-zinc-700 text-[10px] hidden sm:inline">·</span>
-                        <div class="hidden sm:flex items-center gap-2 text-xs text-zinc-400 dark:text-zinc-500 shrink-0">
-                            <span class="tabular-nums">{{ document.date_added|date:"M d, Y" }}</span>
-                            <span class=" text-[10px] uppercase px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800/50 text-zinc-500 dark:text-zinc-400 border border-zinc-200/50 dark:border-zinc-800">
+                        <div class="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-zinc-600 dark:text-zinc-400 text-xs">
+                            {% if document.associated_record %}
+                                <span class="inline-flex items-center gap-1 truncate max-w-[140px] sm:max-w-[180px]">
+                                    <svg class="w-3 h-3 opacity-70 shrink-0"
+                                         fill="none"
+                                         viewBox="0 0 24 24"
+                                         stroke-width="1.8"
+                                         stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                                    </svg>
+                                    {{ document.associated_record.title }}
+                                </span>
+                            {% endif %}
+                            {% if document.associated_record %}<span class="text-zinc-400 dark:text-zinc-600 text-[10px]">·</span>{% endif %}
+                            <span class="tabular-nums text-zinc-500 dark:text-zinc-400 font-medium">{{ document.date_added|date:"M d, Y" }}</span>
+                            <span class="text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200/60 dark:border-zinc-700/60">
                                 {{ document.filepath|slice:"-4:"|cut:"." }}
                             </span>
                         </div>
                     </div>
                 </a>
-                <!-- Right Action Bar (Linear-style hover reveal) -->
-                <div class="flex items-center gap-1 shrink-0 relative z-20 sm:opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-150">
+                <div class="flex items-center gap-1.5 shrink-0 relative z-20 sm:opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-150">
                     {% if pending_ocr_view %}
                         <a href="{% url 'records:add_record' document.id %}"
-                           class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg transition-all shadow-xs">
+                           class="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium text-white bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white rounded-xl transition-all shadow-xs active:scale-[0.98]">
                             Continue
-                            <svg class="w-3 h-3 text-zinc-400"
+                            <svg class="w-3 h-3 opacity-80"
                                  fill="none"
                                  viewBox="0 0 24 24"
                                  stroke-width="2.5"
@@ -65,14 +60,14 @@
                           class="inline">
                         {% csrf_token %}
                         <button type="submit"
-                                class="p-1.5 rounded-lg text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-all cursor-pointer"
+                                class="p-1.5 rounded-xl text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-all cursor-pointer"
                                 title="Delete document">
-                            <svg class="w-3.5 h-3.5"
+                            <svg class="w-4 h-4"
                                  fill="none"
                                  viewBox="0 0 24 24"
                                  stroke-width="2"
                                  stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
                             </svg>
                         </button>
                     </form>
@@ -80,19 +75,19 @@
             </div>
         </div>
     {% empty %}
-        <div class="flex flex-col items-center justify-center text-center py-16 px-4 rounded-xl border border-dashed border-zinc-200 dark:border-zinc-800/80 bg-zinc-50/50 dark:bg-zinc-900/20">
-            <div class="p-2.5 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl mb-2 text-zinc-400 shadow-xs">
-                <svg class="w-4 h-4"
+        <div class="flex flex-col items-center justify-center text-center py-16 px-4">
+            <div class="p-3 bg-zinc-100 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/60 rounded-2xl mb-3 text-zinc-400 shadow-xs">
+                <svg class="w-5 h-5"
                      fill="none"
                      viewBox="0 0 24 24"
-                     stroke-width="2"
+                     stroke-width="1.8"
                      stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.604 10.604z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5A3.375 3.375 0 0 0 10.125 2.25H8.25m2.25 0H5.625A2.25 2.25 0 0 0 3.375 4.5v15a2.25 2.25 0 0 0 2.25 2.25h13.5a2.25 2.25 0 0 0 2.25-2.25V11.25s-2.25 0-2.25-2.25" />
                 </svg>
             </div>
-            <p class="text-xs font-medium text-zinc-600 dark:text-zinc-400">No documents found</p>
-            <p class="text-[11px] text-zinc-400 dark:text-zinc-500 mt-0.5">
-                Adjust your search or filter parameters to find what you're looking for.
+            <p class="text-xs font-semibold text-zinc-800 dark:text-zinc-200">No documents found</p>
+            <p class="text-[11px] text-zinc-400 dark:text-zinc-500 mt-1 max-w-xs">
+                Adjust your search or filter parameters to locate your documents.
             </p>
         </div>
     {% endfor %}

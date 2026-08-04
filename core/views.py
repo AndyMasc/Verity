@@ -23,14 +23,14 @@ from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 from django.views.generic import ListView, TemplateView, UpdateView
 from django_ratelimit.decorators import ratelimit
-from djstripe.models import Product
 from webpush.models import SubscriptionInfo
 from webpush.views import save_info
 
-from billing import metadata
+from billing.views import pricing_context
 
 from .forms import UpdateUserSettingsForm
 from .models import Notification, UserSettings
@@ -44,25 +44,11 @@ def index(request: HttpRequest) -> HttpResponse:
     if request.user.is_authenticated:
         return redirect("core:dashboard")
 
-    products = Product.objects.filter(active=True).prefetch_related("prices").all()
-
-    products = list(Product.objects.filter(active=True).prefetch_related("prices"))
-    for product in products:
-        meta = metadata.PRODUCTS.get(product.id)
-        product.features_list = meta.features if meta else []
-        product.is_default = meta.is_default if meta else False
-
-    free_plan = metadata.PAPERTRAIL_FREE
-    free_plan.features_list = free_plan.features
-    free_plan.prices = []
-    free_plan.is_default = False
-    products.insert(0, free_plan)
-
     context = {
         "stripe_public_key": settings.STRIPE_PRICING_TABLE_KEY,
         "stripe_pricing_table_id": settings.STRIPE_PRICING_TABLE_ID,
-        "products": products,
     }
+    context.update(pricing_context(request))
 
     return render(request, "core/landing_page.html", context)
 
@@ -113,6 +99,7 @@ def health_check(request: HttpRequest) -> JsonResponse:  # noqa: ARG001
 
 
 @require_POST
+@csrf_exempt
 def safe_webpush_save_info(request: HttpRequest) -> HttpResponse:
     """Deduplicate webpush subscriptions before delegating to django-webpush.
 

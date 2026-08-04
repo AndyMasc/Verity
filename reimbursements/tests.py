@@ -9,6 +9,7 @@ from django.test import RequestFactory, TestCase
 from django.urls import reverse
 from django.utils import timezone
 
+from billing.tests_helpers import give_pro_subscription
 from records.models import AuditLog, Record
 from reimbursements.models import PackagePayment, ReimbursementPackage, StripeAccount
 from reimbursements.views import validate_recipient_email
@@ -255,6 +256,7 @@ class CreatePackageFromRecordsViewTest(TestCase):
     def setUp(self):
         self.user = _user()
         _stripe_account(self.user)
+        give_pro_subscription(self.user)
         self.recipient = _user("recipient@test.com")
         self.client.force_login(self.user)
         self.url = reverse("reimbursements:create-package")

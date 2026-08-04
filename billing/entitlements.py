@@ -26,7 +26,6 @@ PAID_ONLY_FEATURES = frozenset(
 
 PAID_FEATURES = FREE_FEATURES | PAID_ONLY_FEATURES
 
-ACTIVE_SUBSCRIPTION_STATUSES = {"active", "trialing"}
 FREE_MONTHLY_SCAN_LIMIT = features.FREE_MONTHLY_SCAN_LIMIT
 
 
@@ -75,8 +74,8 @@ def get_storage_limit(user) -> int:
 
 
 def get_storage_usage_bytes(user) -> int:
-    """Return total stored bytes directly querying DocumentData."""
-    result = DocumentData.objects.filter(user=user).aggregate(total=Sum("file_size"))
+    """Return total stored bytes, counting only non-trashed documents."""
+    result = DocumentData.objects.active().filter(user=user).aggregate(total=Sum("file_size"))
     return result["total"] or 0
 
 
@@ -122,5 +121,10 @@ def record_scan(user) -> None:
     from .models import ScanUsage
 
     period = timezone.now().strftime("%Y-%m")
-    usage, _ = ScanUsage.objects.get_or_create(user=user, period=period)
-    ScanUsage.objects.filter(pk=usage.pk).update(count=models.F("count") + 1)
+    while True:
+        usage, _ = ScanUsage.objects.get_or_create(user=user, period=period)
+        # Guard against the row being deleted between get_or_create and the
+        # atomic increment (e.g. by a monthly cleanup job).
+        updated = ScanUsage.objects.filter(pk=usage.pk).update(count=models.F("count") + 1)
+        if updated:
+            return

@@ -1,13 +1,11 @@
 {% extends "base.html" %}
 {% load widget_tweaks %}
 {% block content %}
-    <div class="max-w-7xl mx-auto px-4 py-8 space-y-6">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         <header class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mt-5">
             <div>
                 <h1 class="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 capitalize">Documents</h1>
-                <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-                    Centralized view for all your uploaded files and attachments.
-                </p>
+                <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">Centralized view for all your uploaded files and attachments.</p>
             </div>
             <a href="{% url 'documents:upload_document' %}"
                class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-3.5 py-2 text-xs font-medium text-white bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white rounded-2xl transition-all duration-200 shadow-xs active:scale-[0.98] cursor-pointer">
@@ -39,7 +37,7 @@
                        name="search"
                        value="{{ request.GET.search|default:'' }}"
                        hx-get="{% url 'documents:document_list_view' %}"
-                       hx-trigger="input changed delay:200ms, search"
+                       hx-trigger="input changed delay:300ms, search"
                        hx-target="#query-results-container"
                        hx-include="#filter-form"
                        hx-indicator=".htmx-indicator">
@@ -53,9 +51,9 @@
                 <div class="flex items-center gap-2">
                     {% for field in filter.form %}
                         <div class="relative">
-                            <label class="sr-only">{{ field.label }}</label>
+                            <label for="{{ field.id_for_label }}" class="sr-only">{{ field.label }}</label>
                             <div class="bg-white dark:bg-zinc-950 border border-zinc-200/50 dark:border-zinc-800/50 rounded-xl px-2.5 py-1.5 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-700/60 transition-all duration-200 flex items-center">
-                                {% render_field field class="outline-none bg-transparent cursor-pointer text-zinc-700 dark:text-zinc-300 pr-1 text-xs font-medium focus:outline-none focus:ring-0" %}
+                                {% render_field field class="appearance-none outline-none bg-transparent cursor-pointer text-zinc-700 dark:text-zinc-300 pr-4 text-xs font-medium border-none p-0 focus:ring-0" %}
                             </div>
                         </div>
                     {% endfor %}
@@ -73,7 +71,7 @@
               hx-target="#query-results-container"
               hx-include="#filter-form, #search"
               hx-indicator=".htmx-indicator">
-            <div class="htmx-indicator hidden htmx-request:flex absolute inset-0 bg-white/40 dark:bg-zinc-950/40 backdrop-blur-[1px] z-10 items-center justify-center rounded-xl">
+            <div class="htmx-indicator absolute inset-0 bg-white/40 dark:bg-zinc-950/40 backdrop-blur-[1px] z-10 hidden items-center justify-center rounded-xl">
                 <div class="animate-pulse text-xs font-medium text-zinc-500 dark:text-zinc-400 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 px-3 py-1.5 rounded-xl shadow-xs">
                     Updating...
                 </div>

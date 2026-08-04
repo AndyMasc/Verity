@@ -4,6 +4,9 @@ import stripe
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from djstripe.models import Subscription
+
+from . import metadata, services
 
 logger = logging.getLogger(__name__)
 
@@ -27,24 +30,19 @@ class CustomUser(AbstractUser):
 
     @property
     def has_active_subscription(self) -> bool:
-        if not self.subscription:
-            return False
-        return self.subscription.status in ["active", "trialing"]
+        """True if the user has any active or trialing subscription."""
+        return bool(metadata._active_subscriptions(self))
 
     def get_verified_session_holder(self, session: stripe.checkout.Session) -> CustomUser | None:
         """Validates session ownership against the logged-in user or client reference ID."""
+        customer_email = (getattr(session, "customer_details", None) or {}).get("email")
 
-        customer_email = (getattr(session, "customer_details", None) or {}).get(
-            "email"
-        )  # Get customer email from session
         session_customer_matches = (
             (session.customer)
             and (self.customer is not None)
-            and (self.customer.id == session.customer)  # Session customer matches logged-in user
+            and (self.customer.id == session.customer)
         )
-        email_matches = (
-            customer_email and customer_email == self.email
-        )  # Email matches logged-in user
+        email_matches = customer_email and customer_email == self.email
 
         if session_customer_matches or email_matches:
             return self
@@ -74,11 +72,64 @@ class CustomUser(AbstractUser):
 
         return subscription_holder
 
-    def handle_new_subscription(self, djstripe_subscription) -> None:
-        """Associate a subscription with the user."""
-        self.subscription = djstripe_subscription
-        self.customer = djstripe_subscription.customer
-        self.save()
+    def handle_new_subscription(self, djstripe_subscription: Subscription) -> None:
+        """Processes an incoming checkout, updating the primary subscription and
+        canceling overlapping category subscriptions.
+
+        The base-plan subscription is kept as ``self.subscription`` so the
+        dashboard's subscribed status tracks the user's actual plan, while
+        storage add-ons remain available via the customer's other subscriptions.
+        """
+        if not self.customer:
+            self.customer = djstripe_subscription.customer
+            self.save(update_fields=["customer"])
+
+        # Get categories present in the newly purchased subscription
+        raw_subscription = services.retrieve_subscription(djstripe_subscription.id)
+        incoming_categories = set()
+
+        for item in raw_subscription.get("items", {}).get("data", []):
+            product_id = item.get("price", {}).get("product")
+            category = metadata.category_for_product(product_id)
+            if category:
+                incoming_categories.add(category)
+
+        if "base_plan" in incoming_categories:
+            self.subscription = djstripe_subscription
+            self.save()
+
+        # Look at all other active subscriptions for this customer
+        active_subs = Subscription.objects.filter(customer=self.customer)
+        for old_sub in active_subs:
+            sub_status = (old_sub.stripe_data or {}).get("status")
+            if sub_status not in ["active", "trialing"]:
+                continue
+
+            if old_sub.id == djstripe_subscription.id:
+                continue  # Skip the one the user just bought
+
+            # Check items inside the old subscription
+            for old_item in old_sub.items.select_related("price__product").all():
+                old_product = old_item.price.product if old_item.price else None
+                if not old_product:
+                    continue
+
+                old_cat = metadata.category_for_product(old_product.id)
+
+                # If an old subscription contains an item from the exact same category, cancel it
+                if old_cat in incoming_categories:
+                    try:
+                        services.cancel_subscription(old_sub.id)
+                        logger.info(
+                            "Replaced overlapping category plan %s with new subscription %s",
+                            old_sub.id,
+                            djstripe_subscription.id,
+                        )
+                    except stripe.error.StripeError as e:
+                        logger.error(
+                            "Failed to clear old conflicting subscription %s: %s", old_sub.id, e
+                        )
+                    break
 
 
 class ScanUsage(models.Model):
@@ -94,7 +145,7 @@ class ScanUsage(models.Model):
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=["user", "period"], name="unique_scan_usage_period"),
+            models.UniqueConstraint(fields=["user", "period"], name="unique_scan_usage_period")
         ]
 
     def __str__(self):

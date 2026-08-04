@@ -19,11 +19,9 @@ def subscription_status(request: HttpRequest) -> dict[str, Any]:
             "features": list(entitlements.get_features(user)),
         }
 
-    subscription = getattr(user, "subscription", None)
-    is_subscribed = (
-        subscription is not None
-        and subscription.status in entitlements.ACTIVE_SUBSCRIPTION_STATUSES
-    )
+    active_subscriptions = metadata._active_subscriptions(user)
+    is_subscribed = bool(active_subscriptions)
+    primary_subscription = active_subscriptions[0] if active_subscriptions else None
 
     active_products = metadata.active_products_for_user(user)
     plan_name = " + ".join(product.name for product in active_products) or (
@@ -31,10 +29,10 @@ def subscription_status(request: HttpRequest) -> dict[str, Any]:
     )
 
     return {
-        "subscription": subscription if is_subscribed else None,
+        "subscription": primary_subscription if is_subscribed else None,
         "is_subscribed": is_subscribed,
         "subscription_cancel_at_period_end": (
-            subscription.cancel_at_period_end if subscription is not None else False
+            primary_subscription.cancel_at_period_end if primary_subscription is not None else False
         ),
         "plan": entitlements.get_plan(user),
         "plan_name": plan_name,

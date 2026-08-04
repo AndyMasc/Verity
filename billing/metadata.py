@@ -1,8 +1,12 @@
 from dataclasses import dataclass
 
+from djstripe.models import Customer
+
 from . import features
 
 ACTIVE_SUBSCRIPTION_STATUSES = frozenset({"active", "trialing"})
+
+_NOT_CACHED = object()
 
 
 @dataclass
@@ -19,7 +23,6 @@ class ProductMetadata:
     name: str
     features: list[str]
     description: str = ""
-    is_default: bool = False
     category: str = "base_plan"
     storage_limit_gb: int = 0
     # Monthly Quick Scan allowance; None means unlimited. Storage add-ons leave
@@ -46,7 +49,6 @@ PAPERTRAIL_PRO = ProductMetadata(
     stripe_id="prod_V0BRybbfIkmRH4",
     name="Papertrail Pro",
     description="For small businesses and teams",
-    is_default=True,
     category="base_plan",
     features=[
         features.INCLUDES_ALL_FREE,
@@ -59,10 +61,9 @@ PAPERTRAIL_PRO = ProductMetadata(
 )
 
 STORAGE_UPGRADE_25 = ProductMetadata(
-    stripe_id="prod_V0BMnncJMOVWoW",
+    stripe_id="prod_V0dPTSMZjCZNuk",
     name="25GB Storage Upgrade",
     description="",
-    is_default=False,
     category="storage_plan",
     features=[
         features.STORAGE_UPGRADE_25,
@@ -70,11 +71,31 @@ STORAGE_UPGRADE_25 = ProductMetadata(
     storage_limit_gb=features.STORAGE_ADDITIONAL_GB,
 )
 
+STORAGE_UPGRADE_100 = ProductMetadata(
+    stripe_id="prod_V0c9jwv1oVi9Wl",
+    name="100GB Storage Upgrade",
+    description="",
+    category="storage_plan",
+    features=[
+        features.STORAGE_UPGRADE_100,
+    ],
+    storage_limit_gb=features.STORAGE_ADDITIONAL_GB_100,
+)
+
 PRODUCTS = {
     PAPERTRAIL_PRO.stripe_id: PAPERTRAIL_PRO,
     PAPERTRAIL_FREE.stripe_id: PAPERTRAIL_FREE,
     STORAGE_UPGRADE_25.stripe_id: STORAGE_UPGRADE_25,
+    STORAGE_UPGRADE_100.stripe_id: STORAGE_UPGRADE_100,
 }
+
+
+def category_for_product(product_id: str | None) -> str | None:
+    """Return the pricing category for a Stripe product ID, or None if unknown."""
+    if product_id is None:
+        return None
+    meta = PRODUCTS.get(product_id)
+    return meta.category if meta is not None else None
 
 
 def _active_subscriptions(user):
@@ -82,66 +103,92 @@ def _active_subscriptions(user):
 
     djstripe stores the subscription payload in ``stripe_data`` and exposes
     ``status`` as a derived property, so status is filtered in Python.
+
+    Subscriptions are collected from both the user's ``customer`` FK and any
+    Stripe Customer whose ``subscriber`` points at this user. The two can
+    diverge when a legacy customer (created without ``subscriber``) predates
+    ``Customer.get_or_create``: a later checkout then creates a fresh customer
+    and its subscriptions would otherwise be invisible on the dashboard.
+
+    The result is memoized on the user instance so a single request (which
+    shares one ``request.user`` object across context processors and views)
+    runs the queries at most once.
     """
+    cached = getattr(user, "_pt_active_subscriptions", _NOT_CACHED)
+    if cached is not _NOT_CACHED:
+        return cached
+    if not getattr(user, "is_authenticated", False):
+        return []
+
     subscriptions = []
     customer = getattr(user, "customer", None)
     if customer is not None:
-        subscriptions.extend(customer.subscriptions.all())
+        subscriptions.extend(customer.subscriptions.prefetch_related("items").all())
+
+    linked_customers = Customer.objects.filter(subscriber=user).exclude(
+        pk=customer.pk if customer is not None else None
+    )
+    for linked in linked_customers:
+        subscriptions.extend(linked.subscriptions.prefetch_related("items").all())
+
     direct = getattr(user, "subscription", None)
     if direct is not None and not any(s.pk == direct.pk for s in subscriptions):
         subscriptions.append(direct)
-    return [
+    active = [
         sub for sub in subscriptions if getattr(sub, "status", None) in ACTIVE_SUBSCRIPTION_STATUSES
     ]
+    user._pt_active_subscriptions = active
+    return active
 
 
-def _product_metas(subscriptions):
-    """Yield ProductMetadata for each item across the given subscriptions."""
-    for subscription in subscriptions:
-        items = subscription.items.select_related("price", "price__product").all()
-        for item in items:
-            product_id = item.price.product_id if item.price is not None else None
-            meta = PRODUCTS.get(product_id)
-            if meta is not None:
-                yield meta
+def _metas_for_subscription(subscription):
+    """Yield ProductMetadata for each item on a single subscription."""
+    items = subscription.items.select_related("price", "price__product").all()
+    for item in items:
+        product_id = item.price.product_id if item.price is not None else None
+        meta = PRODUCTS.get(product_id)
+        if meta is not None:
+            yield meta
 
 
-def plan_for_subscription(subscription) -> ProductMetadata:
-    """Return the base-plan metadata for a single subscription, or Free if none."""
-    if subscription is not None:
-        for meta in _product_metas([subscription]):
-            if meta.category == "base_plan":
-                return meta
-    return PAPERTRAIL_FREE
+def _products_by_category(user) -> dict[str, ProductMetadata]:
+    """Return at most one ProductMetadata per category for the user.
+
+    Exactly one plan per category is allowed. When several active
+    subscriptions cover the same category (an old plan whose Stripe
+    cancellation hasn't landed yet, a webhook-synced duplicate, ...), the
+    most recently created subscription wins so a new purchase *replaces*
+    rather than stacks with the previous one.
+    """
+    entries = []
+    for subscription in _active_subscriptions(user):
+        for meta in _metas_for_subscription(subscription):
+            entries.append((subscription.created, subscription.pk, meta))
+    winners: dict[str, ProductMetadata] = {}
+    for _created, _pk, meta in sorted(entries, key=lambda e: (e[0], e[1]), reverse=True):
+        winners.setdefault(meta.category, meta)
+    return winners
 
 
 def plan_for_user(user) -> ProductMetadata:
     """Return the user's base plan (drives plan features), or Free if none."""
-    for meta in _product_metas(_active_subscriptions(user)):
-        if meta.category == "base_plan":
-            return meta
-    return PAPERTRAIL_FREE
+    return _products_by_category(user).get("base_plan", PAPERTRAIL_FREE)
 
 
 def storage_addons_for_user(user) -> list[ProductMetadata]:
-    """Return the storage add-on products active for the user (each adds storage)."""
-    return [
-        meta
-        for meta in _product_metas(_active_subscriptions(user))
-        if meta.category == "storage_plan"
-    ]
+    """Return the user's storage add-on product (at most one), or an empty list."""
+    addon = _products_by_category(user).get("storage_plan")
+    return [addon] if addon is not None else []
+
+
+CATEGORY_ORDER = {"base_plan": 0, "storage_plan": 1}
 
 
 def active_products_for_user(user) -> list[ProductMetadata]:
     """Return metadata for every product the user is actively subscribed to.
 
-    Includes the base plan and any storage add-ons, deduplicated by product,
-    so callers can render plan names without hardcoding anything.
+    At most one product per category, base plan first, so callers can render
+    plan names without hardcoding anything.
     """
-    result: list[ProductMetadata] = []
-    seen: set[str] = set()
-    for meta in _product_metas(_active_subscriptions(user)):
-        if meta.stripe_id not in seen:
-            seen.add(meta.stripe_id)
-            result.append(meta)
-    return result
+    products = list(_products_by_category(user).values())
+    return sorted(products, key=lambda p: (CATEGORY_ORDER.get(p.category, 99), p.name))

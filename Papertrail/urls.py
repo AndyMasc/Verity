@@ -49,15 +49,17 @@ urlpatterns = [
     # Stripe webhook endpoint (djstripe). The Stripe dashboard URL must include
     # the djstripe_uuid of a synced WebhookEndpoint, e.g. /stripe/webhook/<uuid>/
     path("stripe/", include("djstripe.urls", namespace="djstripe")),
-    # Service worker must be served from the origin root so its scope covers
-    # the whole site (webpush's default /webpush/ path limits scope)
-    path("service-worker.js", ServiceWorkerView.as_view(), name="service_worker"),
-    path("serviceworker.js", ServiceWorkerView.as_view()),
     # Webpush
     path(
         "webpush/save_information", safe_webpush_save_info, name="save_webpush_info"
     ),  # Custom URL to catch webpush POST before sent to fix webpush MultipleObjectsReturned error.
     path("webpush/", include("webpush.urls")),
+    # Service worker must be served from the origin root so its scope covers
+    # the whole site (webpush's default /webpush/ path limits scope).
+    # Registered AFTER the webpush include so reverse('service_worker')
+    # resolves to the root path (Django reverse keeps the last duplicate name).
+    path("service-worker.js", ServiceWorkerView.as_view(), name="service_worker"),
+    path("serviceworker.js", ServiceWorkerView.as_view()),
     path("plaid/", include("plaid_integration.urls")),
 ]
 

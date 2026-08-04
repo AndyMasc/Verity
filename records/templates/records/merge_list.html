@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 {% load static %}
 {% block content %}
-    <div class="max-w-7xl mx-auto py-8 space-y-6">
-        <header class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mt-5">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        <header class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mt-2">
             <div>
                 <h1 class="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Merged Records</h1>
                 <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">Receipts matched to bank transactions.</p>
@@ -10,20 +10,21 @@
         </header>
         <section class="space-y-3" aria-label="Merge Filters">
             <div class="relative w-full">
-                <div class="absolute inset-y-0 left-4 flex items-center pointer-events-none text-zinc-400 dark:text-zinc-600">
+                <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none text-zinc-400 dark:text-zinc-500">
                     <svg class="w-4 h-4"
                          fill="none"
                          viewBox="0 0 24 24"
-                         stroke-width="2.2"
+                         stroke-width="2"
                          stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.604 10.604z" />
                     </svg>
                 </div>
-                <input class="w-full bg-white dark:bg-zinc-950 border border-zinc-200/50 dark:border-zinc-800/50 py-3 pl-10 pr-4 text-xs rounded-xl dark:text-zinc-100 text-zinc-900 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-600 transition-all duration-200"
+                <input class="w-full bg-zinc-100/70 dark:bg-zinc-800/40 py-2.5 pl-9 pr-4 text-xs rounded-xl dark:text-zinc-100 text-zinc-900 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:bg-zinc-100 dark:focus:bg-zinc-800/80 transition-all duration-200"
                        placeholder="Search merged records..."
                        id="search"
                        type="search"
                        name="search"
+                       value="{{ request.GET.search|default:'' }}"
                        hx-get="{% url 'records:merge_list' %}"
                        hx-trigger="input changed delay:300ms, keyup[key=='Enter']"
                        hx-target="#merge-list-container"
@@ -31,9 +32,9 @@
             </div>
         </section>
         <main id="merge-list-container"
-              class="relative min-h-0 w-full min-w-0 mt-10 bg-white/80 dark:bg-zinc-900/30 py-4 px-6 rounded-2xl shadow-sm dark:shadow-none ring-1 ring-inset ring-black/[0.04] dark:ring-white/[0.04]">
-            <div class="htmx-indicator absolute inset-0 bg-white/40 dark:bg-zinc-950/40 backdrop-blur-[1px] z-10 hidden items-center justify-center rounded-xl pointer-events-none">
-                <div class="animate-pulse text-xs font-medium text-zinc-500 dark:text-zinc-400 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 px-3 py-1.5 rounded-xl shadow-xs">
+              class="relative min-h-0 w-full min-w-0 mt-6">
+            <div class="htmx-indicator absolute inset-0 bg-white/50 dark:bg-zinc-950/50 backdrop-blur-[1px] z-10 hidden items-center justify-center rounded-2xl pointer-events-none">
+                <div class="animate-pulse text-xs font-medium text-zinc-500 dark:text-zinc-400 bg-white dark:bg-zinc-900 px-3 py-1.5 rounded-xl shadow-xs">
                     Updating...
                 </div>
             </div>

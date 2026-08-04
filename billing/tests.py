@@ -4,7 +4,9 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
-from djstripe.models import Customer, Subscription
+from djstripe.models import Customer, Price, Product, Subscription, SubscriptionItem
+
+from . import metadata
 
 
 class FakeSession:
@@ -43,6 +45,26 @@ class SubscriptionConfirmTests(TestCase):
             customer=self.customer,
             stripe_data={"status": "active"},
         )
+        pro_product = Product.objects.create(
+            id=metadata.PAPERTRAIL_PRO.stripe_id,
+            livemode=False,
+            active=True,
+            name="Papertrail Pro",
+        )
+        pro_price = Price.objects.create(
+            id="price_pro",
+            livemode=False,
+            active=True,
+            product=pro_product,
+            currency="usd",
+        )
+        SubscriptionItem.objects.create(
+            id="si_pro",
+            livemode=False,
+            created=timezone.now(),
+            subscription=self.subscription,
+            price=pro_price,
+        )
         self.user = get_user_model().objects.create_user(
             username="andy",
             email="andy@example.com",
@@ -63,7 +85,10 @@ class SubscriptionConfirmTests(TestCase):
             ),
             mock.patch(
                 "billing.views.stripe.Subscription.retrieve",
-                return_value={"id": "sub_test"},
+                return_value={
+                    "id": "sub_test",
+                    "items": {"data": [{"price": {"product": metadata.PAPERTRAIL_PRO.stripe_id}}]},
+                },
             ),
             mock.patch(
                 "billing.views.Subscription.sync_from_stripe_data",
