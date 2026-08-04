@@ -1,16 +1,13 @@
 import logging
-from decimal import Decimal
 
 import stripe
-from django.conf import settings
 from django.db import transaction
 
-from core.currencies import from_stripe_amount
 from records.models import AuditLog
 
+from . import services
 from .models import PackagePayment, ProcessedStripeEvent, StripeAccount
 
-stripe.api_key = settings.STRIPE_SECRET_KEY
 logger = logging.getLogger(__name__)
 
 
@@ -21,49 +18,6 @@ def _as_dict(obj):
     if hasattr(obj, "to_dict_recursive"):
         return obj.to_dict_recursive()
     return dict(obj)
-
-
-def _session_amount_matches(session: dict, payment: PackagePayment) -> bool:
-    """Cross-check the settled checkout amount against the expected package total.
-
-    Prevents a session for a different/edited amount from being treated as a
-    completed payment. A small tolerance absorbs the rounding difference
-    between Stripe's per-line-item cent rounding and the stored converted
-    total.
-    """
-    session_currency = (session.get("currency") or payment.payer_currency).lower()
-    amount_total = session.get("amount_total")
-    if session_currency != payment.payer_currency.lower():
-        logger.error(
-            "Package %s: session %s currency mismatch (%s vs %s) — refusing to mark as paid",
-            payment.package_id,
-            session.get("id"),
-            session_currency,
-            payment.payer_currency,
-        )
-        return False
-    if amount_total is None:
-        logger.error(
-            "Package %s: session %s has no amount_total — refusing to mark as paid",
-            payment.package_id,
-            session.get("id"),
-        )
-        return False
-    settled = from_stripe_amount(amount_total, session_currency)
-    expected = payment.amount_paid
-    tolerance = max(Decimal("0.02"), expected * Decimal("0.01"))
-    if abs(settled - expected) > tolerance:
-        logger.error(
-            "Package %s: session %s settled amount %s %s does not match expected %s %s — refusing to mark as paid",
-            payment.package_id,
-            session.get("id"),
-            settled,
-            session_currency,
-            expected,
-            payment.payer_currency,
-        )
-        return False
-    return True
 
 
 def process_stripe_event(event):
@@ -107,7 +61,7 @@ def process_stripe_event(event):
                 # session is valid but our DB row hasn't appeared yet (race
                 # condition), re-raise so the task queue retries.
                 try:
-                    stripe.checkout.Session.retrieve(session["id"])
+                    services.retrieve_checkout_session(session["id"])
                 except stripe.error.InvalidRequestError:
                     logger.error(
                         "PackagePayment not found and session %s is unknown to Stripe — skipping",
@@ -122,7 +76,7 @@ def process_stripe_event(event):
                 )
                 raise
 
-            if not _session_amount_matches(session, payment):
+            if not payment.amount_matches(session):
                 logger.error(
                     "Package %s: session %s amount check failed — skipping mark-as-paid",
                     package_uuid,
@@ -130,12 +84,7 @@ def process_stripe_event(event):
                 )
                 return
 
-            payment.is_completed = True
-            payment_intent_id = session.get("payment_intent")
-            if payment_intent_id:
-                payment.stripe_payment_intent_id = payment_intent_id
-            payment.save(update_fields=["is_completed", "stripe_payment_intent_id"])
-
+            payment.complete_from_session(session)
             package = payment.package
             payer_currency = getattr(payment, "payer_currency", None) or "usd"
             package.mark_as_paid(payer=payment.payer, payer_currency=payer_currency)
@@ -171,18 +120,14 @@ def process_stripe_event(event):
             return
 
         if event["type"] == "checkout.session.async_payment_succeeded":
-            if not _session_amount_matches(session, payment):
+            if not payment.amount_matches(session):
                 logger.error(
                     "Package %s: session %s amount check failed — skipping mark-as-paid",
                     package_uuid,
                     session["id"],
                 )
                 return
-            payment.is_completed = True
-            payment_intent_id = session.get("payment_intent")
-            if payment_intent_id:
-                payment.stripe_payment_intent_id = payment_intent_id
-            payment.save(update_fields=["is_completed", "stripe_payment_intent_id"])
+            payment.complete_from_session(session)
             package = payment.package
             payer_currency = getattr(payment, "payer_currency", None) or "usd"
             package.mark_as_paid(payer=payment.payer, payer_currency=payer_currency)
@@ -198,8 +143,7 @@ def process_stripe_event(event):
             )
             transaction.on_commit(lambda: _notify_package_paid(package.pk, payment.payer.pk))
         else:
-            payment.is_completed = False
-            payment.save(update_fields=["is_completed"])
+            payment.mark_failed()
             logger.warning(
                 "Async payment failed for session %s (package %s)",
                 session["id"],
@@ -225,7 +169,7 @@ def process_stripe_event(event):
             source_transaction = obj.get("source_transaction")
             if source_transaction:
                 try:
-                    charge = stripe.Charge.retrieve(source_transaction)
+                    charge = services.retrieve_charge(source_transaction)
                 except stripe.error.StripeError:
                     logger.exception(
                         "Failed to retrieve source charge %s for %s",
@@ -247,8 +191,7 @@ def process_stripe_event(event):
                 .first()
             )
             if payment:
-                payment.is_completed = False
-                payment.save(update_fields=["is_completed"])
+                payment.mark_failed()
                 payment.package.mark_as_refunded()
                 AuditLog.objects.create(
                     user=payment.package.creator,
@@ -288,8 +231,7 @@ def process_stripe_event(event):
             if payment:
                 # Only fully revert the package if the entire charge was refunded.
                 is_full_refund = amount_refunded_cents >= amount_captured_cents
-                payment.is_completed = False
-                payment.save(update_fields=["is_completed"])
+                payment.mark_failed()
                 if is_full_refund:
                     payment.package.mark_as_refunded()
                 AuditLog.objects.create(

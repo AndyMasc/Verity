@@ -1,26 +1,20 @@
 import json
 import logging
-from datetime import timedelta
-from decimal import Decimal
 from typing import Any
 
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db import transaction
 from django.db.models import Q
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
-from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.generic import DetailView, ListView
 from django_ratelimit.decorators import ratelimit
 
 from billing import features
-from core.exchange_rates import convert as convert_currency
-from core.exchange_rates import get_rates
 from records.models import Record
 
 from ..mixins import ReimbursementRequestRequiredMixin
@@ -46,20 +40,6 @@ class PackageListView(LoginRequiredMixin, ListView):
             .order_by("-id")
         )
 
-    def _precompute_displays(self, packages, to_currency: str) -> None:
-        if not packages:
-            return
-        rates = get_rates("USD")
-        for pkg in packages:
-            active = [r for r in pkg.records.all() if r.is_active and r.balance]
-            if not active:
-                pkg._prefetched_converted_total = Decimal("0.00")
-                continue
-            total = Decimal("0.00")
-            for r in active:
-                total += convert_currency(r.balance, r.currency, to_currency, rates=rates)
-            pkg._prefetched_converted_total = total
-
     def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
         context = super().get_context_data(**kwargs)
         sent_packages = list(context["packages"])
@@ -84,7 +64,9 @@ class PackageListView(LoginRequiredMixin, ListView):
         user_currency = getattr(
             getattr(self.request.user, "settings", None), "default_currency", "usd"
         )
-        self._precompute_displays(sent_packages + paid_by_me + sent_to_me, user_currency)
+        ReimbursementPackage.prefetch_converted_totals(
+            sent_packages + paid_by_me + sent_to_me, user_currency
+        )
 
         context["sections"] = [
             ("Sent by You", sent_packages, "sent"),
@@ -120,57 +102,15 @@ class PackageDetailView(LoginRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         package: ReimbursementPackage = self.object
 
-        payer_settings = getattr(self.request.user, "settings", None)
-        user_currency = getattr(payer_settings, "default_currency", "usd")
+        user_currency = getattr(
+            getattr(self.request.user, "settings", None), "default_currency", "usd"
+        )
         context["user_currency"] = user_currency
 
-        all_records = list(package.records.all())
-
-        user_rates = get_rates("USD")
-        record_items = []
-        converted_total = Decimal("0")
-        original_total = Decimal("0")
-
-        if all_records:
-            HistoricalRecord = Record.history.model
-            record_ids = [r.id for r in all_records]
-            first_histories: dict[int, object] = {}
-            for h in HistoricalRecord.objects.filter(id__in=record_ids).order_by("history_date"):
-                if h.id not in first_histories:
-                    first_histories[h.id] = h
-
-            for rec in all_records:
-                first = first_histories.get(rec.id)
-                orig_bal = first.balance if first else rec.balance
-                orig_cc = first.currency if first else rec.currency
-
-                orig_converted = convert_currency(
-                    orig_bal, orig_cc, user_currency, rates=user_rates
-                )
-                current_converted = (
-                    convert_currency(rec.balance, rec.currency, user_currency, rates=user_rates)
-                    if rec.balance
-                    else orig_converted
-                )
-
-                converted_total += current_converted
-                original_total += convert_currency(
-                    orig_bal, orig_cc, package.currency, rates=user_rates
-                )
-
-                record_items.append(
-                    {
-                        "record": rec,
-                        "original_converted": orig_converted,
-                        "requested_converted": current_converted,
-                        "converted_currency": user_currency,
-                        "is_inactive": not rec.is_active,
-                    }
-                )
-
-        context["record_items"] = record_items
-        context["converted_total"] = converted_total
-        context["original_total"] = original_total
+        detail = package.detail_items(user_currency)
+        context["record_items"] = detail.record_items
+        context["converted_total"] = detail.converted_total
+        context["original_total"] = detail.original_total
         context["package_currency"] = package.currency
         context["is_recipient"] = package.recipient == self.request.user
         context["is_payer"] = package.paid_by == self.request.user
@@ -268,17 +208,13 @@ class CreatePackageFromRecordsView(LoginRequiredMixin, ReimbursementRequestRequi
         if not records.exists():
             return JsonResponse({"error": "No valid records found."}, status=400)
 
-        package_currency = getattr(request.user.settings, "default_currency", "usd")
-
-        with transaction.atomic():
-            package = ReimbursementPackage.objects.create(
-                creator=request.user,
-                recipient=recipient,
-                title=title,
-                currency=package_currency,
-                expires_at=timezone.now() + timedelta(days=days_valid),
-            )
-            package.records.set(records)
+        package = ReimbursementPackage.objects.create_for(
+            creator=request.user,
+            recipient=recipient,
+            title=title,
+            records=records,
+            days_valid=days_valid,
+        )
 
         from ..notifications import send_package_created_notification
 
