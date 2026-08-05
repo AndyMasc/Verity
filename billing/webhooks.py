@@ -62,7 +62,7 @@ def report_webhook_processing_error(**kwargs: Any) -> None:
 
 
 @djstripe_receiver("customer.subscription.deleted")
-def handle_subscription_deleted(_sender: Any, **kwargs: Any) -> None:
+def handle_subscription_deleted(**kwargs: Any) -> None:
     """Clears the user's subscription relation when cancelled in Stripe."""
     event = kwargs.get("event")
     if not event:

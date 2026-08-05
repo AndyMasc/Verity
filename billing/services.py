@@ -7,6 +7,7 @@ tested in one place, and always use djstripe's mode-aware secret key.
 import logging
 
 import stripe
+from djstripe.models import Subscription
 from djstripe.settings import djstripe_settings
 
 logger = logging.getLogger(__name__)
@@ -45,3 +46,63 @@ def customer_missing_in_stripe(customer_id: str) -> bool:
     if remote is None:
         return True
     return bool(getattr(remote, "deleted", False))
+
+
+def reconcile_subscription_statuses(
+    subscription_ids: list[str] | None = None,
+) -> int:
+    """Reconcile local djstripe subscription statuses against Stripe.
+
+    Local rows drift from Stripe when a webhook event is missed (endpoint
+    downtime, exhausted Stripe retries, a crashed handler, ...). This refetches
+    each local subscription from Stripe and updates its stored status to match,
+    so ``plan_for_user`` stops trusting stale ``active`` rows.
+
+    Subscriptions that no longer exist in Stripe are marked ``canceled``.
+
+    Args:
+        subscription_ids: Optional filter; when None, all local subscriptions
+            are reconciled.
+
+    Returns:
+        The number of local rows whose stored status was corrected.
+    """
+    _configure()
+
+    queryset = Subscription.objects.all().order_by("id")
+    if subscription_ids:
+        queryset = queryset.filter(id__in=subscription_ids)
+
+    corrected = 0
+    for local in queryset.iterator(chunk_size=100):
+        try:
+            remote = stripe.Subscription.retrieve(local.id)
+            remote_status = remote.status
+        except stripe.error.InvalidRequestError:
+            # No longer exists in Stripe (deleted/expired). The period ended
+            # or it was removed out-of-band; local status is stale.
+            remote_status = "canceled"
+        except stripe.error.StripeError as exc:
+            logger.warning(
+                "Reconciliation: failed to fetch subscription %s from Stripe: %s",
+                local.id,
+                exc,
+            )
+            continue
+
+        local_status = (local.stripe_data or {}).get("status")
+        if local_status == remote_status:
+            continue
+
+        data = dict(local.stripe_data or {})
+        data["status"] = remote_status
+        Subscription.objects.filter(pk=local.pk).update(stripe_data=data)
+        corrected += 1
+        logger.info(
+            "Reconciliation: %s status %s -> %s",
+            local.id,
+            local_status,
+            remote_status,
+        )
+
+    return corrected
