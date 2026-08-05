@@ -6,8 +6,8 @@
         <div class="container mx-auto flex w-full items-center justify-between px-6 py-4 md:max-w-7xl">
             <div class="flex items-center gap-8">
                 <a href="{% url 'core:landing_page' %}"
-                   class="font-semibold tracking-tight text-zinc-950 dark:text-zinc-100 flex items-center gap-2.5 text-base transition-opacity hover:opacity-80">
-                    <span class="inline-block w-2.5 h-2.5 rounded-full bg-[#5A67FF] shadow-[0_0_8px_rgba(90,103,255,0.6)]"></span>
+                   class="font-semibold tracking-tight text-zinc-950 dark:text-zinc-100 flex items-center gap-2.5 text-base transition-opacity hover:opacity-80 group">
+                    <span class="inline-block w-2.5 h-2.5 rounded-full bg-[#5A67FF] shadow-[0_0_8px_rgba(90,103,255,0.6)] group-hover:scale-125 transition-transform duration-300"></span>
                     <span class="font-bold tracking-tighter">Papertrail<span class="text-[#5A67FF]">.</span></span>
                 </a>
                 <nav class="hidden items-center md:inline-flex space-x-1 pl-6 border-l border-zinc-300 dark:border-zinc-800">
@@ -32,9 +32,9 @@
             </div>
             <div class="inline-flex items-center space-x-3">
                 <a href="{% url 'account_login' %}"
-                   class="rounded-full border border-zinc-300 dark:border-zinc-700 px-4 py-1.5 text-xs font-semibold text-zinc-800 hover:text-zinc-950 hover:border-zinc-400 dark:text-zinc-200 dark:hover:text-white dark:hover:border-zinc-600 transition-all duration-200 active:scale-[0.98]">Sign in</a>
+                   class="rounded-full border border-zinc-300 dark:border-zinc-700 px-4 py-1.5 text-xs font-semibold text-zinc-800 hover:text-zinc-950 hover:border-zinc-400 dark:text-zinc-200 dark:hover:text-white dark:hover:border-zinc-600 transition-all duration-200 active:scale-[0.98] hover:scale-105">Sign in</a>
                 <a href="{% url 'account_signup' %}"
-                   class="rounded-full bg-zinc-950 px-4 py-1.5 text-xs font-medium text-white transition-all duration-200 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white active:scale-[0.98] shadow-sm">Join now</a>
+                   class="rounded-full bg-zinc-950 px-4 py-1.5 text-xs font-medium text-white transition-all duration-200 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white active:scale-[0.98] shadow-sm hover:shadow-md hover:scale-105">Join now</a>
             </div>
         </div>
     </nav>
@@ -42,7 +42,7 @@
         <div class="absolute inset-0 bg-[radial-gradient(#e4e4e7_1px,transparent_1px)] dark:bg-[radial-gradient(#18181b_1px,transparent_1px)] [background-size:24px_24px] [mask-image:radial-gradient(ellipse_50%_50%_at_50%_35%,#000_60%,transparent_100%)] pointer-events-none opacity-20 dark:opacity-40">
         </div>
         <div class="relative container mx-auto flex flex-col items-center justify-center gap-8 px-6 max-w-7xl text-center">
-            <div class="relative inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 text-xs font-semibold tracking-tight text-zinc-800 dark:text-zinc-300 shadow-sm transition-all duration-500 hover:border-[#5A67FF]/50 dark:hover:border-[#5A67FF]/50 animate-[pulse_3s_cubic-bezier(0.4,_0,_0.6,_1)_infinite] hover:shadow-[0_0_15px_rgba(90,103,255,0.25)]">
+            <div class="relative inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 text-xs font-semibold tracking-tight text-zinc-800 dark:text-zinc-300 shadow-sm transition-all duration-500 hover:border-[#5A67FF]/50 dark:hover:border-[#5A67FF]/50 animate-[pulse_3s_cubic-bezier(0.4,_0,_0.6,_1)_infinite] hover:shadow-[0_0_15px_rgba(90,103,255,0.25)] cursor-default">
                 <div class="absolute -inset-[1px] rounded-full border border-[#5A67FF] opacity-40 animate-[pulse_2s_ease-in-out_infinite] pointer-events-none">
                 </div>
                 <span class="flex h-2 w-2 relative">
@@ -55,37 +55,37 @@
                 <h1 class="text-4xl sm:text-6xl lg:text-7xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50 leading-[1.05]">
                     Papertrail is the home
                     <br class="hidden sm:inline" />
-                    <span class="bg-gradient-to-b from-zinc-950 via-zinc-800 to-zinc-600 dark:from-zinc-100 dark:via-zinc-400 dark:to-zinc-600 bg-clip-text text-transparent">for every expense.</span>
+                    <span class="bg-gradient-to-b from-zinc-950 from-40% to-zinc-600 dark:from-zinc-100 dark:to-zinc-600 bg-clip-text text-transparent">for every expense.</span>
                 </h1>
                 <p class="mx-auto max-w-2xl text-sm sm:text-base text-zinc-700 dark:text-zinc-300 leading-relaxed font-normal">
                     Centralize every purchase, invoice, and transaction into a single, encrypted workspace. <span class="text-zinc-950 dark:text-zinc-100 font-semibold">Minimal friction. Hyper fast. Private by design.</span>
                 </p>
             </header>
             <div class="inline-flex flex-wrap items-center justify-center gap-2.5 pt-2 text-xs text-zinc-600 dark:text-zinc-400 tracking-tight font-medium">
-                <span class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 text-zinc-950 dark:text-zinc-100 font-semibold shadow-sm">
+                <span class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 text-zinc-950 dark:text-zinc-100 font-semibold shadow-sm transition-transform duration-300 hover:border-[#5A67FF]/40 cursor-default">
                     <span class="w-1.5 h-1.5 rounded-full bg-[#5A67FF]"></span> 4s &mdash; Papertrail
                 </span>
-                <span class="inline-flex items-center px-3.5 py-1.5 rounded-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-300/80 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400">
+                <span class="inline-flex items-center px-3.5 py-1.5 rounded-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-300/80 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 transition-transform duration-300 cursor-default">
                     17s &mdash; Expensify
                 </span>
-                <span class="inline-flex items-center px-3.5 py-1.5 rounded-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-300/80 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400">
+                <span class="inline-flex items-center px-3.5 py-1.5 rounded-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-300/80 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 transition-transform duration-300 cursor-default">
                     110s &mdash; Zoho Expense
                 </span>
             </div>
             <div class="flex items-center gap-3.5 pt-4">
                 <a href="{% url 'account_signup' %}"
-                   class="rounded-full bg-zinc-950 px-7 py-3 text-xs sm:text-sm font-semibold text-white transition-all duration-300 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white shadow-md active:scale-[0.98]">
+                   class="rounded-full bg-zinc-950 px-7 py-3 text-xs sm:text-sm font-semibold text-white transition-all duration-300 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white shadow-md hover:shadow-[0_0_20px_rgba(90,103,255,0.25)] hover:scale-[1.03] active:scale-[0.97]">
                     Get Started Free
                 </a>
                 <a href="#features"
-                   class="group border border-zinc-300 dark:border-zinc-700 flex items-center justify-center gap-2 rounded-full px-7 py-3 text-xs sm:text-sm font-semibold text-zinc-800 hover:text-zinc-950 dark:text-zinc-200 dark:hover:text-white hover:border-zinc-400 dark:hover:border-zinc-600 transition-all duration-200 active:scale-[0.98] bg-white dark:bg-transparent shadow-sm">
+                   class="group border border-zinc-300 dark:border-zinc-700 flex items-center justify-center gap-2 rounded-full px-7 py-3 text-xs sm:text-sm font-semibold text-zinc-800 hover:text-zinc-950 dark:text-zinc-200 dark:hover:text-white hover:border-zinc-400 dark:hover:border-zinc-600 transition-all duration-300 hover:scale-[1.03] active:scale-[0.97] bg-white dark:bg-transparent shadow-sm">
                     <span>Discover Platform</span>
                     <svg xmlns="http://www.w3.org/2000/svg"
                          fill="none"
                          viewBox="0 0 24 24"
                          stroke-width="2"
                          stroke="currentColor"
-                         class="size-4 text-zinc-600 dark:text-zinc-400 transition-transform group-hover:translate-x-0.5 group-hover:text-zinc-950 dark:group-hover:text-white">
+                         class="size-4 text-zinc-600 dark:text-zinc-400 transition-transform duration-300 group-hover:translate-x-1 group-hover:text-zinc-950 dark:group-hover:text-white">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
                     </svg>
                 </a>
@@ -94,14 +94,15 @@
         <div class="relative mt-20 w-full overflow-hidden">
             <div class="flex justify-start md:justify-center">
                 <div class="relative w-[92vw] sm:w-[85vw] md:w-full max-w-7xl ml-6 md:ml-0 shrink-0 dark:shadow-[0_32px_96px_-16px_rgba(0,0,0,0.8)] group [mask-image:linear-gradient(to_bottom,black_80%,transparent_100%)]">
-                    <div class="absolute -inset-px rounded-2xl md:rounded-3xl pointer-events-none"></div>
-                    <div class="rounded-xl sm:rounded-2xl border border-zinc-300 dark:border-zinc-800 overflow-hidden bg-white dark:bg-zinc-950">
+                    <div class="absolute -inset-px rounded-2xl md:rounded-3xl pointer-events-none transition-opacity duration-500 opacity-0 group-hover:opacity-100 shadow-[0_0_50px_rgba(90,103,255,0.15)]">
+                    </div>
+                    <div class="rounded-xl sm:rounded-2xl border border-zinc-300 dark:border-zinc-800 overflow-hidden bg-white dark:bg-zinc-950 transition-colors duration-500 group-hover:border-[#5A67FF]/30">
                         <img src="{% static 'core/images/interface-demo-light.png' %}"
                              alt="App interface preview"
-                             class="w-full object-cover object-left dark:hidden rounded-xl sm:rounded-2xl">
+                             class="w-full object-cover object-left dark:hidden rounded-xl sm:rounded-2xl transition-transform duration-700">
                         <img src="{% static 'core/images/interface-demo-dark.png' %}"
                              alt="App interface preview (dark)"
-                             class="hidden w-full object-cover object-left dark:block rounded-xl sm:rounded-2xl">
+                             class="hidden w-full object-cover object-left dark:block rounded-xl sm:rounded-2xl transition-transform duration-700">
                     </div>
                 </div>
             </div>
@@ -120,28 +121,34 @@
                 </p>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-                <div class="group rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/40 p-8 flex flex-col justify-between hover:border-zinc-400 dark:hover:border-zinc-700 transition-all duration-300 shadow-sm hover:shadow">
+                <div class="group rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/40 p-8 flex flex-col justify-between hover:border-zinc-400 dark:hover:border-zinc-700 transition-all duration-300 shadow-sm hover:shadow-lg hover:-translate-y-1 relative overflow-hidden">
+                    <div class="absolute top-0 left-0 right-0 h-[2px] bg-[#5A67FF] scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left">
+                    </div>
                     <div>
-                        <span class="text-xs font-mono font-bold text-zinc-500 dark:text-zinc-500 group-hover:text-[#5A67FF] transition-colors">01</span>
-                        <h3 class="mt-4 text-base font-semibold text-zinc-950 dark:text-zinc-100">AI Extraction</h3>
+                        <span class="text-xs font-mono font-bold text-zinc-500 dark:text-zinc-500 group-hover:text-[#5A67FF] transition-colors duration-300">01</span>
+                        <h3 class="mt-4 text-base font-semibold text-zinc-950 dark:text-zinc-100 group-hover:translate-x-0.5 transition-transform duration-300">AI Extraction</h3>
                         <p class="mt-2 text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed font-normal">
                             AI engine parses merchants, dates, totals, and metadata in seconds.
                         </p>
                     </div>
                 </div>
-                <div class="group rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/40 p-8 flex flex-col justify-between hover:border-zinc-400 dark:hover:border-zinc-700 transition-all duration-300 shadow-sm hover:shadow">
+                <div class="group rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/40 p-8 flex flex-col justify-between hover:border-zinc-400 dark:hover:border-zinc-700 transition-all duration-300 shadow-sm hover:shadow-lg hover:-translate-y-1 relative overflow-hidden">
+                    <div class="absolute top-0 left-0 right-0 h-[2px] bg-[#5A67FF] scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left">
+                    </div>
                     <div>
-                        <span class="text-xs font-mono font-bold text-zinc-500 dark:text-zinc-500 group-hover:text-[#5A67FF] transition-colors">02</span>
-                        <h3 class="mt-4 text-base font-semibold text-zinc-950 dark:text-zinc-100">Unified Records</h3>
+                        <span class="text-xs font-mono font-bold text-zinc-500 dark:text-zinc-500 group-hover:text-[#5A67FF] transition-colors duration-300">02</span>
+                        <h3 class="mt-4 text-base font-semibold text-zinc-950 dark:text-zinc-100 group-hover:translate-x-0.5 transition-transform duration-300">Unified Records</h3>
                         <p class="mt-2 text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed font-normal">
                             Keep warranties, manuals, and repair bills permanently attached to their original purchase.
                         </p>
                     </div>
                 </div>
-                <div class="group rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/40 p-8 flex flex-col justify-between hover:border-zinc-400 dark:hover:border-zinc-700 transition-all duration-300 shadow-sm hover:shadow">
+                <div class="group rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/40 p-8 flex flex-col justify-between hover:border-zinc-400 dark:hover:border-zinc-700 transition-all duration-300 shadow-sm hover:shadow-lg hover:-translate-y-1 relative overflow-hidden">
+                    <div class="absolute top-0 left-0 right-0 h-[2px] bg-[#5A67FF] scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left">
+                    </div>
                     <div>
-                        <span class="text-xs font-mono font-bold text-zinc-500 dark:text-zinc-500 group-hover:text-[#5A67FF] transition-colors">03</span>
-                        <h3 class="mt-4 text-base font-semibold text-zinc-950 dark:text-zinc-100">Bank Matching</h3>
+                        <span class="text-xs font-mono font-bold text-zinc-500 dark:text-zinc-500 group-hover:text-[#5A67FF] transition-colors duration-300">03</span>
+                        <h3 class="mt-4 text-base font-semibold text-zinc-950 dark:text-zinc-100 group-hover:translate-x-0.5 transition-transform duration-300">Bank Matching</h3>
                         <p class="mt-2 text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed font-normal">
                             Connect purchases directly with bank transactions to eliminate missing documentation.
                         </p>
@@ -161,17 +168,17 @@
                 </p>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-                <div class="relative overflow-hidden rounded-2xl border border-zinc-950 dark:border-zinc-100 p-8 bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 shadow-lg">
+                <div class="relative overflow-hidden rounded-2xl border border-zinc-950 dark:border-zinc-100 p-8 bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 shadow-lg transition-transform duration-300 hover:scale-[1.02]">
                     <span class="text-xs font-bold tracking-widest text-[#5A67FF] uppercase">Papertrail</span>
                     <span class="block text-4xl font-extrabold tracking-tight mt-4">~4s*</span>
                     <span class="block text-xs font-semibold mt-4">Rapid AI-Powered Extraction</span>
                     <span class="block text-xs opacity-70 mt-1">Produces rich, structured data instantly.</span>
                 </div>
-                <div class="rounded-2xl border border-zinc-300 dark:border-zinc-800 p-8 bg-zinc-100/60 dark:bg-zinc-900/20">
+                <div class="rounded-2xl border border-zinc-300 dark:border-zinc-800 p-8 bg-zinc-100/60 dark:bg-zinc-900/20 transition-transform duration-300 hover:scale-[1.01]">
                     <span class="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-widest">Expensify</span>
                     <span class="block text-4xl font-bold tracking-tight text-zinc-500 dark:text-zinc-500 mt-4">~17s*</span>
                 </div>
-                <div class="rounded-2xl border border-zinc-300 dark:border-zinc-800 p-8 bg-zinc-100/60 dark:bg-zinc-900/20">
+                <div class="rounded-2xl border border-zinc-300 dark:border-zinc-800 p-8 bg-zinc-100/60 dark:bg-zinc-900/20 transition-transform duration-300 hover:scale-[1.01]">
                     <span class="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-widest">Zoho Expense</span>
                     <span class="block text-4xl font-bold tracking-tight text-zinc-500 dark:text-zinc-500 mt-4">~110s*</span>
                 </div>
@@ -192,15 +199,15 @@
                     Receipts and documents are organized into permanent purchase histories. Keep everything searchable for warranty claims, taxes, and audits without sacrificing structural integrity.
                 </p>
                 <div class="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-6 pt-8 border-t border-zinc-300 dark:border-zinc-800">
-                    <div class="space-y-1">
+                    <div class="space-y-1 transition-transform duration-300 hover:-translate-y-0.5">
                         <span class="block text-xs font-bold text-zinc-950 dark:text-zinc-100">Encrypted Storage</span>
                         <span class="block text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed">Secure signed links and cryptographic access protection.</span>
                     </div>
-                    <div class="space-y-1">
+                    <div class="space-y-1 transition-transform duration-300 hover:-translate-y-0.5">
                         <span class="block text-xs font-bold text-zinc-950 dark:text-zinc-100">Chronological Timelines</span>
                         <span class="block text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed">Complete purchase lifecycle mapping from day one.</span>
                     </div>
-                    <div class="space-y-1">
+                    <div class="space-y-1 transition-transform duration-300 hover:-translate-y-0.5">
                         <span class="block text-xs font-bold text-zinc-950 dark:text-zinc-100">Tax Compliance</span>
                         <span class="block text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed">Multi-year regulatory archival standards met out of the box.</span>
                     </div>
@@ -219,11 +226,11 @@
                 Generate clean reimbursement statements directly from existing purchase records. Share items instantly for review without duplicate data entry.
             </p>
             <div class="mt-10 grid grid-cols-2 gap-6 max-w-md mx-auto border-t border-zinc-300 dark:border-zinc-800 pt-8 text-left">
-                <div>
+                <div class="transition-transform duration-300 hover:-translate-y-0.5">
                     <p class="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider">Standard</p>
                     <p class="mt-1 text-xs text-zinc-950 dark:text-zinc-100 font-bold">Encrypted by design</p>
                 </div>
-                <div>
+                <div class="transition-transform duration-300 hover:-translate-y-0.5">
                     <p class="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider">Payouts</p>
                     <p class="mt-1 text-xs text-zinc-950 dark:text-zinc-100 font-bold">Multi-Currency Support</p>
                 </div>
@@ -247,13 +254,13 @@
                 </h2>
             </div>
             <div class="space-y-4 text-left">
-                <div class="p-6 rounded-2xl border border-zinc-300 dark:border-zinc-800 bg-white dark:bg-zinc-900/20 shadow-sm">
+                <div class="p-6 rounded-2xl border border-zinc-300 dark:border-zinc-800 bg-white dark:bg-zinc-900/20 shadow-sm transition-all duration-300 hover:border-zinc-400 dark:hover:border-zinc-700 hover:shadow-md">
                     <h3 class="text-xs sm:text-sm font-semibold text-zinc-950 dark:text-zinc-100">How does Papertrail differ from standard expense managers?</h3>
                     <p class="mt-2 text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed font-normal">
                         Papertrail goes beyond basic scanning by linking bank feeds, warranty records, invoices, and supporting documents into an organized, unified purchase record.
                     </p>
                 </div>
-                <div class="p-6 rounded-2xl border border-zinc-300 dark:border-zinc-800 bg-white dark:bg-zinc-900/20 shadow-sm">
+                <div class="p-6 rounded-2xl border border-zinc-300 dark:border-zinc-800 bg-white dark:bg-zinc-900/20 shadow-sm transition-all duration-300 hover:border-zinc-400 dark:hover:border-zinc-700 hover:shadow-md">
                     <h3 class="text-xs sm:text-sm font-semibold text-zinc-950 dark:text-zinc-100">Is my financial data secure?</h3>
                     <p class="mt-2 text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed font-normal">
                         Yes. All documents and sensitive data are encrypted at rest and in transit, stored securely with strict cryptographic access limits.

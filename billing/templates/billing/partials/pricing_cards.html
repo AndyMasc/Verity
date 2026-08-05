@@ -171,11 +171,6 @@
             Continue
         </button>
     </div>
-    <p class="text-center mt-5 text-zinc-400 text-xs">
-        Plans do not stack.
-        <br>
-        Purchasing a plan replaces any existing subscription within the same category.
-    </p>
 </form>
 {% if has_active_subscription %}
     <form method="post" action="{% url 'portal_session' %}" class="mt-6">
