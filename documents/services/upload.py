@@ -15,6 +15,7 @@ from typing import Any
 from django.db import transaction
 from django.http import HttpRequest
 
+from billing.entitlements import can_add_storage, get_storage_limit, is_storage_limit_exceeded
 from documents.forms import R2UploadForm
 from documents.models import DocumentData, DocumentStatus
 from documents.storage import generate_presigned_post, generate_upload_key
@@ -71,7 +72,14 @@ class UploadService:
         if not file_hash or not filename:
             return PresignResult(status="error", error="Missing file_hash or filename.")
 
-        form = R2UploadForm({"filename": filename, "content_type": content_type, "notes": notes})
+        form = R2UploadForm(
+            {
+                "filename": filename,
+                "content_type": content_type,
+                "notes": notes,
+                "file_size": data.get("file_size", ""),
+            }
+        )
         if not form.is_valid():
             return PresignResult(
                 status="error",
@@ -83,6 +91,15 @@ class UploadService:
             existing = self._find_duplicate(file_hash)
             if existing:
                 return self._duplicate_result(existing)
+
+        if not self._within_storage_limit(form.cleaned_data.get("file_size")):
+            limit_gb = get_storage_limit(self.user)
+            return PresignResult(
+                status="error",
+                error=(
+                    f"Storage limit reached ({limit_gb} GB). Upgrade to upload more files, or contact us to hard delete documents for you."
+                ),
+            )
 
         effective_hash = self._resolve_hash(file_hash, force_upload)
         key, safe_title = self._prepare_key_and_title(filename)
@@ -107,6 +124,16 @@ class UploadService:
             key=key,
             document_id=document.id,
         )
+
+    def _within_storage_limit(self, file_size: int | None) -> bool:
+        """Return whether the current upload stays within the user's storage quota.
+
+        Falls back to blocking only when the quota is already exceeded if the
+        prospective file size is unknown (e.g. legacy clients).
+        """
+        if file_size is None:
+            return not is_storage_limit_exceeded(self.user)
+        return can_add_storage(self.user, file_size)
 
     def _find_duplicate(self, file_hash: str) -> DocumentData | None:
         """Search for an existing active document with the same file hash for this user."""

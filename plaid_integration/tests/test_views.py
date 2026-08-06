@@ -18,7 +18,7 @@ from plaid_integration.views import (
 )
 from records.models import Record
 
-from billing.tests_helpers import give_pro_subscription
+from billing.tests.helpers import give_pro_subscription
 
 
 class PlaidViewsTest(TestCase):

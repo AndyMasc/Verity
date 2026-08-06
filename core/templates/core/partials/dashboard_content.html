@@ -16,7 +16,7 @@
                         <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
                         <span class="relative inline-flex rounded-full size-1.5 bg-indigo-500"></span>
                     </span>
-                    <span>Files pending action{{ orphaned_document_count|pluralize }}</span>
+                    <span>Files pending action{{ pending_ocr_count|pluralize }}</span>
                 </span>
             </a>
         </div>
@@ -41,7 +41,8 @@
         <div class="lg:col-span-5 xl:col-span-4 flex flex-col justify-between gap-5">
             <section class="flex-1 flex flex-col justify-between rounded-2xl dark:bg-zinc-900/30 bg-white border border-zinc-200/60 dark:border-white/[0.05] p-5 md:p-6 shadow-2xs">
                 <div>
-                    {% include 'core/partials/section_header.html' with title="Notifications" badge_text=unread_notifications_count|stringformat:"s"|add:" unread" view_all_url="/notifications/" %}
+                    {% url 'core:notifications' as notifications_url %}
+                    {% include 'core/partials/section_header.html' with title="Notifications" badge_text=unread_notifications_count|stringformat:"s"|add:" unread" view_all_url=notifications_url %}
                     <div class="mt-3.5 space-y-2">
                         {% for notification in notifications|slice:":3" %}
                             <div class="flex items-center justify-between gap-2.5 px-3.5 py-2.5 rounded-xl bg-zinc-200/50 dark:bg-zinc-800/40 border border-zinc-200/45 dark:border-white/[0.035] hover:border-zinc-300/80 dark:hover:border-white/[0.07] transition-colors">
@@ -60,32 +61,30 @@
                 </div>
             </section>
             <section class="flex-1 flex flex-col justify-between rounded-2xl dark:bg-zinc-900/30 bg-white border border-zinc-200/60 dark:border-white/[0.05] p-5 md:p-6 shadow-2xs">
-                {% include 'core/partials/section_header.html' with title="Reimbursements" view_all_url="/reimbursements/" %}
-                {% if has_packages %}
-                    <div class="mt-3.5 grid grid-cols-2 gap-3">
-                        <div class="p-3.5 rounded-xl bg-zinc-200/50 dark:bg-zinc-800/40 border border-zinc-200/45 dark:border-white/[0.035]">
-                            <h3 class="text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Sent</h3>
-                            <p class="text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 mt-1 truncate">
-                                {{ reimbursements_sent_total|default:"0.00"|currency_format:user.settings.default_currency }}
-                            </p>
-                            <p class="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 mt-0.5">{{ reimbursements_sent_pending_count }} pending</p>
-                        </div>
-                        <div class="p-3.5 rounded-xl bg-zinc-200/50 dark:bg-zinc-800/40 border border-zinc-200/45 dark:border-white/[0.035]">
-                            <h3 class="text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Received</h3>
-                            <p class="text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 mt-1 truncate">
-                                {{ reimbursements_received_total|default:"0.00"|currency_format:user.settings.default_currency }}
-                            </p>
-                            <p class="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 mt-0.5">{{ reimbursements_received_count }} completed</p>
-                        </div>
+                {% url 'reimbursements:package-list' as reimbursements_url %}
+                {% include 'core/partials/section_header.html' with title="Reimbursements" view_all_url=reimbursements_url %}
+                <div class="mt-3.5 grid grid-cols-2 gap-3">
+                    <div class="p-3.5 rounded-xl bg-zinc-200/50 dark:bg-zinc-800/40 border border-zinc-200/45 dark:border-white/[0.035]">
+                        <h3 class="text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Sent</h3>
+                        <p class="text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 mt-1 truncate">
+                            {{ reimbursements_sent_total|default:"0.00"|currency_format:user.settings.default_currency }}
+                        </p>
+                        <p class="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 mt-0.5">{{ reimbursements_sent_pending_count }} pending</p>
                     </div>
-                {% else %}
-                    <div class="py-6 text-xs font-medium text-center text-zinc-400 dark:text-zinc-500 my-auto">No reimbursements yet.</div>
-                {% endif %}
+                    <div class="p-3.5 rounded-xl bg-zinc-200/50 dark:bg-zinc-800/40 border border-zinc-200/45 dark:border-white/[0.035]">
+                        <h3 class="text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Received</h3>
+                        <p class="text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 mt-1 truncate">
+                            {{ reimbursements_received_total|default:"0.00"|currency_format:user.settings.default_currency }}
+                        </p>
+                        <p class="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 mt-0.5">{{ reimbursements_received_count }} completed</p>
+                    </div>
+                </div>
             </section>
         </div>
     </div>
     <section class="rounded-2xl dark:bg-zinc-900/30 bg-white border border-zinc-200/60 dark:border-white/[0.05] p-6 pb-2 shadow-2xs">
-        {% include 'core/partials/section_header.html' with title="Recent Activity" view_all_url="/records/" %}
+        {% url 'records:view_all_records' as view_all_records_url %}
+        {% include 'core/partials/section_header.html' with title="Recent Activity" view_all_url=view_all_records_url %}
         <div class="divide-y divide-zinc-200/45 dark:divide-white/[0.035]">
             {% for record in records %}
                 {% include 'records/record_card.html' %}

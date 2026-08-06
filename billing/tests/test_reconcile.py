@@ -5,7 +5,8 @@ from django.test import TestCase
 from django.utils import timezone
 from djstripe.models import Customer, Subscription
 
-from . import services
+from .. import services
+from ..tasks import reconcile_subscription_statuses_task
 
 
 class ReconcileSubscriptionStatusesTests(TestCase):
@@ -81,9 +82,7 @@ class ReconcileSubscriptionStatusesTests(TestCase):
                 message="No such subscription", param="id"
             ),
         ):
-            corrected = services.reconcile_subscription_statuses(
-                ["sub_recon_filtered"]
-            )
+            corrected = services.reconcile_subscription_statuses(["sub_recon_filtered"])
         self.assertEqual(corrected, 1)
         local.refresh_from_db()
         self.assertEqual(local.stripe_data["status"], "canceled")
@@ -107,6 +106,4 @@ class ReconcileSubscriptionStatusesTaskTests(TestCase):
                 message="No such subscription", param="id"
             ),
         ):
-            from .tasks import reconcile_subscription_statuses_task
-
             self.assertEqual(reconcile_subscription_statuses_task(), 1)

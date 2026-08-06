@@ -1,16 +1,44 @@
-"""Shared test helpers for granting users active paid subscriptions.
+"""Shared test helpers for the billing test suite.
 
 Views gated by ``billing.mixins.FeatureRequiredMixin`` redirect free users to
 the pricing page, so tests that exercise those views need a user with a real
 active Pro subscription. ``give_pro_subscription`` builds the djstripe rows
 (Product / Price / SubscriptionItem / Customer) that ``metadata`` and the
 entitlement layer read.
+
+``FakeSession`` mimics the small surface of a Stripe checkout Session that the
+views read, so tests can mock ``stripe.checkout.Session.retrieve`` without a
+network call.
 """
 
 from django.utils import timezone
 from djstripe.models import Customer, Price, Product, Subscription, SubscriptionItem
 
-from . import metadata
+from .. import metadata
+
+
+class FakeSession:
+    def __init__(
+        self,
+        *,
+        id="cs_test",
+        payment_status="paid",
+        customer=None,
+        customer_details=None,
+        client_reference_id=None,
+        subscription="sub_test",
+        url="https://checkout.stripe.com/c/pay/cs_test",
+    ):
+        self.id = id
+        self.payment_status = payment_status
+        self.customer = customer
+        self.customer_details = customer_details or {}
+        self.client_reference_id = client_reference_id
+        self.subscription = subscription
+        self.url = url
+
+    def get(self, key, default=None):
+        return getattr(self, key, default)
 
 
 def give_pro_subscription(user) -> Subscription:

@@ -68,24 +68,23 @@ def pricing_page(request: HttpRequest) -> HttpResponse:
 @login_required
 @ratelimit(key="user", rate="10/m", method=["GET"], block=True)
 def subscription_confirm(request: HttpRequest) -> HttpResponse:
-    stripe.api_key = djstripe_settings.STRIPE_SECRET_KEY
-
     session_id = request.GET.get("session_id")
     if not session_id:
         return HttpResponseBadRequest("Missing session ID.")
 
     try:
-        session = stripe.checkout.Session.retrieve(session_id)
+        session = services.retrieve_checkout_session(session_id)
         if session.payment_status != "paid":
             return HttpResponseBadRequest("Subscription is not paid.")
         if not session.subscription:
             return HttpResponseBadRequest("Session is not a subscription checkout.")
 
-        subscription = stripe.Subscription.retrieve(str(session.subscription))
+        subscription = services.retrieve_subscription(str(session.subscription))
     except stripe.error.StripeError as e:
         logger.error("Stripe API error during subscription confirmation: %s", e)
         messages.error(
-            request, "We encountered an error confirming your subscription. Please contact support."
+            request,
+            "We encountered an error confirming your subscription. Please contact support.",
         )
         return redirect("core:dashboard")
 
@@ -109,8 +108,7 @@ def create_portal_session(request: HttpRequest) -> HttpResponse:
     if customer is None:
         return HttpResponseBadRequest("No Stripe customer associated with this account.")
 
-    stripe.api_key = djstripe_settings.STRIPE_SECRET_KEY
-    portal_session = stripe.billing_portal.Session.create(
+    portal_session = services.create_billing_portal_session(
         customer=customer.id,
         return_url=request.build_absolute_uri(reverse("core:profile_page")),
     )
@@ -131,6 +129,7 @@ def _validated_price(price_id: str | None, category: str) -> str | None:
 
 
 def _checkout_quantity(raw_qty: str | None, max_quantity: int = 100) -> int:
+    """Get checkout quantity from POST request, for stackable plans and scalability"""
     try:
         quantity = int(raw_qty) if raw_qty else 1
     except TypeError, ValueError:
@@ -143,7 +142,6 @@ def _checkout_quantity(raw_qty: str | None, max_quantity: int = 100) -> int:
 @ratelimit(key="user", rate="10/m", method="POST", block=True)
 def create_checkout_session(request: HttpRequest) -> HttpResponse:
     user = cast(CustomUser, request.user)
-    stripe.api_key = djstripe_settings.STRIPE_SECRET_KEY
 
     base_price_id = _validated_price(request.POST.get("base_price_id"), "base_plan")
     storage_price_id = _validated_price(request.POST.get("storage_price_id"), "storage_plan")
@@ -183,10 +181,9 @@ def create_checkout_session(request: HttpRequest) -> HttpResponse:
             user.save(update_fields=["customer"])
 
     try:
-        checkout_session = stripe.checkout.Session.create(
+        checkout_session = services.create_checkout_session(
             customer=customer.id,
             line_items=line_items,
-            mode="subscription",
             success_url=request.build_absolute_uri(reverse("subscription_confirm"))
             + "?session_id={CHECKOUT_SESSION_ID}",
             cancel_url=request.build_absolute_uri(reverse("pricing_page")),

@@ -3,8 +3,8 @@ from django.test import TestCase
 from django.utils import timezone
 from djstripe.models import Customer, Price, Product, Subscription, SubscriptionItem
 
-from . import entitlements, features, metadata
-from .models import CustomUser
+from .. import entitlements, features, metadata
+from ..models import CustomUser
 
 
 class EntitlementTests(TestCase):
@@ -131,7 +131,7 @@ class ContextProcessorTests(TestCase):
     def test_anon_context(self):
         from django.contrib.auth.models import AnonymousUser
 
-        from .context_processors import subscription_status
+        from ..context_processors import subscription_status
 
         request = self._request()
         request.user = AnonymousUser()
@@ -141,7 +141,7 @@ class ContextProcessorTests(TestCase):
         self.assertEqual(ctx["plan_name"], metadata.PAPERTRAIL_FREE.name)
 
     def test_subscription_with_non_active_status_is_free(self):
-        from .context_processors import subscription_status
+        from ..context_processors import subscription_status
 
         self._add_subscription(status="canceled")
         ctx = subscription_status(self._request())
@@ -149,7 +149,7 @@ class ContextProcessorTests(TestCase):
         self.assertEqual(ctx["plan"], "free")
 
     def test_storage_addon_plan_name_is_not_free(self):
-        from .context_processors import subscription_status
+        from ..context_processors import subscription_status
 
         self._add_subscription(status="active", product_id=metadata.STORAGE_UPGRADE_25.stripe_id)
         ctx = subscription_status(self._request())
@@ -159,7 +159,7 @@ class ContextProcessorTests(TestCase):
         self.assertNotIn(features.UNLIMITED_SCANS, ctx["features"])
 
     def test_pro_plan_name_is_dynamic(self):
-        from .context_processors import subscription_status
+        from ..context_processors import subscription_status
 
         self._add_subscription(status="active", product_id=metadata.PAPERTRAIL_PRO.stripe_id)
         ctx = subscription_status(self._request())

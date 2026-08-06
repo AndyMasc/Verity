@@ -7,31 +7,8 @@ from django.urls import reverse
 from django.utils import timezone
 from djstripe.models import Customer, Price, Product, Subscription, SubscriptionItem
 
-from . import entitlements, metadata
-
-
-class FakeSession:
-    def __init__(
-        self,
-        *,
-        id="cs_storage",
-        payment_status="paid",
-        customer=None,
-        customer_details=None,
-        client_reference_id=None,
-        subscription="sub_storage",
-        url="https://checkout.stripe.com/c/pay/cs_test",
-    ):
-        self.id = id
-        self.payment_status = payment_status
-        self.customer = customer
-        self.customer_details = customer_details or {}
-        self.client_reference_id = client_reference_id
-        self.subscription = subscription
-        self.url = url
-
-    def get(self, key, default=None):
-        return getattr(self, key, default)
+from .. import entitlements, metadata
+from .helpers import FakeSession
 
 
 class StoragePackEntitlementTests(TestCase):
@@ -80,7 +57,11 @@ class StoragePackEntitlementTests(TestCase):
         self.user.save()
 
     def _make_storage_sub(
-        self, customer, sub_id="sub_storage", price_id="price_storage", product_meta=None
+        self,
+        customer,
+        sub_id="sub_storage",
+        price_id="price_storage",
+        product_meta=None,
     ):
         product_meta = product_meta or metadata.STORAGE_UPGRADE_25
         storage_product, _ = Product.objects.get_or_create(
@@ -203,14 +184,14 @@ class StoragePackConfirmFlowTests(TestCase):
     def _run_confirm(self, storage_sub, session_customer):
         patchers = [
             mock.patch(
-                "billing.views.stripe.checkout.Session.retrieve",
+                "billing.services.retrieve_checkout_session",
                 return_value=FakeSession(
                     customer=session_customer,
                     customer_details={"email": self.user.email},
                 ),
             ),
             mock.patch(
-                "billing.views.stripe.Subscription.retrieve",
+                "billing.services.retrieve_subscription",
                 return_value={"id": storage_sub.id, "items": {"data": []}},
             ),
             mock.patch(
@@ -241,9 +222,9 @@ class StoragePackConfirmFlowTests(TestCase):
     def test_create_checkout_reuses_existing_customer(self):
         with (
             mock.patch("billing.views.Customer.get_or_create") as get_or_create,
-            mock.patch("billing.views.stripe.checkout.Session.create") as session_create,
+            mock.patch("billing.services.create_checkout_session") as session_create,
             mock.patch(
-                "billing.views.stripe.Customer.retrieve",
+                "billing.services.stripe.Customer.retrieve",
                 return_value=type("R", (), {"deleted": False})(),
             ),
         ):
@@ -259,9 +240,9 @@ class StoragePackConfirmFlowTests(TestCase):
     def test_checkout_falls_back_when_customer_deleted_in_stripe(self):
         with (
             mock.patch("billing.views.Customer.get_or_create") as get_or_create,
-            mock.patch("billing.views.stripe.checkout.Session.create") as session_create,
+            mock.patch("billing.services.create_checkout_session") as session_create,
             mock.patch(
-                "billing.views.stripe.Customer.retrieve",
+                "billing.services.stripe.Customer.retrieve",
                 side_effect=stripe.error.InvalidRequestError(
                     message="No such customer", param="id"
                 ),

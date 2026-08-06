@@ -172,6 +172,7 @@
                 metadataBody.append('file_hash', fileHash);
                 metadataBody.append('filename', selectedFile.name);
                 metadataBody.append('content_type', resolvedMimeType);
+                metadataBody.append('file_size', selectedFile.size);
                 metadataBody.append('notes', notesValue || "");
                 metadataBody.append('force_upload', uploadButton.dataset.forceUpload);
 

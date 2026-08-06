@@ -1,10 +1,7 @@
 """Plan entitlements: which features a user is allowed to use."""
 
 from django.db import models
-from django.db.models import Sum
 from django.utils import timezone
-
-from documents.models import DocumentData
 
 from . import features
 
@@ -74,9 +71,10 @@ def get_storage_limit(user) -> int:
 
 
 def get_storage_usage_bytes(user) -> int:
-    """Return total stored bytes, counting only non-trashed documents."""
-    result = DocumentData.objects.active().filter(user=user).aggregate(total=Sum("file_size"))
-    return result["total"] or 0
+    """Return total stored bytes via the denormalized O(1) counter."""
+    from .storage import get_storage_usage_bytes as _counter
+
+    return _counter(user)
 
 
 def get_storage_usage_gb(user) -> float:
@@ -89,6 +87,13 @@ def is_storage_limit_exceeded(user) -> bool:
     limit_gb = get_storage_limit(user)
     usage_gb = get_storage_usage_gb(user)
     return usage_gb >= limit_gb
+
+
+def can_add_storage(user, additional_bytes: int) -> bool:
+    """Return whether storing *additional_bytes* more would stay within the limit."""
+    limit_gb = get_storage_limit(user)
+    usage_bytes = get_storage_usage_bytes(user)
+    return usage_bytes + additional_bytes <= limit_gb * 1024**3
 
 
 def can_scan(user) -> bool:

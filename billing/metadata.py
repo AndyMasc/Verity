@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
-from djstripe.models import Customer
+from django.db.models import Prefetch
+from djstripe.models import Customer, SubscriptionItem
 
 from . import features
 
@@ -121,15 +122,19 @@ def _active_subscriptions(user):
         return []
 
     subscriptions = []
+    items_prefetch = Prefetch(
+        "items",
+        queryset=SubscriptionItem.objects.select_related("price", "price__product"),
+    )
     customer = getattr(user, "customer", None)
     if customer is not None:
-        subscriptions.extend(customer.subscriptions.prefetch_related("items").all())
+        subscriptions.extend(customer.subscriptions.prefetch_related(items_prefetch).all())
 
     linked_customers = Customer.objects.filter(subscriber=user).exclude(
         pk=customer.pk if customer is not None else None
     )
     for linked in linked_customers:
-        subscriptions.extend(linked.subscriptions.prefetch_related("items").all())
+        subscriptions.extend(linked.subscriptions.prefetch_related(items_prefetch).all())
 
     direct = getattr(user, "subscription", None)
     if direct is not None and not any(s.pk == direct.pk for s in subscriptions):
@@ -142,9 +147,13 @@ def _active_subscriptions(user):
 
 
 def _metas_for_subscription(subscription):
-    """Yield ProductMetadata for each item on a single subscription."""
-    items = subscription.items.select_related("price", "price__product").all()
-    for item in items:
+    """Yield ProductMetadata for each item on a single subscription.
+
+    Items are prefetched together with their price and product by
+    ``_active_subscriptions`` (via ``Prefetch``), so this is served from the
+    query cache rather than issuing a query per subscription.
+    """
+    for item in subscription.items.all():
         product_id = item.price.product_id if item.price is not None else None
         meta = PRODUCTS.get(product_id)
         if meta is not None:

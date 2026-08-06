@@ -72,7 +72,10 @@ class RecordFilter(django_filters.FilterSet):
                         Folder.objects.filter(user=self.request.user).values_list("id", "name")
                     )
                     cache.set(cache_key, user_folders, FILTER_CHOICES_CACHE_TTL)
-                folder_filter.extra["choices"] = [("none", "All folders"), *user_folders]
+                folder_filter.extra["choices"] = [
+                    ("none", "All folders"),
+                    *user_folders,
+                ]
 
             cache_key = f"rt_{self.request.user.id}"
             user_record_types = cache.get(cache_key)

@@ -90,8 +90,14 @@ def health_check(request: HttpRequest) -> JsonResponse:  # noqa: ARG001
     return JsonResponse(
         {
             "status": "healthy" if healthy else "unhealthy",
-            "database": {"status": "connected" if db_ok else "disconnected", "ms": db_ms},
-            "cache": {"status": "connected" if redis_ok else "disconnected", "ms": redis_ms},
+            "database": {
+                "status": "connected" if db_ok else "disconnected",
+                "ms": db_ms,
+            },
+            "cache": {
+                "status": "connected" if redis_ok else "disconnected",
+                "ms": redis_ms,
+            },
             "version": getattr(settings, "APP_VERSION", "unknown"),
         },
         status=status,

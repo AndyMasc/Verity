@@ -1,15 +1,15 @@
 """Plaid webhook handler and JWT signature verification."""
 
+import datetime
 import hashlib
 import json
 import logging
-from datetime import UTC, datetime
 from typing import Any
 
 import jwt
 import requests
 from django.conf import settings
-from django.db import transaction
+from django.db import models, transaction
 from django.http import (
     HttpRequest,
     HttpResponse,
@@ -35,13 +35,9 @@ WEBHOOK_MAX_BODY_SIZE = 1024 * 100  # 100KB
 
 
 def _get_plaid_jwk(kid: str, max_age: int = 3600) -> dict[str, Any] | None:
-    """Fetch and cache a Plaid JSON Web Key by key ID.
-
-    Maintains an in-memory cache that refreshes after ``max_age`` seconds
-    to avoid hammering Plaid's JWKS endpoint on every webhook.
-    """
+    """Fetch and cache a Plaid JSON Web Key by key ID."""
     global _jwks_cache, _jwks_fetched_at
-    now = datetime.now(UTC).timestamp()
+    now = datetime.datetime.now(datetime.UTC).timestamp()
     if not _jwks_fetched_at or (now - _jwks_fetched_at) > max_age:
         try:
             resp = requests.get(PLAID_JWKS_URL, timeout=10)
@@ -56,11 +52,7 @@ def _get_plaid_jwk(kid: str, max_age: int = 3600) -> dict[str, Any] | None:
 
 
 def verify_plaid_webhook(body: bytes, plaid_verification: str | None) -> bool:
-    """Verify the JWT signature and body hash of an incoming Plaid webhook.
-
-    Uses Plaid's public JWKS endpoint to validate the RS256 signature,
-    then confirms the request body hasn't been tampered with.
-    """
+    """Verify the JWT signature and body hash of an incoming Plaid webhook."""
     if not plaid_verification:
         logger.warning("Missing Plaid-Verification header")
         return False
@@ -92,13 +84,7 @@ def verify_plaid_webhook(body: bytes, plaid_verification: str | None) -> bool:
 @csrf_exempt
 @require_POST
 def plaid_webhook(request: HttpRequest) -> HttpResponse:
-    """Handle incoming Plaid webhooks for transaction and credential events.
-
-    Routes different webhook types to the appropriate handler: transaction
-    syncs are dispatched as async tasks, credential errors are persisted
-    on the PlaidItem for UI display, and removed transactions are marked
-    inactive. Verification is skipped in sandbox for easier testing.
-    """
+    """Handle incoming Plaid webhooks for transaction and credential events."""
     if len(request.body) > WEBHOOK_MAX_BODY_SIZE:
         logger.warning("Plaid webhook body too large: %d bytes", len(request.body))
         return HttpResponseBadRequest("Payload too large")
@@ -108,9 +94,6 @@ def plaid_webhook(request: HttpRequest) -> HttpResponse:
     except ValueError, TypeError:
         return HttpResponseBadRequest("Invalid JSON")
 
-    # Only skip signature verification when we are running against Plaid's
-    # sandbox. An attacker-supplied "environment": "sandbox" in the payload
-    # must never disable verification in a live environment.
     if settings.PLAID_ENV != "sandbox" and not verify_plaid_webhook(
         request.body, request.headers.get("Plaid-Verification")
     ):
@@ -140,27 +123,25 @@ def plaid_webhook(request: HttpRequest) -> HttpResponse:
 
 
 def _dispatch_sync(plaid_item: PlaidItem) -> bool:
-    """Enqueue a transaction sync for an item, debounced by a per-item cooldown.
-
-    Plaid may deliver several SYNC_UPDATES_AVAILABLE webhooks for the same
-    item within seconds. Only the first one within
-    ``PLAID_SYNC_COOLDOWN_SECONDS`` triggers a task; the rest are dropped to
-    avoid redundant (and potentially expensive) sync runs.
-    """
+    """Enqueue a transaction sync for an item, debounced atomically by a per-item cooldown."""
     now = tz.now()
-    last_synced_at = plaid_item.last_synced_at
-    if last_synced_at is not None:
-        elapsed = (now - last_synced_at).total_seconds()
-        if elapsed < settings.PLAID_SYNC_COOLDOWN_SECONDS:
-            logger.info(
-                "Skipping sync for item %s: last sync %.1fs ago (cooldown %ss)",
-                plaid_item.item_id,
-                elapsed,
-                settings.PLAID_SYNC_COOLDOWN_SECONDS,
-            )
-            return False
+    cooldown_threshold = now - datetime.timedelta(seconds=settings.PLAID_SYNC_COOLDOWN_SECONDS)
 
-    PlaidItem.objects.filter(id=plaid_item.id).update(last_synced_at=now)
+    updated_count = (
+        PlaidItem.objects.filter(id=plaid_item.id)
+        .filter(
+            models.Q(last_synced_at__isnull=True) | models.Q(last_synced_at__lt=cooldown_threshold)
+        )
+        .update(last_synced_at=now)
+    )
+
+    if updated_count == 0:
+        logger.info(
+            "Skipping sync for item %s: last sync within cooldown window.",
+            plaid_item.item_id,
+        )
+        return False
+
     sync_and_convert_for_item_task.delay(plaid_item.id)
     return True
 

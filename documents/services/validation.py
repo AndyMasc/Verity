@@ -7,6 +7,7 @@ optionally transitions the document from PENDING_UPLOAD to UPLOADED status.
 import logging
 from dataclasses import dataclass
 
+from billing.entitlements import can_add_storage, get_storage_limit
 from documents.models import DocumentData, DocumentStatus
 from documents.storage import (
     gatekeeper_validate_r2_object,
@@ -98,6 +99,25 @@ class DocumentUploadService:
         head = get_r2_object_head(self.key)
         file_size = head.get("ContentLength") if head else None
         mime_type = head.get("ContentType", "").split(";")[0].strip() if head else ""
+
+        if transition and file_size is not None and not can_add_storage(
+            self.document.user, file_size
+        ):
+            limit_gb = get_storage_limit(self.document.user)
+            self.document.status = DocumentStatus.ERROR
+            self.document.notes = (
+                (self.document.notes or "")
+                + f"\n[Storage] Upload rejected: storage limit ({limit_gb} GB) reached."
+            ).strip()
+            self.document.save(update_fields=["status", "notes"])
+            logger.warning(
+                "Storage limit exceeded for doc %s (%s bytes)", self.document.id, file_size
+            )
+            return UploadResult(
+                valid=False,
+                error=f"Storage limit ({limit_gb} GB) reached.",
+                status_code=422,
+            )
 
         if transition:
             self.document.status = DocumentStatus.UPLOADED

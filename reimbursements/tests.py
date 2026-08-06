@@ -9,7 +9,7 @@ from django.test import RequestFactory, TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from billing.tests_helpers import give_pro_subscription
+from billing.tests.helpers import give_pro_subscription
 from records.models import AuditLog, Record
 from reimbursements.models import PackagePayment, ReimbursementPackage, StripeAccount
 from reimbursements.views import validate_recipient_email

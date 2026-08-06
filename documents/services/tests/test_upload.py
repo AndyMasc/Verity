@@ -209,3 +209,69 @@ class TestUploadServiceHandle:
         assert result.status == "duplicate_confirmed"
         assert result.existing_record_id == record.id
         assert result.existing_record_label == "Test Record"
+
+    @patch(
+        "documents.services.upload.generate_presigned_post",
+        return_value="https://upload.url",
+    )
+    def test_upload_above_storage_limit_rejected(self, mock_presign, user):
+        from billing.entitlements import get_storage_limit
+
+        over = get_storage_limit(user) * 1024**3 + 1
+        DocumentData.objects.create(
+            user=user,
+            filepath="users/1/full.pdf",
+            file_hash=_make_hash(),
+            file_size=over,
+            status=DocumentStatus.UPLOADED,
+        )
+        request = HttpRequest()
+        request.content_type = "application/x-www-form-urlencoded"
+        request.POST = QueryDict(
+            "filename=new.pdf&file_hash=abc123&content_type=application/pdf&file_size=100"
+        )
+        request.user = user
+        svc = UploadService(request)
+        result = svc.handle()
+        assert result.status == "error"
+        assert "Storage limit reached" in result.error
+        mock_presign.assert_not_called()
+
+    @patch(
+        "documents.services.upload.generate_presigned_post",
+        return_value="https://upload.url",
+    )
+    def test_upload_within_storage_limit_allowed(self, mock_presign, user):
+        request = HttpRequest()
+        request.content_type = "application/x-www-form-urlencoded"
+        request.POST = QueryDict(
+            "filename=new.pdf&file_hash=abc123&content_type=application/pdf&file_size=100"
+        )
+        request.user = user
+        svc = UploadService(request)
+        result = svc.handle()
+        assert result.status == "upload_url"
+
+    @patch(
+        "documents.services.upload.generate_presigned_post",
+        return_value="https://upload.url",
+    )
+    def test_upload_unknown_file_size_checks_exceeded_only(self, mock_presign, user):
+        from billing.entitlements import get_storage_limit
+
+        over = get_storage_limit(user) * 1024**3 + 1
+        DocumentData.objects.create(
+            user=user,
+            filepath="users/1/full.pdf",
+            file_hash=_make_hash(),
+            file_size=over,
+            status=DocumentStatus.UPLOADED,
+        )
+        request = HttpRequest()
+        request.content_type = "application/x-www-form-urlencoded"
+        request.POST = QueryDict("filename=new.pdf&file_hash=abc123&content_type=application/pdf")
+        request.user = user
+        svc = UploadService(request)
+        result = svc.handle()
+        assert result.status == "error"
+        assert "Storage limit reached" in result.error

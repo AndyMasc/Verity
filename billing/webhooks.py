@@ -5,7 +5,6 @@ import djstripe.signals as djstripe_signals
 from django.db import transaction
 from django.dispatch import receiver
 from djstripe.event_handlers import djstripe_receiver
-from djstripe.models import Subscription
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +67,7 @@ def handle_subscription_deleted(**kwargs: Any) -> None:
     if not event:
         return
 
-    stripe_sub = event.data["object"]
+    stripe_sub = event.data.get("object", {})
     sub_id = stripe_sub.get("id")
 
     if not sub_id:
@@ -77,12 +76,7 @@ def handle_subscription_deleted(**kwargs: Any) -> None:
     def _clear_user_subscription() -> None:
         from .models import CustomUser
 
-        subscription = Subscription.objects.only("id").filter(id=sub_id).first()
-        if subscription is None:
-            return
-        updated_count = CustomUser.objects.filter(subscription_id=subscription.pk).update(
-            subscription=None
-        )
+        updated_count = CustomUser.objects.filter(subscription__id=sub_id).update(subscription=None)
         if updated_count:
             logger.info("Cleared subscription %s from %d user(s).", sub_id, updated_count)
 

@@ -6,29 +6,8 @@ from django.urls import reverse
 from django.utils import timezone
 from djstripe.models import Customer, Price, Product, Subscription, SubscriptionItem
 
-from . import metadata
-
-
-class FakeSession:
-    def __init__(
-        self,
-        *,
-        id="cs_test",
-        payment_status="paid",
-        customer=None,
-        customer_details=None,
-        client_reference_id=None,
-        subscription="sub_test",
-    ):
-        self.id = id
-        self.payment_status = payment_status
-        self.customer = customer
-        self.customer_details = customer_details or {}
-        self.client_reference_id = client_reference_id
-        self.subscription = subscription
-
-    def get(self, key, default=None):
-        return getattr(self, key, default)
+from .. import metadata
+from .helpers import FakeSession
 
 
 class SubscriptionConfirmTests(TestCase):
@@ -80,11 +59,11 @@ class SubscriptionConfirmTests(TestCase):
     def _patch_stripe(self, session):
         patchers = [
             mock.patch(
-                "billing.views.stripe.checkout.Session.retrieve",
+                "billing.services.retrieve_checkout_session",
                 return_value=session,
             ),
             mock.patch(
-                "billing.views.stripe.Subscription.retrieve",
+                "billing.services.retrieve_subscription",
                 return_value={
                     "id": "sub_test",
                     "items": {"data": [{"price": {"product": metadata.PAPERTRAIL_PRO.stripe_id}}]},

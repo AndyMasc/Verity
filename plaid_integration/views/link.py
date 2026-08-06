@@ -33,6 +33,7 @@ from billing.mixins import FeatureRequiredMixin
 from ..models import PlaidItem
 from ..plaid_client import client
 from ..services import public_token_exchange
+from ..tasks import sync_and_convert_for_item_task
 
 logger: logging.Logger = logging.getLogger(__name__)
 
@@ -71,9 +72,9 @@ class CreateLinkTokenView(FeatureRequiredMixin, APIView):
             )
             response = client.link_token_create(request_obj)
             return Response({"link_token": response["link_token"]})
-        except plaid.ApiException as e:
-            logger.exception("Link token creation failed for user %s", request.user)
-            return Response({"error": str(e)}, status=400)
+        except plaid.ApiException:
+            logger.exception("Link token creation failed for user %s", request.user.id)
+            return Response({"error": "Failed to create link token with Plaid"}, status=400)
 
 
 class CreateUpdateLinkTokenView(FeatureRequiredMixin, APIView):
@@ -102,18 +103,13 @@ class CreateUpdateLinkTokenView(FeatureRequiredMixin, APIView):
             )
             response = client.link_token_create(request_obj)
             return Response({"link_token": response["link_token"]})
-        except plaid.ApiException as e:
+        except plaid.ApiException:
             logger.exception("Update link token creation failed for item %s", item_id)
-            return Response({"error": str(e)}, status=400)
+            return Response({"error": "Failed to create update token with Plaid"}, status=400)
 
 
 class PublicTokenExchange(FeatureRequiredMixin, APIView):
-    """Exchange a Plaid public token for a persistent access token.
-
-    Completes the bank linking flow: exchanges the short-lived public token,
-    fetches institution metadata and account info, creates a PlaidItem, and
-    fires an initial sync webhook.
-    """
+    """Exchange a Plaid public token for a persistent access token."""
 
     required_feature = features.BANK_TRANSACTION_SYNC
     authentication_classes = [authentication.SessionAuthentication]
@@ -131,7 +127,7 @@ class PublicTokenExchange(FeatureRequiredMixin, APIView):
             accounts_data = _fetch_accounts(access_token, item_id)
 
             with transaction.atomic():
-                PlaidItem.objects.create(
+                plaid_item = PlaidItem.objects.create(
                     user=request.user,
                     item_id=item_id,
                     access_token=access_token,
@@ -139,8 +135,9 @@ class PublicTokenExchange(FeatureRequiredMixin, APIView):
                     accounts_data=accounts_data,
                 )
 
-            _fire_initial_sync_webhook(access_token, item_id)
+            _trigger_initial_sync(plaid_item)
             cache.delete(f"plaid_status:{request.user.id}")
+
             posthog.capture(
                 "bank_linked",
                 distinct_id=str(request.user.id),
@@ -149,9 +146,9 @@ class PublicTokenExchange(FeatureRequiredMixin, APIView):
                     "account_count": len(accounts_data),
                 },
             )
-            return Response({"success": "Bank linked successfully! Syncing transactions\u2026"})
+            return Response({"success": "Bank linked successfully! Syncing transactions…"})
         except Exception:
-            logger.exception("Failed to exchange public token for user %s", request.user)
+            logger.exception("Failed to exchange public token for user %s", request.user.id)
             return Response({"error": "Failed to exchange token"}, status=400)
 
 
@@ -159,8 +156,8 @@ def _fetch_institution_name(access_token: str, item_id: str) -> str:
     """Fetch the institution name from Plaid, returning a default on failure."""
     try:
         item_resp = client.item_get(ItemGetRequest(access_token=access_token))
-        item_data = item_resp if isinstance(item_resp, dict) else item_resp.to_dict()
-        inst_id = item_data.get("item", {}).get("institution_id", "")
+        item_dict = item_resp.to_dict() if hasattr(item_resp, "to_dict") else item_resp
+        inst_id = item_dict.get("item", {}).get("institution_id", "")
         if inst_id:
             inst_req = InstitutionsGetByIdRequest(
                 institution_id=inst_id,
@@ -168,8 +165,8 @@ def _fetch_institution_name(access_token: str, item_id: str) -> str:
                 options=InstitutionsGetByIdRequestOptions(include_optional_metadata=False),
             )
             inst_resp = client.institutions_get_by_id(inst_req)
-            inst_data = inst_resp if isinstance(inst_resp, dict) else inst_resp.to_dict()
-            return inst_data.get("institution", {}).get("name", "Bank Account")
+            inst_dict = inst_resp.to_dict() if hasattr(inst_resp, "to_dict") else inst_resp
+            return inst_dict.get("institution", {}).get("name", "Bank Account")
     except Exception:
         logger.warning("Failed to fetch institution name for item %s", item_id)
     return "Bank Account"
@@ -179,7 +176,7 @@ def _fetch_accounts(access_token: str, item_id: str) -> list[dict[str, str]]:
     """Fetch account metadata from Plaid, returning an empty list on failure."""
     try:
         acct_resp = client.accounts_get(AccountsGetRequest(access_token=access_token))
-        acct_data = acct_resp if isinstance(acct_resp, dict) else acct_resp.to_dict()
+        acct_dict = acct_resp.to_dict() if hasattr(acct_resp, "to_dict") else acct_resp
         return [
             {
                 "id": a["account_id"],
@@ -188,21 +185,24 @@ def _fetch_accounts(access_token: str, item_id: str) -> list[dict[str, str]]:
                 "type": a.get("type", ""),
                 "subtype": a.get("subtype", ""),
             }
-            for a in acct_data.get("accounts", [])
+            for a in acct_dict.get("accounts", [])
         ]
     except Exception:
         logger.warning("Failed to fetch accounts for item %s", item_id)
     return []
 
 
-def _fire_initial_sync_webhook(access_token: str, item_id: str) -> None:
-    """Fire a sandbox webhook to trigger the initial transaction sync."""
-    try:
-        client.sandbox_item_fire_webhook(
-            SandboxItemFireWebhookRequest(
-                access_token=access_token,
-                webhook_code="DEFAULT_UPDATE",
+def _trigger_initial_sync(plaid_item: PlaidItem) -> None:
+    """Trigger initial sync via sandbox webhook in Sandbox, or directly via Celery in Prod."""
+    if getattr(settings, "PLAID_ENV", "") == "sandbox":
+        try:
+            client.sandbox_item_fire_webhook(
+                SandboxItemFireWebhookRequest(
+                    access_token=plaid_item.access_token,
+                    webhook_code="DEFAULT_UPDATE",
+                )
             )
-        )
-    except plaid.ApiException:
-        logger.warning("Failed to fire initial sync webhook for item %s", item_id)
+        except plaid.ApiException:
+            logger.warning("Failed to fire initial sandbox webhook for item %s", plaid_item.item_id)
+    else:
+        sync_and_convert_for_item_task.delay(plaid_item.id)

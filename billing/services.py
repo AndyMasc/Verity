@@ -23,6 +23,36 @@ def retrieve_subscription(subscription_id: str) -> dict:
     return stripe.Subscription.retrieve(str(subscription_id))
 
 
+def retrieve_checkout_session(session_id: str) -> stripe.checkout.Session:
+    """Fetch a Stripe checkout Session payload for the given ID."""
+    _configure()
+    return stripe.checkout.Session.retrieve(session_id)
+
+
+def create_checkout_session(
+    *,
+    customer: str,
+    line_items: list[dict],
+    success_url: str,
+    cancel_url: str,
+) -> stripe.checkout.Session:
+    """Create a Stripe subscription checkout session."""
+    _configure()
+    return stripe.checkout.Session.create(
+        customer=customer,
+        line_items=line_items,
+        mode="subscription",
+        success_url=success_url,
+        cancel_url=cancel_url,
+    )
+
+
+def create_billing_portal_session(*, customer: str, return_url: str) -> stripe.billing_portal.Session:
+    """Create a Stripe billing portal session."""
+    _configure()
+    return stripe.billing_portal.Session.create(customer=customer, return_url=return_url)
+
+
 def cancel_subscription(subscription_id: str) -> None:
     """Cancel a Stripe subscription, logging failures for the caller."""
     _configure()
