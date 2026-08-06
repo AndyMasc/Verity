@@ -39,7 +39,6 @@ class TestBuildContext:
         request.user = user
         ctx = DocumentDetailService.build_context(doc, request)
         assert ctx.view_url == "https://view.url"
-        assert ctx.seven_years_ago_unix > 0
         assert ctx.is_paginated is False
 
     @patch(

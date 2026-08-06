@@ -1,197 +1,219 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% load widget_tweaks %}
-
 {% block title %}
     {% trans "Profile Settings" %}
 {% endblock %}
-
 {% block extra_head %}
     {% load webpush_notifications %}
     {% webpush_header %}
 {% endblock %}
-
 {% block content %}
-<div x-data="{ currentTab: $persist('general') }"
-     class="max-w-6xl mx-auto py-12 px-4 sm:px-6 lg:px-8 text-zinc-900 dark:text-zinc-100"
-     x-cloak>
-    
-    <div class="relative pb-8 mb-10 border-b border-zinc-200/80 dark:border-zinc-800/80">
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-                <h1 class="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-white">Account Settings</h1>
-                <p class="mt-1.5 text-sm text-zinc-500 dark:text-zinc-400">Manage your profile details, platform preferences, and security settings.</p>
+    <div x-data="{ currentTab: $persist('general') }"
+         class="max-w-6xl mx-auto py-12 px-4 sm:px-6 lg:px-8 text-zinc-900 dark:text-zinc-100"
+         x-cloak>
+        <div class="relative pb-8 mb-10 border-b border-zinc-200/80 dark:border-zinc-800/80">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <h1 class="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-white">Account Settings</h1>
+                    <p class="mt-1.5 text-sm text-zinc-500 dark:text-zinc-400">Manage your profile details, platform preferences, and security settings.</p>
+                </div>
             </div>
         </div>
-    </div>
-
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-8 items-start">
-        
-        <aside class="md:col-span-1 space-y-6">
-            <div class="p-3.5 rounded-2xl bg-zinc-50/80 dark:bg-zinc-900/50 border border-zinc-200/60 dark:border-zinc-800/60 backdrop-blur-sm shadow-xs flex items-center gap-3.5">
-                <div class="relative flex-shrink-0">
-                    <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-zinc-200 to-zinc-100 dark:from-zinc-800 dark:to-zinc-700 border border-zinc-300/60 dark:border-zinc-700/80 flex items-center justify-center text-sm font-semibold text-zinc-800 dark:text-zinc-200 shadow-inner select-none">
-                        {{ user.email|slice:":1"|upper }}
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-8 items-start">
+            <aside class="md:col-span-1 space-y-6">
+                <div class="p-3.5 rounded-2xl bg-zinc-50/80 dark:bg-zinc-900/50 border border-zinc-200/60 dark:border-zinc-800/60 backdrop-blur-sm shadow-xs flex items-center gap-3.5">
+                    <div class="relative flex-shrink-0">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-zinc-200 to-zinc-100 dark:from-zinc-800 dark:to-zinc-700 border border-zinc-300/60 dark:border-zinc-700/80 flex items-center justify-center text-sm font-semibold text-zinc-800 dark:text-zinc-200 shadow-inner select-none">
+                            {{ user.email|slice:":1"|upper }}
+                        </div>
+                        <span class="absolute bottom-0 right-0 size-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-zinc-900"></span>
                     </div>
-                    <span class="absolute bottom-0 right-0 size-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-zinc-900"></span>
-                </div>
-                <div class="min-w-0 flex-1">
-                    <h2 class="text-xs font-semibold text-zinc-900 dark:text-zinc-100 truncate">
-                        {% if user.username %}{{ user.username }}{% else %}{{ user.email }}{% endif %}
-                    </h2>
-                    <span class="inline-flex items-center gap-1.5 mt-0.5 text-[10px] font-medium tracking-tight text-emerald-600 dark:text-emerald-400">
-                        <span class="size-1 rounded-full bg-emerald-500 animate-pulse"></span>
-                        Active Session
-                    </span>
-                </div>
-            </div>
-
-            <nav class="space-y-1">
-                <button @click="currentTab = 'general'"
-                        :class="currentTab === 'general' ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 font-medium shadow-xs' : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100/80 dark:hover:bg-zinc-800/50'"
-                        class="w-full flex items-center gap-3 px-3.5 py-2.5 text-xs rounded-xl transition-all duration-200 text-left cursor-pointer">
-                    <svg class="size-4 shrink-0 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
-                    </svg>
-                    General Info
-                </button>
-
-                <button @click="currentTab = 'preferences'"
-                        :class="currentTab === 'preferences' ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 font-medium shadow-xs' : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100/80 dark:hover:bg-zinc-800/50'"
-                        class="w-full flex items-center gap-3 px-3.5 py-2.5 text-xs rounded-xl transition-all duration-200 text-left cursor-pointer">
-                    <svg class="size-4 shrink-0 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 18H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 12h9.75" />
-                    </svg>
-                    Preferences
-                </button>
-
-                <button @click="currentTab = 'notifications'"
-                        :class="currentTab === 'notifications' ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 font-medium shadow-xs' : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100/80 dark:hover:bg-zinc-800/50'"
-                        class="w-full flex items-center gap-3 px-3.5 py-2.5 text-xs rounded-xl transition-all duration-200 text-left cursor-pointer">
-                    <svg class="size-4 shrink-0 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
-                    </svg>
-                    Notifications
-                </button>
-
-                <button @click="currentTab = 'security'"
-                        :class="currentTab === 'security' ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 font-medium shadow-xs' : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100/80 dark:hover:bg-zinc-800/50'"
-                        class="w-full flex items-center gap-3 px-3.5 py-2.5 text-xs rounded-xl transition-all duration-200 text-left cursor-pointer">
-                    <svg class="size-4 shrink-0 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.57-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.286zm0 13.036h.008v.008H12v-.008z" />
-                    </svg>
-                    Security & Access
-                </button>
-            </nav>
-        </aside>
-
-        <main class="md:col-span-3 min-h-[450px]">
-            
-            <div x-show="currentTab === 'general'"
-                 x-transition:enter="transition ease-out duration-200"
-                 x-transition:enter-start="opacity-0 translate-y-1"
-                 x-transition:enter-end="opacity-100 translate-y-0"
-                 class="space-y-6">
-                
-                <div class="rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white/70 dark:bg-zinc-900/40 backdrop-blur-xl shadow-xs overflow-hidden">
-                    <div class="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800/80 bg-zinc-50/50 dark:bg-zinc-900/20">
-                        <h3 class="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">General Information</h3>
+                    <div class="min-w-0 flex-1">
+                        <h2 class="text-xs font-semibold text-zinc-900 dark:text-zinc-100 truncate">
+                            {% if user.username %}{{ user.username }}{% else %}{{ user.email }}{% endif %}
+                        </h2>
                     </div>
-                    <div class="p-6 space-y-6">
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                            {% if user.username %}
-                            <div>
-                                <span class="block text-[11px] font-medium uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Username</span>
-                                <span class="text-sm text-zinc-900 dark:text-zinc-100 font-medium mt-1 block">{{ user.username }}</span>
+                </div>
+                <nav class="space-y-1">
+                    <button @click="currentTab = 'general'"
+                            :class="currentTab === 'general' ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 font-medium shadow-xs' : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100/80 dark:hover:bg-zinc-800/50'"
+                            class="w-full flex items-center gap-3 px-3.5 py-2.5 text-xs rounded-xl transition-all duration-200 text-left cursor-pointer">
+                        <svg class="size-4 shrink-0 opacity-80"
+                             fill="none"
+                             viewBox="0 0 24 24"
+                             stroke="currentColor"
+                             stroke-width="1.75">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+                        </svg>
+                        General Info
+                    </button>
+                    <button @click="currentTab = 'preferences'"
+                            :class="currentTab === 'preferences' ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 font-medium shadow-xs' : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100/80 dark:hover:bg-zinc-800/50'"
+                            class="w-full flex items-center gap-3 px-3.5 py-2.5 text-xs rounded-xl transition-all duration-200 text-left cursor-pointer">
+                        <svg class="size-4 shrink-0 opacity-80"
+                             fill="none"
+                             viewBox="0 0 24 24"
+                             stroke="currentColor"
+                             stroke-width="1.75">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 18H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 12h9.75" />
+                        </svg>
+                        Preferences
+                    </button>
+                    <button @click="currentTab = 'notifications'"
+                            :class="currentTab === 'notifications' ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 font-medium shadow-xs' : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100/80 dark:hover:bg-zinc-800/50'"
+                            class="w-full flex items-center gap-3 px-3.5 py-2.5 text-xs rounded-xl transition-all duration-200 text-left cursor-pointer">
+                        <svg class="size-4 shrink-0 opacity-80"
+                             fill="none"
+                             viewBox="0 0 24 24"
+                             stroke="currentColor"
+                             stroke-width="1.75">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
+                        </svg>
+                        Notifications
+                    </button>
+                    <button @click="currentTab = 'security'"
+                            :class="currentTab === 'security' ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 font-medium shadow-xs' : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100/80 dark:hover:bg-zinc-800/50'"
+                            class="w-full flex items-center gap-3 px-3.5 py-2.5 text-xs rounded-xl transition-all duration-200 text-left cursor-pointer">
+                        <svg class="size-4 shrink-0 opacity-80"
+                             fill="none"
+                             viewBox="0 0 24 24"
+                             stroke="currentColor"
+                             stroke-width="1.75">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.57-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.286zm0 13.036h.008v.008H12v-.008z" />
+                        </svg>
+                        Security & Access
+                    </button>
+                </nav>
+            </aside>
+            <main class="md:col-span-3 min-h-[450px]">
+                <div x-show="currentTab === 'general'"
+                     x-transition:enter="transition ease-out duration-200"
+                     x-transition:enter-start="opacity-0 translate-y-1"
+                     x-transition:enter-end="opacity-100 translate-y-0"
+                     class="space-y-6">
+                    <div class="rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white/70 dark:bg-zinc-900/40 backdrop-blur-xl shadow-xs overflow-hidden">
+                        <div class="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800/80 bg-zinc-50/50 dark:bg-zinc-900/20">
+                            <h3 class="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">General Information</h3>
+                        </div>
+                        <div class="p-6 space-y-6">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                {% if user.username %}
+                                    <div>
+                                        <span class="block text-[11px] font-medium uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Username</span>
+                                        <span class="text-sm text-zinc-900 dark:text-zinc-100 font-medium mt-1 block">{{ user.username }}</span>
+                                    </div>
+                                {% endif %}
+                                <div>
+                                    <span class="block text-[11px] font-medium uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Primary Email</span>
+                                    <span class="text-sm text-zinc-900 dark:text-zinc-100 font-medium mt-1 block">{{ user.email }}</span>
+                                </div>
                             </div>
-                            {% endif %}
-                            <div>
-                                <span class="block text-[11px] font-medium uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Primary Email</span>
-                                <span class="text-sm text-zinc-900 dark:text-zinc-100 font-medium mt-1 block">{{ user.email }}</span>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-6 border-t border-zinc-100 dark:border-zinc-800/50">
+                                <div>
+                                    <span class="block text-[11px] font-medium uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Date Joined</span>
+                                    <span class="text-xs text-zinc-700 dark:text-zinc-300 mt-1 block">{{ user.date_joined|date:"F d, Y" }}</span>
+                                </div>
+                                <div>
+                                    <span class="block text-[11px] font-medium uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Last Active</span>
+                                    <span class="text-xs text-zinc-700 dark:text-zinc-300 mt-1 block">{{ user.last_login|date:"F d, Y \a\t H:i" }}</span>
+                                </div>
                             </div>
                         </div>
-                        
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-6 border-t border-zinc-100 dark:border-zinc-800/50">
-                            <div>
-                                <span class="block text-[11px] font-medium uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Date Joined</span>
-                                <span class="text-xs text-zinc-700 dark:text-zinc-300 mt-1 block">{{ user.date_joined|date:"F d, Y" }}</span>
-                            </div>
-                            <div>
-                                <span class="block text-[11px] font-medium uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Last Active</span>
-                                <span class="text-xs text-zinc-700 dark:text-zinc-300 mt-1 block">{{ user.last_login|date:"F d, Y \a\t H:i" }}</span>
-                            </div>
+                    </div>
+                    <div class="rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white/70 dark:bg-zinc-900/40 backdrop-blur-xl shadow-xs overflow-hidden">
+                        <div class="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800/80 bg-zinc-50/50 dark:bg-zinc-900/20">
+                            <h3 class="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Subscription Plan</h3>
                         </div>
-                    </div>
-                </div>
-
-                <div class="rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white/70 dark:bg-zinc-900/40 backdrop-blur-xl shadow-xs overflow-hidden">
-                    <div class="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800/80 bg-zinc-50/50 dark:bg-zinc-900/20">
-                        <h3 class="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Subscription Plan</h3>
-                    </div>
-                    <div class="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div class="space-y-1">
-                            <div class="flex items-center gap-2">
-                                <span class="text-sm font-semibold text-zinc-900 dark:text-white">{{ plan_name }}</span>
-                                {% if is_subscribed %}
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50">Active</span>
-                                {% else %}
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">Free Tier</span>
+                        <div class="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div class="space-y-1">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-sm font-semibold text-zinc-900 dark:text-white">{{ plan_name }}</span>
+                                    {% if is_subscribed %}
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50">Active</span>
+                                    {% else %}
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">Free Tier</span>
+                                    {% endif %}
+                                </div>
+                                {% if not is_subscribed %}
+                                    <p class="text-xs text-zinc-500 dark:text-zinc-400">Upgrade to unlock advanced features and unlimited exports.</p>
                                 {% endif %}
                             </div>
-                            {% if not is_subscribed %}
-                                <p class="text-xs text-zinc-500 dark:text-zinc-400">Upgrade to unlock advanced features and unlimited exports.</p>
-                            {% endif %}
+                            <div class="shrink-0 flex items-center gap-2.5">
+                                {% if is_subscribed %}
+                                    <a href="{% url 'pricing_page' %}"
+                                       class="bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 font-medium py-2 px-4 text-xs rounded-xl transition-all duration-200 active:scale-[0.98] shadow-xs">
+                                        Change Plan
+                                    </a>
+                                    <form method="post" action="{% url 'portal_session' %}">
+                                        {% csrf_token %}
+                                        <button type="submit"
+                                                class="border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-medium py-2 px-4 text-xs rounded-xl transition-all duration-200 active:scale-[0.98] cursor-pointer">
+                                            Billing Portal
+                                        </button>
+                                    </form>
+                                {% else %}
+                                    <a href="{% url 'pricing_page' %}"
+                                       class="bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 font-medium py-2 px-4 text-xs rounded-xl transition-all duration-200 active:scale-[0.98] shadow-xs">
+                                        Upgrade Plan
+                                    </a>
+                                {% endif %}
+                            </div>
                         </div>
-                        <div class="shrink-0 flex items-center gap-2.5">
-                            {% if is_subscribed %}
-                                <a href="{% url 'pricing_page' %}"
-                                   class="bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 font-medium py-2 px-4 text-xs rounded-xl transition-all duration-200 active:scale-[0.98] shadow-xs">
-                                    Change Plan
-                                </a>
-                                <form method="post" action="{% url 'portal_session' %}">
-                                    {% csrf_token %}
-                                    <button type="submit"
-                                            class="border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-medium py-2 px-4 text-xs rounded-xl transition-all duration-200 active:scale-[0.98] cursor-pointer">
-                                        Billing Portal
-                                    </button>
-                                </form>
-                            {% else %}
-                                <a href="{% url 'pricing_page' %}"
-                                   class="bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 font-medium py-2 px-4 text-xs rounded-xl transition-all duration-200 active:scale-[0.98] shadow-xs">
-                                    Upgrade Plan
-                                </a>
-                            {% endif %}
+                    </div>
+                    <div class="rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white/70 dark:bg-zinc-900/40 backdrop-blur-xl p-6 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div class="space-y-1">
+                            <h3 class="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Export System Data</h3>
+                            <p class="text-xs text-zinc-500 dark:text-zinc-400">Download a consolidated spreadsheet of all your recorded data.</p>
+                        </div>
+                        <a href="{% url 'accounting:export_all_to_excel' %}"
+                           class="inline-flex items-center justify-center shrink-0 bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 font-medium py-2 px-4 text-xs rounded-xl transition-all duration-200 active:scale-[0.98] shadow-xs w-full sm:w-auto">
+                            <svg class="size-3.5 mr-2"
+                                 fill="none"
+                                 viewBox="0 0 24 24"
+                                 stroke="currentColor"
+                                 stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                            </svg>
+                            Download Records
+                        </a>
+                    </div>
+                </div>
+                <div x-show="currentTab === 'preferences'"
+                     x-transition:enter="transition ease-out duration-200"
+                     x-transition:enter-start="opacity-0 translate-y-1"
+                     x-transition:enter-end="opacity-100 translate-y-0"
+                     class="space-y-6">
+                    <div class="rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white/70 dark:bg-zinc-900/40 backdrop-blur-xl shadow-xs overflow-hidden">
+                        <div class="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800/80 bg-zinc-50/50 dark:bg-zinc-900/20">
+                            <h3 class="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Application Preferences</h3>
+                            <p class="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">Customize your workflow and automation behavior.</p>
+                        </div>
+                        <div>
+                            <form hx-post="{% url 'core:profile_page' %}"
+                                  hx-target="#UserSettingsForm"
+                                  hx-swap="outerHTML"
+                                  hx-trigger="change"
+                                  hx-include="this"
+                                  method="POST">
+                                {% csrf_token %}
+                                {{ form.enable_push_notifications.as_hidden }}
+                                {{ form.enable_email_notifications.as_hidden }}
+                                {% include 'core/partials/user_settings_partial.html' %}
+                            </form>
                         </div>
                     </div>
                 </div>
-
-                <div class="rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white/70 dark:bg-zinc-900/40 backdrop-blur-xl p-6 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <div class="space-y-1">
-                        <h3 class="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Export System Data</h3>
-                        <p class="text-xs text-zinc-500 dark:text-zinc-400">Download a consolidated spreadsheet of all your recorded data.</p>
-                    </div>
-                    <a href="{% url 'accounting:export_all_to_excel' %}"
-                       class="inline-flex items-center justify-center shrink-0 bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 font-medium py-2 px-4 text-xs rounded-xl transition-all duration-200 active:scale-[0.98] shadow-xs w-full sm:w-auto">
-                        <svg class="size-3.5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
-                        </svg>
-                        Download Records
-                    </a>
-                </div>
-            </div>
-
-            <div x-show="currentTab === 'preferences'"
-                 x-transition:enter="transition ease-out duration-200"
-                 x-transition:enter-start="opacity-0 translate-y-1"
-                 x-transition:enter-end="opacity-100 translate-y-0"
-                 class="space-y-6">
-                
-                <div class="rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white/70 dark:bg-zinc-900/40 backdrop-blur-xl shadow-xs overflow-hidden">
-                    <div class="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800/80 bg-zinc-50/50 dark:bg-zinc-900/20">
-                        <h3 class="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Application Preferences</h3>
-                        <p class="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">Customize your workflow and automation behavior.</p>
-                    </div>
-                    <div>
+                <div x-show="currentTab === 'notifications'"
+                     x-transition:enter="transition ease-out duration-200"
+                     x-transition:enter-start="opacity-0 translate-y-1"
+                     x-transition:enter-end="opacity-100 translate-y-0"
+                     class="space-y-6">
+                    <div class="rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white/70 dark:bg-zinc-900/40 backdrop-blur-xl shadow-xs overflow-hidden">
+                        <div class="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800/80 bg-zinc-50/50 dark:bg-zinc-900/20">
+                            <h3 class="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Notification Channels</h3>
+                            <p class="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">Control how and when you receive system communications.</p>
+                        </div>
                         <form hx-post="{% url 'core:profile_page' %}"
                               hx-target="#UserSettingsForm"
                               hx-swap="outerHTML"
@@ -199,179 +221,173 @@
                               hx-include="this"
                               method="POST">
                             {% csrf_token %}
-                            {{ form.enable_push_notifications.as_hidden }}
-                            {{ form.enable_email_notifications.as_hidden }}
-                            {% include 'core/partials/user_settings_partial.html' %}
+                            {{ form.auto_archive_expired_records.as_hidden }}
+                            {{ form.auto_delete_archived_records.as_hidden }}
+                            {{ form.expiring_notifications_advance_time.as_hidden }}
+                            {{ form.default_currency.as_hidden }}
+                            {{ form.auto_create_and_organize_folders.as_hidden }}
+                            <div class="divide-y divide-zinc-100 dark:divide-zinc-800/50">
+                                <div class="flex items-center justify-between px-6 py-4 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors">
+                                    <div class="flex flex-col pr-4">
+                                        <label for="{{ form.enable_push_notifications.id_for_label }}"
+                                               class="text-xs font-medium text-zinc-800 dark:text-zinc-200 cursor-pointer select-none">
+                                            {{ form.enable_push_notifications.label }}
+                                        </label>
+                                        <span class="text-[11px] text-zinc-400 dark:text-zinc-500 mt-0.5">Receive real-time push alerts on your primary browser.</span>
+                                    </div>
+                                    <div class="flex items-center">
+                                        {% render_field form.enable_push_notifications class="size-4 rounded border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 focus:ring-zinc-500/20 bg-transparent cursor-pointer" %}
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-between px-6 py-4 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors">
+                                    <div class="flex flex-col pr-4">
+                                        <label for="{{ form.enable_email_notifications.id_for_label }}"
+                                               class="text-xs font-medium text-zinc-800 dark:text-zinc-200 cursor-pointer select-none">
+                                            {{ form.enable_email_notifications.label }}
+                                        </label>
+                                        <span class="text-[11px] text-zinc-400 dark:text-zinc-500 mt-0.5">Receive summary digests and critical account activity via email.</span>
+                                    </div>
+                                    <div class="flex items-center">
+                                        {% render_field form.enable_email_notifications class="size-4 rounded border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 focus:ring-zinc-500/20 bg-transparent cursor-pointer" %}
+                                    </div>
+                                </div>
+                            </div>
                         </form>
                     </div>
-                </div>
-            </div>
-
-            <div x-show="currentTab === 'notifications'"
-                 x-transition:enter="transition ease-out duration-200"
-                 x-transition:enter-start="opacity-0 translate-y-1"
-                 x-transition:enter-end="opacity-100 translate-y-0"
-                 class="space-y-6">
-                
-                <div class="rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white/70 dark:bg-zinc-900/40 backdrop-blur-xl shadow-xs overflow-hidden">
-                    <div class="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800/80 bg-zinc-50/50 dark:bg-zinc-900/20">
-                        <h3 class="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Notification Channels</h3>
-                        <p class="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">Control how and when you receive system communications.</p>
-                    </div>
-                    
-                    <form hx-post="{% url 'core:profile_page' %}"
-                          hx-target="#UserSettingsForm"
-                          hx-swap="outerHTML"
-                          hx-trigger="change"
-                          hx-include="this"
-                          method="POST">
-                        {% csrf_token %}
-                        {{ form.auto_archive_expired_records.as_hidden }}
-                        {{ form.auto_delete_archived_records.as_hidden }}
-                        {{ form.auto_delete_deleted_documents.as_hidden }}
-                        {{ form.expiring_notifications_advance_time.as_hidden }}
-                        {{ form.default_currency.as_hidden }}
-                        {{ form.auto_create_and_organize_folders.as_hidden }}
-                        
-                        <div class="divide-y divide-zinc-100 dark:divide-zinc-800/50">
-                            <div class="flex items-center justify-between px-6 py-4 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors">
-                                <div class="flex flex-col pr-4">
-                                    <label for="{{ form.enable_push_notifications.id_for_label }}"
-                                           class="text-xs font-medium text-zinc-800 dark:text-zinc-200 cursor-pointer select-none">
-                                        {{ form.enable_push_notifications.label }}
-                                    </label>
-                                    <span class="text-[11px] text-zinc-400 dark:text-zinc-500 mt-0.5">Receive real-time push alerts on your primary browser.</span>
-                                </div>
-                                <div class="flex items-center">
-                                    {% render_field form.enable_push_notifications class="size-4 rounded border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 focus:ring-zinc-500/20 bg-transparent cursor-pointer" %}
-                                </div>
-                            </div>
-
-                            <div class="flex items-center justify-between px-6 py-4 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors">
-                                <div class="flex flex-col pr-4">
-                                    <label for="{{ form.enable_email_notifications.id_for_label }}"
-                                           class="text-xs font-medium text-zinc-800 dark:text-zinc-200 cursor-pointer select-none">
-                                        {{ form.enable_email_notifications.label }}
-                                    </label>
-                                    <span class="text-[11px] text-zinc-400 dark:text-zinc-500 mt-0.5">Receive summary digests and critical account activity via email.</span>
-                                </div>
-                                <div class="flex items-center">
-                                    {% render_field form.enable_email_notifications class="size-4 rounded border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 focus:ring-zinc-500/20 bg-transparent cursor-pointer" %}
-                                </div>
-                            </div>
+                    <div class="rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white/70 dark:bg-zinc-900/40 backdrop-blur-xl p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs">
+                        <div class="space-y-1">
+                            <h4 class="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Device Push Integration</h4>
+                            <p class="text-xs text-zinc-500 dark:text-zinc-400">
+                                You currently have <span class="font-medium text-zinc-800 dark:text-zinc-200">{{ webpush_subscription_count }}</span> registered subscription{{ webpush_subscription_count|pluralize }}.
+                            </p>
                         </div>
-                    </form>
-                </div>
-
-                <div class="rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white/70 dark:bg-zinc-900/40 backdrop-blur-xl p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs">
-                    <div class="space-y-1">
-                        <h4 class="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Device Push Integration</h4>
-                        <p class="text-xs text-zinc-500 dark:text-zinc-400">
-                            You currently have <span class="font-medium text-zinc-800 dark:text-zinc-200">{{ webpush_subscription_count }}</span> registered subscription{{ webpush_subscription_count|pluralize }}.
-                        </p>
-                    </div>
-                    <div>
-                        {% webpush_button with_class="border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl text-xs font-medium px-4 py-2 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 transition shadow-xs cursor-pointer active:scale-[0.98]" %}
+                        <div>
+                            {% webpush_button with_class="border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl text-xs font-medium px-4 py-2 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 transition shadow-xs cursor-pointer active:scale-[0.98]" %}
+                        </div>
                     </div>
                 </div>
-            </div>
-
-            <div x-show="currentTab === 'security'"
-                 x-transition:enter="transition ease-out duration-200"
-                 x-transition:enter-start="opacity-0 translate-y-1"
-                 x-transition:enter-end="opacity-100 translate-y-0">
-                
-                <div class="rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white/70 dark:bg-zinc-900/40 backdrop-blur-xl shadow-xs overflow-hidden divide-y divide-zinc-100 dark:divide-zinc-800/60">
-                    <div class="px-6 py-4 bg-zinc-50/50 dark:bg-zinc-900/20">
-                        <h3 class="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Security & Authentication</h3>
-                    </div>
-
-                    {% url 'account_email' as email_url %}
-                    {% if email_url %}
-                        <a href="{{ email_url }}"
-                           class="flex items-center justify-between p-4 px-6 hover:bg-zinc-50/80 dark:hover:bg-zinc-800/30 transition-all duration-200 group">
-                            <div class="flex items-center gap-3.5">
-                                <div class="p-2.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-500 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors border border-zinc-200/60 dark:border-zinc-700/60">
-                                    <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <span class="block text-xs font-medium text-zinc-900 dark:text-zinc-100">Manage Email Addresses</span>
-                                    <span class="block text-[11px] text-zinc-400 dark:text-zinc-500 mt-0.5">Add, verify, or update your primary login credentials.</span>
-                                </div>
-                            </div>
-                            <svg class="size-4 text-zinc-300 dark:text-zinc-600 group-hover:text-zinc-600 dark:group-hover:text-zinc-300 transition-all duration-200 group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                            </svg>
-                        </a>
-                    {% endif %}
-
-                    {% if user.has_usable_password %}
-                        {% url 'account_change_password' as pwd_url %}
-                        {% if pwd_url %}
-                            <a href="{{ pwd_url }}"
+                <div x-show="currentTab === 'security'"
+                     x-transition:enter="transition ease-out duration-200"
+                     x-transition:enter-start="opacity-0 translate-y-1"
+                     x-transition:enter-end="opacity-100 translate-y-0">
+                    <div class="rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white/70 dark:bg-zinc-900/40 backdrop-blur-xl shadow-xs overflow-hidden divide-y divide-zinc-100 dark:divide-zinc-800/60">
+                        <div class="px-6 py-4 bg-zinc-50/50 dark:bg-zinc-900/20">
+                            <h3 class="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Security & Authentication</h3>
+                        </div>
+                        {% url 'account_email' as email_url %}
+                        {% if email_url %}
+                            <a href="{{ email_url }}"
                                class="flex items-center justify-between p-4 px-6 hover:bg-zinc-50/80 dark:hover:bg-zinc-800/30 transition-all duration-200 group">
                                 <div class="flex items-center gap-3.5">
                                     <div class="p-2.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-500 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors border border-zinc-200/60 dark:border-zinc-700/60">
-                                        <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+                                        <svg class="size-4"
+                                             fill="none"
+                                             viewBox="0 0 24 24"
+                                             stroke-width="1.75"
+                                             stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
                                         </svg>
                                     </div>
                                     <div>
-                                        <span class="block text-xs font-medium text-zinc-900 dark:text-zinc-100">Update Password</span>
-                                        <span class="block text-[11px] text-zinc-400 dark:text-zinc-500 mt-0.5">Ensure account integrity by periodically updating your password.</span>
+                                        <span class="block text-xs font-medium text-zinc-900 dark:text-zinc-100">Manage Email Addresses</span>
+                                        <span class="block text-[11px] text-zinc-400 dark:text-zinc-500 mt-0.5">Add, verify, or update your primary login credentials.</span>
                                     </div>
                                 </div>
-                                <svg class="size-4 text-zinc-300 dark:text-zinc-600 group-hover:text-zinc-600 dark:group-hover:text-zinc-300 transition-all duration-200 group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <svg class="size-4 text-zinc-300 dark:text-zinc-600 group-hover:text-zinc-600 dark:group-hover:text-zinc-300 transition-all duration-200 group-hover:translate-x-0.5"
+                                     fill="none"
+                                     viewBox="0 0 24 24"
+                                     stroke="currentColor"
+                                     stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
                                 </svg>
                             </a>
                         {% endif %}
-                    {% endif %}
-
-                    <a href="{% url 'socialaccount_connections' %}"
-                       class="flex items-center justify-between p-4 px-6 hover:bg-zinc-50/80 dark:hover:bg-zinc-800/30 transition-all duration-200 group">
-                        <div class="flex items-center gap-3.5">
-                            <div class="p-2.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-500 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors border border-zinc-200/60 dark:border-zinc-700/60">
-                                <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
-                                </svg>
-                            </div>
-                            <div>
-                                <span class="block text-xs font-medium text-zinc-900 dark:text-zinc-100">Third-Party Connections</span>
-                                <span class="block text-[11px] text-zinc-400 dark:text-zinc-500 mt-0.5">Manage single sign-on (SSO) integrations and OAuth providers.</span>
-                            </div>
-                        </div>
-                        <svg class="size-4 text-zinc-300 dark:text-zinc-600 group-hover:text-zinc-600 dark:group-hover:text-zinc-300 transition-all duration-200 group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                        </svg>
-                    </a>
-
-                    {% url 'account_logout' as logout_url %}
-                    {% if logout_url %}
-                        <a href="{{ logout_url }}"
-                           class="flex items-center justify-between p-4 px-6 hover:bg-rose-50/50 dark:hover:bg-rose-950/20 transition-all duration-200 group">
+                        {% if user.has_usable_password %}
+                            {% url 'account_change_password' as pwd_url %}
+                            {% if pwd_url %}
+                                <a href="{{ pwd_url }}"
+                                   class="flex items-center justify-between p-4 px-6 hover:bg-zinc-50/80 dark:hover:bg-zinc-800/30 transition-all duration-200 group">
+                                    <div class="flex items-center gap-3.5">
+                                        <div class="p-2.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-500 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors border border-zinc-200/60 dark:border-zinc-700/60">
+                                            <svg class="size-4"
+                                                 fill="none"
+                                                 viewBox="0 0 24 24"
+                                                 stroke-width="1.75"
+                                                 stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <span class="block text-xs font-medium text-zinc-900 dark:text-zinc-100">Update Password</span>
+                                            <span class="block text-[11px] text-zinc-400 dark:text-zinc-500 mt-0.5">Ensure account integrity by periodically updating your password.</span>
+                                        </div>
+                                    </div>
+                                    <svg class="size-4 text-zinc-300 dark:text-zinc-600 group-hover:text-zinc-600 dark:group-hover:text-zinc-300 transition-all duration-200 group-hover:translate-x-0.5"
+                                         fill="none"
+                                         viewBox="0 0 24 24"
+                                         stroke="currentColor"
+                                         stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                                    </svg>
+                                </a>
+                            {% endif %}
+                        {% endif %}
+                        <a href="{% url 'socialaccount_connections' %}"
+                           class="flex items-center justify-between p-4 px-6 hover:bg-zinc-50/80 dark:hover:bg-zinc-800/30 transition-all duration-200 group">
                             <div class="flex items-center gap-3.5">
-                                <div class="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 border border-rose-200/50 dark:border-rose-900/50">
-                                    <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75" />
+                                <div class="p-2.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-500 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors border border-zinc-200/60 dark:border-zinc-700/60">
+                                    <svg class="size-4"
+                                         fill="none"
+                                         viewBox="0 0 24 24"
+                                         stroke-width="1.75"
+                                         stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
                                     </svg>
                                 </div>
                                 <div>
-                                    <span class="block text-xs font-semibold text-rose-600 dark:text-rose-400">Sign Out</span>
-                                    <span class="block text-[11px] text-zinc-400 dark:text-zinc-500 mt-0.5">Safely terminate your active session on this device.</span>
+                                    <span class="block text-xs font-medium text-zinc-900 dark:text-zinc-100">Third-Party Connections</span>
+                                    <span class="block text-[11px] text-zinc-400 dark:text-zinc-500 mt-0.5">Manage single sign-on (SSO) integrations and OAuth providers.</span>
                                 </div>
                             </div>
-                            <svg class="size-4 text-rose-300 dark:text-rose-800 group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-all duration-200 group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <svg class="size-4 text-zinc-300 dark:text-zinc-600 group-hover:text-zinc-600 dark:group-hover:text-zinc-300 transition-all duration-200 group-hover:translate-x-0.5"
+                                 fill="none"
+                                 viewBox="0 0 24 24"
+                                 stroke="currentColor"
+                                 stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
                             </svg>
                         </a>
-                    {% endif %}
+                        {% url 'account_logout' as logout_url %}
+                        {% if logout_url %}
+                            <a href="{{ logout_url }}"
+                               class="flex items-center justify-between p-4 px-6 hover:bg-rose-50/50 dark:hover:bg-rose-950/20 transition-all duration-200 group">
+                                <div class="flex items-center gap-3.5">
+                                    <div class="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 border border-rose-200/50 dark:border-rose-900/50">
+                                        <svg class="size-4"
+                                             fill="none"
+                                             viewBox="0 0 24 24"
+                                             stroke-width="1.75"
+                                             stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <span class="block text-xs font-semibold text-rose-600 dark:text-rose-400">Sign Out</span>
+                                        <span class="block text-[11px] text-zinc-400 dark:text-zinc-500 mt-0.5">Safely terminate your active session on this device.</span>
+                                    </div>
+                                </div>
+                                <svg class="size-4 text-rose-300 dark:text-rose-800 group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-all duration-200 group-hover:translate-x-0.5"
+                                     fill="none"
+                                     viewBox="0 0 24 24"
+                                     stroke="currentColor"
+                                     stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                                </svg>
+                            </a>
+                        {% endif %}
+                    </div>
                 </div>
-            </div>
-
-        </main>
+            </main>
+        </div>
     </div>
-</div>
 {% endblock %}

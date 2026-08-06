@@ -15,7 +15,11 @@ from typing import Any
 from django.db import transaction
 from django.http import HttpRequest
 
-from billing.entitlements import can_add_storage, get_storage_limit, is_storage_limit_exceeded
+from billing.entitlements import (
+    can_add_storage,
+    get_storage_limit,
+    is_storage_limit_exceeded,
+)
 from documents.forms import R2UploadForm
 from documents.models import DocumentData, DocumentStatus
 from documents.storage import generate_presigned_post, generate_upload_key

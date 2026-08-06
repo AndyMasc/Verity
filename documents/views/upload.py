@@ -1,5 +1,6 @@
 """Upload views: presigned R2 uploads, confirmation, and supporting document flow."""
 
+import logging
 from typing import Any
 
 import posthog
@@ -16,6 +17,8 @@ from records.models import Record
 
 from ..models import DocumentData, DocumentStatus
 from ..services import ConfirmUploadService, UploadService
+
+logger = logging.getLogger(__name__)
 
 
 def _presign_to_json(result) -> JsonResponse:
@@ -112,6 +115,16 @@ class ConfirmUploadView(LoginRequiredMixin, View):
 
             if not result.valid:
                 return JsonResponse({"error": result.error}, status=result.status_code)
+
+        from records.services import kickoff_ocr_scan
+
+        warning = kickoff_ocr_scan(request.user, document)
+        if warning:
+            logger.info(
+                "OCR scan skipped for user %s: %s",
+                request.user.pk,
+                warning,
+            )
 
         posthog.capture(
             "document_uploaded",

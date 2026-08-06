@@ -4,13 +4,8 @@ Re-exports every view from the sub-modules so they can be imported
 directly as ``documents.views.UploadView`` etc.
 """
 
-from .detail import (
-    DeleteDocument,
-    HardDeleteDocumentView,
-    UndoDeleteDocument,
-    ViewDocument,
-)
-from .list import DocumentListView, PendingOCRListView, TrashDocumentListView
+from .detail import DeleteDocument, ViewDocument
+from .list import DocumentListView
 from .upload import AddSupportDocuments, ConfirmUploadView, UploadView
 
 __all__ = [
@@ -18,10 +13,6 @@ __all__ = [
     "ConfirmUploadView",
     "DeleteDocument",
     "DocumentListView",
-    "HardDeleteDocumentView",
-    "PendingOCRListView",
-    "TrashDocumentListView",
-    "UndoDeleteDocument",
     "UploadView",
     "ViewDocument",
 ]

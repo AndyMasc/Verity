@@ -4,10 +4,15 @@ Keeps archive/unarchive logic out of views so it can be reused from
 signals, tasks, or management commands without duplicating business rules.
 """
 
+from datetime import date as _date
+
 from django.db import transaction
+from django.utils.dateparse import parse_date, parse_datetime
 
 from billing.models import CustomUser as User
+from core.currencies import CURRENCY_CHOICES, DEFAULT_CURRENCY
 
+from .matching import try_match_document_record
 from .models import AuditLog, Record
 
 BULK_LIMIT = 200
@@ -95,6 +100,101 @@ def kickoff_ocr_scan(user: User, document) -> str | None:
     entitlements.record_scan(user)
     extract_document.delay(document.id)
     return None
+
+
+def _resolve_suggested_folder_id(document, initial: dict) -> int | None:
+    """Convert an OCR ``suggested_folder`` name into a Folder PK owned by the user."""
+    from .models import Folder
+
+    suggested = initial.pop("suggested_folder", None)
+    if not suggested:
+        return None
+    folder = Folder.objects.filter(user=document.user, name__iexact=suggested).first()
+    return folder.pk if folder else None
+
+
+def _coerce_date(value) -> _date | None:
+    """Parse an OCR-provided date into a ``datetime.date``, or None if unusable.
+
+    Gemini returns dates as strings that may be bare ``YYYY-MM-DD`` or full ISO
+    datetimes. Coercing here (rather than letting the model raise) keeps the
+    auto-created record from failing on a malformed value.
+    """
+    if value is None or isinstance(value, _date):
+        return value
+    if isinstance(value, str):
+        value = value.strip()
+        if not value:
+            return None
+        if parsed := parse_date(value):
+            return parsed
+        if parsed_dt := parse_datetime(value):
+            return parsed_dt.date()
+    return None
+
+
+def create_record_from_ocr(document_id: int) -> Record | None:
+    """Create a Record from a document's persisted OCR output.
+
+    Idempotent: returns the existing ``associated_record`` when the document is
+    already linked, so it is safe to call from both the OCR task and the status
+    polling view. When a Plaid match is found the document record is merged into
+    the bank transaction and the merged record is returned.
+    """
+    from documents.models import DocumentData
+    from documents.ocr_helpers import ocr_data_to_form_initial
+
+    document = DocumentData.objects.select_related("user").filter(id=document_id).first()
+    if document is None:
+        return None
+    if document.associated_record_id:
+        return document.associated_record
+
+    data = document.ocr_raw_data
+    if not isinstance(data, dict) or "error" in data:
+        return None
+
+    initial = ocr_data_to_form_initial(data)
+    folder_id = _resolve_suggested_folder_id(document, initial)
+
+    record_type = initial.get("record_type")
+    if record_type not in Record.RecordTypes.values:
+        record_type = Record.RecordTypes.FINANCIAL_DOCUMENT
+
+    currency = initial.get("currency")
+    if currency not in {code for code, _ in CURRENCY_CHOICES}:
+        currency = getattr(document.user.settings, "default_currency", DEFAULT_CURRENCY)
+
+    title = (initial.get("title") or "").strip()
+    if not title:
+        title = "Untitled Document"
+
+    with transaction.atomic():
+        locked = DocumentData.objects.select_for_update().get(pk=document_id)
+        if locked.associated_record_id:
+            return locked.associated_record
+
+        record = Record.objects.create(
+            user=document.user,
+            title=title,
+            products=initial.get("products") or "",
+            merchant=initial.get("merchant") or "",
+            balance=initial.get("balance"),
+            currency=currency,
+            transaction_date=_coerce_date(initial.get("transaction_date")),
+            expiry_date=_coerce_date(initial.get("expiry_date")),
+            record_type=record_type,
+            folder_id=folder_id,
+        )
+
+        locked.associated_record = record
+        locked.save(update_fields=["associated_record"])
+
+    merged = try_match_document_record(record, locked)
+    if merged is not None:
+        return merged
+
+    return record
 
 
 def bulk_toggle_archive(

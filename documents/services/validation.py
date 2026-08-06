@@ -100,8 +100,10 @@ class DocumentUploadService:
         file_size = head.get("ContentLength") if head else None
         mime_type = head.get("ContentType", "").split(";")[0].strip() if head else ""
 
-        if transition and file_size is not None and not can_add_storage(
-            self.document.user, file_size
+        if (
+            transition
+            and file_size is not None
+            and not can_add_storage(self.document.user, file_size)
         ):
             limit_gb = get_storage_limit(self.document.user)
             self.document.status = DocumentStatus.ERROR
@@ -111,7 +113,9 @@ class DocumentUploadService:
             ).strip()
             self.document.save(update_fields=["status", "notes"])
             logger.warning(
-                "Storage limit exceeded for doc %s (%s bytes)", self.document.id, file_size
+                "Storage limit exceeded for doc %s (%s bytes)",
+                self.document.id,
+                file_size,
             )
             return UploadResult(
                 valid=False,

@@ -1,7 +1,7 @@
 """Tests for the document cleanup service.
 
 Covers normalize_s3_key, bulk_delete_documents, delete_orphaned_documents,
-reconcile_documents, and delete_7year_deleted_documents.
+and reconcile_documents.
 """
 
 import hashlib
@@ -14,9 +14,7 @@ from django.utils import timezone
 
 from documents.models import DocumentData, DocumentStatus
 from documents.services.cleanup import (
-    COMPLIANCE_RETENTION_YEARS,
     bulk_delete_documents,
-    delete_7year_deleted_documents,
     delete_orphaned_documents,
     normalize_s3_key,
     reconcile_documents,
@@ -252,57 +250,3 @@ class TestReconcileDocuments:
         reconcile_documents()
         assert not DocumentData.objects.filter(id=doc.id).exists()
         mock_r2.assert_called_once()
-
-
-@pytest.mark.django_db
-class TestDelete7YearDeletedDocuments:
-    def test_hard_deletes_expired_documents(self, user):
-        user.settings.auto_delete_deleted_documents = True
-        user.settings.save()
-        doc = DocumentData.objects.create(
-            user=user,
-            filepath=f"users/{user.id}/old.pdf",
-            file_hash=_make_hash(b"7yr"),
-            did_ocr=True,
-        )
-        # Soft-delete first (sets deleted_at)
-        doc.delete()
-        doc.refresh_from_db()
-        # Backdate date_added to exceed 7-year retention
-        old_date = timezone.now() - timedelta(days=365 * COMPLIANCE_RETENTION_YEARS + 1)
-        DocumentData.objects.filter(id=doc.id).update(date_added=old_date)
-        with patch("documents.services.cleanup.bulk_delete_documents") as mock_bulk:
-            delete_7year_deleted_documents()
-            mock_bulk.assert_called_once()
-
-    def test_keeps_recently_soft_deleted(self, user):
-        user.settings.auto_delete_deleted_documents = True
-        user.settings.save()
-        doc = DocumentData.objects.create(
-            user=user,
-            filepath=f"users/{user.id}/recent_del.pdf",
-            file_hash=_make_hash(b"recent_del"),
-            did_ocr=True,
-        )
-        doc.delete()
-        with patch("documents.services.cleanup.bulk_delete_documents") as mock_bulk:
-            delete_7year_deleted_documents()
-            mock_bulk.assert_not_called()
-
-    def test_skips_users_without_auto_delete(self, user):
-        user.settings.auto_delete_deleted_documents = False
-        user.settings.save()
-        doc = DocumentData.objects.create(
-            user=user,
-            filepath=f"users/{user.id}/noauto.pdf",
-            file_hash=_make_hash(b"noauto"),
-            did_ocr=True,
-        )
-        doc.delete()
-        doc.refresh_from_db()
-        # Backdate date_added to exceed 7-year retention
-        old_date = timezone.now() - timedelta(days=365 * COMPLIANCE_RETENTION_YEARS + 1)
-        DocumentData.objects.filter(id=doc.id).update(date_added=old_date)
-        with patch("documents.services.cleanup.bulk_delete_documents") as mock_bulk:
-            delete_7year_deleted_documents()
-            mock_bulk.assert_not_called()

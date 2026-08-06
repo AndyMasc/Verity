@@ -99,7 +99,7 @@ def _checkout_quantity(raw_qty: str | None, max_quantity: int = 100) -> int:
     """Get checkout quantity from POST request, for stackable plans and scalability"""
     try:
         quantity = int(raw_qty) if raw_qty else 1
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         quantity = 1
     return max(1, min(quantity, max_quantity))
 

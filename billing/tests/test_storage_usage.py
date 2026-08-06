@@ -1,7 +1,7 @@
 """Tests for the denormalized storage counter (billing.storage + signals).
 
 The counter must stay in sync with the active document set across every
-lifecycle transition: create, confirm-size, soft delete, restore, hard delete,
+lifecycle transition: create, confirm-size, permanent delete, hard delete,
 and bulk ``QuerySet.delete()``.
 """
 
@@ -9,7 +9,11 @@ import pytest
 from django.utils import timezone
 
 from billing.models import CustomUser
-from billing.storage import adjust_storage_usage, get_storage_usage_bytes, reconcile_storage_usage
+from billing.storage import (
+    adjust_storage_usage,
+    get_storage_usage_bytes,
+    reconcile_storage_usage,
+)
 from documents.models import DocumentData, DocumentStatus
 
 from conftest import DocumentDataFactory
@@ -47,12 +51,12 @@ def test_setting_file_size_on_save_adjusts_counter(user):
     assert _counter(user) == 5120
 
 
-def test_soft_delete_deducts_usage(user):
+def test_delete_deducts_usage(user):
     doc = DocumentDataFactory(user=user, file_size=4096, did_ocr=True)
     assert _counter(user) == 4096
     doc.delete()
     assert _counter(user) == 0
-    assert doc.is_active is False
+    assert not DocumentData.objects.filter(pk=doc.pk).exists()
 
 
 def test_hard_delete_deducts_usage(user):
@@ -64,22 +68,6 @@ def test_hard_delete_deducts_usage(user):
 
 def test_hard_delete_method_deducts_usage(user):
     doc = DocumentDataFactory(user=user, file_size=4096, did_ocr=True)
-    doc.hard_delete()
-    assert _counter(user) == 0
-
-
-def test_undo_delete_restores_usage(user):
-    doc = DocumentDataFactory(user=user, file_size=4096, did_ocr=True)
-    doc.delete()
-    assert _counter(user) == 0
-    doc.undo_delete()
-    assert _counter(user) == 4096
-
-
-def test_soft_deleted_document_hard_delete_does_not_double_deduct(user):
-    doc = DocumentDataFactory(user=user, file_size=4096, did_ocr=True)
-    doc.delete()
-    assert _counter(user) == 0
     doc.hard_delete()
     assert _counter(user) == 0
 
@@ -97,9 +85,7 @@ def test_bulk_delete_deducts_each_document(user):
 
 
 def test_counter_never_goes_negative(user):
-    doc = DocumentDataFactory(user=user, file_size=100)
-    doc.is_active = False
-    doc.save(update_fields=["is_active"])
+    DocumentDataFactory(user=user, file_size=100)
     adjust_storage_usage(user.pk, -10_000)
     assert _counter(user) == 0
 
@@ -111,16 +97,16 @@ def test_usage_is_per_user(user, other_user):
 
 
 def test_reconcile_recomputes_counter(user):
-    adjust_storage_usage(user.pk, 999)
     doc = DocumentDataFactory(user=user, file_size=2048, did_ocr=True)
     doc.delete()
+    adjust_storage_usage(user.pk, 999)
     assert _counter(user) == 999
     corrected = reconcile_storage_usage(user.pk)
     assert corrected == 1
     assert _counter(user) == 0
 
 
-def test_reconcile_ignores_inactive_documents(user):
+def test_reconcile_ignores_deleted_documents(user):
     DocumentDataFactory(user=user, file_size=2048, did_ocr=True).delete()
     reconcile_storage_usage(user.pk)
     assert _counter(user) == 0
@@ -137,7 +123,9 @@ def test_reconcile_all_users(user, other_user):
 
 def test_expired_cleanup_style_queryset_delete_keeps_counter_consistent(user):
     stale = DocumentDataFactory(
-        user=user, file_size=1024, date_added=timezone.now() - timezone.timedelta(days=30)
+        user=user,
+        file_size=1024,
+        date_added=timezone.now() - timezone.timedelta(days=30),
     )
     DocumentData.objects.filter(pk=stale.pk).delete()
     assert _counter(user) == 0

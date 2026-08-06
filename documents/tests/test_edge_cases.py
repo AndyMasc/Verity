@@ -1,7 +1,7 @@
 """Expanded edge-case tests for DocumentData model.
 
-Covers soft_delete (OCR vs non-OCR), undo_delete, hard_delete,
-with_record queryset, and file_extension auto-derivation.
+Covers permanent delete, hard_delete, with_record queryset, and
+file_extension auto-derivation.
 """
 
 import hashlib
@@ -21,24 +21,22 @@ def _make_hash(content: bytes = b"test") -> str:
     return hashlib.sha256(content).hexdigest()
 
 
-class DocumentSoftDeleteEdgeCasesTest(TestCase):
+class DocumentPermanentDeleteEdgeCasesTest(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(username="docedge", password="pass")
 
-    def test_ocr_soft_delete_preserves_in_db(self):
+    def test_delete_permanently_removes_ocr_document(self):
         doc = DocumentData.objects.create(
             user=self.user,
             filepath="users/1/ocr.pdf",
             file_hash=_make_hash(),
             did_ocr=True,
         )
+        pk = doc.id
         doc.delete()
-        doc.refresh_from_db()
-        self.assertTrue(DocumentData.objects.filter(id=doc.id).exists())
-        self.assertFalse(doc.is_active)
-        self.assertIsNotNone(doc.deleted_at)
+        self.assertFalse(DocumentData.objects.filter(id=pk).exists())
 
-    def test_non_ocr_hard_deletes(self):
+    def test_delete_permanently_removes_non_ocr_document(self):
         doc = DocumentData.objects.create(
             user=self.user,
             filepath="users/1/no_ocr.pdf",
@@ -48,20 +46,6 @@ class DocumentSoftDeleteEdgeCasesTest(TestCase):
         pk = doc.id
         doc.delete()
         self.assertFalse(DocumentData.objects.filter(id=pk).exists())
-
-    def test_undo_delete_restores(self):
-        doc = DocumentData.objects.create(
-            user=self.user,
-            filepath="users/1/restore.pdf",
-            file_hash=_make_hash(b"restore"),
-            did_ocr=True,
-        )
-        doc.delete()
-        doc.refresh_from_db()
-        doc.undo_delete()
-        doc.refresh_from_db()
-        self.assertTrue(doc.is_active)
-        self.assertIsNone(doc.deleted_at)
 
     def test_hard_delete_removes_regardless_of_ocr(self):
         doc = DocumentData.objects.create(

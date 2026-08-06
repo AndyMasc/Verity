@@ -164,9 +164,7 @@ def create_package_checkout(
         idempotency_key = hashlib.sha256(
             f"{_IDEMPOTENCY_PREFIX}:{package.uuid}:{payer.id}:{timezone.now().timestamp()}".encode()
         ).hexdigest()
-        checkout_session = create_checkout_session(
-            **checkout_args, idempotency_key=idempotency_key
-        )
+        checkout_session = create_checkout_session(**checkout_args, idempotency_key=idempotency_key)
     except stripe.error.StripeError:
         logger.exception("Failed to create Stripe Checkout Session for package %s", package.uuid)
         return CheckoutOutcome(

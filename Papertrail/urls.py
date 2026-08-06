@@ -24,6 +24,9 @@ def forbidden_view(request, *args, **kwargs):  # noqa: ARG001
     return HttpResponseForbidden("Password features are disabled.")
 
 
+handler403 = "Papertrail.views.handler403"
+
+
 urlpatterns = [
     # Trigger error for Sentry testing
     path("sentry-debug/", trigger_error),

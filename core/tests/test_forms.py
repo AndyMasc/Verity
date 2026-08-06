@@ -13,7 +13,6 @@ class UpdateUserSettingsFormTest(TestCase):
             "default_currency",
             "auto_archive_expired_records",
             "auto_delete_archived_records",
-            "auto_delete_deleted_documents",
             "expiring_notifications_advance_time",
             "enable_push_notifications",
             "enable_email_notifications",

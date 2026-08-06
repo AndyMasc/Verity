@@ -191,21 +191,6 @@ async def get_dashboard_context(user) -> dict:
         .acount()
     )
 
-    pending_ocr_count = (
-        await DocumentData.objects.for_user(user)
-        .filter(
-            did_ocr=True,
-            associated_record__isnull=True,
-            status__in=[
-                DocumentStatus.UPLOADED,
-                DocumentStatus.PROCESSING,
-                DocumentStatus.COMPLETED,
-                DocumentStatus.ERROR,
-            ],
-        )
-        .acount()
-    )
-
     context = {
         "merged_records_count": merge_count,
         "records": recent_records,
@@ -215,7 +200,6 @@ async def get_dashboard_context(user) -> dict:
             [(b, c) for b, c in monthly_expense_rows if b], user_currency
         ),
         "orphaned_document_count": orphaned_count,
-        "pending_ocr_count": pending_ocr_count,
         "webpush_warning": webpush_warning,
         "notifications": notifications,
         "unread_notifications_count": unread_notifications_count,

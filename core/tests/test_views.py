@@ -59,7 +59,6 @@ class DashboardViewTest(TestCase):
         self.client.force_login(self.user)
         response = self.client.get(reverse("core:dashboard"))
         self.assertIn("merged_records_count", response.context)
-        self.assertIn("pending_ocr_count", response.context)
         self.assertIn("records", response.context)
         self.assertIn("expiring_soon", response.context)
         self.assertIn("orphaned_document_count", response.context)

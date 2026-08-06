@@ -15,7 +15,7 @@ def hard_delete_documents(modeladmin, request, queryset):  # noqa: ARG001
 
 
 class DocumentDataAdmin(admin.ModelAdmin):
-    list_display = ("title", "user", "status", "did_ocr", "deleted_at")
+    list_display = ("title", "user", "status", "did_ocr")
     list_filter = ("status", "did_ocr")
     search_fields = ("title",)
     actions = [hard_delete_documents]
@@ -48,7 +48,7 @@ class DocumentDataAdmin(admin.ModelAdmin):
         qs = super().get_queryset(request)
         if request.user.is_superuser:
             return qs
-        return qs.active()
+        return qs.for_user(request.user)
 
 
 admin.site.register(DocumentData, DocumentDataAdmin)

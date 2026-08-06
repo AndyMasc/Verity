@@ -1,6 +1,5 @@
 """Unified history timeline view for records."""
 
-
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404
 from django.views.generic.list import ListView
@@ -133,10 +132,8 @@ class RecordHistoryView(LoginRequiredMixin, ListView):
                 "ocr_error",
                 "ocr_metadata",
                 "status",
-                "is_active",
                 "created_at",
                 "updated_at",
-                "deleted_at",
             )
             and not f.auto_created
             and not getattr(f, "is_relation", False)

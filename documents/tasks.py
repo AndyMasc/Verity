@@ -1,6 +1,6 @@
 """Background tasks for OCR extraction, document deletion, and storage reconciliation.
 
-Uses django-q-stash for async execution with retry/backoff. Each task is a thin
+Uses django-qstash for async execution with retry/backoff. Each task is a thin
 wrapper that delegates to the corresponding service module.
 """
 
@@ -8,9 +8,6 @@ from typing import Any
 
 from django_qstash import shared_task
 
-from .services.cleanup import (
-    delete_7year_deleted_documents as _cleanup_7year,
-)
 from .services.cleanup import (
     delete_orphaned_documents as _cleanup_orphaned,
 )
@@ -30,8 +27,18 @@ __all__ = [
 
 @shared_task(retries=MAX_OCR_RETRIES, backoff_factor=2)
 def extract_document(document_id: int) -> dict[str, Any]:
-    """Run Gemini OCR on a document, extracting structured financial data."""
-    return _ocr_extract(document_id)
+    """Run Gemini OCR on a document and auto-create a Record from the result.
+
+    The record is created from the persisted ``ocr_raw_data`` so it survives
+    even if the user closes the tab before the redirect. Merging with a Plaid
+    match (when warranted) happens inside ``create_record_from_ocr``.
+    """
+    result = _ocr_extract(document_id)
+    if isinstance(result, dict) and "error" not in result:
+        from records.services import create_record_from_ocr
+
+        create_record_from_ocr(document_id)
+    return result
 
 
 @shared_task(retries=3, backoff_factor=2)
@@ -52,9 +59,3 @@ def delete_orphaned_documents() -> None:
 def reconcile_documents() -> None:
     """Clean up stale pending uploads and dangling error records."""
     _cleanup_reconcile()
-
-
-@shared_task
-def delete_7year_deleted_documents() -> None:
-    """Hard-delete documents soft-deleted over 7 years ago for users with auto-delete enabled."""
-    _cleanup_7year()

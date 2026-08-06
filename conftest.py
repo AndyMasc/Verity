@@ -66,7 +66,6 @@ class DocumentDataFactory(factory.django.DjangoModelFactory):
     title = factory.Sequence(lambda n: f"Document {n}")
     filepath = factory.Sequence(lambda n: f"users/1/doc-{n}.pdf")
     status = "pending_upload"
-    is_active = True
 
 
 @pytest.fixture

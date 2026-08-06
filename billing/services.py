@@ -49,7 +49,9 @@ def create_checkout_session(
     )
 
 
-def create_billing_portal_session(*, customer: str, return_url: str) -> stripe.billing_portal.Session:
+def create_billing_portal_session(
+    *, customer: str, return_url: str
+) -> stripe.billing_portal.Session:
     """Create a Stripe billing portal session."""
     _configure()
     return stripe.billing_portal.Session.create(customer=customer, return_url=return_url)

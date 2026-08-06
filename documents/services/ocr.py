@@ -185,7 +185,13 @@ def extract(document_id: int) -> dict[str, Any]:
         final_data = call_gemini(part, folder_names)
 
         cache.set(cache_key, final_data, timeout=OCR_CACHE_TTL)
-        set_document_status(document_id, DocumentStatus.COMPLETED, ocr_error="", did_ocr=True)
+        set_document_status(
+            document_id,
+            DocumentStatus.COMPLETED,
+            ocr_error="",
+            did_ocr=True,
+            ocr_raw_data=final_data,
+        )
         return final_data
 
     except Exception as exc:
@@ -195,7 +201,12 @@ def extract(document_id: int) -> dict[str, Any]:
         if retries >= MAX_OCR_RETRIES:
             error_payload = {"error": "Failed to automatically extract document details."}
             cache.set(cache_key, error_payload, timeout=OCR_CACHE_TTL)
-            set_document_status(document_id, DocumentStatus.ERROR, ocr_error=str(exc))
+            set_document_status(
+                document_id,
+                DocumentStatus.ERROR,
+                ocr_error=str(exc),
+                ocr_raw_data=error_payload,
+            )
             raise GeminiOCRError(f"OCR execution hard-failed for document {document_id}") from exc
 
         raise

@@ -1,10 +1,10 @@
 """Storage accounting: O(1) per-user byte usage via a denormalized counter.
 
-Usage checks used to run a ``SUM(file_size)`` over every active document on
-each request, which grows linearly with the user's document count. Instead the
+Usage checks used to run a ``SUM(file_size)`` over every document on each
+request, which grows linearly with the user's document count. Instead the
 documents layer maintains ``CustomUser.storage_used_bytes`` transactionally at
-every mutation point (upload confirm, soft/hard delete, restore, bulk cleanup),
-and the checks here read that single row.
+every mutation point (upload confirm, permanent delete, bulk cleanup), and the
+checks here read that single row.
 
 The counter is kept in sync by signals on ``DocumentData`` (``pre_save`` /
 ``post_save`` / ``post_delete``) so every lifecycle transition — including bulk
@@ -31,9 +31,7 @@ def get_storage_usage_bytes(user) -> int:
     if user is None or not getattr(user, "pk", None):
         return 0
     value = (
-        CustomUser.objects.filter(pk=user.pk)
-        .values_list("storage_used_bytes", flat=True)
-        .first()
+        CustomUser.objects.filter(pk=user.pk).values_list("storage_used_bytes", flat=True).first()
     )
     return value or 0
 
@@ -53,11 +51,10 @@ def adjust_storage_usage(user_id: int, delta: int) -> None:
 
 
 def reconcile_storage_usage(user_id: int | None = None) -> int:
-    """Recompute storage counters from active documents for users.
+    """Recompute storage counters from documents for users.
 
     Also zeroes out counters that have drifted above zero but reference no
-    active documents (e.g. the last document was hard-deleted outside a
-    signal path).
+    documents (e.g. the last document was deleted outside a signal path).
 
     Args:
         user_id: Restrict reconciliation to a single user, or None for all users.
@@ -65,7 +62,7 @@ def reconcile_storage_usage(user_id: int | None = None) -> int:
     Returns:
         Number of users whose counter was corrected.
     """
-    docs = DocumentData.objects.filter(is_active=True)
+    docs = DocumentData.objects.all()
     if user_id is not None:
         docs = docs.filter(user_id=user_id)
 
