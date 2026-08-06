@@ -5,7 +5,6 @@ compliance date calculations, record search with pagination) and handling
 record association updates.
 """
 
-import logging
 from dataclasses import dataclass
 from datetime import timedelta
 
@@ -16,8 +15,6 @@ from django.utils import timezone
 from documents.services.cleanup import COMPLIANCE_RETENTION_YEARS
 from documents.storage import generate_read_presigned_url
 from records.models import Record
-
-logger = logging.getLogger(__name__)
 
 RECORD_SEARCH_PAGE_SIZE = 5
 

@@ -126,7 +126,7 @@ class PlaidWebhookViewTest(TestCase):
         )
 
     @override_settings(PLAID_ENV="sandbox")
-    @patch("plaid_integration.views.webhook.sync_and_convert_for_item_task")
+    @patch("plaid_integration.tasks.sync_and_convert_for_item_task")
     def test_sync_updates_available_webhook(self, mock_task):
         payload = {
             "webhook_type": "TRANSACTIONS",
@@ -143,7 +143,7 @@ class PlaidWebhookViewTest(TestCase):
         mock_task.delay.assert_called_once_with(self.plaid_item.id)
 
     @override_settings(PLAID_ENV="sandbox", PLAID_SYNC_COOLDOWN_SECONDS=60)
-    @patch("plaid_integration.views.webhook.sync_and_convert_for_item_task")
+    @patch("plaid_integration.tasks.sync_and_convert_for_item_task")
     def test_sync_webhook_debounced_within_cooldown(self, mock_task):
         from datetime import timedelta
 
@@ -172,7 +172,7 @@ class PlaidWebhookViewTest(TestCase):
         self.assertEqual(mock_task.delay.call_count, 2)
 
     @override_settings(PLAID_ENV="sandbox", PLAID_SYNC_COOLDOWN_SECONDS=60)
-    @patch("plaid_integration.views.webhook.sync_and_convert_for_item_task")
+    @patch("plaid_integration.tasks.sync_and_convert_for_item_task")
     def test_sync_webhook_sets_last_synced_at(self, mock_task):
         payload = {
             "webhook_type": "TRANSACTIONS",

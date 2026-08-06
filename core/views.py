@@ -7,9 +7,6 @@ caches the result to reduce database load on repeated visits.
 import json
 import logging
 import time as _time
-from calendar import month_name
-from datetime import datetime as _dt
-from datetime import timedelta
 from typing import Any
 
 import posthog
@@ -22,7 +19,6 @@ from django.db import DatabaseError, connection
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
-from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 from django.views.generic import ListView, TemplateView, UpdateView
@@ -30,7 +26,7 @@ from django_ratelimit.decorators import ratelimit
 from webpush.models import SubscriptionInfo
 from webpush.views import save_info
 
-from billing.views import pricing_context
+from billing.services import pricing_context
 
 from .forms import UpdateUserSettingsForm
 from .models import Notification, UserSettings
@@ -48,7 +44,7 @@ def index(request: HttpRequest) -> HttpResponse:
         "stripe_public_key": settings.STRIPE_PRICING_TABLE_KEY,
         "stripe_pricing_table_id": settings.STRIPE_PRICING_TABLE_ID,
     }
-    context.update(pricing_context(request))
+    context.update(pricing_context(request.user))
 
     return render(request, "core/landing_page.html", context)
 
@@ -198,75 +194,21 @@ class ProfilePageView(LoginRequiredMixin, UpdateView):
         return super().form_invalid(form)
 
 
-PERIOD_MONTHS = {"3m": 3, "6m": 6, "1y": 12, "all": None}
-
-
 @require_GET
 @ratelimit(key="user", rate="30/m", method="GET", block=True)
 def expense_chart_data(request: HttpRequest) -> JsonResponse:
     """Return monthly expense aggregates for the expense chart.
 
     Query params:
-        period – ``3m``, ``6m``, ``1y``, or ``all`` (default ``3m``).
+        period - ``3m``, ``6m``, ``1y``, or ``all`` (default ``3m``).
 
     Response:
         ``{"months": [{"label": "Jan 24", "total": 1234.56}, ...], "currency": "$"}``
     """
-    from collections import defaultdict
-
-    from core.exchange_rates import convert, get_rates
-    from records.models import Record
+    from .services.expenses import get_monthly_expense_series
 
     period = request.GET.get("period", "3m")
-    months_back = PERIOD_MONTHS.get(period)
-    user_currency = getattr(request.user.settings, "default_currency", "usd")
-
-    now = timezone.now()
-    if months_back is not None:
-        start = now - timedelta(days=months_back * 30)
-    else:
-        earliest = (
-            Record.objects.active()
-            .filter(user=request.user, balance__isnull=False)
-            .order_by("transaction_date")
-            .values_list("transaction_date", flat=True)
-            .first()
-        )
-        start = earliest or (now - timedelta(days=365))
-
-    # Fetch raw rows: one DB query, no aggregation
-    rows = list(
-        Record.objects.active()
-        .filter(
-            user=request.user,
-            transaction_date__gte=start.date(),
-            transaction_date__lte=now.date(),
-            balance__isnull=False,
-        )
-        .values_list("balance", "currency", "transaction_date")
-    )
-
-    # Pre-fetch USD-based rates once for the entire batch
-    rates = get_rates("USD")
-
-    # Group by month and convert each amount
-    monthly: dict[str, float] = defaultdict(float)
-    for balance, currency, txn_date in rows:
-        month_key = txn_date.strftime("%Y-%m")
-        converted = convert(balance, currency, user_currency, rates=rates)
-        monthly[month_key] += float(converted)
-
-    months = []
-    for month_key in sorted(monthly):
-        dt = _dt.strptime(month_key, "%Y-%m")
-        months.append(
-            {
-                "label": f"{month_name[dt.month][:3]} {dt.strftime('%y')}",
-                "total": round(monthly[month_key], 2),
-            }
-        )
-
-    return JsonResponse({"months": months, "currency": user_currency})
+    return JsonResponse(get_monthly_expense_series(request.user, period))
 
 
 class NotificationListView(LoginRequiredMixin, ListView):

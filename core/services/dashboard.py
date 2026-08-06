@@ -5,7 +5,6 @@ view so that the view layer only handles HTTP concerns.
 """
 
 import asyncio
-import logging
 from datetime import datetime, time, timedelta
 
 from asgiref.sync import sync_to_async
@@ -18,8 +17,6 @@ from core.models import Notification, UserSettings
 from documents.models import DocumentData, DocumentStatus
 from records.models import MergeLog, Record
 from reimbursements.models import PackagePayment, ReimbursementPackage
-
-logger = logging.getLogger(__name__)
 
 DASHBOARD_CACHE_TTL = 10
 

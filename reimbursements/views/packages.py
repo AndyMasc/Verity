@@ -3,7 +3,6 @@ import logging
 from typing import Any
 
 from django.contrib import messages
-from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
 from django.http import HttpRequest, HttpResponse, JsonResponse
@@ -15,10 +14,11 @@ from django.views.generic import DetailView, ListView
 from django_ratelimit.decorators import ratelimit
 
 from billing import features
-from records.models import Record
 
+from .. import services
 from ..mixins import ReimbursementRequestRequiredMixin
 from ..models import ReimbursementPackage
+from ..notifications import send_package_created_notification
 
 logger = logging.getLogger(__name__)
 
@@ -147,6 +147,13 @@ class PackageDeleteView(LoginRequiredMixin, View):
         return redirect(reverse("reimbursements:package-list"))
 
 
+def _clamp_days_valid(raw: Any) -> int:
+    try:
+        return max(1, min(365, int(raw)))
+    except (TypeError, ValueError):
+        return 7
+
+
 @method_decorator(ratelimit(key="user", rate="5/m", method="POST", block=True), name="dispatch")
 class CreatePackageFromRecordsView(LoginRequiredMixin, ReimbursementRequestRequiredMixin, View):
     required_feature = features.QUICK_REIMBURSEMENT_REQUEST
@@ -161,27 +168,19 @@ class CreatePackageFromRecordsView(LoginRequiredMixin, ReimbursementRequestRequi
             record_ids: list[int] = data.get("record_ids", [])
             title: str = data.get("title", "Reimbursement Package")
             recipient_email: str = data.get("recipient_email", "").strip()
-            try:
-                days_valid: int = max(1, min(365, int(data.get("days_valid", 7))))
-            except TypeError, ValueError:
-                days_valid = 7
+            days_valid = _clamp_days_valid(data.get("days_valid", 7))
         else:
             record_ids = [
                 int(rid) for rid in request.POST.getlist("selected_records") if rid.isdigit()
             ]
             title = request.POST.get("title", "Reimbursement Package")
             recipient_email = request.POST.get("recipient_email", "").strip()
-            try:
-                days_valid = max(1, min(365, int(request.POST.get("days_valid", 7))))
-            except TypeError, ValueError:
-                days_valid = 7
+            days_valid = _clamp_days_valid(request.POST.get("days_valid", 7))
 
         if not record_ids:
             return JsonResponse({"error": "No records selected."}, status=400)
 
-        title = title.strip()[:255]
-        if not title:
-            title = "Reimbursement Package"
+        title = title.strip()[:255] or "Reimbursement Package"
 
         if not recipient_email:
             return JsonResponse(
@@ -189,36 +188,17 @@ class CreatePackageFromRecordsView(LoginRequiredMixin, ReimbursementRequestRequi
                 status=400,
             )
 
-        user_model = get_user_model()
-        try:
-            recipient = user_model.objects.get(email__iexact=recipient_email)
-        except user_model.DoesNotExist:
-            return JsonResponse(
-                {"error": "No Papertrail user found with that email address."},
-                status=400,
-            )
-
-        if recipient == request.user:
-            return JsonResponse(
-                {"error": "You cannot send a reimbursement package to yourself."},
-                status=400,
-            )
-
-        records = Record.objects.filter(id__in=record_ids, user=request.user, is_active=True)
-        if not records.exists():
-            return JsonResponse({"error": "No valid records found."}, status=400)
-
-        package = ReimbursementPackage.objects.create_for(
+        package, error = services.create_reimbursement_package(
             creator=request.user,
-            recipient=recipient,
+            recipient_email=recipient_email,
+            record_ids=record_ids,
             title=title,
-            records=records,
             days_valid=days_valid,
         )
+        if error:
+            return JsonResponse({"error": error}, status=400)
 
-        from ..notifications import send_package_created_notification
-
-        send_package_created_notification(package, recipient)
+        send_package_created_notification(package, package.recipient)
 
         redirect_url = reverse(
             "reimbursements:package-detail", kwargs={"package_uuid": package.uuid}

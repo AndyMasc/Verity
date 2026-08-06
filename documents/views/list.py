@@ -1,6 +1,5 @@
 """List views for documents: main list, pending OCR, and trash."""
 
-import logging
 from typing import Any
 
 from django.conf import settings
@@ -15,8 +14,6 @@ from Papertrail.views import CachedPaginatorMixin
 
 from ..filters import DocumentFilter
 from ..models import DocumentData, DocumentStatus
-
-logger = logging.getLogger(__name__)
 
 LIST_FIELDS = (
     "pk",

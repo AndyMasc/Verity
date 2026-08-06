@@ -1,6 +1,5 @@
 """Unified history timeline view for records."""
 
-import logging
 
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404
@@ -11,8 +10,6 @@ from documents.models import DocumentData
 from ..models import MergeLog, Record
 from ..types import HistoryEntry
 from .records import snapshot_with_currency
-
-logger = logging.getLogger(__name__)
 
 _HISTORY_EXCLUDE = frozenset(
     {

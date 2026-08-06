@@ -17,7 +17,6 @@ from django_ratelimit.decorators import ratelimit
 from djstripe.models import (
     Customer,
     Price,
-    Product,
     Subscription,
 )
 from djstripe.settings import djstripe_settings
@@ -28,41 +27,9 @@ from .models import CustomUser
 logger = logging.getLogger(__name__)
 
 
-def pricing_context(request: HttpRequest) -> dict:
-    """Build the context shared by the pricing page and the landing page."""
-    user = request.user
-
-    products = list(Product.objects.filter(active=True).prefetch_related("prices"))
-    for product in products:
-        meta = metadata.PRODUCTS.get(product.id)
-        product.features_list = meta.features if meta else []
-
-    free_plan = metadata.PAPERTRAIL_FREE
-    free_plan.features_list = free_plan.features
-    free_plan.prices = []
-    free_plan.metadata = {"category": "base_plan"}
-    products.insert(0, free_plan)
-
-    def _by_category(category: str) -> list:
-        return [
-            p
-            for p in products
-            if isinstance(getattr(p, "metadata", None), dict)
-            and p.metadata.get("category") == category
-        ]
-
-    return {
-        "products": products,
-        "free_plan": free_plan,
-        "has_active_subscription": bool(user.is_authenticated and user.has_active_subscription),
-        "base_plans": _by_category("base_plan"),
-        "storage_plans": _by_category("storage_plan"),
-    }
-
-
 @login_required
 def pricing_page(request: HttpRequest) -> HttpResponse:
-    return render(request, "billing/pricing_page.html", pricing_context(request))
+    return render(request, "billing/pricing_page.html", services.pricing_context(request.user))
 
 
 @login_required
@@ -132,7 +99,7 @@ def _checkout_quantity(raw_qty: str | None, max_quantity: int = 100) -> int:
     """Get checkout quantity from POST request, for stackable plans and scalability"""
     try:
         quantity = int(raw_qty) if raw_qty else 1
-    except TypeError, ValueError:
+    except (TypeError, ValueError):
         quantity = 1
     return max(1, min(quantity, max_quantity))
 

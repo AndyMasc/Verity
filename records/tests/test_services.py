@@ -27,14 +27,14 @@ class ArchiveRecordTest(TestCase):
         )
 
     def test_archive_sets_inactive(self):
-        archive_record(self.record)
+        archive_record(self.user, self.record)
         self.record.refresh_from_db()
         self.assertFalse(self.record.is_active)
 
     def test_unarchive_sets_active(self):
         self.record.is_active = False
         self.record.save()
-        unarchive_record(self.record)
+        unarchive_record(self.user, self.record)
         self.record.refresh_from_db()
         self.assertTrue(self.record.is_active)
 

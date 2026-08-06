@@ -9,17 +9,10 @@ from django.core.cache import cache
 from django.db import transaction
 from django.http import HttpResponse
 from django.shortcuts import render
-from plaid.model.accounts_get_request import AccountsGetRequest
 from plaid.model.country_code import CountryCode
-from plaid.model.institutions_get_by_id_request import InstitutionsGetByIdRequest
-from plaid.model.institutions_get_by_id_request_options import (
-    InstitutionsGetByIdRequestOptions,
-)
-from plaid.model.item_get_request import ItemGetRequest
 from plaid.model.link_token_create_request import LinkTokenCreateRequest
 from plaid.model.link_token_create_request_user import LinkTokenCreateRequestUser
 from plaid.model.products import Products
-from plaid.model.sandbox_item_fire_webhook_request import SandboxItemFireWebhookRequest
 from rest_framework import authentication, permissions
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.request import Request
@@ -32,8 +25,12 @@ from billing.mixins import FeatureRequiredMixin
 
 from ..models import PlaidItem
 from ..plaid_client import client
-from ..services import public_token_exchange
-from ..tasks import sync_and_convert_for_item_task
+from ..services import (
+    fetch_accounts,
+    fetch_institution_name,
+    public_token_exchange,
+    trigger_initial_sync,
+)
 
 logger: logging.Logger = logging.getLogger(__name__)
 
@@ -123,8 +120,8 @@ class PublicTokenExchange(FeatureRequiredMixin, APIView):
 
         try:
             access_token, item_id = public_token_exchange(public_token)
-            institution_name = _fetch_institution_name(access_token, item_id)
-            accounts_data = _fetch_accounts(access_token, item_id)
+            institution_name = fetch_institution_name(access_token, item_id)
+            accounts_data = fetch_accounts(access_token, item_id)
 
             with transaction.atomic():
                 plaid_item = PlaidItem.objects.create(
@@ -135,7 +132,7 @@ class PublicTokenExchange(FeatureRequiredMixin, APIView):
                     accounts_data=accounts_data,
                 )
 
-            _trigger_initial_sync(plaid_item)
+            trigger_initial_sync(plaid_item)
             cache.delete(f"plaid_status:{request.user.id}")
 
             posthog.capture(
@@ -150,59 +147,3 @@ class PublicTokenExchange(FeatureRequiredMixin, APIView):
         except Exception:
             logger.exception("Failed to exchange public token for user %s", request.user.id)
             return Response({"error": "Failed to exchange token"}, status=400)
-
-
-def _fetch_institution_name(access_token: str, item_id: str) -> str:
-    """Fetch the institution name from Plaid, returning a default on failure."""
-    try:
-        item_resp = client.item_get(ItemGetRequest(access_token=access_token))
-        item_dict = item_resp.to_dict() if hasattr(item_resp, "to_dict") else item_resp
-        inst_id = item_dict.get("item", {}).get("institution_id", "")
-        if inst_id:
-            inst_req = InstitutionsGetByIdRequest(
-                institution_id=inst_id,
-                country_codes=[CountryCode("US")],
-                options=InstitutionsGetByIdRequestOptions(include_optional_metadata=False),
-            )
-            inst_resp = client.institutions_get_by_id(inst_req)
-            inst_dict = inst_resp.to_dict() if hasattr(inst_resp, "to_dict") else inst_resp
-            return inst_dict.get("institution", {}).get("name", "Bank Account")
-    except Exception:
-        logger.warning("Failed to fetch institution name for item %s", item_id)
-    return "Bank Account"
-
-
-def _fetch_accounts(access_token: str, item_id: str) -> list[dict[str, str]]:
-    """Fetch account metadata from Plaid, returning an empty list on failure."""
-    try:
-        acct_resp = client.accounts_get(AccountsGetRequest(access_token=access_token))
-        acct_dict = acct_resp.to_dict() if hasattr(acct_resp, "to_dict") else acct_resp
-        return [
-            {
-                "id": a["account_id"],
-                "name": a["name"],
-                "mask": a.get("mask", ""),
-                "type": a.get("type", ""),
-                "subtype": a.get("subtype", ""),
-            }
-            for a in acct_dict.get("accounts", [])
-        ]
-    except Exception:
-        logger.warning("Failed to fetch accounts for item %s", item_id)
-    return []
-
-
-def _trigger_initial_sync(plaid_item: PlaidItem) -> None:
-    """Trigger initial sync via sandbox webhook in Sandbox, or directly via Celery in Prod."""
-    if getattr(settings, "PLAID_ENV", "") == "sandbox":
-        try:
-            client.sandbox_item_fire_webhook(
-                SandboxItemFireWebhookRequest(
-                    access_token=plaid_item.access_token,
-                    webhook_code="DEFAULT_UPDATE",
-                )
-            )
-        except plaid.ApiException:
-            logger.warning("Failed to fire initial sandbox webhook for item %s", plaid_item.item_id)
-    else:
-        sync_and_convert_for_item_task.delay(plaid_item.id)

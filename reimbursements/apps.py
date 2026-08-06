@@ -5,4 +5,5 @@ class ReimbursementsConfig(AppConfig):
     name = "reimbursements"
 
     def ready(self):
-        import reimbursements.signals  # noqa: F401
+        import reimbursements.signals
+        import reimbursements.webhooks  # noqa: F401

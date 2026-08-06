@@ -1,6 +1,5 @@
 """Record list, detail, and hard-delete views."""
 
-import logging
 from datetime import timedelta
 from typing import Any
 
@@ -22,11 +21,10 @@ from django_ratelimit.decorators import ratelimit
 from core.services.dashboard import invalidate_dashboard_cache
 from Papertrail.views import CachedPaginatorMixin, htmx_response
 
+from .. import services
 from ..filters import RecordFilter
 from ..forms import RecordUpdateForm
-from ..models import AuditLog, MergeLog, Record
-
-logger = logging.getLogger(__name__)
+from ..models import MergeLog, Record
 
 
 def snapshot_with_currency(snapshot: dict[str, Any] | None, fallback: str) -> dict[str, Any]:
@@ -192,18 +190,7 @@ class HardDeleteRecordView(LoginRequiredMixin, View):
             messages.error(request, "This record is not old enough for permanent deletion.")
             return redirect("records:record_detail", pk=pk)
 
-        from documents.models import DocumentData
-
-        with transaction.atomic():
-            for doc in DocumentData.objects.filter(associated_record=record):
-                doc.hard_delete()
-            AuditLog.objects.create(
-                user=request.user,
-                action=AuditLog.Action.HARD_DELETE,
-                record=record,
-                details={"title": record.title},
-            )
-            record.hard_delete()
+        services.hard_delete_record(request.user, record)
 
         invalidate_dashboard_cache(request.user.id)
         posthog.capture(

@@ -1,6 +1,5 @@
 """Upload views: presigned R2 uploads, confirmation, and supporting document flow."""
 
-import logging
 from typing import Any
 
 import posthog
@@ -17,8 +16,6 @@ from records.models import Record
 
 from ..models import DocumentData, DocumentStatus
 from ..services import ConfirmUploadService, UploadService
-
-logger = logging.getLogger(__name__)
 
 
 def _presign_to_json(result) -> JsonResponse:

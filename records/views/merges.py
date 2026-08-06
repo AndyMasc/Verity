@@ -5,7 +5,6 @@ mutation endpoints are rate-limited and create AuditLog entries.
 """
 
 import json
-import logging
 
 import posthog
 from django.contrib import messages
@@ -30,8 +29,6 @@ from ..filters import MergeLogFilter, RecordFilter
 from ..forms import ManualMergeForm
 from ..matching import merge_document_into_plaid, undo_merge
 from ..models import AuditLog, MergeLog, Record
-
-logger = logging.getLogger(__name__)
 
 MANUAL_MERGE_PAGE_SIZE = 10
 

@@ -11,7 +11,6 @@ import logging
 import cv2
 import numpy as np
 from deskew import determine_skew
-from PIL import Image
 from pillow_heif import is_supported, read_heif
 
 logger = logging.getLogger(__name__)
@@ -138,22 +137,3 @@ def prepare_image_for_gemini(image_bytes: bytes) -> bytes:
     except Exception as e:
         logger.error("Failed to optimize image: %s", e)
         return image_bytes
-
-
-def prepare_image_from_pil(image: Image.Image) -> bytes:
-    """Convert a PIL Image to preprocessed WebP bytes for Gemini OCR.
-
-    Handles RGB, RGBA, and grayscale input by converting to BGR for OpenCV,
-    then runs the standard deskew-resize-encode pipeline.
-    """
-    img_array = np.array(image)
-    if img_array.ndim == 3 and img_array.shape[2] == 3:
-        img_array = cv2.cvtColor(img_array, cv2.COLOR_RGB2BGR)
-    elif img_array.ndim == 3 and img_array.shape[2] == 4:
-        img_array = cv2.cvtColor(img_array, cv2.COLOR_RGBA2BGR)
-    else:
-        img_array = cv2.cvtColor(img_array, cv2.COLOR_GRAY2BGR)
-
-    img_array = _deskew_image(img_array)
-    img_array = _resize_image(img_array)
-    return _encode_webp(img_array)

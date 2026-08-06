@@ -9,21 +9,17 @@ from typing import Any
 import jwt
 import requests
 from django.conf import settings
-from django.db import models, transaction
 from django.http import (
     HttpRequest,
     HttpResponse,
     HttpResponseBadRequest,
     HttpResponseForbidden,
 )
-from django.utils import timezone as tz
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
-from records.models import Record
-
 from ..models import PlaidItem
-from ..tasks import sync_and_convert_for_item_task
+from ..services import route_webhook
 
 logger: logging.Logger = logging.getLogger(__name__)
 
@@ -91,7 +87,7 @@ def plaid_webhook(request: HttpRequest) -> HttpResponse:
 
     try:
         payload = json.loads(request.body)
-    except ValueError, TypeError:
+    except (ValueError, TypeError):
         return HttpResponseBadRequest("Invalid JSON")
 
     if settings.PLAID_ENV != "sandbox" and not verify_plaid_webhook(
@@ -117,74 +113,6 @@ def plaid_webhook(request: HttpRequest) -> HttpResponse:
         logger.warning("Webhook received for unknown item %s", item_id)
         return HttpResponse("OK")
 
-    _route_webhook(webhook_code, plaid_item, payload)
+    route_webhook(webhook_code, plaid_item, payload)
 
     return HttpResponse("OK")
-
-
-def _dispatch_sync(plaid_item: PlaidItem) -> bool:
-    """Enqueue a transaction sync for an item, debounced atomically by a per-item cooldown."""
-    now = tz.now()
-    cooldown_threshold = now - datetime.timedelta(seconds=settings.PLAID_SYNC_COOLDOWN_SECONDS)
-
-    updated_count = (
-        PlaidItem.objects.filter(id=plaid_item.id)
-        .filter(
-            models.Q(last_synced_at__isnull=True) | models.Q(last_synced_at__lt=cooldown_threshold)
-        )
-        .update(last_synced_at=now)
-    )
-
-    if updated_count == 0:
-        logger.info(
-            "Skipping sync for item %s: last sync within cooldown window.",
-            plaid_item.item_id,
-        )
-        return False
-
-    sync_and_convert_for_item_task.delay(plaid_item.id)
-    return True
-
-
-def _route_webhook(webhook_code: str, plaid_item: PlaidItem, payload: dict[str, Any]) -> None:
-    """Dispatch a webhook to the appropriate handler based on the code."""
-    if webhook_code in ("SYNC_UPDATES_AVAILABLE", "HISTORICAL_UPDATE"):
-        _dispatch_sync(plaid_item)
-
-    elif webhook_code in (
-        "ITEM_LOGIN_REQUIRED",
-        "ITEM_REQUIRES_UPDATE",
-        "PENDING_EXPIRATION",
-    ):
-        logger.warning(
-            "Item %s requires manual user intervention: %s",
-            plaid_item.item_id,
-            webhook_code,
-        )
-        PlaidItem.objects.filter(id=plaid_item.id).update(
-            last_error_code=webhook_code,
-            last_error_message=payload.get("error", {}).get(
-                "error_message", "User action required"
-            ),
-            last_error_at=tz.now(),
-        )
-
-    elif webhook_code == "ERROR":
-        error: dict[str, Any] = payload.get("error", {})
-        logger.error(
-            "Plaid error for item %s: %s",
-            plaid_item.item_id,
-            error.get("error_message"),
-        )
-        PlaidItem.objects.filter(id=plaid_item.id).update(
-            last_error_code=error.get("error_code", webhook_code),
-            last_error_message=error.get("error_message", "Unknown error"),
-            last_error_at=tz.now(),
-        )
-
-    elif webhook_code == "TRANSACTIONS_REMOVED":
-        txns: list[str] = payload.get("removed_transactions", [])
-        with transaction.atomic():
-            Record.objects.filter(plaid_transaction_id__in=txns).update(
-                is_active=False, last_edited=tz.now()
-            )

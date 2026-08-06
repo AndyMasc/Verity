@@ -5,9 +5,9 @@ from django.test import TestCase
 from django.utils import timezone
 from djstripe.models import Customer, Subscription
 
+from reimbursements.webhooks import HANDLED_EVENT_TYPES, enqueue_reimbursement_processing
+
 from ..webhooks import (
-    HANDLED_EVENT_TYPES,
-    enqueue_reimbursement_processing,
     handle_subscription_deleted,
     report_webhook_processing_error,
 )

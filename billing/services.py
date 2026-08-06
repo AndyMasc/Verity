@@ -7,8 +7,10 @@ tested in one place, and always use djstripe's mode-aware secret key.
 import logging
 
 import stripe
-from djstripe.models import Subscription
+from djstripe.models import Product, Subscription
 from djstripe.settings import djstripe_settings
+
+from . import metadata
 
 logger = logging.getLogger(__name__)
 
@@ -76,6 +78,36 @@ def customer_missing_in_stripe(customer_id: str) -> bool:
     if remote is None:
         return True
     return bool(getattr(remote, "deleted", False))
+
+
+def pricing_context(user) -> dict:
+    """Build the pricing data shared by the pricing page and the landing page."""
+    products = list(Product.objects.filter(active=True).prefetch_related("prices"))
+    for product in products:
+        meta = metadata.PRODUCTS.get(product.id)
+        product.features_list = meta.features if meta else []
+
+    free_plan = metadata.PAPERTRAIL_FREE
+    free_plan.features_list = free_plan.features
+    free_plan.prices = []
+    free_plan.metadata = {"category": "base_plan"}
+    products.insert(0, free_plan)
+
+    def _by_category(category: str) -> list:
+        return [
+            p
+            for p in products
+            if isinstance(getattr(p, "metadata", None), dict)
+            and p.metadata.get("category") == category
+        ]
+
+    return {
+        "products": products,
+        "free_plan": free_plan,
+        "has_active_subscription": bool(user.is_authenticated and user.has_active_subscription),
+        "base_plans": _by_category("base_plan"),
+        "storage_plans": _by_category("storage_plan"),
+    }
 
 
 def reconcile_subscription_statuses(

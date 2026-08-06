@@ -5,7 +5,6 @@ HTMX partial responses for seamless in-page folder management.
 """
 
 import json
-import logging
 
 import posthog
 from django.contrib import messages
@@ -19,8 +18,6 @@ from core.services.dashboard import invalidate_dashboard_cache
 
 from ..forms import FolderForm
 from ..models import Folder
-
-logger = logging.getLogger(__name__)
 
 
 def _unfiled_count(user) -> int:
