@@ -1,18 +1,30 @@
 """Tests for the records service layer.
 
-Covers archive_record, unarchive_record, bulk_toggle_archive, and
-BulkLimitExceededError boundary conditions.
+Covers archive_record, unarchive_record, bulk_toggle_archive,
+create_record_from_ocr, kickoff_ocr_scan, and BulkLimitExceededError
+boundary conditions.
 """
 
-from django.contrib.auth.models import User
+import hashlib
+from datetime import date
+from decimal import Decimal
+
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+from django.core.cache import cache
 from django.test import TestCase
 
+from core.currencies import DEFAULT_CURRENCY
+from documents.models import DocumentData, DocumentStatus
 from records.models import AuditLog, Record
 from records.services import (
     BULK_LIMIT,
     BulkLimitExceededError,
     archive_record,
     bulk_toggle_archive,
+    create_record_from_ocr,
+    kickoff_ocr_scan,
     unarchive_record,
 )
 
@@ -25,14 +37,14 @@ class ArchiveRecordTest(TestCase):
         )
 
     def test_archive_sets_inactive(self):
-        archive_record(self.record)
+        archive_record(self.user, self.record)
         self.record.refresh_from_db()
         self.assertFalse(self.record.is_active)
 
     def test_unarchive_sets_active(self):
         self.record.is_active = False
         self.record.save()
-        unarchive_record(self.record)
+        unarchive_record(self.user, self.record)
         self.record.refresh_from_db()
         self.assertTrue(self.record.is_active)
 
@@ -117,3 +129,124 @@ class BulkToggleArchiveTest(TestCase):
         for r in self.records[:2]:
             r.refresh_from_db()
             self.assertTrue(r.is_active)
+
+
+def _make_hash(content: bytes = b"ocr") -> str:
+    return hashlib.sha256(content).hexdigest()
+
+
+class CreateRecordFromOCRTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username="ocrsvc", password="pass")
+
+    def _doc(self, data=None, **kwargs):
+        return DocumentData.objects.create(
+            user=self.user,
+            filepath="users/1/ocr.pdf",
+            file_hash=_make_hash(),
+            status=DocumentStatus.COMPLETED,
+            ocr_raw_data=data,
+            **kwargs,
+        )
+
+    def test_creates_record_from_persisted_data(self):
+        doc = self._doc(
+            {
+                "title": "Coffee Shop",
+                "merchant": "Coffee Shop Inc",
+                "balance": 12.5,
+                "currency": "usd",
+                "transaction_date": "2024-06-15",
+                "products": ["Latte", "Croissant"],
+                "record_type": "expense_receipt",
+            }
+        )
+        record = create_record_from_ocr(doc.id)
+        self.assertIsNotNone(record)
+        doc.refresh_from_db()
+        self.assertEqual(doc.associated_record, record)
+        record.refresh_from_db()
+        self.assertEqual(record.title, "Coffee Shop")
+        self.assertEqual(record.merchant, "Coffee Shop Inc")
+        self.assertEqual(record.balance, Decimal("12.5"))
+        self.assertEqual(record.transaction_date, date(2024, 6, 15))
+        self.assertEqual(record.currency, "usd")
+
+    def test_is_idempotent(self):
+        doc = self._doc({"title": "Coffee"})
+        first = create_record_from_ocr(doc.id)
+        second = create_record_from_ocr(doc.id)
+        self.assertEqual(first, second)
+        self.assertEqual(Record.objects.filter(user=self.user).count(), 1)
+
+    def test_returns_existing_associated_record(self):
+        record = Record.objects.create(
+            user=self.user,
+            title="Linked",
+            record_type="expense_receipt",
+        )
+        doc = self._doc({"title": "Coffee"}, associated_record=record)
+        self.assertEqual(create_record_from_ocr(doc.id), record)
+
+    def test_returns_none_without_ocr_data(self):
+        doc = self._doc(None)
+        self.assertIsNone(create_record_from_ocr(doc.id))
+
+    def test_returns_none_on_error_payload(self):
+        doc = self._doc({"error": "Failed to extract details."})
+        self.assertIsNone(create_record_from_ocr(doc.id))
+
+    def test_returns_none_for_missing_document(self):
+        self.assertIsNone(create_record_from_ocr(99999))
+
+    def test_falls_back_on_invalid_type_and_currency(self):
+        doc = self._doc({"title": "Coffee", "currency": "xxx", "record_type": "bogus"})
+        record = create_record_from_ocr(doc.id)
+        record.refresh_from_db()
+        self.assertEqual(record.record_type, Record.RecordTypes.FINANCIAL_DOCUMENT)
+        self.assertEqual(record.currency, DEFAULT_CURRENCY)
+
+    def test_coerces_iso_datetime(self):
+        doc = self._doc({"title": "Coffee", "transaction_date": "2024-06-15T10:30:00Z"})
+        record = create_record_from_ocr(doc.id)
+        record.refresh_from_db()
+        self.assertEqual(record.transaction_date, date(2024, 6, 15))
+
+    def test_defaults_title(self):
+        doc = self._doc({})
+        record = create_record_from_ocr(doc.id)
+        self.assertEqual(record.title, "Untitled Document")
+
+
+class KickoffOCRScanTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username="scanner", password="pass")
+        self.doc = DocumentData.objects.create(
+            user=self.user,
+            filepath="users/1/scan.pdf",
+            file_hash=_make_hash(b"scan"),
+        )
+        cache.clear()
+
+    def test_kicks_off_extraction(self):
+        warning = kickoff_ocr_scan(self.user, self.doc)
+        self.assertIsNone(warning)
+        self.assertEqual(cache.get(f"ocr_status_{self.doc.id}"), "processing")
+
+    def test_second_kickoff_is_noop(self):
+        kickoff_ocr_scan(self.user, self.doc)
+        self.assertIsNone(kickoff_ocr_scan(self.user, self.doc))
+
+    def test_returns_warning_when_scan_limit_reached(self):
+        from django.utils import timezone
+
+        from billing.models import ScanUsage
+
+        period = timezone.now().strftime("%Y-%m")
+        ScanUsage.objects.create(user=self.user, period=period, count=30)
+        warning = kickoff_ocr_scan(self.user, self.doc)
+        self.assertIsNotNone(warning)
+        self.assertIn("limit", warning.lower())
+        self.doc.refresh_from_db()
+        self.assertEqual(self.doc.status, DocumentStatus.ERROR)
+        self.assertEqual(self.doc.ocr_error, "scan_limit_reached")

@@ -26,5 +26,8 @@ def validate_recipient_email(request: HttpRequest) -> JsonResponse:
         return JsonResponse({"valid": True, "name": recipient.get_full_name() or recipient.email})
     except user_model.DoesNotExist:
         return JsonResponse(
-            {"valid": False, "error": "No Papertrail user found with that email address."}
+            {
+                "valid": False,
+                "error": "No Papertrail user found with that email address.",
+            }
         )

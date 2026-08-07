@@ -1,7 +1,7 @@
 """Tests for record creation views: AddRecordView and CheckOCRStatus.
 
-Covers OCR status polling, form pre-fill from cache, association
-blocking, and suggested folder resolution.
+Covers OCR status polling, redirect to the auto-created record's inline
+editor, and manual entry.
 """
 
 import hashlib
@@ -80,7 +80,7 @@ class AddRecordViewTest(TestCase):
         )
         self.assertIn(response.status_code, [200, 302])
 
-    def test_already_associated_returns_400(self):
+    def test_already_associated_redirects_to_record(self):
         record = Record.objects.create(
             user=self.user,
             title="Existing",
@@ -97,7 +97,11 @@ class AddRecordViewTest(TestCase):
         self.client.force_login(self.user)
         url = reverse("records:add_record", args=[doc.id])
         response = self.client.get(url)
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(
+            response["Location"],
+            reverse("records:record_detail", args=[record.id]),
+        )
 
     def test_suggested_folder_resolves_to_pk(self):
         folder = Folder.objects.create(user=self.user, name="Taxes")
@@ -131,12 +135,32 @@ class CheckOCRStatusTest(TestCase):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
 
-    def test_completed_returns_form(self):
+    def test_completed_returns_redirect(self):
+        self.doc.status = DocumentStatus.COMPLETED
+        self.doc.ocr_raw_data = {
+            "title": "Auto Receipt",
+            "transaction_date": "2024-06-15",
+            "record_type": "expense_receipt",
+            "currency": "usd",
+        }
+        self.doc.save()
+        self.client.force_login(self.user)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("HX-Redirect", response.headers)
+        record = Record.objects.get(title="Auto Receipt", user=self.user)
+        self.assertIn(
+            reverse("records:record_detail", args=[record.id]),
+            response.headers["HX-Redirect"],
+        )
+
+    def test_completed_without_ocr_data_returns_error(self):
         self.doc.status = DocumentStatus.COMPLETED
         self.doc.save()
         self.client.force_login(self.user)
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Extraction produced no data")
 
     def test_error_returns_error_message(self):
         self.doc.status = DocumentStatus.ERROR

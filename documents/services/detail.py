@@ -1,23 +1,16 @@
 """Document detail service for context building and record association.
 
 Provides reusable logic for building document detail context (presigned URLs,
-compliance date calculations, record search with pagination) and handling
-record association updates.
+record search with pagination) and handling record association updates.
 """
 
-import logging
 from dataclasses import dataclass
-from datetime import timedelta
 
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.shortcuts import get_object_or_404
-from django.utils import timezone
 
-from documents.services.cleanup import COMPLIANCE_RETENTION_YEARS
 from documents.storage import generate_read_presigned_url
 from records.models import Record
-
-logger = logging.getLogger(__name__)
 
 RECORD_SEARCH_PAGE_SIZE = 5
 
@@ -27,7 +20,6 @@ class DocumentContext:
     """Pre-built context data for the document detail view."""
 
     view_url: str
-    seven_years_ago_unix: float
     records: list
     page_obj: object
     is_paginated: bool
@@ -40,13 +32,10 @@ class DocumentDetailService:
     def build_context(document, request) -> DocumentContext:
         """Build the full context needed for the document detail template.
 
-        Generates a presigned view URL, calculates the 7-year compliance
-        timestamp, and searches/paginates user records for association.
+        Generates a presigned view URL and searches/paginates user records
+        for association.
         """
         view_url = generate_read_presigned_url(document.filepath)
-
-        seven_years_ago = timezone.now() - timedelta(days=365 * COMPLIANCE_RETENTION_YEARS)
-        seven_years_ago_unix = seven_years_ago.timestamp()
 
         records_list = DocumentDetailService._search_records(request)
         paginator = Paginator(records_list, RECORD_SEARCH_PAGE_SIZE)
@@ -61,7 +50,6 @@ class DocumentDetailService:
 
         return DocumentContext(
             view_url=view_url,
-            seven_years_ago_unix=seven_years_ago_unix,
             records=page_obj.object_list,
             page_obj=page_obj,
             is_paginated=page_obj.has_other_pages(),
@@ -70,7 +58,7 @@ class DocumentDetailService:
     @staticmethod
     def _search_records(request):
         """Return user records matching the current search query for association."""
-        queryset = Record.objects.for_user(request.user).active().only("id", "title")
+        queryset = Record.objects.for_user(request.user).active()
         search_query = request.GET.get("search", "").strip()
         if search_query:
             queryset = queryset.smart_search(search_query)

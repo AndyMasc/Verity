@@ -5,12 +5,10 @@ a 204 response so the client can update the UI without a full page reload.
 """
 
 import json
-import logging
 
 import posthog
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db import transaction
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.utils.decorators import method_decorator
@@ -21,15 +19,14 @@ from django_ratelimit.decorators import ratelimit
 from core.services.dashboard import invalidate_dashboard_cache
 from Papertrail.views import parse_record_ids
 
-from ..models import AuditLog, Record
+from ..models import Record
 from ..services import (
     BulkLimitExceededError,
     archive_record,
     bulk_toggle_archive,
+    soft_delete_record,
     unarchive_record,
 )
-
-logger = logging.getLogger(__name__)
 
 
 class ArchiveRecord(LoginRequiredMixin, View):
@@ -38,12 +35,7 @@ class ArchiveRecord(LoginRequiredMixin, View):
     @method_decorator(ratelimit(key="user", rate="30/m", method="POST", block=True))
     def post(self, request: HttpRequest, record_id: int) -> HttpResponse:
         record = get_object_or_404(Record, id=record_id, user=request.user, is_active=True)
-        archive_record(record)
-        AuditLog.objects.create(
-            user=request.user,
-            action=AuditLog.Action.ARCHIVE,
-            record=record,
-        )
+        archive_record(request.user, record)
         invalidate_dashboard_cache(request.user.id)
         posthog.capture(
             "record_archived",
@@ -65,14 +57,8 @@ class UnarchiveRecord(LoginRequiredMixin, View):
 
     @method_decorator(ratelimit(key="user", rate="30/m", method="POST", block=True))
     def post(self, request: HttpRequest, record_id: int) -> HttpResponse:
-        with transaction.atomic():
-            record = get_object_or_404(Record, id=record_id, user=request.user, is_active=False)
-            unarchive_record(record)
-            AuditLog.objects.create(
-                user=request.user,
-                action=AuditLog.Action.UNARCHIVE,
-                record=record,
-            )
+        record = get_object_or_404(Record, id=record_id, user=request.user, is_active=False)
+        unarchive_record(request.user, record)
         invalidate_dashboard_cache(request.user.id)
         if request.headers.get("HX-Request") == "true":
             response = HttpResponse(status=200)
@@ -86,13 +72,7 @@ class DeleteRecordView(LoginRequiredMixin, View):
 
     def post(self, request: HttpRequest, record_id: int) -> HttpResponse:
         record = get_object_or_404(Record, id=record_id, user=request.user)
-        with transaction.atomic():
-            record.delete()
-            AuditLog.objects.create(
-                user=request.user,
-                action=AuditLog.Action.SOFT_DELETE,
-                record=record,
-            )
+        soft_delete_record(request.user, record)
         invalidate_dashboard_cache(request.user.id)
         posthog.capture(
             "record_deleted",

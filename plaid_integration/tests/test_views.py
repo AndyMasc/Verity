@@ -2,7 +2,9 @@ import json
 from datetime import date
 from unittest.mock import patch
 
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 from django.test import TestCase, RequestFactory, override_settings
 from django.urls import reverse
 
@@ -16,12 +18,15 @@ from plaid_integration.views import (
 )
 from records.models import Record
 
+from billing.tests.helpers import give_pro_subscription
+
 
 class PlaidViewsTest(TestCase):
     """Tests for Plaid integration API views."""
 
     def setUp(self):
         self.user = User.objects.create_user(username="testuser", password="pass")
+        give_pro_subscription(self.user)
         self.client.login(username="testuser", password="pass")
         self.plaid_item = PlaidItem.objects.create(
             user=self.user,
@@ -121,7 +126,7 @@ class PlaidWebhookViewTest(TestCase):
         )
 
     @override_settings(PLAID_ENV="sandbox")
-    @patch("plaid_integration.views.webhook.sync_and_convert_for_item_task")
+    @patch("plaid_integration.tasks.sync_and_convert_for_item_task")
     def test_sync_updates_available_webhook(self, mock_task):
         payload = {
             "webhook_type": "TRANSACTIONS",
@@ -135,6 +140,53 @@ class PlaidWebhookViewTest(TestCase):
         )
         response = plaid_webhook(request)
         self.assertEqual(response.status_code, 200)
+        mock_task.delay.assert_called_once_with(self.plaid_item.id)
+
+    @override_settings(PLAID_ENV="sandbox", PLAID_SYNC_COOLDOWN_SECONDS=60)
+    @patch("plaid_integration.tasks.sync_and_convert_for_item_task")
+    def test_sync_webhook_debounced_within_cooldown(self, mock_task):
+        from datetime import timedelta
+
+        from django.utils import timezone as dj_tz
+
+        payload = {
+            "webhook_type": "TRANSACTIONS",
+            "webhook_code": "SYNC_UPDATES_AVAILABLE",
+            "item_id": "item-webhook-1",
+        }
+        request = self.factory.post(
+            reverse("plaid:webhook"),
+            data=json.dumps(payload),
+            content_type="application/json",
+        )
+        plaid_webhook(request)
+        mock_task.delay.assert_called_once_with(self.plaid_item.id)
+
+        plaid_webhook(request)
+        mock_task.delay.assert_called_once_with(self.plaid_item.id)
+
+        PlaidItem.objects.filter(id=self.plaid_item.id).update(
+            last_synced_at=dj_tz.now() - timedelta(seconds=120)
+        )
+        plaid_webhook(request)
+        self.assertEqual(mock_task.delay.call_count, 2)
+
+    @override_settings(PLAID_ENV="sandbox", PLAID_SYNC_COOLDOWN_SECONDS=60)
+    @patch("plaid_integration.tasks.sync_and_convert_for_item_task")
+    def test_sync_webhook_sets_last_synced_at(self, mock_task):
+        payload = {
+            "webhook_type": "TRANSACTIONS",
+            "webhook_code": "SYNC_UPDATES_AVAILABLE",
+            "item_id": "item-webhook-1",
+        }
+        request = self.factory.post(
+            reverse("plaid:webhook"),
+            data=json.dumps(payload),
+            content_type="application/json",
+        )
+        plaid_webhook(request)
+        self.plaid_item.refresh_from_db()
+        self.assertIsNotNone(self.plaid_item.last_synced_at)
         mock_task.delay.assert_called_once_with(self.plaid_item.id)
 
     @override_settings(PLAID_ENV="sandbox")

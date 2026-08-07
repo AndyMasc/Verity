@@ -14,13 +14,13 @@ from .status import DisconnectBankView, PlaidStatusView, SyncTransactionsView
 from .webhook import plaid_webhook, verify_plaid_webhook
 
 __all__ = [
-    "plaid_connect_page",
     "CreateLinkTokenView",
     "CreateUpdateLinkTokenView",
-    "PublicTokenExchange",
-    "PlaidStatusView",
-    "SyncTransactionsView",
     "DisconnectBankView",
+    "PlaidStatusView",
+    "PublicTokenExchange",
+    "SyncTransactionsView",
+    "plaid_connect_page",
     "plaid_webhook",
     "verify_plaid_webhook",
 ]

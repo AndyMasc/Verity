@@ -1,13 +1,37 @@
 import logging
 
 import stripe
-from django.conf import settings
+from django.db import transaction
 from django_qstash import shared_task
 
+from . import services
 from .models import PackagePayment, ReimbursementPackage
 
-stripe.api_key = settings.STRIPE_SECRET_KEY
 logger = logging.getLogger(__name__)
+
+
+@shared_task(max_retries=3)
+def process_stripe_event_task(trigger_id: int) -> None:
+    """Applies a Stripe webhook event to the reimbursements flow, off the
+    request path.
+
+    Enqueued from the djstripe ``webhook_post_process`` signal. Transient
+    failures raise out of ``process_stripe_event`` so QStash retries; the
+    surrounding transaction guarantees the event-id dedupe marker rolls back
+    with any partial work.
+    """
+    from djstripe.models import WebhookEventTrigger
+
+    from .webhooks import process_stripe_event
+
+    try:
+        trigger = WebhookEventTrigger.objects.get(pk=trigger_id)
+    except WebhookEventTrigger.DoesNotExist:
+        logger.warning("process_stripe_event_task: trigger %s not found", trigger_id)
+        return
+
+    with transaction.atomic():
+        process_stripe_event(trigger.json_body)
 
 
 @shared_task(max_retries=3)
@@ -27,7 +51,7 @@ def sync_payment_status(package_uuid: str, payment_id: int) -> None:
         return
 
     try:
-        session = stripe.checkout.Session.retrieve(payment.stripe_checkout_session_id)
+        session = services.retrieve_checkout_session(payment.stripe_checkout_session_id)
     except stripe.error.StripeError as e:
         logger.warning(
             "sync_payment_status: failed to retrieve session %s — %s",
@@ -37,11 +61,7 @@ def sync_payment_status(package_uuid: str, payment_id: int) -> None:
         raise  # Trigger QStash retry
 
     if session.payment_status == "paid":
-        payment.is_completed = True
-        payment_intent_id = getattr(session, "payment_intent", None)
-        if payment_intent_id:
-            payment.stripe_payment_intent_id = payment_intent_id
-        payment.save(update_fields=["is_completed", "stripe_payment_intent_id"])
+        payment.complete_from_session(session)
         payer_currency = getattr(payment, "payer_currency", None) or "usd"
         package.mark_as_paid(payer=payment.payer, payer_currency=payer_currency)
         logger.info("Background sync: marked package %s as paid", package_uuid)

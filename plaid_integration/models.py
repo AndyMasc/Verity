@@ -7,6 +7,7 @@ state needed to maintain ongoing transaction synchronization.
 import json
 from typing import Any
 
+from django.conf import settings
 from django.db import models
 from fernet_fields import EncryptedCharField, EncryptedTextField
 
@@ -61,7 +62,9 @@ class PlaidItem(models.Model):
     institution metadata and error state for user-facing diagnostics.
     """
 
-    user = models.ForeignKey("auth.User", on_delete=models.CASCADE, related_name="plaid_items")
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="plaid_items"
+    )
     item_id = models.CharField(max_length=255, unique=True)
     access_token = EncryptedCharField(max_length=512)
     next_cursor = models.CharField(
@@ -72,6 +75,7 @@ class PlaidItem(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    last_synced_at = models.DateTimeField(null=True, blank=True)
     last_error_code = models.CharField(max_length=255, null=True, blank=True)
     last_error_message = models.TextField(null=True, blank=True)
     last_error_at = models.DateTimeField(null=True, blank=True)

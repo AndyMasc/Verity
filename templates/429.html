@@ -4,50 +4,32 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Too Many Requests | Papertrail</title>
-        <style>
-            *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-            body {
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-                background-color: #fafafa;
-                color: #18181b;
-                min-height: 100vh;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                -webkit-font-smoothing: antialiased;
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script>
+            tailwind.config = {
+                darkMode: 'media',
             }
-            @media (prefers-color-scheme: dark) {
-                body { background-color: #09090b; color: #fafafa; }
-                .card { background-color: #18181b; border-color: #27272a; }
-                .subtitle { color: #a1a1aa; }
-                .btn { background-color: #fafafa; color: #09090b; }
-                .btn:hover { background-color: #e4e4e7; }
-            }
-            .card {
-                max-width: 28rem; width: 100%; text-align: center;
-                padding: 2rem; margin: 1rem;
-                background-color: #ffffff;
-                border: 1px solid rgba(228,228,231,0.5);
-                border-radius: 1rem;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.02);
-            }
-            h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; }
-            .subtitle { color: #71717a; font-size: 0.875rem; margin-bottom: 1.5rem; line-height: 1.6; }
-            .btn {
-                display: inline-flex; align-items: center; justify-content: center;
-                padding: 0.5rem 1rem; font-size: 0.875rem; font-weight: 500;
-                border-radius: 1rem; text-decoration: none; transition: all 0.15s;
-                cursor: pointer; border: none;
-                background-color: #18181b; color: #ffffff;
-            }
-            .btn:hover { background-color: #27272a; }
-        </style>
+        </script>
     </head>
-    <body>
-        <div class="card">
-            <h1>Slow down a bit</h1>
-            <p class="subtitle">You've made too many sign-in requests in a short period. Please wait before trying to get a new code.</p>
-            <a href="/accounts/login/" class="btn">Return to Login</a>
+    <body class="font-sans bg-[#fcfcfc] dark:bg-[#0c0c0e] text-[#111827] dark:text-[#f4f4f5] min-h-screen flex items-center justify-center antialiased selection:bg-zinc-200 dark:selection:bg-zinc-800">
+        <div class="relative w-full max-w-[24rem] mx-4 p-10 bg-white dark:bg-[#141416] border border-zinc-200 dark:border-white/[0.08] rounded-lg shadow-[0_4px_6px_-1px_rgba(0,0,0,0.02),0_2px_4px_-2px_rgba(0,0,0,0.02)] dark:shadow-[0_20px_25px_-5px_rgba(0,0,0,0.5),0_8px_10px_-6px_rgba(0,0,0,0.5)] text-left">
+            <div class="inline-flex items-center justify-center w-10 h-10 mb-6 bg-[#f9fafb] dark:bg-white/[0.04] border border-zinc-200 dark:border-white/[0.08] rounded-md text-zinc-600 dark:text-[#a1a1aa]">
+                <svg class="w-[1.125rem] h-[1.125rem]"
+                     fill="none"
+                     viewBox="0 0 24 24"
+                     stroke="currentColor"
+                     stroke-width="1.75">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+            </div>
+            <h1 class="text-[1.125rem] font-medium tracking-tight mb-1.5">Too many requests</h1>
+            <p class="text-sm text-zinc-500 dark:text-[#9b9ba1] leading-relaxed mb-8">
+                You have exceeded the rate limit. Please wait a moment before attempting your request again.
+            </p>
+            <button onclick="window.location.reload();"
+                    class="inline-flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-white dark:text-[#0c0c0e] bg-[#111827] dark:bg-[#f4f4f5] hover:bg-[#1f2937] dark:hover:bg-white rounded-md transition-colors duration-150 active:opacity-95 cursor-pointer border-0">
+                Try again
+            </button>
         </div>
     </body>
 </html>

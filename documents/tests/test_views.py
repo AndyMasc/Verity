@@ -1,7 +1,9 @@
 import hashlib
 from unittest.mock import patch
 
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
@@ -342,107 +344,3 @@ class DocumentListViewTest(TestCase):
         response = self.client.get(self.url)
         self.assertFalse(response.context["is_paginated"])
         self.assertEqual(len(response.context["documents"]), 0)
-
-
-class PendingOCRListViewTest(TestCase):
-    def setUp(self):
-        self.user = User.objects.create_user(username="ocruser", password="pass")
-        self.url = reverse("documents:pending_ocr")
-        self.record = Record.objects.create(
-            user=self.user,
-            title="Test Record",
-            transaction_date=timezone.now().date(),
-        )
-
-    def _make_doc(self, status: str, **kwargs) -> DocumentData:
-        return DocumentData.objects.create(
-            user=self.user,
-            filepath="users/1/test.pdf",
-            file_hash=hashlib.sha256(f"test_{status}".encode()).hexdigest(),
-            status=status,
-            did_ocr=True,
-            **kwargs,
-        )
-
-    def test_login_required(self):
-        response = self.client.get(self.url)
-        self.assertEqual(response.status_code, 302)
-
-    def test_authenticated_access(self):
-        self.client.force_login(self.user)
-        response = self.client.get(self.url)
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "documents/pending_ocr_list.html")
-
-    def test_includes_uploaded_docs(self):
-        self.client.force_login(self.user)
-        doc = self._make_doc(DocumentStatus.UPLOADED)
-        response = self.client.get(self.url)
-        self.assertIn(doc, response.context["documents"])
-
-    def test_includes_processing_docs(self):
-        self.client.force_login(self.user)
-        doc = self._make_doc(DocumentStatus.PROCESSING)
-        response = self.client.get(self.url)
-        self.assertIn(doc, response.context["documents"])
-
-    def test_includes_completed_docs(self):
-        self.client.force_login(self.user)
-        doc = self._make_doc(DocumentStatus.COMPLETED)
-        response = self.client.get(self.url)
-        self.assertIn(doc, response.context["documents"])
-
-    def test_includes_error_docs(self):
-        self.client.force_login(self.user)
-        doc = self._make_doc(DocumentStatus.ERROR)
-        response = self.client.get(self.url)
-        self.assertIn(doc, response.context["documents"])
-
-    def test_excludes_pending_upload_docs(self):
-        self.client.force_login(self.user)
-        doc = self._make_doc(DocumentStatus.PENDING_UPLOAD)
-        response = self.client.get(self.url)
-        self.assertNotIn(doc, response.context["documents"])
-
-    def test_excludes_deleting_docs(self):
-        self.client.force_login(self.user)
-        doc = self._make_doc(DocumentStatus.DELETING)
-        response = self.client.get(self.url)
-        self.assertNotIn(doc, response.context["documents"])
-
-    def test_excludes_linked_docs(self):
-        self.client.force_login(self.user)
-        doc = self._make_doc(DocumentStatus.COMPLETED, associated_record=self.record)
-        response = self.client.get(self.url)
-        self.assertNotIn(doc, response.context["documents"])
-
-    def test_excludes_did_ocr_false_docs(self):
-        self.client.force_login(self.user)
-        doc = DocumentData.objects.create(
-            user=self.user,
-            filepath="users/1/support.pdf",
-            file_hash=hashlib.sha256(b"support").hexdigest(),
-            status=DocumentStatus.UPLOADED,
-            did_ocr=False,
-        )
-        response = self.client.get(self.url)
-        self.assertNotIn(doc, response.context["documents"])
-
-    def test_excludes_other_users_docs(self):
-        other = User.objects.create_user(username="other", password="pass")
-        self.client.force_login(self.user)
-        doc = DocumentData.objects.create(
-            user=other,
-            filepath="users/2/other.pdf",
-            file_hash=hashlib.sha256(b"other").hexdigest(),
-            status=DocumentStatus.COMPLETED,
-            did_ocr=True,
-        )
-        response = self.client.get(self.url)
-        self.assertNotIn(doc, response.context["documents"])
-
-    def test_empty_state(self):
-        self.client.force_login(self.user)
-        response = self.client.get(self.url)
-        self.assertEqual(len(response.context["documents"]), 0)
-        self.assertContains(response, "No documents found")

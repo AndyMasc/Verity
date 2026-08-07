@@ -118,7 +118,7 @@ class BaseRecordForm(forms.ModelForm):
         ),
     )
     currency = forms.ChoiceField(
-        choices=[("", "—")] + list(CURRENCY_CHOICES),
+        choices=[("", "—"), *list(CURRENCY_CHOICES)],
         required=True,
         widget=forms.Select(attrs=CURRENCY_WIDGET_ATTRS),
     )

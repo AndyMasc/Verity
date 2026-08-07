@@ -1,7 +1,7 @@
 """Filtersets for the document list view.
 
-Provides dynamic filter choices for file type, processing status, and
-active/trash state. File-type choices are cached per user to avoid repeated queries.
+Provides dynamic filter choices for file type and processing status.
+File-type choices are cached per user to avoid repeated queries.
 """
 
 import django_filters
@@ -14,17 +14,11 @@ FILTER_CHOICES_CACHE_TTL = 3600
 
 
 class DocumentFilter(django_filters.FilterSet):
-    """Filters documents by activity state, file extension, and link status.
+    """Filters documents by file extension and link status.
 
     File type choices are populated dynamically from the user's existing
     documents and cached to reduce database load on list views.
     """
-
-    is_active = django_filters.BooleanFilter(
-        field_name="is_active",
-        lookup_expr="exact",
-        widget=forms.Select(choices=[(None, "All"), (True, "Active"), (False, "Trash")]),
-    )
 
     file_type = django_filters.ChoiceFilter(
         field_name="file_extension",
@@ -62,15 +56,17 @@ class DocumentFilter(django_filters.FilterSet):
     def _get_cached_extensions(self):
         """Return distinct file extensions for the user, using cache to avoid repeated queries."""
         if self.request and self.request.user.is_authenticated:
-            cache_key = f"de_v2_{self.request.user.id}"
+            cache_key = f"de_v3_{self.request.user.id}"
             extensions = cache.get(cache_key)
             if extensions is None:
                 extensions = sorted(
-                    ext.strip().lower()[:10]
-                    for ext in DocumentData.objects.filter(user=self.request.user)
-                    .values_list("file_extension", flat=True)
-                    .distinct()
-                    if ext and ext.strip()
+                    {
+                        ext.strip().lower()[:10]
+                        for ext in DocumentData.objects.filter(user=self.request.user)
+                        .values_list("file_extension", flat=True)
+                        .distinct()
+                        if ext and ext.strip()
+                    }
                 )
                 cache.set(cache_key, extensions, FILTER_CHOICES_CACHE_TTL)
             return extensions

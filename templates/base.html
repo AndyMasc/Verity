@@ -8,6 +8,11 @@
         <meta http-equiv="X-UA-Compatible" content="ie=edge">
         <script src="https://js.sentry-cdn.com/d63e860242f18d1e659b055f82407b13.min.js"
                 crossorigin="anonymous"></script>
+        <style>
+            html {
+                scroll-behavior: smooth;
+            }
+        </style>
         <script>
             (function() {
                 try {
@@ -73,7 +78,7 @@
         {% block extra_head %}{% endblock %}
     </head>
     <body class="font-sans bg-zinc-50 dark:bg-[#0E0E0E] text-zinc-950 dark:text-zinc-50 min-h-screen antialiased selection:bg-zinc-900/10 dark:selection:bg-zinc-100/10"
-          {% if user.is_authenticated %} x-data="{ open: $persist(true) }" {% endif %}>
+          {% if user.is_authenticated %}x-data="{ open: $persist(true) }"{% endif %}>
         {% include 'core/toast.html' %}
         <noscript>
             <div style="position: fixed;

@@ -1,24 +1,25 @@
 """Plaid webhook handler and JWT signature verification."""
 
+import datetime
 import hashlib
 import json
 import logging
-from datetime import UTC, datetime
 from typing import Any
 
 import jwt
 import requests
 from django.conf import settings
-from django.db import transaction
-from django.http import HttpRequest, HttpResponse, HttpResponseBadRequest, HttpResponseForbidden
-from django.utils import timezone as tz
+from django.http import (
+    HttpRequest,
+    HttpResponse,
+    HttpResponseBadRequest,
+    HttpResponseForbidden,
+)
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
-from records.models import Record
-
 from ..models import PlaidItem
-from ..tasks import sync_and_convert_for_item_task
+from ..services import route_webhook
 
 logger: logging.Logger = logging.getLogger(__name__)
 
@@ -30,13 +31,9 @@ WEBHOOK_MAX_BODY_SIZE = 1024 * 100  # 100KB
 
 
 def _get_plaid_jwk(kid: str, max_age: int = 3600) -> dict[str, Any] | None:
-    """Fetch and cache a Plaid JSON Web Key by key ID.
-
-    Maintains an in-memory cache that refreshes after ``max_age`` seconds
-    to avoid hammering Plaid's JWKS endpoint on every webhook.
-    """
+    """Fetch and cache a Plaid JSON Web Key by key ID."""
     global _jwks_cache, _jwks_fetched_at
-    now = datetime.now(UTC).timestamp()
+    now = datetime.datetime.now(datetime.UTC).timestamp()
     if not _jwks_fetched_at or (now - _jwks_fetched_at) > max_age:
         try:
             resp = requests.get(PLAID_JWKS_URL, timeout=10)
@@ -51,11 +48,7 @@ def _get_plaid_jwk(kid: str, max_age: int = 3600) -> dict[str, Any] | None:
 
 
 def verify_plaid_webhook(body: bytes, plaid_verification: str | None) -> bool:
-    """Verify the JWT signature and body hash of an incoming Plaid webhook.
-
-    Uses Plaid's public JWKS endpoint to validate the RS256 signature,
-    then confirms the request body hasn't been tampered with.
-    """
+    """Verify the JWT signature and body hash of an incoming Plaid webhook."""
     if not plaid_verification:
         logger.warning("Missing Plaid-Verification header")
         return False
@@ -87,13 +80,7 @@ def verify_plaid_webhook(body: bytes, plaid_verification: str | None) -> bool:
 @csrf_exempt
 @require_POST
 def plaid_webhook(request: HttpRequest) -> HttpResponse:
-    """Handle incoming Plaid webhooks for transaction and credential events.
-
-    Routes different webhook types to the appropriate handler: transaction
-    syncs are dispatched as async tasks, credential errors are persisted
-    on the PlaidItem for UI display, and removed transactions are marked
-    inactive. Verification is skipped in sandbox for easier testing.
-    """
+    """Handle incoming Plaid webhooks for transaction and credential events."""
     if len(request.body) > WEBHOOK_MAX_BODY_SIZE:
         logger.warning("Plaid webhook body too large: %d bytes", len(request.body))
         return HttpResponseBadRequest("Payload too large")
@@ -103,10 +90,8 @@ def plaid_webhook(request: HttpRequest) -> HttpResponse:
     except ValueError, TypeError:
         return HttpResponseBadRequest("Invalid JSON")
 
-    if (
-        payload.get("environment") != "sandbox"
-        and settings.PLAID_ENV != "sandbox"
-        and not verify_plaid_webhook(request.body, request.headers.get("Plaid-Verification"))
+    if settings.PLAID_ENV != "sandbox" and not verify_plaid_webhook(
+        request.body, request.headers.get("Plaid-Verification")
     ):
         logger.warning("Plaid webhook verification failed for %s", payload.get("item_id"))
         return HttpResponseForbidden("Invalid webhook signature")
@@ -115,7 +100,12 @@ def plaid_webhook(request: HttpRequest) -> HttpResponse:
     webhook_code: str = payload.get("webhook_code", "")
     item_id: str = payload.get("item_id", "")
 
-    logger.info("Plaid webhook received: %s / %s for item %s", webhook_type, webhook_code, item_id)
+    logger.info(
+        "Plaid webhook received: %s / %s for item %s",
+        webhook_type,
+        webhook_code,
+        item_id,
+    )
 
     try:
         plaid_item = PlaidItem.objects.get(item_id=item_id)
@@ -123,40 +113,6 @@ def plaid_webhook(request: HttpRequest) -> HttpResponse:
         logger.warning("Webhook received for unknown item %s", item_id)
         return HttpResponse("OK")
 
-    _route_webhook(webhook_code, plaid_item, payload)
+    route_webhook(webhook_code, plaid_item, payload)
 
     return HttpResponse("OK")
-
-
-def _route_webhook(webhook_code: str, plaid_item: PlaidItem, payload: dict[str, Any]) -> None:
-    """Dispatch a webhook to the appropriate handler based on the code."""
-    if webhook_code in ("SYNC_UPDATES_AVAILABLE", "HISTORICAL_UPDATE"):
-        sync_and_convert_for_item_task.delay(plaid_item.id)
-
-    elif webhook_code in ("ITEM_LOGIN_REQUIRED", "ITEM_REQUIRES_UPDATE", "PENDING_EXPIRATION"):
-        logger.warning(
-            "Item %s requires manual user intervention: %s", plaid_item.item_id, webhook_code
-        )
-        PlaidItem.objects.filter(id=plaid_item.id).update(
-            last_error_code=webhook_code,
-            last_error_message=payload.get("error", {}).get(
-                "error_message", "User action required"
-            ),
-            last_error_at=tz.now(),
-        )
-
-    elif webhook_code == "ERROR":
-        error: dict[str, Any] = payload.get("error", {})
-        logger.error("Plaid error for item %s: %s", plaid_item.item_id, error.get("error_message"))
-        PlaidItem.objects.filter(id=plaid_item.id).update(
-            last_error_code=error.get("error_code", webhook_code),
-            last_error_message=error.get("error_message", "Unknown error"),
-            last_error_at=tz.now(),
-        )
-
-    elif webhook_code == "TRANSACTIONS_REMOVED":
-        txns: list[str] = payload.get("removed_transactions", [])
-        with transaction.atomic():
-            Record.objects.filter(plaid_transaction_id__in=txns).update(
-                is_active=False, last_edited=tz.now()
-            )

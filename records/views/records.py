@@ -1,7 +1,7 @@
 """Record list, detail, and hard-delete views."""
 
-import logging
 from datetime import timedelta
+from typing import Any
 
 import posthog
 from django.conf import settings
@@ -21,11 +21,23 @@ from django_ratelimit.decorators import ratelimit
 from core.services.dashboard import invalidate_dashboard_cache
 from Papertrail.views import CachedPaginatorMixin, htmx_response
 
+from .. import services
 from ..filters import RecordFilter
 from ..forms import RecordUpdateForm
-from ..models import AuditLog, MergeLog, Record
+from ..models import MergeLog, Record
 
-logger = logging.getLogger(__name__)
+
+def snapshot_with_currency(snapshot: dict[str, Any] | None, fallback: str) -> dict[str, Any]:
+    """Ensure a MergeLog snapshot dict carries a ``currency`` key for templates.
+
+    Snapshots created before currency was recorded lack the key; the detail
+    and history templates use it as a ``currency_format`` filter argument,
+    which raises ``VariableDoesNotExist`` when absent.
+    """
+    clean = dict(snapshot or {})
+    clean.setdefault("currency", fallback)
+    return clean
+
 
 LIST_FIELDS = (
     "pk",
@@ -116,8 +128,12 @@ class RecordDetailView(LoginRequiredMixin, UpdateView):
             )
             if active_merge:
                 context["active_merge"] = active_merge
-                context["plaid_snapshot"] = active_merge.plaid_snapshot
-                context["document_snapshot"] = active_merge.document_snapshot
+                context["plaid_snapshot"] = snapshot_with_currency(
+                    active_merge.plaid_snapshot, self.object.currency
+                )
+                context["document_snapshot"] = snapshot_with_currency(
+                    active_merge.document_snapshot, self.object.currency
+                )
 
         return context
 
@@ -174,18 +190,7 @@ class HardDeleteRecordView(LoginRequiredMixin, View):
             messages.error(request, "This record is not old enough for permanent deletion.")
             return redirect("records:record_detail", pk=pk)
 
-        from documents.models import DocumentData
-
-        with transaction.atomic():
-            for doc in DocumentData.objects.filter(associated_record=record):
-                doc.hard_delete()
-            AuditLog.objects.create(
-                user=request.user,
-                action=AuditLog.Action.HARD_DELETE,
-                record=record,
-                details={"title": record.title},
-            )
-            record.hard_delete()
+        services.hard_delete_record(request.user, record)
 
         invalidate_dashboard_cache(request.user.id)
         posthog.capture(

@@ -1,18 +1,16 @@
 """Tests for the DocumentDeletionService.
 
-Covers soft_delete, undo_delete, hard_delete, and is_eligible_for_hard_delete.
+Covers soft_delete and hard_delete, both of which permanently remove documents.
 """
 
 import hashlib
-from datetime import timedelta
 from unittest.mock import patch
 
 import pytest
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 
-from documents.models import DocumentData, DocumentStatus
-from documents.services.cleanup import COMPLIANCE_RETENTION_YEARS
+from documents.models import DocumentData
 from documents.services.deletion import DocumentDeletionService
 
 User = get_user_model()
@@ -24,39 +22,34 @@ def _make_hash(content: bytes = b"test") -> str:
 
 @pytest.mark.django_db
 class TestSoftDelete:
-    def test_non_ocr_hard_deletes_immediately(self, user):
+    def test_permanently_deletes_document(self, user):
         doc = DocumentData.objects.create(
             user=user,
             filepath="users/1/doc.pdf",
             file_hash=_make_hash(),
-            did_ocr=False,
         )
         result = DocumentDeletionService.soft_delete(doc)
         assert result.success is True
         assert result.message_tag == "success"
         assert not DocumentData.objects.filter(id=doc.id).exists()
 
-    def test_ocr_soft_deletes_for_compliance(self, user):
+    def test_deletes_even_with_ocr_data(self, user):
         doc = DocumentData.objects.create(
             user=user,
             filepath="users/1/doc.pdf",
             file_hash=_make_hash(),
             did_ocr=True,
+            ocr_raw_data={"title": "Receipt"},
         )
         result = DocumentDeletionService.soft_delete(doc)
         assert result.success is True
-        assert result.message_tag == "info"
-        assert "compliance" in result.message.lower()
-        doc.refresh_from_db()
-        assert doc.is_active is False
-        assert doc.deleted_at is not None
+        assert not DocumentData.objects.filter(id=doc.id).exists()
 
     def test_soft_delete_returns_filepath(self, user):
         doc = DocumentData.objects.create(
             user=user,
             filepath="users/1/doc.pdf",
             file_hash=_make_hash(),
-            did_ocr=False,
         )
         result = DocumentDeletionService.soft_delete(doc)
         assert result.filepath == "users/1/doc.pdf"
@@ -75,7 +68,6 @@ class TestSoftDelete:
             filepath="users/1/doc.pdf",
             file_hash=_make_hash(),
             associated_record=record,
-            did_ocr=False,
         )
         result = DocumentDeletionService.soft_delete(doc)
         assert result.record_id == record.id
@@ -93,50 +85,8 @@ class TestSoftDelete:
 
 
 @pytest.mark.django_db
-class TestUndoDelete:
-    def test_restores_soft_deleted_document(self, user):
-        doc = DocumentData.objects.create(
-            user=user,
-            filepath="users/1/doc.pdf",
-            file_hash=_make_hash(),
-            did_ocr=True,
-        )
-        doc.delete()
-        doc.refresh_from_db()
-        assert doc.is_active is False
-        result = DocumentDeletionService.undo_delete(doc)
-        assert result.success is True
-        doc.refresh_from_db()
-        assert doc.is_active is True
-        assert doc.deleted_at is None
-
-
-@pytest.mark.django_db
-class TestIsEligibleForHardDelete:
-    def test_eligible_after_7_years(self, user):
-        doc = DocumentData.objects.create(
-            user=user,
-            filepath="users/1/doc.pdf",
-            file_hash=_make_hash(),
-        )
-        DocumentData.objects.filter(id=doc.id).update(
-            date_added=timezone.now() - timedelta(days=365 * COMPLIANCE_RETENTION_YEARS + 1)
-        )
-        doc.refresh_from_db()
-        assert DocumentDeletionService.is_eligible_for_hard_delete(doc) is True
-
-    def test_not_eligible_recent(self, user):
-        doc = DocumentData.objects.create(
-            user=user,
-            filepath="users/1/doc.pdf",
-            file_hash=_make_hash(),
-        )
-        assert DocumentDeletionService.is_eligible_for_hard_delete(doc) is False
-
-
-@pytest.mark.django_db
 class TestHardDelete:
-    def test_permently_removes_document(self, user):
+    def test_permanently_removes_document(self, user):
         doc = DocumentData.objects.create(
             user=user,
             filepath="users/1/doc.pdf",

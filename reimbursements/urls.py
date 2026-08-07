@@ -1,14 +1,12 @@
 from django.urls import path
 
 from . import views
-from .webhooks import stripe_webhook
 
 app_name = "reimbursements"
 
 urlpatterns = [
     path("", views.PackageListView.as_view(), name="package-list"),
     path("onboard/", views.StripeOnboardView.as_view(), name="stripe-onboard"),
-    path("webhooks/stripe/", stripe_webhook, name="stripe-webhook"),
     path("validate-email/", views.validate_recipient_email, name="validate-email"),
     path("create/", views.CreatePackageFromRecordsView.as_view(), name="create-package"),
     path("success/", views.PaymentSuccessView.as_view(), name="payment-success"),

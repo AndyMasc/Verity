@@ -179,7 +179,13 @@ def find_document_matches_for_plaid(plaid_record: Record) -> list[tuple[Record, 
     return results
 
 
-PLAID_RESTORE_FIELDS = ["products", "notes", "record_type", "folder_id", "payment_method"]
+PLAID_RESTORE_FIELDS = [
+    "products",
+    "notes",
+    "record_type",
+    "folder_id",
+    "payment_method",
+]
 
 
 def _record_snapshot(record: Record) -> dict[str, Any]:
@@ -193,9 +199,10 @@ def _record_snapshot(record: Record) -> dict[str, Any]:
         "title": record.title,
         "merchant": record.merchant,
         "balance": str(record.balance) if record.balance is not None else None,
-        "transaction_date": record.transaction_date.isoformat()
-        if record.transaction_date
-        else None,
+        "transaction_date": (
+            record.transaction_date.isoformat() if record.transaction_date else None
+        ),
+        "currency": record.currency,
         "payment_method": record.payment_method,
     }
 

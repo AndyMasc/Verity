@@ -192,7 +192,9 @@ class FolderQuerySet(models.QuerySet):
 class Folder(models.Model):
     """User-owned folder for organising records into logical groups."""
 
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="folders")
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="folders"
+    )
     name = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -247,7 +249,12 @@ class Record(models.Model):
     title = models.CharField(max_length=255)
     merchant = models.CharField(max_length=255, default="")
     balance = models.DecimalField(
-        max_digits=12, decimal_places=2, null=True, blank=True, default=None, db_index=True
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        default=None,
+        db_index=True,
     )
     currency = models.CharField(
         max_length=3,
@@ -372,7 +379,10 @@ class MergeLog(models.Model):
         Record, on_delete=models.SET_NULL, null=True, related_name="merge_logs_as_plaid"
     )
     document_record = models.ForeignKey(
-        Record, on_delete=models.SET_NULL, null=True, related_name="merge_logs_as_document"
+        Record,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="merge_logs_as_document",
     )
     document = models.ForeignKey(
         "documents.DocumentData", on_delete=models.SET_NULL, null=True, blank=True
@@ -400,7 +410,7 @@ class MergeLog(models.Model):
             ),
         ]
 
-    def save(  # noqa: PLR0913
+    def save(
         self,
         force_insert=False,
         force_update=False,
@@ -443,7 +453,12 @@ class AuditLog(models.Model):
         ARCHIVE = "archive"
         UNARCHIVE = "unarchive"
 
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="audit_logs")
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="audit_logs",
+    )
     action = models.CharField(max_length=32, choices=Action.choices, db_index=True)
     record = models.ForeignKey(
         Record, on_delete=models.SET_NULL, null=True, related_name="audit_logs"

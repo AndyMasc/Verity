@@ -1,11 +1,10 @@
-"""Document detail, delete, undo-delete, and hard-delete views."""
+"""Document detail and delete views."""
 
 import json
 from typing import Any
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.contrib.messages import constants as message_constants
 from django.db import transaction
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect
@@ -50,7 +49,6 @@ class ViewDocument(LoginRequiredMixin, UpdateView):
         context = super().get_context_data(**kwargs)
         ctx = DocumentDetailService.build_context(self.object, self.request)
         context["view_url"] = ctx.view_url
-        context["seven_years_ago_unix"] = ctx.seven_years_ago_unix
         context["records"] = ctx.records
         context["page_obj"] = ctx.page_obj
         context["is_paginated"] = ctx.is_paginated
@@ -87,7 +85,7 @@ class ViewDocument(LoginRequiredMixin, UpdateView):
 
 @method_decorator(ratelimit(key="user", rate="10/m", method="POST", block=True), name="dispatch")
 class DeleteDocument(LoginRequiredMixin, View):
-    """Soft or hard-deletes a document and redirects to the parent record."""
+    """Permanently deletes a document and redirects to the parent record."""
 
     def post(self, request: HttpRequest, document_id: int) -> HttpResponse:
         document = get_object_or_404(
@@ -126,85 +124,17 @@ class DeleteDocument(LoginRequiredMixin, View):
                 {
                     "recordChanged": {},
                     "documentChanged": {},
-                    "showToast": {"text": result.message, "tags": result.message_tag or "success"},
+                    "showToast": {
+                        "text": result.message,
+                        "tags": result.message_tag or "success",
+                    },
                 }
             )
             return response
-        messages.add_message(
-            request,
-            message_constants.SUCCESS
-            if result.message_tag == "success"
-            else message_constants.INFO,
-            result.message,
-        )
+        messages.success(request, result.message)
         url = (
             reverse("records:record_detail", kwargs={"pk": record.id})
             if record
             else reverse("records:view_all_records")
         )
         return redirect(url)
-
-
-@method_decorator(ratelimit(key="user", rate="10/m", method="POST", block=True), name="dispatch")
-class UndoDeleteDocument(LoginRequiredMixin, View):
-    """Restores a soft-deleted document to active status."""
-
-    def post(self, request: HttpRequest, pk: int) -> HttpResponse:
-        document = get_object_or_404(DocumentData, pk=pk, user=request.user, is_active=False)
-        result = DocumentDeletionService.undo_delete(document)
-        invalidate_dashboard_cache(request.user.id)
-        if request.headers.get("HX-Request") == "true":
-            response = HttpResponse(status=204)
-            response["HX-Trigger"] = json.dumps(
-                {
-                    "recordChanged": {},
-                    "documentChanged": {},
-                    "showToast": {"text": result.message, "tags": "success"},
-                }
-            )
-            return response
-        messages.success(request, result.message)
-        return redirect("documents:trash_list")
-
-
-@method_decorator(ratelimit(key="user", rate="5/m", method="POST", block=True), name="dispatch")
-class HardDeleteDocumentView(LoginRequiredMixin, View):
-    """Permanently deletes documents older than 7 years from R2 and the database."""
-
-    def post(self, request: HttpRequest, pk: int) -> HttpResponse:
-        document = get_object_or_404(DocumentData, pk=pk, user=request.user)
-
-        if not DocumentDeletionService.is_eligible_for_hard_delete(document):
-            if request.headers.get("HX-Request") == "true":
-                response = HttpResponse(status=409)
-                response["HX-Trigger"] = json.dumps(
-                    {
-                        "showToast": {
-                            "text": "This document is not old enough for permanent deletion.",
-                            "tags": "error",
-                        }
-                    }
-                )
-                return response
-            messages.error(request, "This document is not old enough for permanent deletion.")
-            return redirect("documents:view_document", pk=pk)
-
-        result = DocumentDeletionService.hard_delete(document)
-        if result.filepath:
-            from ..tasks import delete_document
-
-            delete_document(result.filepath)
-
-        invalidate_dashboard_cache(request.user.id)
-        if request.headers.get("HX-Request") == "true":
-            response = HttpResponse(status=204)
-            response["HX-Trigger"] = json.dumps(
-                {
-                    "recordChanged": {},
-                    "documentChanged": {},
-                    "showToast": {"text": result.message, "tags": "success"},
-                }
-            )
-            return response
-        messages.success(request, result.message)
-        return redirect("documents:trash_list")

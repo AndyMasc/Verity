@@ -1,46 +1,91 @@
 import logging
+from typing import Any
 
+import djstripe.signals as djstripe_signals
 import stripe
-from django.conf import settings
-from django.http import HttpResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST
-from django_ratelimit.decorators import ratelimit
+from django.db import transaction
+from django.dispatch import receiver
 
 from records.models import AuditLog
 
-from .models import PackagePayment, StripeAccount
+from . import services
+from .models import PackagePayment, ProcessedStripeEvent, StripeAccount
 
-stripe.api_key = settings.STRIPE_SECRET_KEY
 logger = logging.getLogger(__name__)
 
+# Only these event types feed the reimbursements pipeline; everything else
+# (e.g. customer.subscription.*, invoice.*, customer.created) is already
+# handled by djstripe's own sync and does not need a QStash task.
+HANDLED_EVENT_TYPES = frozenset(
+    {
+        "checkout.session.completed",
+        "checkout.session.async_payment_succeeded",
+        "checkout.session.async_payment_failed",
+        "account.updated",
+        "transfer.failed",
+        "charge.failed",
+        "charge.refunded",
+    }
+)
 
-@csrf_exempt
-@require_POST
-@ratelimit(key="ip", rate="60/m", method="POST", block=True)
-def stripe_webhook(request):
-    payload = request.body
-    sig_header = request.META.get("HTTP_STRIPE_SIGNATURE")
 
-    try:
-        event = stripe.Webhook.construct_event(payload, sig_header, settings.STRIPE_WEBHOOK_SECRET)
-    except ValueError:
-        logger.error("Stripe webhook: invalid payload — could not parse")
-        return HttpResponse(status=400)
-    except stripe.error.SignatureVerificationError:
-        logger.error("Stripe webhook: invalid signature (possible tampering or config mismatch)")
-        return HttpResponse(status=400)
+@receiver(djstripe_signals.webhook_post_process)
+def enqueue_reimbursement_processing(**kwargs: Any) -> None:
+    """Hands the Stripe event to the reimbursements pipeline as a QStash task.
+
+    Runs after djstripe has already synced the event. Enqueued via
+    ``on_commit`` so the worker never races the trigger row's transaction, and
+    failures are retried by QStash instead of blocking djstripe's processing.
+    """
+    trigger = kwargs.get("instance")
+    if trigger is None:
+        return
+
+    event_type = getattr(getattr(trigger, "event", None), "type", "")
+    if event_type not in HANDLED_EVENT_TYPES:
+        return
+
+    from .tasks import process_stripe_event_task
+
+    transaction.on_commit(lambda: process_stripe_event_task.delay(trigger.id))
+
+
+def _as_dict(obj):
+    """Normalizes webhook payload objects (dict or stripe.StripeObject)."""
+    if isinstance(obj, dict):
+        return obj
+    if hasattr(obj, "to_dict_recursive"):
+        return obj.to_dict_recursive()
+    return dict(obj)
+
+
+def process_stripe_event(event):
+    """Applies a single Stripe webhook event to the reimbursements flow.
+
+    Idempotent: the event id is recorded before any work, so duplicate
+    deliveries and retries are no-ops. Runs inside the caller's transaction;
+    transient failures raise (so the task queue retries) and permanent
+    failures are logged and skipped. Accepts both raw dicts (as produced by
+    djstripe's ``WebhookEventTrigger.json_body``) and stripe.StripeObject
+    payloads.
+    """
+    event_id = event.get("id")
+    if event_id:
+        _, created = ProcessedStripeEvent.objects.get_or_create(event_id=event_id)
+        if not created:
+            logger.info("Stripe event %s already processed — skipping", event_id)
+            return
 
     if event["type"] == "checkout.session.completed":
-        session = event["data"]["object"]
+        session = _as_dict(event["data"]["object"])
 
         # Only process when payment has actually settled.
         # For delayed payment methods the session completes first, then
         # async_payment_succeeded fires later.
-        if getattr(session, "payment_status", None) != "paid":
-            return HttpResponse(status=200)
+        if session.get("payment_status") != "paid":
+            return
 
-        metadata = dict(getattr(session, "metadata", None) or {})
+        metadata = dict(session.get("metadata") or {})
         package_uuid = metadata.get("package_uuid")
 
         if package_uuid:
@@ -51,31 +96,34 @@ def stripe_webhook(request):
             except PackagePayment.DoesNotExist:
                 # Verify whether this session is known to Stripe at all.
                 # If Stripe itself has no record of it (InvalidRequestError), this
-                # is a permanently unresolvable session — return 400 so Stripe
-                # stops retrying.  If the session is valid but our DB row hasn't
-                # appeared yet (race condition), return 500 to request a retry.
+                # is a permanently unresolvable session — give up quietly. If the
+                # session is valid but our DB row hasn't appeared yet (race
+                # condition), re-raise so the task queue retries.
                 try:
-                    stripe.checkout.Session.retrieve(session["id"])
+                    services.retrieve_checkout_session(session["id"])
                 except stripe.error.InvalidRequestError:
                     logger.error(
-                        "PackagePayment not found and session %s is unknown to Stripe — returning 400",
+                        "PackagePayment not found and session %s is unknown to Stripe — skipping",
                         session["id"],
                     )
-                    return HttpResponse(status=400)
+                    return
                 except stripe.error.StripeError:
-                    pass  # Network/API issue — fall through to 500 retry below
+                    pass  # Network/API issue — fall through to retry below
                 logger.error(
-                    "PackagePayment not found for session %s — returning 500 for Stripe retry",
+                    "PackagePayment not found for session %s — raising for retry",
                     session["id"],
                 )
-                return HttpResponse(status=500)
+                raise
 
-            payment.is_completed = True
-            payment_intent_id = getattr(session, "payment_intent", None)
-            if payment_intent_id:
-                payment.stripe_payment_intent_id = payment_intent_id
-            payment.save(update_fields=["is_completed", "stripe_payment_intent_id"])
+            if not payment.amount_matches(session):
+                logger.error(
+                    "Package %s: session %s amount check failed — skipping mark-as-paid",
+                    package_uuid,
+                    session["id"],
+                )
+                return
 
+            payment.complete_from_session(session)
             package = payment.package
             payer_currency = getattr(payment, "payer_currency", None) or "usd"
             package.mark_as_paid(payer=payment.payer, payer_currency=payer_currency)
@@ -92,32 +140,33 @@ def stripe_webhook(request):
                 },
             )
 
-            from .tasks import send_package_paid_notification_task
-
-            send_package_paid_notification_task.delay(package.pk, payment.payer.pk)
+            transaction.on_commit(lambda: _notify_package_paid(package.pk, payment.payer.pk))
 
     elif event["type"] in (
         "checkout.session.async_payment_succeeded",
         "checkout.session.async_payment_failed",
     ):
-        session = event["data"]["object"]
-        metadata = dict(getattr(session, "metadata", None) or {})
+        session = _as_dict(event["data"]["object"])
+        metadata = dict(session.get("metadata") or {})
         package_uuid = metadata.get("package_uuid")
         if not package_uuid:
-            return HttpResponse(status=200)
+            return
         try:
             payment = PackagePayment.objects.select_related("package", "payer").get(
                 stripe_checkout_session_id=session["id"]
             )
         except PackagePayment.DoesNotExist:
-            return HttpResponse(status=200)
+            return
 
         if event["type"] == "checkout.session.async_payment_succeeded":
-            payment.is_completed = True
-            payment_intent_id = getattr(session, "payment_intent", None)
-            if payment_intent_id:
-                payment.stripe_payment_intent_id = payment_intent_id
-            payment.save(update_fields=["is_completed", "stripe_payment_intent_id"])
+            if not payment.amount_matches(session):
+                logger.error(
+                    "Package %s: session %s amount check failed — skipping mark-as-paid",
+                    package_uuid,
+                    session["id"],
+                )
+                return
+            payment.complete_from_session(session)
             package = payment.package
             payer_currency = getattr(payment, "payer_currency", None) or "usd"
             package.mark_as_paid(payer=payment.payer, payer_currency=payer_currency)
@@ -131,12 +180,9 @@ def stripe_webhook(request):
                     "payer_email": payment.payer.email if payment.payer else None,
                 },
             )
-            from .tasks import send_package_paid_notification_task
-
-            send_package_paid_notification_task.delay(package.pk, payment.payer.pk)
+            transaction.on_commit(lambda: _notify_package_paid(package.pk, payment.payer.pk))
         else:
-            payment.is_completed = False
-            payment.save(update_fields=["is_completed"])
+            payment.mark_failed()
             logger.warning(
                 "Async payment failed for session %s (package %s)",
                 session["id"],
@@ -144,17 +190,33 @@ def stripe_webhook(request):
             )
 
     elif event["type"] == "account.updated":
-        account = event["data"]["object"]
+        account = _as_dict(event["data"]["object"])
         StripeAccount.objects.filter(stripe_account_id=account["id"]).update(
-            stripe_details_submitted=getattr(account, "details_submitted", False),
-            charges_enabled=getattr(account, "charges_enabled", False),
-            payouts_enabled=getattr(account, "payouts_enabled", False),
+            stripe_details_submitted=account.get("details_submitted", False),
+            charges_enabled=account.get("charges_enabled", False),
+            payouts_enabled=account.get("payouts_enabled", False),
         )
 
     elif event["type"] in ("transfer.failed", "charge.failed"):
-        obj = event["data"]["object"]
-        failure_message = getattr(obj, "failure_message", None) or "unknown reason"
-        payment_intent_id = getattr(obj, "payment_intent", None) or getattr(obj, "id", None)
+        obj = _as_dict(event["data"]["object"])
+        failure_message = obj.get("failure_message") or "unknown reason"
+        payment_intent_id = obj.get("payment_intent")
+        if not payment_intent_id and event["type"] == "transfer.failed":
+            # Destination-charge transfers carry no payment_intent on the
+            # Transfer object; resolve it via the source charge so the
+            # package payment can be found and reverted.
+            source_transaction = obj.get("source_transaction")
+            if source_transaction:
+                try:
+                    charge = services.retrieve_charge(source_transaction)
+                except stripe.error.StripeError:
+                    logger.exception(
+                        "Failed to retrieve source charge %s for %s",
+                        source_transaction,
+                        event["type"],
+                    )
+                    raise
+                payment_intent_id = charge.get("payment_intent")
         logger.error(
             "Stripe %s — payment_intent: %s, reason: %s",
             event["type"],
@@ -168,8 +230,7 @@ def stripe_webhook(request):
                 .first()
             )
             if payment:
-                payment.is_completed = False
-                payment.save(update_fields=["is_completed"])
+                payment.mark_failed()
                 payment.package.mark_as_refunded()
                 AuditLog.objects.create(
                     user=payment.package.creator,
@@ -183,11 +244,11 @@ def stripe_webhook(request):
                 )
 
     elif event["type"] == "charge.refunded":
-        charge = event["data"]["object"]
-        payment_intent_id = getattr(charge, "payment_intent", None)
-        charge_currency = getattr(charge, "currency", None) or "usd"
-        amount_refunded_cents = getattr(charge, "amount_refunded", None) or 0
-        amount_captured_cents = getattr(charge, "amount_captured", None) or 0
+        charge = _as_dict(event["data"]["object"])
+        payment_intent_id = charge.get("payment_intent")
+        charge_currency = charge.get("currency") or "usd"
+        amount_refunded_cents = charge.get("amount_refunded") or 0
+        amount_captured_cents = charge.get("amount_captured") or 0
         if charge_currency.lower() in ("jpy", "krw", "vnd", "idr", "clp", "ugx"):
             refunded_display = float(amount_refunded_cents)
         else:
@@ -209,8 +270,7 @@ def stripe_webhook(request):
             if payment:
                 # Only fully revert the package if the entire charge was refunded.
                 is_full_refund = amount_refunded_cents >= amount_captured_cents
-                payment.is_completed = False
-                payment.save(update_fields=["is_completed"])
+                payment.mark_failed()
                 if is_full_refund:
                     payment.package.mark_as_refunded()
                 AuditLog.objects.create(
@@ -231,4 +291,8 @@ def stripe_webhook(request):
                     payment_intent_id,
                 )
 
-    return HttpResponse(status=200)
+
+def _notify_package_paid(package_pk: int, payer_pk: int | None) -> None:
+    from .tasks import send_package_paid_notification_task
+
+    send_package_paid_notification_task.delay(package_pk, payer_pk)

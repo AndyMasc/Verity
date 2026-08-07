@@ -6,6 +6,7 @@ uses the Resend provider through django-anymail.
 
 import logging
 
+from anymail.exceptions import AnymailRequestsAPIError
 from django.contrib.auth import get_user_model
 from django.core.mail import EmailMultiAlternatives, get_connection
 from django_qstash import shared_task
@@ -14,11 +15,14 @@ from webpush import send_user_notification
 logger = logging.getLogger(__name__)
 
 
-@shared_task
+@shared_task(max_retries=3)
 def send_background_email(subject, message, from_email, recipient_list, html_message=None):
     """Send an email via the Resend backend as a background task.
 
-    Supports optional HTML content for richer email templates.
+    Supports optional HTML content for richer email templates. Permanent
+    rejections (4xx, e.g. invalid recipient) are logged and skipped so QStash
+    doesn't retry them; transient failures (network, 5xx, rate limits) raise
+    so QStash retries.
     """
     resend_connection = get_connection(backend="anymail.backends.resend.EmailBackend")
 
@@ -33,7 +37,22 @@ def send_background_email(subject, message, from_email, recipient_list, html_mes
     if html_message:
         email.attach_alternative(html_message, "text/html")
 
-    email.send()
+    try:
+        email.send()
+    except AnymailRequestsAPIError as e:
+        status = getattr(e, "status_code", None)
+        if status is not None and 400 <= status < 500 and status != 429:
+            logger.error(
+                "Email permanently rejected (%s) to %s: %s",
+                status,
+                recipient_list,
+                e,
+            )
+            return
+        raise
+    except Exception:
+        logger.exception("Email send failed to %s", recipient_list)
+        raise
 
 
 @shared_task

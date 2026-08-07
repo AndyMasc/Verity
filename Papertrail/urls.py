@@ -9,7 +9,9 @@ from django.conf import settings
 from django.contrib import admin
 from django.http import HttpResponseForbidden
 from django.urls import include, path
+from webpush.views import ServiceWorkerView
 
+from billing.views import subscription_confirm
 from core.views import safe_webpush_save_info
 
 
@@ -20,6 +22,9 @@ def trigger_error(request):  # noqa: ARG001
 def forbidden_view(request, *args, **kwargs):  # noqa: ARG001
     """Return a 403 response for disabled password management endpoints."""
     return HttpResponseForbidden("Password features are disabled.")
+
+
+handler403 = "Papertrail.views.handler403"
 
 
 urlpatterns = [
@@ -41,11 +46,23 @@ urlpatterns = [
     path("records/", include("records.urls")),
     path("accounting/", include("accounting.urls")),
     path("reimbursements/", include("reimbursements.urls")),
+    path("billing/", include("billing.urls")),
+    # Stripe pricing table success URL is configured at this root path
+    path("subscription-confirm/", subscription_confirm, name="subscription_confirm"),
+    # Stripe webhook endpoint (djstripe). The Stripe dashboard URL must include
+    # the djstripe_uuid of a synced WebhookEndpoint, e.g. /stripe/webhook/<uuid>/
+    path("stripe/", include("djstripe.urls", namespace="djstripe")),
     # Webpush
     path(
         "webpush/save_information", safe_webpush_save_info, name="save_webpush_info"
     ),  # Custom URL to catch webpush POST before sent to fix webpush MultipleObjectsReturned error.
     path("webpush/", include("webpush.urls")),
+    # Service worker must be served from the origin root so its scope covers
+    # the whole site (webpush's default /webpush/ path limits scope).
+    # Registered AFTER the webpush include so reverse('service_worker')
+    # resolves to the root path (Django reverse keeps the last duplicate name).
+    path("service-worker.js", ServiceWorkerView.as_view(), name="service_worker"),
+    path("serviceworker.js", ServiceWorkerView.as_view()),
     path("plaid/", include("plaid_integration.urls")),
 ]
 

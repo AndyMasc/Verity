@@ -6,7 +6,8 @@ from datetime import date
 
 import factory
 import pytest
-from django.contrib.auth.models import User
+
+from billing.models import CustomUser as User
 
 
 class UserFactory(factory.django.DjangoModelFactory):
@@ -65,7 +66,6 @@ class DocumentDataFactory(factory.django.DjangoModelFactory):
     title = factory.Sequence(lambda n: f"Document {n}")
     filepath = factory.Sequence(lambda n: f"users/1/doc-{n}.pdf")
     status = "pending_upload"
-    is_active = True
 
 
 @pytest.fixture

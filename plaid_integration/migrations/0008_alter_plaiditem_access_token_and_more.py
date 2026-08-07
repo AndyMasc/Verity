@@ -5,6 +5,16 @@ import plaid_integration.models
 from django.db import migrations, models
 
 
+class RunSQLPostgresOnly(migrations.RunSQL):
+    def database_forwards(self, app_label, schema_editor, from_state, to_state):
+        if schema_editor.connection.vendor == "postgresql":
+            super().database_forwards(app_label, schema_editor, from_state, to_state)
+
+    def database_backwards(self, app_label, schema_editor, from_state, to_state):
+        if schema_editor.connection.vendor == "postgresql":
+            super().database_backwards(app_label, schema_editor, from_state, to_state)
+
+
 class Migration(migrations.Migration):
     dependencies = [
         ("plaid_integration", "0007_encrypt_existing_plaid_data"),
@@ -18,7 +28,7 @@ class Migration(migrations.Migration):
         ),
         migrations.SeparateDatabaseAndState(
             database_operations=[
-                migrations.RunSQL(
+                RunSQLPostgresOnly(
                     sql="ALTER TABLE plaid_integration_plaiditem ALTER COLUMN accounts_data TYPE bytea USING accounts_data::text::bytea",
                     reverse_sql=migrations.RunSQL.noop,
                 ),

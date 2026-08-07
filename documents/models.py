@@ -1,7 +1,8 @@
 """Database models and querysets for the documents module.
 
 Manages the lifecycle of uploaded document files, from pending upload through
-OCR processing to archival, including soft-delete for compliance retention.
+OCR processing to completion. Deleting a document is permanent: the database
+row and the R2 object are removed immediately.
 """
 
 from __future__ import annotations
@@ -36,20 +37,12 @@ class DocumentDataQuerySet(models.QuerySet):
     """Custom queryset providing filtered views across the document lifecycle."""
 
     def for_user(self, user: AbstractUser) -> DocumentDataQuerySet:
-        """Return only active documents belonging to the given user."""
-        return self.filter(user=user, is_active=True)
-
-    def active(self) -> DocumentDataQuerySet:
-        """Return non-trashed documents."""
-        return self.filter(is_active=True)
-
-    def trashed(self) -> DocumentDataQuerySet:
-        """Return soft-deleted documents."""
-        return self.filter(is_active=False)
+        """Return documents belonging to the given user."""
+        return self.filter(user=user)
 
     def orphaned(self) -> DocumentDataQuerySet:
-        """Return active documents not linked to any record."""
-        return self.filter(associated_record__isnull=True, is_active=True)
+        """Return documents not linked to any record."""
+        return self.filter(associated_record__isnull=True)
 
     def linked(self) -> DocumentDataQuerySet:
         """Return documents associated with at least one record."""
@@ -108,8 +101,8 @@ class DocumentData(models.Model):
     """Represents an uploaded document file and its processing metadata.
 
     Documents track a file from initial upload through optional OCR extraction,
-    linking to a Record once processed. OCR-processed documents are soft-deleted
-    for 7-year compliance retention; unprocessed documents are hard-deleted.
+    linking to a Record once processed. Deleting a document is permanent; there
+    is no trash or undo step.
     """
 
     id = models.BigAutoField(primary_key=True)
@@ -132,6 +125,7 @@ class DocumentData(models.Model):
     ocr_retries = models.PositiveSmallIntegerField(default=0)
     ocr_error = models.TextField(blank=True, default="")
     ocr_metadata = models.JSONField(blank=True, null=True)
+    ocr_raw_data = models.JSONField(blank=True, null=True)
     notes = models.TextField(blank=True, default="")
     file_extension = models.CharField(max_length=10, blank=True, default="")
     file_size = models.BigIntegerField(null=True, blank=True)
@@ -143,9 +137,7 @@ class DocumentData(models.Model):
         default=DocumentStatus.PENDING_UPLOAD,
         db_index=True,
     )
-    is_active = models.BooleanField(default=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
-    deleted_at = models.DateTimeField(null=True, blank=True, db_index=True)
 
     objects = DocumentDataManager()
     history = HistoricalRecords(m2m_fields=[])
@@ -186,24 +178,12 @@ class DocumentData(models.Model):
         super().save(*args, **kwargs)
 
     def delete(self, using=None, keep_parents=False):
-        """Soft-delete OCR'd documents for compliance; hard-delete others."""
-        if self.did_ocr:
-            self.is_active = False
-            self.deleted_at = timezone.now()
-            self.associated_record = None
-            self.save(update_fields=["is_active", "deleted_at", "associated_record"])
-        else:
-            super().delete(using=using, keep_parents=keep_parents)
+        """Permanently remove the database record and queue R2 cleanup via signals."""
+        super().delete(using=using, keep_parents=keep_parents)
 
     def hard_delete(self, using=None, keep_parents=False):
         """Permanently remove the database record regardless of OCR status."""
         super().delete(using=using, keep_parents=keep_parents)
-
-    def undo_delete(self):
-        """Restore a soft-deleted document to active status."""
-        self.is_active = True
-        self.deleted_at = None
-        self.save(update_fields=["is_active", "deleted_at"])
 
     def __str__(self):
         return f"{self.filepath}"

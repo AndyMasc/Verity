@@ -27,11 +27,31 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # Database
 DATABASES = {"default": env.db("DATABASE_URL", default="sqlite:///db.sqlite3")}
 DATABASES["default"].setdefault("CONN_MAX_AGE", env.int("DB_CONN_MAX_AGE", default=60))
-if DATABASES["default"]["ENGINE"] != "django.db.backends.sqlite3":
+if DATABASES["default"]["ENGINE"] == "django.db.backends.sqlite3":
+    # Concurrent writers (webhooks, QStash workers, web requests) must queue
+    # rather than fail with "database is locked". WAL allows a reader while a
+    # writer is active; busy_timeout makes writers wait; IMMEDIATE takes the
+    # write lock up front so we never block mid-transaction. Dev-only — the
+    # production Postgres connection needs connect_timeout instead.
+    DATABASES["default"].setdefault(
+        "OPTIONS",
+        {
+            "init_command": (
+                "PRAGMA journal_mode=WAL;PRAGMA busy_timeout=20000;PRAGMA synchronous=NORMAL;"
+            ),
+            "transaction_mode": "IMMEDIATE",
+        },
+    )
+else:
     DATABASES["default"].setdefault("OPTIONS", {"connect_timeout": 10})
 
 # Apps
 INSTALLED_APPS = [
+    # Unfold
+    "unfold",
+    # Cachalot
+    "cachalot",
+    # Admin apps
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -67,10 +87,12 @@ INSTALLED_APPS = [
     "records.apps.RecordsConfig",
     "accounting.apps.AccountingConfig",
     "reimbursements.apps.ReimbursementsConfig",
+    "plaid_integration.apps.PlaidIntegrationConfig",
+    "billing.apps.BillingConfig",
     # Webpush
     "webpush",
-    # Plaid
-    "plaid_integration.apps.PlaidIntegrationConfig",
+    # Stripe
+    "djstripe",
 ]
 
 MIDDLEWARE = [
@@ -89,6 +111,8 @@ MIDDLEWARE = [
     "csp.middleware.CSPMiddleware",
     "core.middleware.TimezoneMiddleware",  # Get user timezone via cookie
     "allauth.account.middleware.AccountMiddleware",
+    # Crum
+    "crum.CurrentRequestUserMiddleware",
 ]
 
 if not DEBUG:
@@ -111,7 +135,14 @@ if not DEBUG:
 CONTENT_SECURITY_POLICY = {
     "DIRECTIVES": {
         "default-src": ("'self'",),
-        "script-src": ("'self'", "'unsafe-inline'", "https://cdn.plaid.com", "https://*.plaid.com"),
+        "script-src": (
+            "'self'",
+            "'unsafe-inline'",
+            "https://cdn.plaid.com",
+            "https://*.plaid.com",
+            "https://js.stripe.com",
+        ),
+        "worker-src": ("'self'", "blob:"),
         "style-src": (
             "'self'",
             "'unsafe-inline'",
@@ -125,8 +156,14 @@ CONTENT_SECURITY_POLICY = {
             "https://*.resend.com",
             "https://*.plaid.com",
             "https://cdn.plaid.com",
+            "https://api.stripe.com",
         ),
-        "frame-src": ("'self'", "https://cdn.plaid.com", "https://*.plaid.com"),
+        "frame-src": (
+            "'self'",
+            "https://cdn.plaid.com",
+            "https://*.plaid.com",
+            "https://js.stripe.com",
+        ),
         "frame-ancestors": ("'none'",),
         "base-uri": ("'self'",),
         "form-action": ("'self'",),
@@ -184,6 +221,10 @@ AUTHENTICATION_BACKENDS = [
 # Password validation (disabled — project uses passwordless auth via allauth login-by-code)
 AUTH_PASSWORD_VALIDATORS: list = []
 
+# Custom user model to check for subscription and customer
+AUTH_USER_MODEL = "billing.CustomUser"
+
+
 # Templates
 TEMPLATES = [
     {
@@ -197,6 +238,10 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "core.context_processors.webpush_status",  # Check user webpush status
+                # Billing template context_processors
+                "billing.context_processors.subscription_status",  # Subscription status for all templates
+                "billing.context_processors.scan_usage",  # Scan usage for all templates
+                "billing.context_processors.storage_usage",  # Storage usage for all templates
             ],
             "builtins": [
                 "django.templatetags.static",
@@ -363,6 +408,10 @@ PLAID_CLIENT_ID = env("PLAID_CLIENT_ID")
 PLAID_SECRET = env("PLAID_SECRET")
 PLAID_ENV = env("PLAID_ENV")
 PLAID_WEBHOOK_URL = env("PLAID_WEBHOOK_URL")
+# Minimum seconds between transaction syncs per item. Plaid may fire multiple
+# SYNC_UPDATES_AVAILABLE webhooks in quick succession for the same item; the
+# webhook debounces dispatches within this window to avoid redundant syncs.
+PLAID_SYNC_COOLDOWN_SECONDS = env.int("PLAID_SYNC_COOLDOWN_SECONDS", default=60)
 
 # Accounting
 IMPORT_EXPORT_ESCAPE_FORMULAE_ON_EXPORT = (
@@ -377,8 +426,16 @@ FERNET_KEYS = [
 # Stripe
 STRIPE_SECRET_KEY = env("STRIPE_SECRET_KEY")
 STRIPE_PUBLISHABLE_KEY = env("STRIPE_PUBLISHABLE_KEY")
-STRIPE_WEBHOOK_SECRET = env("STRIPE_WEBHOOK_SECRET")
+DJSTRIPE_FOREIGN_KEY_TO_FIELD = env("DJSTRIPE_FOREIGN_KEY_TO_FIELD")
+STRIPE_PRICING_TABLE_ID = env("STRIPE_PRICING_TABLE_ID")
+STRIPE_PRICING_TABLE_KEY = env("STRIPE_PRICING_TABLE_KEY")
+STRIPE_STORAGE_TABLE_ID = env("STRIPE_STORAGE_TABLE_ID")
+STRIPE_STORAGE_TABLE_KEY = env("STRIPE_STORAGE_TABLE_KEY")
 
+# One Stripe webhook serves both pipelines: djstripe (billing/subscriptions) and
+# reimbursements (see billing/webhooks.py signal receiver). In local dev the
+# signing secret of the "stripe listen" webhook is stored on the djstripe
+# WebhookEndpoint row (djstripe_validation_method="verify_signature").
 
 # Sentry
 _is_prod = env("SENTRY_ENVIRONMENT", default="development") == "production"
@@ -387,7 +444,7 @@ sentry_sdk.init(
     environment=env("SENTRY_ENVIRONMENT", default="development"),
     # Add data like request headers and IP for users,
     # see https://docs.sentry.io/platforms/python/data-management/data-collected/ for more info
-    send_default_pii=True,
+    send_default_pii=False,
     # Enable sending logs to Sentry
     enable_logs=True,
     # Set traces_sample_rate to 1.0 to capture 100%
@@ -400,3 +457,26 @@ sentry_sdk.init(
     # run the profiler on when there is an active transaction
     profile_lifecycle="trace",
 )
+
+# Unfold customization
+UNFOLD = {
+    "SITE_TITLE": "Papertrail Portal",
+    "SITE_HEADER": "Papertrail",
+    "SITE_SYMBOL": "description",  # Material Symbol
+    "SHOW_HISTORY": True,
+    "SHOW_VIEW_ON_SITE": True,
+    "COLORS": {
+        "primary": {
+            "50": "236 253 245",  # Emerald 50
+            "100": "209 250 229",  # Emerald 100
+            "200": "167 243 208",  # Emerald 200
+            "300": "110 231 183",  # Emerald 300
+            "400": "52 211 153",  # Emerald 400
+            "500": "16 185 129",  # #10B981 (Papertrail primary)
+            "600": "5 150 105",  # Emerald 600
+            "700": "4 120 87",  # Emerald 700
+            "800": "6 95 70",  # Emerald 800
+            "900": "6 78 59",  # Emerald 900
+        },
+    },
+}

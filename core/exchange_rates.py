@@ -68,7 +68,8 @@ def get_rates(base: str = "USD") -> dict[str, Decimal]:
         stale = cache.get(stale_key)
         if stale:
             logger.warning(
-                "Frankfurter API unavailable — serving stale exchange rates for %s", base
+                "Frankfurter API unavailable — serving stale exchange rates for %s",
+                base,
             )
             return {code: Decimal(rate) for code, rate in stale.items()}
         return {}

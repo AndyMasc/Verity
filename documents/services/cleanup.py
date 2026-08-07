@@ -1,8 +1,8 @@
 """Document cleanup service for bulk deletion, orphan removal, and reconciliation.
 
 Encapsulates the business logic for document lifecycle cleanup: batch DB + R2
-deletion, orphaned document removal after grace periods, stale upload
-reconciliation, and 7-year compliance hard-deletion.
+deletion, orphaned document removal after grace periods, and stale upload
+reconciliation.
 """
 
 import logging
@@ -71,7 +71,6 @@ def delete_orphaned_documents() -> None:
     grace_period = timezone.now() - timedelta(days=1)
     orphaned_files = DocumentData.objects.filter(
         associated_record=None,
-        deleted_at__isnull=True,
         date_added__lt=grace_period,
         did_ocr=False,
     ).exclude(status=DocumentStatus.DELETING)
@@ -84,7 +83,6 @@ def delete_orphaned_documents() -> None:
     ocr_grace = timezone.now() - timedelta(days=7)
     abandoned_ocr = DocumentData.objects.filter(
         associated_record=None,
-        deleted_at__isnull=True,
         date_added__lt=ocr_grace,
         did_ocr=True,
         status__in=[
@@ -111,7 +109,6 @@ def reconcile_documents() -> None:
     stale_cutoff = timezone.now() - timedelta(minutes=30)
     abandoned_uploads = DocumentData.objects.filter(
         filepath__isnull=False,
-        deleted_at__isnull=True,
         status=DocumentStatus.PENDING_UPLOAD,
         date_added__lt=stale_cutoff,
     )
@@ -132,7 +129,6 @@ def reconcile_documents() -> None:
         logger.info("Reconciliation: cleaned up %d stale pending uploads.", len(deleted_ids))
 
     dangling_records = DocumentData.objects.filter(
-        deleted_at__isnull=True,
         status=DocumentStatus.ERROR,
         date_added__lt=timezone.now() - timedelta(days=2),
     )
@@ -143,24 +139,3 @@ def reconcile_documents() -> None:
             delete_r2_objects_batch(dangling_paths)
         DocumentData.objects.filter(id__in=[d[0] for d in dangling_ids]).delete()
         logger.info("Reconciliation: removed %d dangling error records.", len(dangling_ids))
-
-
-def delete_7year_deleted_documents() -> None:
-    """Hard-delete documents soft-deleted over 7 years ago for users with auto-delete enabled.
-
-    Enforces financial record retention policy by permanently removing
-    documents that have exceeded the compliance window.
-    """
-    seven_years_ago = timezone.now() - timedelta(days=365 * COMPLIANCE_RETENTION_YEARS)
-    expired_deleted = DocumentData.objects.filter(
-        deleted_at__isnull=False,
-        date_added__lte=seven_years_ago,
-        user__settings__auto_delete_deleted_documents=True,
-    )
-    count = expired_deleted.count()
-    if not count:
-        return
-
-    file_data = list(expired_deleted.values_list("id", "filepath"))
-    bulk_delete_documents(file_data)
-    logger.info("Hard-deleted %d documents soft-deleted for 7+ years.", count)

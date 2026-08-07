@@ -3,12 +3,13 @@ import json
 from unittest.mock import patch
 
 import openpyxl
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 from django.test import TestCase
 from django.urls import reverse
 
 from records.models import Record
-
 
 EXPORT_URL = reverse("accounting:export_all_to_excel")
 EXPORT_SELECTED_URL = reverse("accounting:export_selected_to_excel")

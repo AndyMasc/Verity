@@ -326,39 +326,39 @@
         </template>
     </main>
     <script>
-    function packagePage() {
-      return {
-        copied: false,
-        shareUrl: window.location.href,
-        showDeleteModal: false,
-        deleting: false,
-        copyLink() {
-          navigator.clipboard.writeText(this.shareUrl);
-          this.copied = true;
-          setTimeout(() => { this.copied = false }, 2000);
-        },
-        async confirmDelete() {
-          this.deleting = true;
-          try {
-            const resp = await fetch("{% url 'reimbursements:package-delete' package.uuid %}", {
-              method: "POST",
-              headers: {
-                "X-CSRFToken": document.querySelector('meta[name=csrf-token]').content,
-                "X-Requested-With": "XMLHttpRequest",
-              },
-            });
-            if (resp.ok || resp.headers.get("HX-Redirect")) {
-              window.location.href = "{% url 'reimbursements:package-list' %}";
-            } else {
-              alert("Failed to delete package.");
+        function packagePage() {
+            return {
+                copied: false,
+                shareUrl: window.location.href,
+                showDeleteModal: false,
+                deleting: false,
+                copyLink() {
+                    navigator.clipboard.writeText(this.shareUrl);
+                    this.copied = true;
+                    setTimeout(() => { this.copied = false }, 2000);
+                },
+                async confirmDelete() {
+                    this.deleting = true;
+                    try {
+                        const resp = await fetch("{% url 'reimbursements:package-delete' package.uuid %}", {
+                            method: "POST",
+                            headers: {
+                                "X-CSRFToken": document.querySelector('meta[name=csrf-token]').content,
+                                "X-Requested-With": "XMLHttpRequest",
+                            },
+                        });
+                        if (resp.ok || resp.headers.get("HX-Redirect")) {
+                            window.location.href = "{% url 'reimbursements:package-list' %}";
+                        } else {
+                            alert("Failed to delete package.");
+                        }
+                    } catch {
+                        alert("Network error.");
+                    }
+                    this.deleting = false;
+                    this.showDeleteModal = false;
+                }
             }
-          } catch {
-            alert("Network error.");
-          }
-          this.deleting = false;
-          this.showDeleteModal = false;
         }
-      }
-    }
     </script>
 {% endblock %}

@@ -1,4 +1,4 @@
-from .base import *  # noqa: F401, F403, F405
+from .base import *  # noqa: F403
 
 INSTALLED_APPS.extend(["django_browser_reload", "debug_toolbar"])  # noqa: F405
 
@@ -13,7 +13,7 @@ SECURE_SSL_REDIRECT = False
 SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_SECURE = False
 
-STORAGES = {  # noqa: F405
+STORAGES = {
     "default": STORAGES["default"],  # noqa: F405
     "staticfiles": {
         "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",

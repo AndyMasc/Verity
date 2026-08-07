@@ -1,66 +1,69 @@
 <div x-data="expenseChart()"
      x-cloak
      x-init="init()"
-     class="relative rounded-2xl bg-white/70 dark:bg-zinc-900/60 backdrop-blur-xl overflow-hidden transition-all duration-300 hover:ring-black/[0.08] dark:hover:ring-white/[0.12]">
-    <div class="p-5 pb-2">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-                <h3 class="text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">Expense Trends</h3>
-                <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5"
-                   x-text="summary"></p>
+     class="relative flex flex-col h-full w-full">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 shrink-0">
+        <div>
+            <h3 class="text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">Expense Trends</h3>
+            <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5"
+               x-text="summary"></p>
+        </div>
+        <div class="flex items-center gap-1 p-1 rounded-xl bg-zinc-100/80 dark:bg-zinc-800/50 border border-zinc-200/50 dark:border-zinc-700/40 self-start sm:self-auto">
+            <template x-for="p in periods" :key="p.value">
+                <button @click="load(p.value)"
+                        :class="period === p.value ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-50 shadow-xs' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200'"
+                        class="px-2.5 py-1 text-[11px] font-medium rounded-lg transition-all duration-150 active:scale-[0.97]"
+                        x-text="p.label"></button>
+            </template>
+        </div>
+    </div>
+    <div class="relative flex-1 w-full min-h-[220px]">
+        <canvas x-ref="canvas"
+                class="absolute inset-0 w-full h-full cursor-crosshair"
+                @mousemove="onHover($event)"
+                @mouseleave="tooltip.visible = false"></canvas>
+        <!-- Empty State Layer -->
+        <div x-show="data.length === 0 && !loading"
+             x-cloak
+             class="absolute inset-0 flex flex-col items-center justify-center text-center p-6">
+            <div class="size-9 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-400 dark:text-zinc-500 mb-2">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round5" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
             </div>
-            <div class="flex items-center gap-1 p-1 rounded-xl bg-zinc-100/80 dark:bg-zinc-800/60 backdrop-blur-sm ring-1 ring-inset ring-black/[0.04] dark:ring-white/[0.06] self-start sm:self-auto">
-                <template x-for="p in periods" :key="p.value">
-                    <button @click="load(p.value)"
-                            :class="period === p.value ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-50 shadow-xs ring-1 ring-inset ring-black/[0.04] dark:ring-white/[0.06]' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200'"
-                            class="px-3 py-1 text-xs font-medium rounded-lg transition-all duration-200 active:scale-[0.97]"
-                            x-text="p.label"></button>
-                </template>
+            <p class="text-xs font-medium text-zinc-700 dark:text-zinc-300">No expense data available</p>
+            <p class="text-[11px] text-zinc-400 dark:text-zinc-500 mt-0.5">Trends will appear here once data is available.</p>
+        </div>
+        {# Tooltip #}
+        <div x-show="tooltip.visible"
+             x-transition:enter="transition ease-out duration-150"
+             x-transition:enter-start="opacity-0 scale-95"
+             x-transition:enter-end="opacity-100 scale-100"
+             x-transition:leave="transition ease-in duration-100"
+             x-transition:leave-start="opacity-100 scale-100"
+             x-transition:leave-end="opacity-0 scale-95"
+             x-cloak
+             class="absolute z-20 pointer-events-none"
+             :style="`left: ${tooltip.x}px; top: ${tooltip.y}px; transform: translate(-50%, -100%) translateY(-8px);`">
+            <div class="px-3 py-1.5 rounded-xl bg-zinc-900 dark:bg-zinc-800 text-white shadow-xl border border-zinc-700/50 dark:border-zinc-700">
+                <div class="text-[10px] font-medium text-zinc-400 uppercase tracking-wider"
+                     x-text="tooltip.label"></div>
+                <div class="text-xs font-semibold tabular-nums mt-0.5"
+                     x-text="tooltip.value"></div>
             </div>
         </div>
     </div>
-    <div class="relative px-5 pb-5 mt-3">
-        <div class="relative" style="height: 260px;">
-            <canvas x-ref="canvas"
-                    class="absolute inset-0 w-full h-full cursor-crosshair"
-                    @mousemove="onHover($event)"
-                    @mouseleave="tooltip.visible = false"></canvas>
-            {# Soft Tooltip #}
-            <div x-show="tooltip.visible"
-                 x-transition:enter="transition ease-out duration-200"
-                 x-transition:enter-start="opacity-0 scale-95 translate-y-1"
-                 x-transition:enter-end="opacity-100 scale-100 translate-y-0"
-                 x-transition:leave="transition ease-in duration-150"
-                 x-transition:leave-start="opacity-100 scale-100 translate-y-0"
-                 x-transition:leave-end="opacity-0 scale-95 translate-y-1"
-                 x-cloak
-                 class="absolute z-20 pointer-events-none"
-                 :style="`left: ${tooltip.x}px; top: ${tooltip.y}px; transform: translate(-50%, -100%) translateY(-12px);`">
-                <div class="px-3 py-2 rounded-xl bg-zinc-900/90 dark:bg-zinc-800/95 backdrop-blur-xl text-white shadow-lg ring-1 ring-inset ring-white/10">
-                    <div class="text-[10px] font-medium text-zinc-400 mb-0.5 uppercase tracking-wide"
-                         x-text="tooltip.label"></div>
-                    <div class="text-xs font-semibold tabular-nums" x-text="tooltip.value"></div>
-                </div>
-            </div>
-        </div>
-        {# Smooth Loading Overlay #}
-        <div x-show="loading"
-             class="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-zinc-950/50 backdrop-blur-sm z-10 rounded-b-2xl transition-opacity duration-300">
-            <div class="flex items-center gap-2 text-xs font-medium text-zinc-800 dark:text-zinc-200 px-3.5 py-2 bg-white/90 dark:bg-zinc-800/90 backdrop-blur-md rounded-full shadow-md ring-1 ring-inset ring-black/5 dark:ring-white/10">
-                <svg class="animate-spin h-3.5 w-3.5 text-zinc-700 dark:text-zinc-200"
-                     viewBox="0 0 24 24"
-                     fill="none">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle>
-                    <path class="opacity-80" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                </svg>
-                Loading data...
-            </div>
-        </div>
-        {# Empty State #}
-        <div x-show="!loading && data.length === 0"
-             x-cloak
-             class="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
-            <p class="text-xs text-zinc-400 dark:text-zinc-500 font-medium">No expenses recorded yet</p>
+    {# Loading overlay #}
+    <div x-show="loading"
+         class="absolute inset-0 flex items-center justify-center bg-white/40 dark:bg-zinc-900/40 backdrop-blur-xs z-10 rounded-2xl transition-opacity">
+        <div class="flex items-center gap-2 text-xs font-medium text-zinc-700 dark:text-zinc-300 px-3 py-1.5 bg-white dark:bg-zinc-800 rounded-full shadow-sm border border-zinc-200/60 dark:border-zinc-700/60">
+            <svg class="animate-spin h-3.5 w-3.5 text-zinc-600 dark:text-zinc-300"
+                 viewBox="0 0 24 24"
+                 fill="none">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+            </svg>
+            Updating...
         </div>
     </div>
 </div>
@@ -126,7 +129,7 @@
                 if (this.animation.frame) cancelAnimationFrame(this.animation.frame);
                 this.animation.progress = 0;
                 const start = performance.now();
-                const duration = 800; // slightly longer, smoother ease
+                const duration = 800; 
                 const tick = (now) => {
                     const elapsed = now - start;
                     this.animation.progress = Math.min(elapsed / duration, 1);
@@ -169,10 +172,9 @@
 
                 const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
-            // Restrained color palette
                 const textColor = isDark ? '#71717a' : '#a1a1aa';
                 const gridColor = isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)';
-                const lineColor = isDark ? '#ffffff' : '#09090b';
+                const lineColor = '#5A67FF';
 
                 const step = chartW / Math.max(this.data.length - 1, 1);
                 const ease = this.easeOutExpo(this.animation.progress);
@@ -188,7 +190,7 @@
 
                 ctx.save();
 
-            // Background Grid Lines
+                // Background Grid Lines
                 const gridSteps = 4;
                 for (let i = 0; i <= gridSteps; i++) {
                     const y = padTop + (chartH / gridSteps) * i;
@@ -204,23 +206,16 @@
                     ctx.font = '500 10px "Inter", system-ui, sans-serif';
                     ctx.textAlign = 'right';
                     ctx.textBaseline = 'middle';
-                // Move text up slightly to sit exactly on the line
                     ctx.fillText(this.formatNum(val), padLeft + chartW, y - 6);
                 }
 
-            // Single Point State
                 if (this.points.length < 2) {
                     if (this.points.length === 1) {
                         const p = this.points[0];
-
                         const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 50);
-                        if (isDark) {
-                            glow.addColorStop(0, 'rgba(255,255,255,0.15)');
-                            glow.addColorStop(1, 'rgba(255,255,255,0)');
-                        } else {
-                            glow.addColorStop(0, 'rgba(0,0,0,0.08)');
-                            glow.addColorStop(1, 'rgba(0,0,0,0)');
-                        }
+                        glow.addColorStop(0, isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.08)');
+                        glow.addColorStop(1, isDark ? 'rgba(255,255,255,0)' : 'rgba(0,0,0,0)');
+                        
                         ctx.beginPath();
                         ctx.arc(p.x, p.y, 50, 0, Math.PI * 2);
                         ctx.fillStyle = glow;
@@ -241,14 +236,16 @@
                     return;
                 }
 
-            // Gradient Fill beneath the line
+                // Enhanced High-Visibility Vertical Gradient Fill
                 const grad = ctx.createLinearGradient(0, padTop, 0, padTop + chartH);
                 if (isDark) {
-                    grad.addColorStop(0, 'rgba(255,255,255,0.1)');
-                    grad.addColorStop(1, 'rgba(255,255,255,0)');
+                    grad.addColorStop(0, 'rgba(90, 103, 255, 0.45)'); // Much richer color intensity near top
+                    grad.addColorStop(0.5, 'rgba(90, 103, 255, 0.15)');
+                    grad.addColorStop(1, 'rgba(90, 103, 255, 0)');     // Fades completely clear at the X-axis
                 } else {
-                    grad.addColorStop(0, 'rgba(0,0,0,0.06)');
-                    grad.addColorStop(1, 'rgba(0,0,0,0)');
+                    grad.addColorStop(0, 'rgba(90, 103, 255, 0.32)');
+                    grad.addColorStop(0.5, 'rgba(90, 103, 255, 0.10)');
+                    grad.addColorStop(1, 'rgba(90, 103, 255, 0)');
                 }
 
                 ctx.beginPath();
@@ -269,7 +266,7 @@
                 ctx.fillStyle = grad;
                 ctx.fill();
 
-            // Main Spline
+                // Main Spline Line
                 ctx.beginPath();
                 for (let i = 0; i < this.points.length; i++) {
                     const p = this.points[i];
@@ -283,11 +280,11 @@
                     }
                 }
                 ctx.strokeStyle = lineColor;
-                ctx.lineWidth = 2; // Slightly thicker
+                ctx.lineWidth = 2.5;
                 ctx.lineCap = 'round';
                 ctx.stroke();
 
-            // X-Axis Labels
+                // X-Axis Labels
                 const maxLabels = Math.min(this.data.length, Math.floor(chartW / 70));
                 const labelInterval = Math.max(1, Math.ceil(this.data.length / maxLabels));
                 ctx.fillStyle = textColor;
@@ -351,18 +348,12 @@
                         value: this.formatCurrency(closest.data.total),
                     };
 
-                    this.draw(); // Redraw base
-                    const ctx = this.$refs.canvas.getContext('2d');
-                    const dpr = window.devicePixelRatio || 1;
-                    ctx.save();
-                    ctx.scale(dpr, dpr);
-                    const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-
+                    this.draw(); 
                 } else {
                     this.tooltip.visible = false;
-                    this.draw(); // Clear indicator
+                    this.draw(); 
                 }
-            },
+            }
         }
     }
 </script>

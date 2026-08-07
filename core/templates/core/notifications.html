@@ -16,10 +16,7 @@
                 </p>
             </div>
             {% if unread_count %}
-                <form method="post"
-                      action="{% url 'core:notification-mark-all-read' %}"
-                      hx-post="{% url 'core:notification-mark-all-read' %}"
-                      hx-swap="none">
+                <form method="post" action="{% url 'core:notification-mark-all-read' %}">
                     {% csrf_token %}
                     <button type="submit"
                             class="inline-flex items-center gap-1.5 px-3.5 py-2 text-[13px] font-medium text-zinc-700 dark:text-zinc-300 bg-white/60 dark:bg-zinc-900/50 hover:bg-white dark:hover:bg-zinc-900 border border-zinc-200/30 dark:border-zinc-800/30 rounded-xl shadow-sm transition-all duration-200 active:scale-[0.98] cursor-pointer">

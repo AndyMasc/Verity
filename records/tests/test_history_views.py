@@ -62,6 +62,52 @@ class RecordHistoryViewTest(TestCase):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
 
+    def test_merge_snapshot_without_currency_renders_amount(self):
+        other_record = Record.objects.create(
+            user=self.user,
+            title="Other Record",
+            record_type="expense_receipt",
+            transaction_date="2024-06-15",
+        )
+        MergeLog.objects.create(
+            plaid_record=self.record,
+            document_record=other_record,
+            plaid_snapshot={
+                "title": "Test",
+                "merchant": "Bank",
+                "balance": "42.00",
+                "payment_method": "Card",
+            },
+            document_snapshot={"title": "Other", "balance": "7.00"},
+        )
+        self.client.force_login(self.user)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "$")
+
+    def test_merge_snapshot_without_currency_renders_amount(self):
+        other_record = Record.objects.create(
+            user=self.user,
+            title="Other Record",
+            record_type="expense_receipt",
+            transaction_date="2024-06-15",
+        )
+        MergeLog.objects.create(
+            plaid_record=self.record,
+            document_record=other_record,
+            plaid_snapshot={
+                "title": "Test",
+                "merchant": "Bank",
+                "balance": "42.00",
+                "payment_method": "Card",
+            },
+            document_snapshot={"title": "Other", "balance": "7.00"},
+        )
+        self.client.force_login(self.user)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "$")
+
     def test_context_has_tracked_fields(self):
         self.client.force_login(self.user)
         response = self.client.get(self.url)

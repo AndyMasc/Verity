@@ -1,5 +1,5 @@
 {% load form_tags %}
-<main class="flex flex-col max-w-6xl mx-auto justify-center min-h-screen space-y-7"
+<main class="flex flex-col max-w-7xl py-12 mx-auto min-h-screen space-y-6 text-zinc-900 dark:text-zinc-100 antialiased font-sans"
       x-data="recordBulkActions()"
       x-init="$nextTick(() => updateVisibleIds([{% for record in records %}'{{ record.pk }}'{% if not forloop.last %},{% endif %}{% endfor %}]))"
       id="dashboard-content"
@@ -8,157 +8,99 @@
       hx-target="this"
       hx-select="#dashboard-content"
       hx-swap="outerHTML">
-    <!-- Header -->
     <header class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div class="flex flex-col sm:flex-row sm:items-center gap-3">
-            <a href="{% url 'core:profile_page' %}"
-               class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md border border-zinc-200/30 dark:border-zinc-800/30 text-xs text-zinc-700 dark:text-zinc-300 shadow-sm">
-                <span class="relative flex size-2">
-                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span class="relative inline-flex rounded-full size-2 bg-emerald-500"></span>
-                </span>
-                <span class="truncate">{{ request.user.email }}</span>
+        <div>
+            <a href="{% url 'core:profile_page' %}" class="group inline-block">
+                <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-200/80 dark:border-white/[0.06] shadow-2xs transition-all duration-200 group-hover:border-zinc-300 dark:group-hover:border-white/[0.12] group-hover:bg-zinc-200/50 dark:group-hover:bg-zinc-800/80">
+                    <span class="relative flex size-1.5">
+                        <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#5A67FF] opacity-40"></span>
+                        <span class="relative inline-flex size-1.5 rounded-full bg-[#5A67FF]"></span>
+                    </span>
+                    <span class="text-xs font-semibold text-zinc-800 dark:text-zinc-200 tracking-tight">{{ request.user.username }}</span>
+                </div>
             </a>
-            {% if orphaned_document_count %}
-                <span class="px-3 py-1 rounded-xl bg-white/40 dark:bg-zinc-800/40 backdrop-blur-md text-xs text-zinc-600 dark:text-zinc-400 border border-zinc-200/30 dark:border-zinc-700/30">
-                    {{ orphaned_document_count }} unlinked file{{ orphaned_document_count|pluralize }}
-                </span>
-            {% endif %}
         </div>
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2">
             <a href="{% url 'records:view_all_records' %}"
-               class="px-4 py-2 rounded-xl bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md border border-zinc-200/30 dark:border-zinc-800/30 text-xs text-zinc-600 dark:text-zinc-300 hover:bg-white/60 dark:hover:bg-zinc-800/60 shadow-sm transition-all duration-200">
+               class="px-3.5 py-1.5 rounded-xl bg-zinc-100 dark:bg-zinc-800/40 border border-zinc-200/60 dark:border-white/[0.05] text-[12px] font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200/70 dark:hover:bg-zinc-800/60 active:scale-[0.98] transition-all">
                 Search
             </a>
             <a href="{% url 'documents:upload_document' %}"
-               class="px-4 py-2 rounded-xl bg-zinc-900 dark:bg-zinc-100 text-xs text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-white shadow-sm transition-all duration-200 active:scale-[0.98]">
+               class="px-3.5 py-1.5 rounded-xl bg-zinc-900 dark:bg-zinc-100 text-[12px] font-medium text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-white/95 active:scale-[0.98] transition-all shadow-2xs">
                 Upload File
             </a>
         </div>
     </header>
-    <!-- Overview Cards -->
-    <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <!-- Expenses -->
-        <a href="{% filter_url 'records:view_all_records' this_month='True' %}"
-           class="group p-4 rounded-2xl bg-white/60 dark:bg-zinc-900/50 backdrop-blur-md border border-zinc-200/20 dark:border-zinc-800/20 shadow-sm hover:bg-white/70 dark:hover:bg-zinc-900/60 transition-all">
-            <div class="flex items-center justify-between">
-                <span class="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 uppercase">Expenses</span>
-            </div>
-            <div class="mt-3">
-                <span class="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
-                    {{ monthly_expenses|default:0|currency_format:user.settings.default_currency }}
-                </span>
-                <span class="text-xs text-zinc-500 dark:text-zinc-400 lowercase">{% now "F" %}</span>
-            </div>
-        </a>
-        <!-- Expiring Soon -->
-        <a href="{% filter_url 'records:view_all_records' expiring_soon='True' %}"
-           class="group p-4 rounded-2xl bg-white/60 dark:bg-zinc-900/50 backdrop-blur-md border border-zinc-200/20 dark:border-zinc-800/20 shadow-sm hover:bg-white/70 dark:hover:bg-zinc-900/60 transition-all">
-            <div class="flex items-center justify-between">
-                <span class="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 uppercase">Expiring Soon</span>
-            </div>
-            <div class="mt-3 flex items-baseline gap-2">
-                <span class="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">{{ expiring_soon_count }}</span>
-                <span class="text-xs text-zinc-500 dark:text-zinc-400">record{{ expiring_soon_count|pluralize }}</span>
-            </div>
-        </a>
-        <!-- Matched Entries -->
-        <a href="{% url 'records:merge_list' %}"
-           class="group p-4 rounded-2xl bg-white/60 dark:bg-zinc-900/50 backdrop-blur-md border border-zinc-200/20 dark:border-zinc-800/20 shadow-sm hover:bg-white/70 dark:hover:bg-zinc-900/60 transition-all">
-            <div class="flex items-center justify-between">
-                <span class="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 uppercase">Matched Entries</span>
-            </div>
-            <div class="mt-3 flex items-baseline gap-2">
-                <span class="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">{{ merged_records_count }}</span>
-                <span class="text-xs text-zinc-500 dark:text-zinc-400">matches</span>
-            </div>
-        </a>
-    </section>
-    <!-- Chart + Right Column -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-7">
-        <!-- Chart -->
-        <div class="lg:col-span-7 xl:col-span-8 space-y-10">
-            <div class="rounded-2xl bg-white/60 dark:bg-zinc-900/50 backdrop-blur-md border border-zinc-200/20 dark:border-zinc-800/20 shadow-sm p-4">
+    {% include 'core/partials/metric_cards.html' %}
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+        <div class="lg:col-span-7 xl:col-span-8 flex flex-col">
+            <div class="flex-1 flex flex-col rounded-2xl dark:bg-zinc-900/30 bg-white border border-zinc-200/60 dark:border-white/[0.05] p-5 md:p-6 shadow-2xs">
                 {% include 'core/partials/expense_chart.html' %}
             </div>
         </div>
-        <!-- Right Column -->
-        <div class="lg:col-span-5 xl:col-span-4 space-y-7">
-            <!-- Notifications -->
-            <section class="rounded-2xl bg-white/60 dark:bg-zinc-900/50 backdrop-blur-md border border-zinc-200/20 dark:border-zinc-800/20 shadow-sm p-5.5">
-                <div class="flex items-center justify-between pb-3 border-b border-zinc-200/20 dark:border-zinc-800/20">
-                    <h2 class="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 uppercase">Notifications</h2>
-                    <a href="{% url 'core:notifications' %}"
-                       class="text-xs text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100">
-                        View All →
-                    </a>
-                </div>
-                <div class="space-y-2 h-30">
-                    {% for notification in notifications|slice:":4" %}
-                        <div class="flex items-center gap-2 p-2 rounded-xl bg-white/40 dark:bg-zinc-800/40 backdrop-blur-sm border border-zinc-200/10 dark:border-zinc-800/10">
-                            <span class="block size-1.5 rounded-full bg-blue-500 shrink-0"></span>
-                            <span class="text-xs text-zinc-700 dark:text-zinc-300 truncate">
-                                {{ notification.subject|default:"Notice" }} — {{ notification.message|truncatechars:40 }}
-                            </span>
-                            <span class="text-[10px] text-zinc-500 dark:text-zinc-400 shrink-0">{{ notification.sent_at|timesince }} ago</span>
-                        </div>
-                    {% empty %}
-                        <div class="py-8 text-center text-xs text-zinc-500 dark:text-zinc-400">All caught up!</div>
-                    {% endfor %}
+        <div class="lg:col-span-5 xl:col-span-4 flex flex-col justify-between gap-5">
+            <section class="flex-1 flex flex-col justify-between rounded-2xl dark:bg-zinc-900/30 bg-white border border-zinc-200/60 dark:border-white/[0.05] p-5 md:p-6 shadow-2xs">
+                <div>
+                    {% url 'core:notifications' as notifications_url %}
+                    {% include 'core/partials/section_header.html' with title="Notifications" badge_text=unread_notifications_count|stringformat:"s"|add:" unread" view_all_url=notifications_url %}
+                    <div class="mt-3.5 space-y-2">
+                        {% for notification in notifications|slice:":3" %}
+                            <div class="flex items-center justify-between gap-2.5 px-3.5 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200/60 dark:border-white/[0.035] hover:border-zinc-300/80 dark:hover:border-white/[0.07] transition-colors">
+                                <div class="flex items-center gap-2 min-w-0">
+                                    <span class="block size-1.5 rounded-full bg-[#5A67FF] shrink-0"></span>
+                                    <span class="text-xs font-medium text-zinc-800 dark:text-zinc-200 truncate">
+                                        {{ notification.subject|default:"Notice" }} <span class="text-zinc-500 dark:text-zinc-400 font-normal">&middot; {{ notification.message|truncatechars:28 }}</span>
+                                    </span>
+                                </div>
+                                <span class="text-[10px] text-zinc-400 dark:text-zinc-500 shrink-0">{{ notification.sent_at|timesince }} ago</span>
+                            </div>
+                        {% empty %}
+                            <div class="py-6 text-center text-xs font-medium text-zinc-400 dark:text-zinc-500">All caught up!</div>
+                        {% endfor %}
+                    </div>
                 </div>
             </section>
-            <!-- Reimbursements -->
-            <section class="rounded-2xl bg-white/60 dark:bg-zinc-900/50 backdrop-blur-md border border-zinc-200/20 dark:border-zinc-800/20 shadow-sm p-4">
-                <div class="flex items-center justify-between pb-3 border-b border-zinc-200/20 dark:border-zinc-800/20">
-                    <h2 class="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 uppercase">Reimbursements</h2>
-                    <a href="{% url 'reimbursements:package-list' %}"
-                       class="text-xs text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100">
-                        View All →
-                    </a>
-                </div>
-                {% if has_packages %}
-                    <div class="mt-3 grid grid-cols-2 gap-3">
-                        <div class="p-3 rounded-xl bg-white/40 dark:bg-zinc-800/40 backdrop-blur-sm">
-                            <h3 class="text-[11px] font-medium text-zinc-600 dark:text-zinc-300 uppercase">Sent</h3>
-                            <p class="text-xl font-semibold text-zinc-900 dark:text-zinc-50 mt-1 truncate">
-                                {{ reimbursements_sent_total|default:"0.00"|currency_format:user.settings.default_currency }}
-                            </p>
-                            <p class="text-xs text-zinc-500 dark:text-zinc-400">{{ reimbursements_sent_pending_count }} pending</p>
-                        </div>
-                        <div class="p-3 rounded-xl bg-white/40 dark:bg-zinc-800/40 backdrop-blur-sm">
-                            <h3 class="text-[11px] font-medium text-zinc-600 dark:text-zinc-300 uppercase">Received</h3>
-                            <p class="text-xl font-semibold text-zinc-900 dark:text-zinc-50 mt-1 truncate">
-                                {{ reimbursements_received_total|default:"0.00"|currency_format:user.settings.default_currency }}
-                            </p>
-                            <p class="text-xs text-zinc-500 dark:text-zinc-400">{{ reimbursements_received_count }} completed</p>
-                        </div>
+            <section class="flex-1 flex flex-col justify-between rounded-2xl dark:bg-zinc-900/30 bg-white border border-zinc-200/60 dark:border-white/[0.05] p-5 md:p-6 shadow-2xs">
+                {% url 'reimbursements:package-list' as reimbursements_url %}
+                {% include 'core/partials/section_header.html' with title="Reimbursements" view_all_url=reimbursements_url %}
+                <div class="mt-3.5 grid grid-cols-2 gap-3">
+                    <div class="p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200/60 dark:border-white/[0.035]">
+                        <h3 class="text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Sent</h3>
+                        <p class="text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 mt-1 truncate">
+                            {{ reimbursements_sent_total|default:"0.00"|currency_format:user.settings.default_currency }}
+                        </p>
+                        <p class="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 mt-0.5">{{ reimbursements_sent_pending_count }} pending</p>
                     </div>
-                {% else %}
-                    <div class="py-8 text-xs h-25 text-center text-zinc-500 dark:text-zinc-400">No reimbursements yet.</div>
-                {% endif %}
+                    <div class="p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200/60 dark:border-white/[0.035]">
+                        <h3 class="text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Received</h3>
+                        <p class="text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 mt-1 truncate">
+                            {{ reimbursements_received_total|default:"0.00"|currency_format:user.settings.default_currency }}
+                        </p>
+                        <p class="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 mt-0.5">{{ reimbursements_received_count }} completed</p>
+                    </div>
+                </div>
             </section>
         </div>
     </div>
-    <!-- Recent Activity -->
-    <section class="rounded-2xl bg-white/60 dark:bg-zinc-900/50 backdrop-blur-md border border-zinc-200/20 dark:border-zinc-800/20 shadow-sm p-4">
-        <div class="flex items-center justify-between pb-3 border-b border-zinc-200/20 dark:border-zinc-800/20">
-            <div>
-                <h2 class="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 uppercase">Recent Activity</h2>
-            </div>
-            <a href="{% url 'records:view_all_records' %}"
-               class="text-xs text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100">
-                View All →
-            </a>
-        </div>
-        <div class="divide-y divide-zinc-200/20 dark:divide-zinc-800/20">
+    <section class="flex flex-col rounded-2xl dark:bg-zinc-900/30 bg-white border border-zinc-200/60 dark:border-white/[0.05] p-6 pb-2 shadow-2xs">
+        {% url 'records:view_all_records' as view_all_records_url %}
+        {% include 'core/partials/section_header.html' with title="Recent Activity" view_all_url=view_all_records_url %}
+        <div class="flex-1 flex flex-col mt-3 divide-y divide-zinc-200/60 dark:divide-white/[0.035] min-h-[180px]">
             {% for record in records %}
                 {% include 'records/record_card.html' %}
             {% empty %}
-                <div class="py-10 text-center text-xs text-zinc-500 dark:text-zinc-400">No activity yet.</div>
+                <div class="py-12 flex flex-col items-center justify-center text-center">
+                    <div class="size-9 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-400 dark:text-zinc-500 mb-3">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                        </svg>
+                    </div>
+                    <p class="text-xs font-medium text-zinc-700 dark:text-zinc-300">No activity yet</p>
+                    <p class="text-[11px] text-zinc-400 dark:text-zinc-500 mt-0.5">Upload a file or create a record to get started.</p>
+                </div>
             {% endfor %}
         </div>
     </section>
-    {# Bulk Action Bar #}
     {% include 'records/partials/bulk_action_bar.html' %}
 </main>
 {% include 'records/partials/bulk_actions_js.html' %}

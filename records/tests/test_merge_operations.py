@@ -2,7 +2,9 @@ from datetime import date
 from decimal import Decimal
 from unittest.mock import patch
 
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 from django.test import TestCase
 
 from records.matching import (
@@ -113,6 +115,10 @@ class MergeDocumentIntoPlaidTest(TestCase):
         merge_document_into_plaid(self.plaid, self.doc_with_docref, doc_data)
         log = MergeLog.objects.filter(document_record=self.doc_with_docref).first()
         self.assertIn(doc_data.pk, log.document_snapshot.get("document_ids", []))
+
+    def test_record_snapshot_includes_currency(self):
+        snap = _record_snapshot(self.plaid)
+        self.assertEqual(snap["currency"], self.plaid.currency)
 
     def test_merge_concurrency_guard_doc_inactive(self):
         self.doc.is_active = False
@@ -252,7 +258,10 @@ class TryMatchTest(TestCase):
         plaid = make_plaid_record(self.user, "Multi Store")
         make_doc_record(self.user, "Multi Store")
         make_doc_record(
-            self.user, "Multi Store", balance=Decimal("100.00"), transaction_date=date(2024, 6, 15)
+            self.user,
+            "Multi Store",
+            balance=Decimal("100.00"),
+            transaction_date=date(2024, 6, 15),
         )
         merged = try_match_plaid_record(plaid)
         self.assertEqual(len(merged), 2)

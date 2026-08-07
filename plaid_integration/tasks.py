@@ -10,7 +10,6 @@ import logging
 from datetime import date
 from typing import Any
 
-from django.contrib.auth.models import User
 from django.db import IntegrityError
 from django.db import transaction as db_transaction
 from django.db.models import Q
@@ -18,6 +17,7 @@ from django.utils import timezone
 from django_qstash import shared_task
 from plaid.model.transactions_sync_request import TransactionsSyncRequest
 
+from billing.models import CustomUser as User
 from records.models import Folder, Record
 
 from .models import PlaidItem
@@ -56,7 +56,7 @@ def choose_folder(
 
     if not folder:
         try:
-            folder, created = Folder.objects.get_or_create(user=user, name=category_clean)
+            folder, _created = Folder.objects.get_or_create(user=user, name=category_clean)
         except IntegrityError:
             folder = Folder.objects.filter(user=user, name=category_clean).first()
 
@@ -165,7 +165,8 @@ def sync_and_convert_for_item_task(self, plaid_item_id: int | str) -> dict[str, 
             )
         except Exception as e:
             logger.warning(
-                "Plaid API error or rate limit hit for item %s. Retrying task.", plaid_item_id
+                "Plaid API error or rate limit hit for item %s. Retrying task.",
+                plaid_item_id,
             )
             countdown = self.default_retry_delay * (2**self.request.retries)
             raise self.retry(exc=e, countdown=countdown) from None

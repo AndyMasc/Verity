@@ -12,6 +12,8 @@ from typing import TYPE_CHECKING, Any
 
 from django.core.paginator import InvalidPage
 from django.http import Http404, HttpRequest, HttpResponse
+from django.shortcuts import render
+from django_ratelimit.exceptions import Ratelimited
 
 from Papertrail.utils import CachedPaginator
 
@@ -21,6 +23,12 @@ if TYPE_CHECKING:
     from records.models import AuditLog, MergeLog, Record
 
 logger = logging.getLogger(__name__)
+
+
+def handler403(request, exception=None):
+    if isinstance(exception, Ratelimited):
+        return render(request, "429.html", status=429)
+    return HttpResponse("Forbidden", status=403)
 
 
 def htmx_response(
@@ -102,7 +110,9 @@ def create_audit_log(
     return AuditLog.objects.create(**kwargs)
 
 
-def parse_record_ids(request: HttpRequest) -> tuple[list[int] | None, HttpResponse | None]:
+def parse_record_ids(
+    request: HttpRequest,
+) -> tuple[list[int] | None, HttpResponse | None]:
     """Parse and validate record_ids from a JSON request body.
 
     Returns ``(ids, None)`` on success or ``(None, error_response)`` on failure.
@@ -113,7 +123,9 @@ def parse_record_ids(request: HttpRequest) -> tuple[list[int] | None, HttpRespon
         record_ids = data.get("record_ids", [])
     except json.JSONDecodeError, AttributeError:
         return None, HttpResponse(
-            '{"error": "Invalid request body"}', status=400, content_type="application/json"
+            '{"error": "Invalid request body"}',
+            status=400,
+            content_type="application/json",
         )
 
     if not isinstance(record_ids, list) or not all(isinstance(rid, int) for rid in record_ids):

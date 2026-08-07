@@ -116,6 +116,16 @@ class ConfirmUploadView(LoginRequiredMixin, View):
             if not result.valid:
                 return JsonResponse({"error": result.error}, status=result.status_code)
 
+        from records.services import kickoff_ocr_scan
+
+        warning = kickoff_ocr_scan(request.user, document)
+        if warning:
+            logger.info(
+                "OCR scan skipped for user %s: %s",
+                request.user.pk,
+                warning,
+            )
+
         posthog.capture(
             "document_uploaded",
             distinct_id=str(request.user.pk),

@@ -1,7 +1,6 @@
 from django.contrib.postgres.indexes import GinIndex
 from django.db import connection, migrations
 
-
 _FIELDS = ("title", "merchant", "products", "notes")
 _DROP_TEMPLATE = "DROP INDEX IF EXISTS {name};"
 

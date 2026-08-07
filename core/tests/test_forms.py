@@ -1,4 +1,6 @@
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 from django.test import TestCase
 
 from core.forms import UpdateUserSettingsForm
@@ -11,7 +13,6 @@ class UpdateUserSettingsFormTest(TestCase):
             "default_currency",
             "auto_archive_expired_records",
             "auto_delete_archived_records",
-            "auto_delete_deleted_documents",
             "expiring_notifications_advance_time",
             "enable_push_notifications",
             "enable_email_notifications",
