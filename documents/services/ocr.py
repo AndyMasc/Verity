@@ -168,9 +168,9 @@ def extract(document_id: int) -> dict[str, Any]:
         if isinstance(cached, dict) and "error" not in cached:
             return cached
 
-    set_document_status(document_id, DocumentStatus.PROCESSING)
-
     try:
+        set_document_status(document_id, DocumentStatus.PROCESSING)
+
         document = (
             DocumentData.objects.select_related("user")
             .prefetch_related("user__folders")

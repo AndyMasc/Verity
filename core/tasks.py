@@ -1,28 +1,28 @@
 """Background tasks for delivering email and webpush notifications.
 
-Tasks are executed asynchronously via QStash (django-qstash). Email delivery
+Tasks are executed asynchronously via Dramatiq. Email delivery
 uses the Resend provider through django-anymail.
 """
 
 import logging
 
+import dramatiq
 from anymail.exceptions import AnymailRequestsAPIError
 from django.contrib.auth import get_user_model
 from django.core.mail import EmailMultiAlternatives, get_connection
-from django_qstash import shared_task
 from webpush import send_user_notification
 
 logger = logging.getLogger(__name__)
 
 
-@shared_task(max_retries=3)
+@dramatiq.actor(max_retries=3)
 def send_background_email(subject, message, from_email, recipient_list, html_message=None):
-    """Send an email via the Resend backend as a background task.
+    """Send an email via the backend as a background task.
 
     Supports optional HTML content for richer email templates. Permanent
-    rejections (4xx, e.g. invalid recipient) are logged and skipped so QStash
+    rejections (4xx, e.g. invalid recipient) are logged and skipped so Dramatiq
     doesn't retry them; transient failures (network, 5xx, rate limits) raise
-    so QStash retries.
+    so Dramatiq retries.
     """
     resend_connection = get_connection(backend="anymail.backends.resend.EmailBackend")
 
@@ -55,14 +55,13 @@ def send_background_email(subject, message, from_email, recipient_list, html_mes
         raise
 
 
-@shared_task
+@dramatiq.actor
 def fire_single_webpush(user_id: int, payload: dict, ttl: int = 1000) -> None:
     """Dispatch a single webpush notification to a user via django-webpush.
 
     Runs as a background task to avoid blocking the request cycle. Failures
     are logged but never raised to prevent task retries for transient issues.
     """
-    """Async worker task wrapper around the webpush service execution."""
     try:
         User = get_user_model()
         user = User.objects.get(id=user_id)

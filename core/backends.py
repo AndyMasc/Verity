@@ -1,6 +1,6 @@
 """Custom backends for email delivery and optimized user loading.
 
-``QStashEmailBackend`` sends messages asynchronously via QStash.
+``DramatiqEmailBackend`` sends messages asynchronously via Dramatiq.
 ``SelectRelatedModelBackend`` prefetches ``user.settings`` on every
 auth lookup to avoid per-view lazy FK queries.
 """
@@ -13,8 +13,8 @@ from django.core.mail.backends.base import BaseEmailBackend
 from .tasks import send_background_email
 
 
-class QStashEmailBackend(BaseEmailBackend):
-    """Email backend that enqueues each message as a QStash background task.
+class DramatiqEmailBackend(BaseEmailBackend):
+    """Email backend that enqueues each message as a Dramatiq background task.
 
     Extracts HTML alternatives from the message and forwards everything to
     ``send_background_email`` for delivery through the Resend provider.
@@ -32,7 +32,7 @@ class QStashEmailBackend(BaseEmailBackend):
                     if mimetype == "text/html":
                         html_message = content
 
-            send_background_email.delay(
+            send_background_email.send(
                 subject=message.subject,
                 message=message.body,
                 from_email=message.from_email or settings.DEFAULT_FROM_EMAIL,

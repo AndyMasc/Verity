@@ -34,7 +34,6 @@ urlpatterns = [
     path("", include("core.urls")),
     # Admin URLs
     path("admin/", admin.site.urls),
-    path("qstash/webhook/", include("django_qstash.urls")),
     # Block password management paths completely
     path("accounts/password/change/", forbidden_view),
     path("accounts/password/set/", forbidden_view),

@@ -110,7 +110,7 @@ def trigger_initial_sync(plaid_item: PlaidItem) -> None:
     else:
         from .tasks import sync_and_convert_for_item_task
 
-        sync_and_convert_for_item_task.delay(plaid_item.id)
+        sync_and_convert_for_item_task.send(plaid_item.id)
 
 
 def dispatch_sync(plaid_item: PlaidItem) -> bool:
@@ -139,7 +139,7 @@ def dispatch_sync(plaid_item: PlaidItem) -> bool:
 
     from .tasks import sync_and_convert_for_item_task
 
-    sync_and_convert_for_item_task.delay(plaid_item.id)
+    sync_and_convert_for_item_task.send(plaid_item.id)
     return True
 
 

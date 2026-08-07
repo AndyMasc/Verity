@@ -104,7 +104,7 @@ def get_payment_success_package(user, package_uuid: str) -> ReimbursementPackage
         if payment:
             from .tasks import sync_payment_status
 
-            sync_payment_status.delay(str(package.uuid), payment.pk)
+            sync_payment_status.send(str(package.uuid), payment.pk)
         package.refresh_from_db()
     return package
 

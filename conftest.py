@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import date
 
+import dramatiq
 import factory
 import pytest
 
@@ -78,3 +79,18 @@ def user(db) -> User:  # type: ignore[no-untyped-def]  # noqa: ARG001
 def other_user(db) -> User:  # type: ignore[no-untyped-def]  # noqa: ARG001
     """Create a second test user for isolation tests."""
     return UserFactory()  # type: ignore[return-value]
+
+
+@pytest.fixture
+def broker():
+    broker = dramatiq.get_broker()
+    broker.flush_all()
+    return broker
+
+
+@pytest.fixture
+def worker(broker):
+    worker = dramatiq.Worker(broker, worker_timeout=100)
+    worker.start()
+    yield worker
+    worker.stop()

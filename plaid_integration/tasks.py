@@ -10,11 +10,11 @@ import logging
 from datetime import date
 from typing import Any
 
+import dramatiq
 from django.db import IntegrityError
 from django.db import transaction as db_transaction
 from django.db.models import Q
 from django.utils import timezone
-from django_qstash import shared_task
 from plaid.model.transactions_sync_request import TransactionsSyncRequest
 
 from billing.models import CustomUser as User
@@ -136,8 +136,8 @@ def _txn_to_record_defaults(
     return defaults
 
 
-@shared_task(bind=True, max_retries=3, default_retry_delay=60)
-def sync_and_convert_for_item_task(self, plaid_item_id: int | str) -> dict[str, Any]:
+@dramatiq.actor(max_retries=3)
+def sync_and_convert_for_item_task(plaid_item_id: int | str) -> dict[str, Any]:
     """Sync all pending transactions for a Plaid item and create/update Records.
 
     Paginates through the Plaid Transactions Sync endpoint using the stored
@@ -168,8 +168,7 @@ def sync_and_convert_for_item_task(self, plaid_item_id: int | str) -> dict[str, 
                 "Plaid API error or rate limit hit for item %s. Retrying task.",
                 plaid_item_id,
             )
-            countdown = self.default_retry_delay * (2**self.request.retries)
-            raise self.retry(exc=e, countdown=countdown) from None
+            raise e from None
 
         data: dict[str, Any] = response if isinstance(response, dict) else response.to_dict()
 

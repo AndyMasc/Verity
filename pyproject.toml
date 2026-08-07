@@ -69,7 +69,6 @@ exclude = [
 [[tool.mypy.overrides]]
 module = [
     "django.*",
-    "django_qstash.*",
     "webpush.*",
     "anymail.*",
     "allauth.*",

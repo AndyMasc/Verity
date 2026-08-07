@@ -98,7 +98,7 @@ def kickoff_ocr_scan(user: User, document) -> str | None:
         document.save(update_fields=["did_ocr"])
     cache.set(cache_key, "processing", timeout=600)
     entitlements.record_scan(user)
-    extract_document.delay(document.id)
+    extract_document.send(document.id)
     return None
 
 
@@ -141,10 +141,13 @@ def create_record_from_ocr(document_id: int) -> Record | None:
     polling view. When a Plaid match is found the document record is merged into
     the bank transaction and the merged record is returned.
     """
+    from cachalot.api import cachalot_disabled
+
     from documents.models import DocumentData
     from documents.ocr_helpers import ocr_data_to_form_initial
 
-    document = DocumentData.objects.select_related("user").filter(id=document_id).first()
+    with cachalot_disabled():
+        document = DocumentData.objects.select_related("user").filter(id=document_id).first()
     if document is None:
         return None
     if document.associated_record_id:

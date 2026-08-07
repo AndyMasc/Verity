@@ -8,14 +8,14 @@ statuses from Stripe so plan entitlements never trust stale local data.
 
 import logging
 
-from django_qstash import shared_task
+import dramatiq
 
 from . import services
 
 logger = logging.getLogger(__name__)
 
 
-@shared_task(retries=3, backoff_factor=2)
+@dramatiq.actor(max_retries=3, min_backoff=2)
 def reconcile_subscription_statuses_task(
     subscription_ids: list[str] | None = None,
 ) -> int:

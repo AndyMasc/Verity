@@ -36,13 +36,13 @@ class HtmxMessageMiddlewareTest(TestCase):
         self.assertIn("djangoMessages", trigger)
 
 
-class QStashEmailBackendTest(TestCase):
+class DramatiqEmailBackendTest(TestCase):
     @patch("core.backends.send_background_email")
     def test_send_messages(self, mock_task):
-        from core.backends import QStashEmailBackend
+        from core.backends import DramatiqEmailBackend
         from django.core.mail import EmailMultiAlternatives
 
-        backend = QStashEmailBackend()
+        backend = DramatiqEmailBackend()
         email = EmailMultiAlternatives(
             subject="Test",
             body="Text body",
@@ -52,16 +52,16 @@ class QStashEmailBackendTest(TestCase):
         email.attach_alternative("<p>HTML body</p>", "text/html")
         count = backend.send_messages([email])
         self.assertEqual(count, 1)
-        mock_task.delay.assert_called_once()
+        mock_task.send.assert_called_once()
 
     @patch("core.backends.send_background_email")
     def test_empty_messages(self, mock_task):
-        from core.backends import QStashEmailBackend
+        from core.backends import DramatiqEmailBackend
 
-        backend = QStashEmailBackend()
+        backend = DramatiqEmailBackend()
         count = backend.send_messages([])
         self.assertEqual(count, 0)
-        mock_task.delay.assert_not_called()
+        mock_task.send.assert_not_called()
 
 
 class RequestIDMiddlewareTest(TestCase):

@@ -105,7 +105,7 @@ class SyncTransactionsView(APIView):
                 return Response({"error": "Failed to trigger sync via Plaid"}, status=502)
         else:
             # Direct background task dispatch for Live/Production
-            sync_and_convert_for_item_task.delay(plaid_item.id)
+            sync_and_convert_for_item_task.send(plaid_item.id)
 
         # Invalidate status cache on manual sync trigger
         cache.delete(f"plaid_status:{request.user.id}")

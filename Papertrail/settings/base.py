@@ -27,26 +27,12 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # Database
 DATABASES = {"default": env.db("DATABASE_URL", default="sqlite:///db.sqlite3")}
 DATABASES["default"].setdefault("CONN_MAX_AGE", env.int("DB_CONN_MAX_AGE", default=60))
-if DATABASES["default"]["ENGINE"] == "django.db.backends.sqlite3":
-    # Concurrent writers (webhooks, QStash workers, web requests) must queue
-    # rather than fail with "database is locked". WAL allows a reader while a
-    # writer is active; busy_timeout makes writers wait; IMMEDIATE takes the
-    # write lock up front so we never block mid-transaction. Dev-only — the
-    # production Postgres connection needs connect_timeout instead.
-    DATABASES["default"].setdefault(
-        "OPTIONS",
-        {
-            "init_command": (
-                "PRAGMA journal_mode=WAL;PRAGMA busy_timeout=20000;PRAGMA synchronous=NORMAL;"
-            ),
-            "transaction_mode": "IMMEDIATE",
-        },
-    )
-else:
-    DATABASES["default"].setdefault("OPTIONS", {"connect_timeout": 10})
 
 # Apps
 INSTALLED_APPS = [
+    # Dramatiq
+    "django_dramatiq",
+    "django_periodiq",
     # Unfold
     "unfold",
     # Cachalot
@@ -62,10 +48,6 @@ INSTALLED_APPS = [
     # Security
     "csp",
     "corsheaders",
-    # Django QStash
-    "django_qstash",
-    "django_qstash.results",
-    "django_qstash.schedules",
     # Allauth apps
     "allauth",
     "allauth.account",
@@ -273,7 +255,7 @@ SESSION_COOKIE_AGE = 60 * 60 * 24 * 7  # 7 days
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
 # Email
-EMAIL_BACKEND = "core.backends.QStashEmailBackend"  # Use custom backend to queue emails sending, and use anymail
+EMAIL_BACKEND = "core.backends.DramatiqEmailBackend"  # Queue email sends as background tasks
 ANYMAIL = {"RESEND_API_KEY": env("RESEND_API_KEY")}
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="Papertrail <onboarding@resend.dev>")
 
@@ -317,13 +299,6 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
 
 # AI / OCR
 GEMINI_API_KEY = env("GEMINI_API_KEY")
-
-# QStash
-QSTASH_TOKEN = env("QSTASH_TOKEN")
-DJANGO_QSTASH_DOMAIN = env("DJANGO_QSTASH_DOMAIN")
-DJANGO_QSTASH_WEBHOOK_PATH = env("DJANGO_QSTASH_WEBHOOK_PATH")
-QSTASH_CURRENT_SIGNING_KEY = env("QSTASH_CURRENT_SIGNING_KEY")
-QSTASH_NEXT_SIGNING_KEY = env("QSTASH_NEXT_SIGNING_KEY")
 
 # Internationalization & Static
 LANGUAGE_CODE = "en-us"
@@ -390,11 +365,6 @@ LOGGING = {
         },
     },
 }
-
-# Celery/QStash settings
-DJANGO_QSTASH_QUEUE_NAME = "default"
-DJANGO_QSTASH_MAX_RETRIES = 3
-DJANGO_QSTASH_BACKOFF_FACTOR = 2
 
 # Webpush
 WEBPUSH_SETTINGS = {
@@ -465,18 +435,26 @@ UNFOLD = {
     "SITE_SYMBOL": "description",  # Material Symbol
     "SHOW_HISTORY": True,
     "SHOW_VIEW_ON_SITE": True,
-    "COLORS": {
-        "primary": {
-            "50": "236 253 245",  # Emerald 50
-            "100": "209 250 229",  # Emerald 100
-            "200": "167 243 208",  # Emerald 200
-            "300": "110 231 183",  # Emerald 300
-            "400": "52 211 153",  # Emerald 400
-            "500": "16 185 129",  # #10B981 (Papertrail primary)
-            "600": "5 150 105",  # Emerald 600
-            "700": "4 120 87",  # Emerald 700
-            "800": "6 95 70",  # Emerald 800
-            "900": "6 78 59",  # Emerald 900
-        },
-    },
 }
+
+
+# Dramatiq broker
+DRAMATIQ_BROKER = {
+    "BROKER": "dramatiq.brokers.redis.RedisBroker",
+    "OPTIONS": {
+        "url": env("REDIS_URL"),
+    },
+    "MIDDLEWARE": [
+        "dramatiq.middleware.prometheus.Prometheus",
+        "dramatiq.middleware.AgeLimit",
+        "dramatiq.middleware.TimeLimit",
+        "dramatiq.middleware.Callbacks",
+        "dramatiq.middleware.Retries",
+        "django_dramatiq.middleware.DbConnectionsMiddleware",
+        "django_dramatiq.middleware.AdminMiddleware",
+        "periodiq.PeriodiqMiddleware",
+    ],
+}
+# Defines which database should be used to persist Task objects when the
+# AdminMiddleware is enabled.  The default value is "default".
+DRAMATIQ_TASKS_DATABASE = "default"

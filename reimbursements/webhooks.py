@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 # Only these event types feed the reimbursements pipeline; everything else
 # (e.g. customer.subscription.*, invoice.*, customer.created) is already
-# handled by djstripe's own sync and does not need a QStash task.
+# handled by djstripe's own sync and does not need a Dramatiq task.
 HANDLED_EVENT_TYPES = frozenset(
     {
         "checkout.session.completed",
@@ -31,11 +31,11 @@ HANDLED_EVENT_TYPES = frozenset(
 
 @receiver(djstripe_signals.webhook_post_process)
 def enqueue_reimbursement_processing(**kwargs: Any) -> None:
-    """Hands the Stripe event to the reimbursements pipeline as a QStash task.
+    """Hands the Stripe event to the reimbursements pipeline as a Dramatiq task.
 
     Runs after djstripe has already synced the event. Enqueued via
     ``on_commit`` so the worker never races the trigger row's transaction, and
-    failures are retried by QStash instead of blocking djstripe's processing.
+    failures are retried by Dramatiq instead of blocking djstripe's processing.
     """
     trigger = kwargs.get("instance")
     if trigger is None:
@@ -47,7 +47,7 @@ def enqueue_reimbursement_processing(**kwargs: Any) -> None:
 
     from .tasks import process_stripe_event_task
 
-    transaction.on_commit(lambda: process_stripe_event_task.delay(trigger.id))
+    transaction.on_commit(lambda: process_stripe_event_task.send(trigger.id))
 
 
 def _as_dict(obj):
@@ -295,4 +295,4 @@ def process_stripe_event(event):
 def _notify_package_paid(package_pk: int, payer_pk: int | None) -> None:
     from .tasks import send_package_paid_notification_task
 
-    send_package_paid_notification_task.delay(package_pk, payer_pk)
+    send_package_paid_notification_task.send(package_pk, payer_pk)

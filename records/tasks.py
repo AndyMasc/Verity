@@ -1,4 +1,4 @@
-"""Background tasks for the records module, executed via django-qstash.
+"""Background tasks for the records module, executed via Dramatiq.
 
 Covers automated record matching on save, archival of expired records,
 permanent deletion of records older than seven years, and expiry
@@ -11,12 +11,13 @@ import logging
 from datetime import timedelta
 from typing import TYPE_CHECKING
 
+import dramatiq
 from django.contrib.auth import get_user_model
 from django.db.models import F, Q
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
-from django_qstash import shared_task
+from periodiq import cron
 
 if TYPE_CHECKING:
     from django.contrib.auth.models import AbstractUser
@@ -37,7 +38,7 @@ logger = logging.getLogger(__name__)
 User = get_user_model()
 
 
-@shared_task
+@dramatiq.actor
 def run_auto_match(record_pk: int, has_plaid: bool) -> None:
     """Attempt to automatically match a newly saved record with its counterpart.
 
@@ -74,7 +75,7 @@ def run_auto_match(record_pk: int, has_plaid: bool) -> None:
         logger.exception("Auto-match failed for record %s", record_pk)
 
 
-@shared_task
+@dramatiq.actor
 def archive_expired_records() -> None:
     """Soft-delete all active records whose expiry date has passed.
 
@@ -93,7 +94,7 @@ def archive_expired_records() -> None:
         logger.info("Archived %d expired records.", count)
 
 
-@shared_task
+@dramatiq.actor
 def delete_7year_archived_records() -> None:
     """Permanently delete archived records older than seven years.
 
@@ -134,10 +135,10 @@ def delete_7year_archived_records() -> None:
 
     for path in document_paths:
         if path:
-            delete_s3_object.delay(path)
+            delete_s3_object.send(path)
 
 
-@shared_task
+@dramatiq.actor(periodic=cron("0 * * * *"))
 def send_expiry_notifications() -> None:
     """Send expiry notifications for records approaching their expiry date.
 

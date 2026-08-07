@@ -101,12 +101,12 @@ def send_email_notification(
     text_body: str,
     html_body: str,
 ) -> None:
-    """Enqueue an email notification as a QStash background task.
+    """Enqueue an email notification as a Dramatiq background task.
 
     Uses the user's email as the sole recipient. Delivery is asynchronous
     so this function returns immediately.
     """
-    send_background_email.delay(
+    send_background_email.send(
         subject=subject,
         message=text_body,
         from_email=settings.DEFAULT_FROM_EMAIL,
@@ -168,7 +168,7 @@ def send_multi_channel_notification(
     and a message is provided.
     """
     if send_push and webpush_payload and _user_can_receive_push(user):
-        fire_single_webpush.delay(user_id=user.id, payload=webpush_payload, ttl=webpush_ttl)
+        fire_single_webpush.send(user_id=user.id, payload=webpush_payload, ttl=webpush_ttl)
 
     if send_email and _user_can_receive_email(user):
         send_email_notification(

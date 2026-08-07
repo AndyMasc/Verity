@@ -1,8 +1,8 @@
 import logging
 
+import dramatiq
 import stripe
 from django.db import transaction
-from django_qstash import shared_task
 
 from . import services
 from .models import PackagePayment, ReimbursementPackage
@@ -10,13 +10,13 @@ from .models import PackagePayment, ReimbursementPackage
 logger = logging.getLogger(__name__)
 
 
-@shared_task(max_retries=3)
+@dramatiq.actor(max_retries=3)
 def process_stripe_event_task(trigger_id: int) -> None:
     """Applies a Stripe webhook event to the reimbursements flow, off the
     request path.
 
     Enqueued from the djstripe ``webhook_post_process`` signal. Transient
-    failures raise out of ``process_stripe_event`` so QStash retries; the
+    failures raise out of ``process_stripe_event`` so Dramatiq retries; the
     surrounding transaction guarantees the event-id dedupe marker rolls back
     with any partial work.
     """
@@ -34,7 +34,7 @@ def process_stripe_event_task(trigger_id: int) -> None:
         process_stripe_event(trigger.json_body)
 
 
-@shared_task(max_retries=3)
+@dramatiq.actor(max_retries=3)
 def sync_payment_status(package_uuid: str, payment_id: int) -> None:
     try:
         package = ReimbursementPackage.objects.get(uuid=package_uuid)
@@ -58,7 +58,7 @@ def sync_payment_status(package_uuid: str, payment_id: int) -> None:
             payment.stripe_checkout_session_id,
             e,
         )
-        raise  # Trigger QStash retry
+        raise  # Trigger Dramatiq retry
 
     if session.payment_status == "paid":
         payment.complete_from_session(session)
@@ -67,7 +67,7 @@ def sync_payment_status(package_uuid: str, payment_id: int) -> None:
         logger.info("Background sync: marked package %s as paid", package_uuid)
 
 
-@shared_task
+@dramatiq.actor
 def send_package_paid_notification_task(package_pk: int, payer_pk: int | None) -> None:
     from django.contrib.auth import get_user_model
 

@@ -574,7 +574,7 @@ class ReimbursementPackage(models.Model):
 class ProcessedStripeEvent(models.Model):
     """Records Stripe webhook events already applied to the reimbursements flow.
 
-    Stripe redelivers webhook events and QStash retries on transient failure, so
+    Stripe redelivers webhook events and Dramatiq retries on transient failure, so
     event handling must be idempotent. The event id is the stable key across
     every delivery/retry of the same event.
     """

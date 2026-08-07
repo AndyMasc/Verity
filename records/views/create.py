@@ -3,6 +3,7 @@
 import logging
 
 import posthog
+from cachalot.api import cachalot_disabled
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.cache import cache
@@ -53,11 +54,12 @@ class AddRecordView(LoginRequiredMixin, CreateView):
         document_id = self.kwargs.get("document_id")
         if not document_id:
             return None
-        return get_object_or_404(
-            DocumentData.objects.select_related("associated_record"),
-            id=document_id,
-            user=self.request.user,
-        )
+        with cachalot_disabled():
+            return get_object_or_404(
+                DocumentData.objects.select_related("associated_record"),
+                id=document_id,
+                user=self.request.user,
+            )
 
     def get(self, request: HttpRequest, *args, **kwargs) -> HttpResponse:
         document = self.document
@@ -145,33 +147,36 @@ class CheckOCRStatus(LoginRequiredMixin, View):
     """
 
     def get(self, request: HttpRequest, document_id: int) -> HttpResponse:
-        document = DocumentData.objects.filter(id=document_id, user=request.user).first()
-        if not document:
-            raise Http404("Document not found.")
+        with cachalot_disabled():
+            document = DocumentData.objects.filter(id=document_id, user=request.user).first()
+            if not document:
+                raise Http404("Document not found.")
 
-        if document.status == DocumentStatus.COMPLETED:
-            record = services.create_record_from_ocr(document.id)
-            if record:
-                response = HttpResponse(status=200)
-                response["HX-Redirect"] = reverse("records:record_detail", kwargs={"pk": record.pk})
-                return response
-            return render(
-                request,
-                "records/partials/form_card.html",
-                {
-                    "is_waiting": False,
-                    "error_message": "Extraction produced no data. Please enter details manually.",
-                },
-            )
-        elif document.status == DocumentStatus.ERROR:
-            return render(
-                request,
-                "records/partials/form_card.html",
-                {
-                    "is_waiting": False,
-                    "error_message": _ocr_error_message(document),
-                },
-            )
+            if document.status == DocumentStatus.COMPLETED:
+                record = services.create_record_from_ocr(document.id)
+                if record:
+                    response = HttpResponse(status=200)
+                    response["HX-Redirect"] = reverse(
+                        "records:record_detail", kwargs={"pk": record.pk}
+                    )
+                    return response
+                return render(
+                    request,
+                    "records/partials/form_card.html",
+                    {
+                        "is_waiting": False,
+                        "error_message": "Extraction produced no data. Please enter details manually.",
+                    },
+                )
+            elif document.status == DocumentStatus.ERROR:
+                return render(
+                    request,
+                    "records/partials/form_card.html",
+                    {
+                        "is_waiting": False,
+                        "error_message": _ocr_error_message(document),
+                    },
+                )
 
         return render(
             request,

@@ -1,12 +1,12 @@
 """Background tasks for OCR extraction, document deletion, and storage reconciliation.
 
-Uses django-qstash for async execution with retry/backoff. Each task is a thin
+Uses Dramatiq for async execution with retry/backoff. Each task is a thin
 wrapper that delegates to the corresponding service module.
 """
 
 from typing import Any
 
-from django_qstash import shared_task
+import dramatiq
 
 from .services.cleanup import (
     delete_orphaned_documents as _cleanup_orphaned,
@@ -25,7 +25,7 @@ __all__ = [
 ]
 
 
-@shared_task(retries=MAX_OCR_RETRIES, backoff_factor=2)
+@dramatiq.actor(max_retries=MAX_OCR_RETRIES, min_backoff=2)
 def extract_document(document_id: int) -> dict[str, Any]:
     """Run Gemini OCR on a document and auto-create a Record from the result.
 
@@ -41,7 +41,7 @@ def extract_document(document_id: int) -> dict[str, Any]:
     return result
 
 
-@shared_task(retries=3, backoff_factor=2)
+@dramatiq.actor(max_retries=3, min_backoff=2)
 def delete_document(filepath: str) -> None:
     """Delete a single file from R2 storage, retrying on transient failures."""
     if filepath:
@@ -49,13 +49,13 @@ def delete_document(filepath: str) -> None:
         s3.delete_object(Bucket=BUCKET, Key=normalize_s3_key(filepath))
 
 
-@shared_task
+@dramatiq.actor
 def delete_orphaned_documents() -> None:
     """Remove unlinked documents after a grace period."""
     _cleanup_orphaned()
 
 
-@shared_task
+@dramatiq.actor
 def reconcile_documents() -> None:
     """Clean up stale pending uploads and dangling error records."""
     _cleanup_reconcile()
