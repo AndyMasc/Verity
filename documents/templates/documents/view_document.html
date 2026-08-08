@@ -88,7 +88,7 @@
                            value="{{ document.associated_record.pk|default:'' }}">
                 </form>
                 <div class="pt-4 border-t border-zinc-200 dark:border-zinc-800"
-                     x-data="{ modalOpen: false }">
+                     x-data="{ modalOpen: false, selectedRecord: null }">
                     <h3 class="text-[11px] font-bold tracking-widest text-zinc-400 dark:text-zinc-500 uppercase mb-2 pl-0.5">Connected Record</h3>
                     {% if document.associated_record %}
                         <a href="{% url 'records:record_detail' document.associated_record.id %}"
