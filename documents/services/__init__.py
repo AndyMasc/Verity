@@ -10,7 +10,7 @@ from .cleanup import (
 )
 from .deletion import DocumentDeletionService
 from .detail import DocumentDetailService
-from .ocr import GeminiOCRError, extract
+from .ocr import extract
 from .upload import UploadService
 from .validation import DocumentUploadService, UploadResult
 
@@ -21,7 +21,6 @@ __all__ = [
     "DocumentDeletionService",
     "DocumentDetailService",
     "DocumentUploadService",
-    "GeminiOCRError",
     "UploadResult",
     "UploadService",
     "bulk_delete_documents",

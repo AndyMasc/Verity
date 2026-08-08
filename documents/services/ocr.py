@@ -1,8 +1,10 @@
 """OCR pipeline service for Gemini-based document extraction.
 
 Encapsulates the full OCR pipeline: Gemini client/schema configuration,
-R2 file fetching, image preprocessing, API calls with retry logic, and
-result caching. The tasks layer delegates here for all extraction work.
+R2 file fetching, image preprocessing, API calls, and result caching. Retry
+handling is delegated to Dramatiq (the caller re-raises on failure), and the
+document is marked ERROR only after retries are exhausted. The tasks layer
+delegates here for all extraction work.
 """
 
 import logging
@@ -11,7 +13,7 @@ from typing import Any
 
 from django.conf import settings
 from django.core.cache import cache
-from django.db.models import F
+from dramatiq.middleware import CurrentMessage
 
 from documents.models import DocumentData, DocumentStatus
 from documents.ocr_helpers import prepare_image_for_gemini
@@ -76,10 +78,6 @@ except ImportError:
     CONFIG = None
 
 
-class GeminiOCRError(Exception):
-    """Raised when Gemini OCR fails after exhausting all retry attempts."""
-
-
 def get_cache_key(document_id: int) -> str:
     """Return the cache key used to store OCR results for a document."""
     return f"ocr_status_{document_id}"
@@ -90,11 +88,30 @@ def set_document_status(document_id: int, status: str, **kwargs: Any) -> None:
     DocumentData.objects.filter(id=document_id).update(status=status, **kwargs)
 
 
-def increment_ocr_retries(document_id: int) -> int:
-    """Atomically increment and return the current OCR retry count."""
-    DocumentData.objects.filter(id=document_id).update(ocr_retries=F("ocr_retries") + 1)
-    doc = DocumentData.objects.filter(id=document_id).values("ocr_retries").first()
-    return doc["ocr_retries"] if doc else 0
+def _is_final_attempt() -> bool:
+    """Return True when the current attempt is the last Dramatiq retry.
+
+    Retries are owned by Dramatiq's Retries middleware, which tracks the
+    attempt count in ``message.options["retries"]``. Outside a worker context
+    (direct calls) there is no retry, so any failure is treated as final.
+    """
+    message = CurrentMessage.get_current_message()
+    if message is None:
+        return True
+    return message.options.get("retries", 0) >= MAX_OCR_RETRIES
+
+
+def mark_ocr_failed(document_id: int, error: str) -> None:
+    """Persist a terminal OCR failure: cache the error payload and mark ERROR."""
+    cache_key = get_cache_key(document_id)
+    error_payload = {"error": "Failed to automatically extract document details."}
+    cache.set(cache_key, error_payload, timeout=OCR_CACHE_TTL)
+    set_document_status(
+        document_id,
+        DocumentStatus.ERROR,
+        ocr_error=error,
+        ocr_raw_data=error_payload,
+    )
 
 
 def fetch_from_r2(filepath: str) -> bytes:
@@ -147,8 +164,8 @@ def extract(document_id: int) -> dict[str, Any]:
     """Run the full OCR pipeline on a document, returning structured financial data.
 
     Checks for cached results and already-processed documents before fetching
-    from R2. On failure, increments retry count and raises GeminiOCRError
-    after exhausting MAX_OCR_RETRIES.
+    from R2. On failure, re-raises so Dramatiq retries; the document is marked
+    ERROR once retries are exhausted.
     """
     cache_key = get_cache_key(document_id)
 
@@ -196,17 +213,6 @@ def extract(document_id: int) -> dict[str, Any]:
 
     except Exception as exc:
         logger.warning("OCR attempt failed for doc %s: %s", document_id, exc, exc_info=True)
-        retries = increment_ocr_retries(document_id)
-
-        if retries >= MAX_OCR_RETRIES:
-            error_payload = {"error": "Failed to automatically extract document details."}
-            cache.set(cache_key, error_payload, timeout=OCR_CACHE_TTL)
-            set_document_status(
-                document_id,
-                DocumentStatus.ERROR,
-                ocr_error=str(exc),
-                ocr_raw_data=error_payload,
-            )
-            raise GeminiOCRError(f"OCR execution hard-failed for document {document_id}") from exc
-
+        if _is_final_attempt():
+            mark_ocr_failed(document_id, str(exc))
         raise

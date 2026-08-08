@@ -8,8 +8,8 @@
                 Reconcile your books by pairing a bank transaction with an uploaded record.
             </p>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 w-full">
-                {% include 'records/partials/merge_slot.html' with mode="plaid" label="Bank Transaction" icon="bank" selectedState="selectedPlaid" selectedTitle="plaidTitle" %}
-                {% include 'records/partials/merge_slot.html' with mode="doc" label="Uploaded Receipt" icon="receipt" selectedState="selectedDoc" selectedTitle="docTitle" %}
+                {% include 'records/partials/merge/merge_slot.html' with mode="plaid" label="Bank Transaction" icon="bank" selectedState="selectedPlaid" selectedTitle="plaidTitle" %}
+                {% include 'records/partials/merge/merge_slot.html' with mode="doc" label="Uploaded Receipt" icon="receipt" selectedState="selectedDoc" selectedTitle="docTitle" %}
             </div>
             <form method="POST" class="w-full mt-6">
                 {% csrf_token %}

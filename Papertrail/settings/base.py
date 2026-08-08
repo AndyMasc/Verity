@@ -25,8 +25,13 @@ WSGI_APPLICATION = "Papertrail.wsgi.application"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Database
-DATABASES = {"default": env.db("DATABASE_URL", default="sqlite:///db.sqlite3")}
-DATABASES["default"].setdefault("CONN_MAX_AGE", env.int("DB_CONN_MAX_AGE", default=60))
+database_config = env.db("DATABASE_URL", default="sqlite:///db.sqlite3")
+if "sqlite" in database_config["ENGINE"]:
+    database_config.setdefault("OPTIONS", {})["timeout"] = 30
+else:
+    database_config.setdefault("OPTIONS", {})["sslmode"] = "require"
+DATABASES = {"default": database_config}
+DATABASES["default"].setdefault("CONN_MAX_AGE", env.int("DB_CONN_MAX_AGE", default=600))
 
 # Apps
 INSTALLED_APPS = [
@@ -233,24 +238,27 @@ TEMPLATES = [
 ]
 
 # Cache & Session
-if DEBUG:
-    CACHES = {
-        "default": {
-            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-        },
+# A shared Redis cache is used in every environment so that background
+# workers (dramatiq/periodiq) and the web server see the same cached data.
+# Per-process backends like LocMemCache would otherwise leave the web server
+# with stale cached values (e.g. paginator counts) after a background task
+# creates or mutates records.
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": env("REDIS_URL"),
+        "OPTIONS": {"CLIENT_CLASS": "django_redis.client.DefaultClient"},  # type: ignore[dict-item]
+    },
+}
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
     }
-    SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
-    SESSION_CACHE_ALIAS = "default"
-else:
-    CACHES = {
-        "default": {
-            "BACKEND": "django_redis.cache.RedisCache",
-            "LOCATION": env("REDIS_URL"),
-            "OPTIONS": {"CLIENT_CLASS": "django_redis.client.DefaultClient"},  # type: ignore[dict-item]
-        },
-    }
-    SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
-    SESSION_CACHE_ALIAS = "default"
+}
+
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_CACHE_ALIAS = "default"
 SESSION_COOKIE_AGE = 60 * 60 * 24 * 7  # 7 days
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
@@ -314,7 +322,7 @@ TAILWIND_USE_STANDALONE_BINARY = True
 SITE_ID = 1
 
 # List view pagination
-PAGINATE_BY = 25
+PAGINATE_BY = 20
 
 # Logging
 LOGGING = {
@@ -397,15 +405,7 @@ FERNET_KEYS = [
 STRIPE_SECRET_KEY = env("STRIPE_SECRET_KEY")
 STRIPE_PUBLISHABLE_KEY = env("STRIPE_PUBLISHABLE_KEY")
 DJSTRIPE_FOREIGN_KEY_TO_FIELD = env("DJSTRIPE_FOREIGN_KEY_TO_FIELD")
-STRIPE_PRICING_TABLE_ID = env("STRIPE_PRICING_TABLE_ID")
-STRIPE_PRICING_TABLE_KEY = env("STRIPE_PRICING_TABLE_KEY")
-STRIPE_STORAGE_TABLE_ID = env("STRIPE_STORAGE_TABLE_ID")
-STRIPE_STORAGE_TABLE_KEY = env("STRIPE_STORAGE_TABLE_KEY")
 
-# One Stripe webhook serves both pipelines: djstripe (billing/subscriptions) and
-# reimbursements (see billing/webhooks.py signal receiver). In local dev the
-# signing secret of the "stripe listen" webhook is stored on the djstripe
-# WebhookEndpoint row (djstripe_validation_method="verify_signature").
 
 # Sentry
 _is_prod = env("SENTRY_ENVIRONMENT", default="development") == "production"
@@ -440,12 +440,13 @@ UNFOLD = {
 
 # Dramatiq broker
 DRAMATIQ_BROKER = {
-    "BROKER": "dramatiq.brokers.redis.RedisBroker",
+    "BROKER": "dramatiq.brokers.rabbitmq.RabbitmqBroker",
     "OPTIONS": {
-        "url": env("REDIS_URL"),
+        "url": env("RABBIT_MQ_URL"),
     },
     "MIDDLEWARE": [
         "dramatiq.middleware.prometheus.Prometheus",
+        "dramatiq.middleware.CurrentMessage",
         "dramatiq.middleware.AgeLimit",
         "dramatiq.middleware.TimeLimit",
         "dramatiq.middleware.Callbacks",

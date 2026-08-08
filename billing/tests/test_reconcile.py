@@ -106,4 +106,6 @@ class ReconcileSubscriptionStatusesTaskTests(TestCase):
                 message="No such subscription", param="id"
             ),
         ):
-            self.assertEqual(reconcile_subscription_statuses_task(), 1)
+            reconcile_subscription_statuses_task()
+        sub = Subscription.objects.get(id="sub_recon_task")
+        self.assertEqual(sub.stripe_data["status"], "canceled")

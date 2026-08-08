@@ -1,0 +1,6 @@
+web: python manage.py runserver
+dramatiq: python manage.py rundramatiq
+periodiq: python manage.py runperiodiq
+tailwind: python manage.py tailwind start
+stripe: python manage.py stripe_listen
+ngrok: ngrok http 8000

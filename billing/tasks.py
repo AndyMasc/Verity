@@ -9,26 +9,22 @@ statuses from Stripe so plan entitlements never trust stale local data.
 import logging
 
 import dramatiq
+from periodiq import cron
 
 from . import services
 
 logger = logging.getLogger(__name__)
 
 
-@dramatiq.actor(max_retries=3, min_backoff=2)
+@dramatiq.actor(max_retries=3, min_backoff=2, periodic=cron("30 * * * *"))
 def reconcile_subscription_statuses_task(
     subscription_ids: list[str] | None = None,
-) -> int:
+) -> None:
     """Reconcile local subscription statuses against Stripe.
 
     Args:
         subscription_ids: Optional list of Stripe subscription IDs to
             reconcile. When omitted, every local subscription is reconciled.
-
-    Returns:
-        Number of local rows whose stored status was corrected.
     """
     corrected = services.reconcile_subscription_statuses(subscription_ids)
-    if corrected:
-        logger.info("Reconciled %d subscription status(es) against Stripe.", corrected)
-    return corrected
+    logger.info("Reconciled %d subscription status(es) against Stripe.", corrected)

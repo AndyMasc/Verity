@@ -70,7 +70,8 @@ class CachedPaginatorMixin:
     """
 
     def paginate_queryset(self, queryset, page_size):
-        paginator = CachedPaginator(queryset, page_size)
+        user = getattr(self.request, "user", None)
+        paginator = CachedPaginator(queryset, page_size, user_id=getattr(user, "id", None))
         page_kwarg = self.page_kwarg
         page = self.kwargs.get(page_kwarg) or self.request.GET.get(page_kwarg) or 1
         try:

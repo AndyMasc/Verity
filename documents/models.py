@@ -122,7 +122,6 @@ class DocumentData(models.Model):
         related_name="documents",
     )
     did_ocr = models.BooleanField(default=False)
-    ocr_retries = models.PositiveSmallIntegerField(default=0)
     ocr_error = models.TextField(blank=True, default="")
     ocr_metadata = models.JSONField(blank=True, null=True)
     ocr_raw_data = models.JSONField(blank=True, null=True)

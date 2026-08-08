@@ -2,6 +2,8 @@
 <div class="space-y-3">
     {% for merge in merges %}
         <div class="relative group rounded-2xl border border-zinc-200/60 dark:border-zinc-800/60 bg-white/80 dark:bg-zinc-900/40 backdrop-blur-xl hover:border-zinc-300 dark:hover:border-zinc-700 hover:shadow-xl hover:shadow-zinc-900/5 dark:hover:shadow-none transition-all duration-300 overflow-hidden">
+            <div class="absolute left-0 inset-y-0 w-0.5 bg-zinc-900 dark:bg-zinc-100 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            </div>
             <div class="absolute inset-0 bg-gradient-to-r from-zinc-500/[0.02] via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none rounded-2xl">
             </div>
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 py-4 sm:pr-24">
@@ -60,10 +62,10 @@
                         </svg>
                         <span>Merged</span>
                     </div>
-                    <div class="text-zinc-400 dark:text-zinc-500 text-xs font-medium whitespace-nowrap">
+                    <div class="text-zinc-400 dark:text-zinc-500 text-xs font-medium whitespace-nowrap tabular-nums">
                         {% if merge.plaid_record and merge.plaid_record.transaction_date %}{{ merge.plaid_record.transaction_date|date:"M d" }}{% endif %}
                     </div>
-                    <div class="text-zinc-950 dark:text-zinc-50 font-bold text-sm tracking-tight whitespace-nowrap min-w-[70px] text-right">
+                    <div class="text-zinc-950 dark:text-zinc-50 font-bold text-sm tracking-tight whitespace-nowrap min-w-[70px] text-right tabular-nums">
                         {% if merge.plaid_record and merge.plaid_record.balance %}{{ merge.plaid_record.balance|currency_format:merge.plaid_record.currency }}{% else %}<span class="text-zinc-300 dark:text-zinc-700 font-normal">—</span>{% endif %}
                     </div>
                 </div>

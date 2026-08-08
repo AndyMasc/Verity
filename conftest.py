@@ -75,6 +75,17 @@ def user(db) -> User:  # type: ignore[no-untyped-def]  # noqa: ARG001
     return UserFactory()  # type: ignore[return-value]
 
 
+@pytest.fixture(autouse=True)
+def _locmem_cache(settings):  # type: ignore[no-untyped-def]
+    """Isolate tests from the shared Redis cache used by the dev processes.
+
+    The default cache backend is Redis (shared with the running web server and
+    background workers). Tests override it with a per-process LocMemCache so
+    ``cache.clear()`` and cache key churn never touch the live cache.
+    """
+    settings.CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
+
+
 @pytest.fixture
 def other_user(db) -> User:  # type: ignore[no-untyped-def]  # noqa: ARG001
     """Create a second test user for isolation tests."""

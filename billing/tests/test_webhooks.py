@@ -68,20 +68,20 @@ class HandleSubscriptionDeletedTests(TestCase):
 
 class EnqueueReimbursementProcessingTests(TestCase):
     def test_enqueues_handled_event(self):
-        with mock.patch("reimbursements.tasks.process_stripe_event_task.delay") as delay:
+        with mock.patch("reimbursements.tasks.process_stripe_event_task.send") as send:
             with self.captureOnCommitCallbacks(execute=True):
                 enqueue_reimbursement_processing(
                     instance=mock.Mock(event=_fake_event("charge.refunded", "ch_refunded"))
                 )
-        delay.assert_called_once()
+        send.assert_called_once()
 
     def test_skips_unhandled_event(self):
-        with mock.patch("reimbursements.tasks.process_stripe_event_task.delay") as delay:
+        with mock.patch("reimbursements.tasks.process_stripe_event_task.send") as send:
             with self.captureOnCommitCallbacks(execute=True):
                 enqueue_reimbursement_processing(
                     instance=mock.Mock(event=_fake_event("customer.subscription.updated", "sub_x"))
                 )
-        delay.assert_not_called()
+        send.assert_not_called()
 
     def test_noop_when_no_instance(self):
         enqueue_reimbursement_processing()

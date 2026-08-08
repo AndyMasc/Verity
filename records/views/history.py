@@ -128,7 +128,6 @@ class RecordHistoryView(LoginRequiredMixin, ListView):
                 "file_extension",
                 "file_size",
                 "mime_type",
-                "ocr_retries",
                 "ocr_error",
                 "ocr_metadata",
                 "status",

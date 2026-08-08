@@ -1,5 +1,6 @@
 """Record list, detail, and hard-delete views."""
 
+import json
 from datetime import timedelta
 from typing import Any
 
@@ -18,7 +19,6 @@ from django.views.generic.edit import UpdateView
 from django_filters.views import FilterView
 from django_ratelimit.decorators import ratelimit
 
-from core.services.dashboard import invalidate_dashboard_cache
 from Papertrail.views import CachedPaginatorMixin, htmx_response
 
 from .. import services
@@ -141,7 +141,6 @@ class RecordDetailView(LoginRequiredMixin, UpdateView):
     def form_valid(self, form):
         messages.success(self.request, "Record updated successfully.")
         self.object = form.save()
-        invalidate_dashboard_cache(self.request.user.id)
 
         posthog.capture(
             "record_updated",
@@ -159,12 +158,18 @@ class RecordDetailView(LoginRequiredMixin, UpdateView):
 
     def form_invalid(self, form):
         messages.error(self.request, "An error was left in a record")
-        return render(
+        is_htmx = self.request.headers.get("HX-Request") == "true"
+        response = render(
             self.request,
             self.get_template_names(),
             self.get_context_data(form=form),
-            status=422,
+            status=200 if is_htmx else 422,
         )
+        if is_htmx:
+            response["HX-Trigger"] = json.dumps(
+                {"showToast": {"text": "An error was left in a record", "tags": "error"}}
+            )
+        return response
 
 
 class HardDeleteRecordView(LoginRequiredMixin, View):
@@ -192,7 +197,6 @@ class HardDeleteRecordView(LoginRequiredMixin, View):
 
         services.hard_delete_record(request.user, record)
 
-        invalidate_dashboard_cache(request.user.id)
         posthog.capture(
             "record_hard_deleted",
             distinct_id=str(request.user.pk),

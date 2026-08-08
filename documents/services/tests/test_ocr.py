@@ -1,6 +1,6 @@
 """Tests for the OCR pipeline service.
 
-Covers get_cache_key, set_document_status, increment_ocr_retries,
+Covers get_cache_key, set_document_status, mark_ocr_failed,
 fetch_from_r2, and extract (with mocked Gemini).
 """
 
@@ -11,12 +11,14 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
 
+from dramatiq import Message
+
 from documents.models import DocumentData, DocumentStatus
 from documents.services.ocr import (
-    GeminiOCRError,
+    MAX_OCR_RETRIES,
     extract,
     get_cache_key,
-    increment_ocr_retries,
+    mark_ocr_failed,
     set_document_status,
 )
 
@@ -25,6 +27,16 @@ User = get_user_model()
 
 def _make_hash(content: bytes = b"test") -> str:
     return hashlib.sha256(content).hexdigest()
+
+
+def _retry_message(retries: int) -> Message:
+    return Message(
+        queue_name="default",
+        actor_name="extract_document",
+        args=(1,),
+        kwargs={},
+        options={"retries": retries},
+    )
 
 
 class TestGetCacheKey:
@@ -59,29 +71,19 @@ class TestSetDocumentStatus:
 
 
 @pytest.mark.django_db
-class TestIncrementOcrRetries:
-    def test_increments_from_zero(self, user):
+class TestMarkOcrFailed:
+    def test_marks_document_error_and_caches_payload(self, user):
         doc = DocumentData.objects.create(
             user=user,
             filepath="users/1/doc.pdf",
             file_hash=_make_hash(),
+            status=DocumentStatus.PROCESSING,
         )
-        result = increment_ocr_retries(doc.id)
-        assert result == 1
-
-    def test_increments_from_existing(self, user):
-        doc = DocumentData.objects.create(
-            user=user,
-            filepath="users/1/doc.pdf",
-            file_hash=_make_hash(),
-            ocr_retries=2,
-        )
-        result = increment_ocr_retries(doc.id)
-        assert result == 3
-
-    def test_returns_zero_for_nonexistent(self):
-        result = increment_ocr_retries(99999)
-        assert result == 0
+        mark_ocr_failed(doc.id, "Gemini timeout")
+        doc.refresh_from_db()
+        assert doc.status == DocumentStatus.ERROR
+        assert doc.ocr_error == "Gemini timeout"
+        assert "error" in cache.get(get_cache_key(doc.id))
 
 
 @pytest.mark.django_db
@@ -132,28 +134,48 @@ class TestExtract:
         assert doc.did_ocr is True
 
     @patch("documents.services.ocr.fetch_from_r2", side_effect=Exception("R2 error"))
-    def test_failure_increments_retries(self, mock_r2, user):
+    def test_failure_marks_error_outside_worker(self, mock_r2, user):
         doc = DocumentData.objects.create(
             user=user,
             filepath="users/1/doc.pdf",
             file_hash=_make_hash(),
-            status=DocumentStatus.UPLOADED,
+            status=DocumentStatus.PROCESSING,
         )
-        with pytest.raises(Exception):
+        with pytest.raises(Exception, match="R2 error"):
             extract(doc.id)
         doc.refresh_from_db()
-        assert doc.ocr_retries == 1
+        assert doc.status == DocumentStatus.ERROR
 
     @patch("documents.services.ocr.fetch_from_r2", side_effect=Exception("R2 error"))
-    def test_max_retries_raises_gemini_error(self, mock_r2, user):
+    @patch(
+        "documents.services.ocr.CurrentMessage.get_current_message",
+        return_value=_retry_message(retries=0),
+    )
+    def test_retryable_failure_reraises_without_marking_error(self, mock_msg, mock_r2, user):
         doc = DocumentData.objects.create(
             user=user,
             filepath="users/1/doc.pdf",
             file_hash=_make_hash(),
-            status=DocumentStatus.UPLOADED,
-            ocr_retries=3,
+            status=DocumentStatus.PROCESSING,
         )
-        with pytest.raises(GeminiOCRError):
+        with pytest.raises(Exception, match="R2 error"):
+            extract(doc.id)
+        doc.refresh_from_db()
+        assert doc.status == DocumentStatus.PROCESSING
+
+    @patch("documents.services.ocr.fetch_from_r2", side_effect=Exception("R2 error"))
+    @patch(
+        "documents.services.ocr.CurrentMessage.get_current_message",
+        return_value=_retry_message(retries=MAX_OCR_RETRIES),
+    )
+    def test_final_retry_marks_error(self, mock_msg, mock_r2, user):
+        doc = DocumentData.objects.create(
+            user=user,
+            filepath="users/1/doc.pdf",
+            file_hash=_make_hash(),
+            status=DocumentStatus.PROCESSING,
+        )
+        with pytest.raises(Exception, match="R2 error"):
             extract(doc.id)
         doc.refresh_from_db()
         assert doc.status == DocumentStatus.ERROR

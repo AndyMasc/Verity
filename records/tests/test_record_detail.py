@@ -237,6 +237,30 @@ class RecordDetailViewTest(TestCase):
         self.assertEqual(self.record.title, "Updated Title")
         self.assertEqual(self.record.record_type, "voucher")
 
+    def test_invalid_hx_post_returns_errored_form(self):
+        self.client.force_login(self.user)
+        response = self.client.post(
+            self.url,
+            {
+                "title": "",
+                "products": "Updated Item",
+                "record_type": "expense_receipt",
+                "transaction_date": "2024-06-15",
+                "merchant": "",
+                "balance": "",
+                "currency": "",
+                "notes": "",
+                "payment_method": "",
+                "nickname": "",
+                "folder": "",
+            },
+            HTTP_HX_REQUEST="true",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "record-form")
+        self.assertContains(response, "This field is required")
+        self.assertIn("HX-Trigger", response.headers)
+
     def test_other_user_cannot_update(self):
         user2 = User.objects.create_user(username="otherupd", password="pass")
         self.client.force_login(user2)

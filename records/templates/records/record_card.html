@@ -1,13 +1,11 @@
 {% load form_tags %}
 <div data-record-id="{{ record.pk }}"
-     class="relative mb-0 group rounded-none {% if not forloop.last %}border-b border-zinc-200 dark:border-zinc-800{% endif %} bg-transparent hover:bg-zinc-50/80 dark:hover:bg-zinc-900/90 transition-all duration-200">
+     class="relative mb-0 group bg-transparent hover:bg-zinc-50/80 dark:hover:bg-zinc-900/90 transition-all duration-200">
     <a href="{% url 'records:record_detail' record.pk %}"
        class="block relative pl-7 pr-14 py-2.5 sm:py-5">
-        <!-- Left status pill indicator -->
         <div class="absolute left-0 top-3 bottom-3 w-1 rounded-full transition-colors duration-300 {% if not record.is_active %} bg-zinc-400 dark:bg-zinc-600 {% elif record.expiry_date %} bg-amber-500 dark:bg-amber-400 {% else %} bg-zinc-900 dark:bg-zinc-100 {% endif %}">
         </div>
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3">
-            <!-- Title & Type Grid Section -->
             <div class="flex items-center gap-3 min-w-0 flex-1">
                 <span class="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg text-[10px] font-bold {{ record.badge_classes }} border uppercase tracking-wider shrink-0 text-center shadow-xs truncate max-w-35">
                     <span class="sm:hidden">{{ record.get_record_type_display|slice:":3" }}</span>
@@ -38,8 +36,7 @@
                     </div>
                 </div>
             </div>
-            <!-- Details Block: Expiry, Date, Balance -->
-            <div class="flex items-center justify-between sm:justify-end gap-3 sm:gap-6 shrink-0 text-xs pt-1 sm:pt-0 border-t sm:border-0 border-zinc-200/80 dark:border-zinc-800">
+            <div class="flex items-center justify-between sm:justify-end gap-3 sm:gap-6 shrink-0 text-xs pt-1 sm:pt-0 border-0">
                 <div class="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium {% if record.expiry_date %} bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 border border-zinc-300/60 dark:border-zinc-700{% else %} text-zinc-500 dark:text-zinc-400 {% endif %}">
                     <svg class="w-3.5 h-3.5 opacity-70 shrink-0"
                          fill="none"
@@ -61,7 +58,6 @@
             </div>
         </div>
     </a>
-    <!-- Interactive Selection Checkbox -->
     <div class="absolute top-1/2 -translate-y-1/2 right-4 z-20">
         <label class="relative flex items-center justify-center w-5 h-5 cursor-pointer"
                @click.stop>

@@ -21,5 +21,12 @@ PASSWORD_HASHERS = [
     "django.contrib.auth.hashers.MD5PasswordHasher",
 ]
 
-# Disable rate limiting in CI tests
-RATELIMIT_USE_CACHE = None
+# Disable rate limiting in CI tests (short-circuits before any cache lookup)
+RATELIMIT_ENABLE = False
+
+# Use plain static file storage (no manifest hashing) so template-rendering
+# tests don't require a prior ``collectstatic`` run. ManifestStaticFilesStorage
+# (base's non-DEBUG default) raises on uncollected files like css/dist/styles.css.
+STORAGES["staticfiles"]["BACKEND"] = (  # noqa: F405
+    "django.contrib.staticfiles.storage.StaticFilesStorage"
+)

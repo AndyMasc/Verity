@@ -1,7 +1,7 @@
 {% with tp=target_prefix|default:mode %}
     <div class="space-y-1">
         {% for record in records %}
-            {% include 'records/partials/merge_selection_card.html' %}
+            {% include 'records/partials/merge/merge_selection_card.html' %}
         {% empty %}
             <div class="text-center py-8 text-xs font-medium text-zinc-400 dark:text-zinc-500">No matching records found.</div>
         {% endfor %}

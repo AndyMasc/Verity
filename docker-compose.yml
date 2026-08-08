@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   web:
     build:
@@ -5,18 +7,13 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8000:8000"
-    environment:
+    environment: &common-env
       - DEBUG=1
       - DJANGO_ENV=development
       - SECRET_KEY=${SECRET_KEY:-django-insecure-dev-key-change-in-production}
       - DATABASE_URL=postgres://papertrail:papertrail@db:5432/papertrail
-      - REDIS_URL=redis://redis:6379/0
-      - CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
-      - QSTASH_TOKEN=${QSTASH_TOKEN}
-      - QSTASH_CURRENT_SIGNING_KEY=${QSTASH_CURRENT_SIGNING_KEY}
-      - QSTASH_NEXT_SIGNING_KEY=${QSTASH_NEXT_SIGNING_KEY}
-      - DJANGO_QSTASH_DOMAIN=http://web:8000
-      - DJANGO_QSTASH_WEBHOOK_PATH=/django-qstash/webhook/
+      - REDIS_URL=redis://:your_secure_redis_password@redis:6379/0
+      - RABBIT_MQ_URL=amqp://guest:guest@rabbitmq:5672/
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - RESEND_API_KEY=${RESEND_API_KEY}
       - DEFAULT_FROM_EMAIL=${DEFAULT_FROM_EMAIL:-Papertrail <onboarding@resend.dev>}
@@ -45,9 +42,43 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     command: >
       sh -c "python manage.py migrate --noinput &&
              python manage.py runserver 0.0.0.0:8000"
+
+  dramatiq:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment: *common-env
+    volumes:
+      - .:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    command: python manage.py rundramatiq
+
+  periodiq:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment: *common-env
+    volumes:
+      - .:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    command: python manage.py runperiodiq
 
   db:
     image: postgres:16-alpine
@@ -65,14 +96,36 @@ services:
       timeout: 5s
       retries: 5
 
+  rabbitmq:
+    image: rabbitmq:3-alpine
+    restart: always
+    ports:
+      - "5672:5672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   redis:
     image: redis:7-alpine
+    restart: always
+    command: >
+      redis-server 
+      --requirepass your_secure_redis_password
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --timeout 0
+      --save 60 1
+      --appendonly yes
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "your_secure_redis_password", "ping"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -80,3 +133,4 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  rabbitmq_data:

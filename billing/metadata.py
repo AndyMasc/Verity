@@ -57,37 +57,38 @@ PAPERTRAIL_PRO = ProductMetadata(
         features.BANK_TRANSACTION_SYNC,
         features.QUICK_REIMBURSEMENT_REQUEST,
         features.PRO_STORAGE_LIMIT,
+        features.AUTO_TXN_CATEGORIZATION,
     ],
     storage_limit_gb=features.PRO_STORAGE_LIMIT_GB,
 )
 
-STORAGE_UPGRADE_25 = ProductMetadata(
+STORAGE_UPGRADE_10 = ProductMetadata(
     stripe_id="prod_V0dPTSMZjCZNuk",
     name="25GB Storage Upgrade",
     description="",
     category="storage_plan",
     features=[
-        features.STORAGE_UPGRADE_25,
+        features.STORAGE_UPGRADE_10,
     ],
     storage_limit_gb=features.STORAGE_ADDITIONAL_GB,
 )
 
-STORAGE_UPGRADE_100 = ProductMetadata(
-    stripe_id="prod_V0c9jwv1oVi9Wl",
+STORAGE_UPGRADE_50 = ProductMetadata(
+    stripe_id="prod_V1l2wc31fzcmgH",
     name="100GB Storage Upgrade",
     description="",
     category="storage_plan",
     features=[
-        features.STORAGE_UPGRADE_100,
+        features.STORAGE_UPGRADE_50,
     ],
-    storage_limit_gb=features.STORAGE_ADDITIONAL_GB_100,
+    storage_limit_gb=features.STORAGE_ADDITIONAL_GB_50,
 )
 
 PRODUCTS = {
     PAPERTRAIL_PRO.stripe_id: PAPERTRAIL_PRO,
     PAPERTRAIL_FREE.stripe_id: PAPERTRAIL_FREE,
-    STORAGE_UPGRADE_25.stripe_id: STORAGE_UPGRADE_25,
-    STORAGE_UPGRADE_100.stripe_id: STORAGE_UPGRADE_100,
+    STORAGE_UPGRADE_10.stripe_id: STORAGE_UPGRADE_10,
+    STORAGE_UPGRADE_50.stripe_id: STORAGE_UPGRADE_50,
 }
 
 

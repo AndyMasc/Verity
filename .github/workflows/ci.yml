@@ -65,12 +65,22 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 5
+      rabbitmq:
+        image: rabbitmq:3-alpine
+        ports:
+          - 5672:5672
+        options: >-
+          --health-cmd "rabbitmq-diagnostics -q ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
 
     env:
       # Test settings: CI-safe (MD5 hasher, no rate limiting, Postgres DB).
       DJANGO_SETTINGS_MODULE: Papertrail.settings.ci
       DATABASE_URL: postgres://postgres:postgres@localhost:5432/papertrail
       REDIS_URL: redis://localhost:6379/0
+      RABBIT_MQ_URL: amqp://guest:guest@localhost:5672/
       SECRET_KEY: ci-secret-key-not-for-production
       ALLOWED_HOSTS: localhost,127.0.0.1
       # Placeholders: base.py requires these at settings load. Tests mock
@@ -82,11 +92,6 @@ jobs:
       R2_S3_ENDPOINT_URL: https://ci.example.com
       R2_PAPERTRAIL_STORAGE_ACCOUNT_ID: ci-account
       GEMINI_API_KEY: ci-gemini-key
-      QSTASH_TOKEN: ci-qstash-token
-      DJANGO_QSTASH_DOMAIN: http://localhost:8000
-      DJANGO_QSTASH_WEBHOOK_PATH: /qstash/webhook/
-      QSTASH_CURRENT_SIGNING_KEY: ci-qstash-signing-key
-      QSTASH_NEXT_SIGNING_KEY: ci-qstash-next-signing-key
       RESEND_API_KEY: ci-resend-key
       GOOGLE_OAUTH_CLIENT_ID: ci-google-id
       GOOGLE_OAUTH_CLIENT_SECRET: ci-google-secret
@@ -102,11 +107,7 @@ jobs:
       FERNET_KEY: ci-fernet-key
       STRIPE_SECRET_KEY: sk_test_ci
       STRIPE_PUBLISHABLE_KEY: pk_test_ci
-      DJSTRIPE_FOREIGN_KEY_TO_FIELD: djstripe.models.Customer.subscription
-      STRIPE_PRICING_TABLE_ID: ci-pricing-table
-      STRIPE_PRICING_TABLE_KEY: ci-pricing-key
-      STRIPE_STORAGE_TABLE_ID: ci-storage-table
-      STRIPE_STORAGE_TABLE_KEY: ci-storage-key
+      DJSTRIPE_FOREIGN_KEY_TO_FIELD: djstripe_id
       SENTRY_DSN: https://ci@sentry.example.com/1
 
     steps:

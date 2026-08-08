@@ -25,7 +25,7 @@
 </div>
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
     {% for folder in folders %}
-        {% include 'records/partials/folder_item_partial.html' %}
+        {% include 'records/partials/folders/folder_item_partial.html' %}
     {% empty %}
         <div class="col-span-full py-12 flex flex-col items-center justify-center text-center border border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl">
             <p class="text-sm text-zinc-500 dark:text-zinc-400 font-medium">No custom folders.</p>

@@ -36,7 +36,6 @@ class ArchiveRecord(LoginRequiredMixin, View):
     def post(self, request: HttpRequest, record_id: int) -> HttpResponse:
         record = get_object_or_404(Record, id=record_id, user=request.user, is_active=True)
         archive_record(request.user, record)
-        invalidate_dashboard_cache(request.user.id)
         posthog.capture(
             "record_archived",
             distinct_id=str(request.user.pk),
@@ -59,7 +58,6 @@ class UnarchiveRecord(LoginRequiredMixin, View):
     def post(self, request: HttpRequest, record_id: int) -> HttpResponse:
         record = get_object_or_404(Record, id=record_id, user=request.user, is_active=False)
         unarchive_record(request.user, record)
-        invalidate_dashboard_cache(request.user.id)
         if request.headers.get("HX-Request") == "true":
             response = HttpResponse(status=200)
             response["HX-Trigger"] = json.dumps({"recordChanged": {}})
@@ -73,7 +71,6 @@ class DeleteRecordView(LoginRequiredMixin, View):
     def post(self, request: HttpRequest, record_id: int) -> HttpResponse:
         record = get_object_or_404(Record, id=record_id, user=request.user)
         soft_delete_record(request.user, record)
-        invalidate_dashboard_cache(request.user.id)
         posthog.capture(
             "record_deleted",
             distinct_id=str(request.user.pk),

@@ -20,7 +20,6 @@ from django.views.generic.edit import FormView
 from django_filters.views import FilterView
 from django_ratelimit.decorators import ratelimit
 
-from core.services.dashboard import invalidate_dashboard_cache
 from documents.models import DocumentData
 from Papertrail.responses import api_error
 from Papertrail.views import create_audit_log
@@ -125,7 +124,6 @@ class ManualMergeView(LoginRequiredMixin, FormView):
                 merge_log=merge_log,
                 details={"document_record_id": document_record.pk},
             )
-            invalidate_dashboard_cache(self.request.user.id)
             posthog.capture(
                 "merge_completed",
                 distinct_id=str(self.request.user.pk),
@@ -164,7 +162,7 @@ class ManualMergeSearchView(LoginRequiredMixin, View):
         page_obj = paginator.get_page(page_number)
         return render(
             request,
-            "records/partials/merge_search_panel.html",
+            "records/partials/merge/merge_search_panel.html",
             {
                 "records": page_obj.object_list,
                 "mode": mode,
@@ -189,7 +187,7 @@ class ManualMergeModalView(LoginRequiredMixin, View):
         filter_instance = RecordFilter(request=request, data=None, queryset=Record.objects.none())
         return render(
             request,
-            "records/partials/merge_modal_content.html",
+            "records/partials/merge/merge_modal_content.html",
             {
                 "records": page_obj.object_list,
                 "mode": mode,
@@ -218,7 +216,7 @@ class MergeListView(LoginRequiredMixin, FilterView):
 
     def get_template_names(self):
         if self.request.headers.get("HX-Target") == "merge-list-container":
-            return ["records/partials/merge_list_partial.html"]
+            return ["records/partials/merge/merge_list_partial.html"]
         return [self.template_name]
 
 
@@ -237,7 +235,6 @@ class UndoMergeView(LoginRequiredMixin, View):
             plaid_record__user=request.user,
         )
         restored = undo_merge(merge_log)
-        invalidate_dashboard_cache(request.user.id)
         if restored is None:
             if request.headers.get("HX-Request") == "true":
                 response = HttpResponse(status=204)

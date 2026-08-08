@@ -18,6 +18,7 @@ PAID_ONLY_FEATURES = frozenset(
         features.UNLIMITED_SCANS,
         features.BANK_TRANSACTION_SYNC,
         features.QUICK_REIMBURSEMENT_REQUEST,
+        features.AUTO_TXN_CATEGORIZATION,
     }
 )
 

@@ -75,7 +75,7 @@ def run_auto_match(record_pk: int, has_plaid: bool) -> None:
         logger.exception("Auto-match failed for record %s", record_pk)
 
 
-@dramatiq.actor
+@dramatiq.actor(periodic=cron("0 2 * * *"))
 def archive_expired_records() -> None:
     """Soft-delete all active records whose expiry date has passed.
 
@@ -94,7 +94,7 @@ def archive_expired_records() -> None:
         logger.info("Archived %d expired records.", count)
 
 
-@dramatiq.actor
+@dramatiq.actor(periodic=cron("0 3 * * *"))
 def delete_7year_archived_records() -> None:
     """Permanently delete archived records older than seven years.
 

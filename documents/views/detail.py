@@ -14,8 +14,6 @@ from django.views import View
 from django.views.generic import UpdateView
 from django_ratelimit.decorators import ratelimit
 
-from core.services.dashboard import invalidate_dashboard_cache
-
 from ..forms import DocumentUpdateForm
 from ..models import DocumentData
 from ..services import DocumentDeletionService, DocumentDetailService
@@ -61,7 +59,6 @@ class ViewDocument(LoginRequiredMixin, UpdateView):
             DocumentDetailService.associate_record(form.instance, record_id, self.request.user)
 
         form.save()
-        invalidate_dashboard_cache(self.request.user.id)
 
         if self.request.headers.get("HX-Request") == "true":
             if "associated_record" in self.request.POST:
@@ -96,7 +93,6 @@ class DeleteDocument(LoginRequiredMixin, View):
         result = DocumentDeletionService.soft_delete(document)
 
         if not result.success:
-            invalidate_dashboard_cache(request.user.id)
             if request.headers.get("HX-Request") == "true":
                 response = HttpResponse(status=204)
                 response["HX-Trigger"] = json.dumps(
@@ -117,7 +113,6 @@ class DeleteDocument(LoginRequiredMixin, View):
                 else reverse("records:view_all_records")
             )
 
-        invalidate_dashboard_cache(request.user.id)
         if request.headers.get("HX-Request") == "true":
             response = HttpResponse(status=204)
             response["HX-Trigger"] = json.dumps(

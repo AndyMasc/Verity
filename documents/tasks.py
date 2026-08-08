@@ -7,6 +7,7 @@ wrapper that delegates to the corresponding service module.
 from typing import Any
 
 import dramatiq
+from periodiq import cron
 
 from .services.cleanup import (
     delete_orphaned_documents as _cleanup_orphaned,
@@ -16,13 +17,8 @@ from .services.cleanup import (
     reconcile_documents as _cleanup_reconcile,
 )
 from .services.ocr import MAX_OCR_RETRIES
-from .services.ocr import GeminiOCRError as GeminiOCRError
 from .services.ocr import extract as _ocr_extract
 from .storage import BUCKET, get_s3_client
-
-__all__ = [
-    "GeminiOCRError",
-]
 
 
 @dramatiq.actor(max_retries=MAX_OCR_RETRIES, min_backoff=2)
@@ -49,13 +45,13 @@ def delete_document(filepath: str) -> None:
         s3.delete_object(Bucket=BUCKET, Key=normalize_s3_key(filepath))
 
 
-@dramatiq.actor
+@dramatiq.actor(periodic=cron("0 4 * * *"))
 def delete_orphaned_documents() -> None:
     """Remove unlinked documents after a grace period."""
     _cleanup_orphaned()
 
 
-@dramatiq.actor
+@dramatiq.actor(periodic=cron("0 * * * *"))
 def reconcile_documents() -> None:
     """Clean up stale pending uploads and dangling error records."""
     _cleanup_reconcile()

@@ -83,7 +83,7 @@ class RecordListViewTest(TestCase):
             )
         response = self.client.get(self.url)
         self.assertTrue(response.context["is_paginated"])
-        self.assertEqual(len(response.context["records"]), 25)
+        self.assertEqual(len(response.context["records"]), 20)
 
     def test_pagination_second_page(self):
         self.client.force_login(self.user)
@@ -95,7 +95,7 @@ class RecordListViewTest(TestCase):
                 transaction_date=date(2024, 6, 15),
             )
         response = self.client.get(self.url, {"page": 2})
-        self.assertEqual(len(response.context["records"]), 5)
+        self.assertEqual(len(response.context["records"]), 10)
 
     def test_pagination_invalid_page_returns_404(self):
         self.client.force_login(self.user)

@@ -302,7 +302,7 @@ class DocumentListViewTest(TestCase):
             )
         response = self.client.get(self.url)
         self.assertTrue(response.context["is_paginated"])
-        self.assertEqual(len(response.context["documents"]), 25)
+        self.assertEqual(len(response.context["documents"]), 20)
 
     def test_pagination_second_page(self):
         self.client.force_login(self.user)
@@ -314,7 +314,7 @@ class DocumentListViewTest(TestCase):
                 file_hash=f"hash{i:04d}",
             )
         response = self.client.get(self.url, {"page": 2})
-        self.assertEqual(len(response.context["documents"]), 5)
+        self.assertEqual(len(response.context["documents"]), 10)
 
     def test_pagination_invalid_page_returns_404(self):
         self.client.force_login(self.user)

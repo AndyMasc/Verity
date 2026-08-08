@@ -101,12 +101,12 @@ class StoragePackEntitlementTests(TestCase):
             self.customer,
             sub_id="sub_100",
             price_id="price_100",
-            product_meta=metadata.STORAGE_UPGRADE_100,
+            product_meta=metadata.STORAGE_UPGRADE_50,
         )
         self.assertEqual(entitlements.get_storage_limit(self.user), 125)
         self.assertEqual(
             [a.stripe_id for a in metadata.storage_addons_for_user(self.user)],
-            [metadata.STORAGE_UPGRADE_100.stripe_id],
+            [metadata.STORAGE_UPGRADE_50.stripe_id],
         )
         self.assertEqual(
             " + ".join(p.name for p in metadata.active_products_for_user(self.user)),
@@ -118,7 +118,7 @@ class StoragePackEntitlementTests(TestCase):
         self.assertEqual(entitlements.get_storage_limit(self.user), 50)
         self.assertEqual(
             [a.stripe_id for a in metadata.storage_addons_for_user(self.user)],
-            [metadata.STORAGE_UPGRADE_25.stripe_id],
+            [metadata.STORAGE_UPGRADE_10.stripe_id],
         )
         self.assertEqual(
             " + ".join(p.name for p in metadata.active_products_for_user(self.user)),
@@ -260,7 +260,7 @@ class StoragePackConfirmFlowTests(TestCase):
 
     def _make_storage_sub(self):
         storage_product = Product.objects.create(
-            id=metadata.STORAGE_UPGRADE_25.stripe_id,
+            id=metadata.STORAGE_UPGRADE_10.stripe_id,
             livemode=False,
             active=True,
             name="25GB Storage Upgrade",

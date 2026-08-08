@@ -1,64 +1,54 @@
-<div class="divide-y divide-zinc-200/80 dark:divide-zinc-800">
+<div class="divide-y divide-zinc-200/60 dark:divide-zinc-800/60">
     {% for document in documents %}
-        <div class="group relative py-3 sm:py-4 bg-transparent hover:bg-zinc-50/80 dark:hover:bg-zinc-900/90 transition-all duration-200 -mx-6 px-6">
-            <div class="flex items-center justify-between gap-4">
-                <a href="{% url 'documents:view_document' document.pk %}"
-                   class="flex-1 min-w-0 flex items-center gap-3">
-                    <div class="flex items-center shrink-0">
-                        {% if document.did_ocr %}
-                            <span class="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg text-[10px] font-bold bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 border border-zinc-900 dark:border-zinc-100 uppercase tracking-wider shrink-0 text-center shadow-xs">
-                                OCR
-                            </span>
-                        {% else %}
-                            <span class="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg text-[10px] font-bold bg-zinc-100 text-zinc-600 dark:bg-zinc-800/80 dark:text-zinc-400 border border-zinc-200/80 dark:border-zinc-700/50 uppercase tracking-wider shrink-0 text-center">
-                                File
+        <div class="group flex items-center gap-3 px-2 sm:px-3 py-3 sm:py-3.5 hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40 transition-colors duration-150">
+            <a href="{% url 'documents:view_document' document.pk %}"
+               class="flex items-center gap-3 min-w-0 flex-1 pr-3">
+                <span class="shrink-0 inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider shadow-xs {% if document.did_ocr %} bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 border border-zinc-900 dark:border-zinc-100 {% else %} bg-zinc-100 text-zinc-600 dark:bg-zinc-800/80 dark:text-zinc-400 border border-zinc-200/80 dark:border-zinc-700/50 {% endif %}">
+                    {% if document.did_ocr %}OCR{% else %}File{% endif %}
+                </span>
+                <div class="min-w-0 flex-1">
+                    <p class="font-medium text-zinc-950 dark:text-zinc-50 text-sm truncate group-hover:text-black dark:group-hover:text-white transition-colors">
+                        {{ document.title }}
+                    </p>
+                    <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
+                        {% if document.associated_record %}
+                            <span class="inline-flex items-center gap-1 truncate max-w-[140px] sm:max-w-[180px]">
+                                <svg class="w-3 h-3 opacity-60 shrink-0"
+                                     fill="none"
+                                     viewBox="0 0 24 24"
+                                     stroke-width="1.8"
+                                     stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                                </svg>
+                                {{ document.associated_record.title }}
                             </span>
                         {% endif %}
-                    </div>
-                    <div class="min-w-0 flex flex-col sm:flex-row sm:items-center sm:gap-3 flex-1">
-                        <span class="font-medium text-zinc-950 dark:text-zinc-50 text-sm truncate group-hover:text-black dark:group-hover:text-white transition-colors">
-                            {{ document.title }}
+                        {% if document.associated_record %}<span class="text-zinc-400 dark:text-zinc-600">·</span>{% endif %}
+                        <span class="tabular-nums">{{ document.date_added|date:"M d, Y" }}</span>
+                        <span class="text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 border border-zinc-200/60 dark:border-zinc-700/60">
+                            {{ document.filepath|slice:"-4:"|cut:"." }}
                         </span>
-                        <div class="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-zinc-600 dark:text-zinc-400 text-xs">
-                            {% if document.associated_record %}
-                                <span class="inline-flex items-center gap-1 truncate max-w-[140px] sm:max-w-[180px]">
-                                    <svg class="w-3 h-3 opacity-70 shrink-0"
-                                         fill="none"
-                                         viewBox="0 0 24 24"
-                                         stroke-width="1.8"
-                                         stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-                                    </svg>
-                                    {{ document.associated_record.title }}
-                                </span>
-                            {% endif %}
-                            {% if document.associated_record %}<span class="text-zinc-400 dark:text-zinc-600 text-[10px]">·</span>{% endif %}
-                            <span class="tabular-nums text-zinc-500 dark:text-zinc-400 font-medium">{{ document.date_added|date:"M d, Y" }}</span>
-                            <span class="text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200/60 dark:border-zinc-700/60">
-                                {{ document.filepath|slice:"-4:"|cut:"." }}
-                            </span>
-                        </div>
                     </div>
-                </a>
-                <div class="flex items-center gap-1.5 shrink-0 relative z-20 sm:opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-150">
-                    <form action="{% url 'documents:delete_document' document.pk %}"
-                          method="POST"
-                          onsubmit="return confirm('Delete this document permanently?');"
-                          class="inline">
-                        {% csrf_token %}
-                        <button type="submit"
-                                class="p-1.5 rounded-xl text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-all cursor-pointer"
-                                title="Delete document">
-                            <svg class="w-4 h-4"
-                                 fill="none"
-                                 viewBox="0 0 24 24"
-                                 stroke-width="2"
-                                 stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                            </svg>
-                        </button>
-                    </form>
                 </div>
+            </a>
+            <div class="shrink-0 relative z-20 sm:opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-150">
+                <form action="{% url 'documents:delete_document' document.pk %}"
+                      method="POST"
+                      onsubmit="return confirm('Delete this document permanently?');"
+                      class="inline">
+                    {% csrf_token %}
+                    <button type="submit"
+                            class="p-1.5 rounded-lg text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-all cursor-pointer"
+                            title="Delete document">
+                        <svg class="w-4 h-4"
+                             fill="none"
+                             viewBox="0 0 24 24"
+                             stroke-width="2"
+                             stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                        </svg>
+                    </button>
+                </form>
             </div>
         </div>
     {% empty %}

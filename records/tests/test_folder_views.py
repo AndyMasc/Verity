@@ -49,7 +49,7 @@ class CreateFolderViewTest(TestCase):
         self.client.force_login(self.user)
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "records/partials/create_folder_modal.html")
+        self.assertTemplateUsed(response, "records/partials/folders/create_folder_modal.html")
 
     def test_post_valid(self):
         self.client.force_login(self.user)

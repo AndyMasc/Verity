@@ -40,13 +40,7 @@ def index(request: HttpRequest) -> HttpResponse:
     if request.user.is_authenticated:
         return redirect("core:dashboard")
 
-    context = {
-        "stripe_public_key": settings.STRIPE_PRICING_TABLE_KEY,
-        "stripe_pricing_table_id": settings.STRIPE_PRICING_TABLE_ID,
-    }
-    context.update(pricing_context(request.user))
-
-    return render(request, "core/landing_page.html", context)
+    return render(request, "core/landing_page.html", pricing_context(request.user))
 
 
 def privacy_policy(request: HttpRequest) -> HttpResponse:

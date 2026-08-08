@@ -46,7 +46,7 @@ class FolderListView(LoginRequiredMixin, ListView):
 
     def get_template_names(self):
         if self.request.headers.get("HX-Request"):
-            return ["records/partials/folder_list_partial.html"]
+            return ["records/partials/folders/folder_list_partial.html"]
         return [self.template_name]
 
     def get_queryset(self):
@@ -67,7 +67,7 @@ class CreateFolder(LoginRequiredMixin, CreateView):
 
     model = Folder
     form_class = FolderForm
-    template_name = "records/partials/create_folder_modal.html"
+    template_name = "records/partials/folders/create_folder_modal.html"
 
     def form_valid(self, form):
         form.instance.user = self.request.user
@@ -80,7 +80,7 @@ class CreateFolder(LoginRequiredMixin, CreateView):
             ctx = _folder_list_context(self.request.user)
             response = render(
                 self.request,
-                "records/partials/folder_list_partial.html",
+                "records/partials/folders/folder_list_partial.html",
                 ctx,
             )
             response["HX-Trigger"] = json.dumps({"closeModal": True})
@@ -99,7 +99,7 @@ class FolderUpdateView(LoginRequiredMixin, UpdateView):
 
     model = Folder
     form_class = FolderForm
-    template_name = "records/partials/edit_folder_inline.html"
+    template_name = "records/partials/folders/edit_folder_inline.html"
     pk_url_kwarg = "folder_id"
 
     def get_queryset(self):
@@ -110,7 +110,7 @@ class FolderUpdateView(LoginRequiredMixin, UpdateView):
         if self.request.headers.get("HX-Request"):
             return render(
                 self.request,
-                "records/partials/folder_item_partial.html",
+                "records/partials/folders/folder_item_partial.html",
                 {"folder": self.object},
             )
         return super().form_valid(form)
@@ -145,7 +145,7 @@ class FolderDeleteView(LoginRequiredMixin, DeleteView):
             ctx = _folder_list_context(request.user)
             response = render(
                 request,
-                "records/partials/folder_list_partial.html",
+                "records/partials/folders/folder_list_partial.html",
                 ctx,
             )
             response["HX-Trigger"] = json.dumps({"recordChanged": {}})
