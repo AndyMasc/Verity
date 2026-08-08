@@ -1,0 +1,80 @@
+services:
+  # 1. THE DJANGO WEB APPLICATION
+  - type: web
+    name: papertrail-web
+    env: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python manage.py migrate --noinput && gunicorn papertrail.wsgi --log-file -"
+    envVars:
+      - key: DEBUG
+        value: "0"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: papertrail-db
+          property: connectionString
+      - key: REDIS_URL
+        fromRedis:
+          name: papertrail-redis
+          property: connectionString
+      - key: RABBIT_MQ_URL
+        value: "amqp://guest:guest@papertrail-mq:5672/"
+
+  # 2. THE DRAMATIQ WORKER
+  - type: worker
+    name: papertrail-dramatiq
+    env: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python manage.py rundramatiq"
+    envVars:
+      - fromService:
+          type: web
+          name: papertrail-web
+          envVarKey: DATABASE_URL
+      - fromService:
+          type: web
+          name: papertrail-web
+          envVarKey: REDIS_URL
+      - fromService:
+          type: web
+          name: papertrail-web
+          envVarKey: RABBIT_MQ_URL
+
+  # 3. THE PERIODIQ SCHEDULER
+  - type: worker
+    name: papertrail-periodiq
+    env: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python manage.py runperiodiq"
+    envVars:
+      - fromService:
+          type: web
+          name: papertrail-web
+          envVarKey: DATABASE_URL
+      - fromService:
+          type: web
+          name: papertrail-web
+          envVarKey: REDIS_URL
+      - fromService:
+          type: web
+          name: papertrail-web
+          envVarKey: RABBIT_MQ_URL
+
+  # 4. RABBITMQ AS A PRIVATE BACKGROUND SERVICE
+  - type: pservice
+    name: papertrail-mq
+    env: docker
+    dockerfile: Dockerfile.rabbitmq
+    repo: https://github.com/AndyMasc/Papertrail
+    ports:
+      - port: 5672
+        protocol: TCP
+
+# 5. THE NATIVE MANAGED POSTGRES DATABASE
+databases:
+  - name: papertrail-db
+    plan: free
+
+# 6. THE NATIVE MANAGED REDIS INSTANCE
+redis:
+  - name: papertrail-redis
+    plan: free
