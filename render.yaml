@@ -15,7 +15,7 @@ services:
           name: papertrail-db
           property: connectionString
       - key: REDIS_URL
-        fromRedis:
+        fromKeyValue:
           name: papertrail-redis
           property: connectionString
 
@@ -25,6 +25,6 @@ databases:
     plan: free
 
 # 3. NATIVE MANAGED REDIS INSTANCE
-redis:
+keyvalues:
   - name: papertrail-redis
     plan: free
