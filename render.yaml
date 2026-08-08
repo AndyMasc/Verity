@@ -1,5 +1,5 @@
 services:
-  # 1. THE DJANGO WEB APPLICATION (Handles Web views + QStash Webhooks)
+  # 1. THE DJANGO WEB APPLICATION
   - type: web
     name: papertrail-web
     env: python
@@ -19,12 +19,12 @@ services:
           name: papertrail-redis
           property: connectionString
 
-# 2. NATIVE MANAGED POSTGRES DATABASE
+  # 2. THE MANAGED REDIS INSTANCE (Placed correctly inside the services list)
+  - type: keyvalue
+    name: papertrail-redis
+    plan: free 
+
+# 3. NATIVE MANAGED POSTGRES DATABASE
 databases:
   - name: papertrail-db
-    plan: free
-
-# 3. NATIVE MANAGED REDIS INSTANCE
-keyvalues:
-  - name: papertrail-redis
     plan: free
