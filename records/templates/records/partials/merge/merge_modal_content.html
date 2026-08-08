@@ -24,7 +24,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.604 10.604z" />
             </svg>
         </div>
-        <input class="w-full bg-zinc-100 dark:bg-zinc-800/40 border border-zinc-200 dark:border-zinc-700 py-2.5 pl-9 pr-3.5 text-xs rounded-xl dark:text-zinc-100 text-zinc-900 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-600 transition-all duration-200"
+        <input class="w-full bg-zinc-100 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700 py-2.5 pl-9 pr-3.5 text-xs rounded-xl dark:text-zinc-100 text-zinc-900 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-600 transition-all duration-200"
                placeholder="Search {{ label|lower }}..."
                id="modal-{{ mode }}-search"
                type="search"
@@ -43,15 +43,15 @@
           class="flex items-center gap-2 overflow-x-auto scrollbar-none">
         {% for field in filter.form %}
             {% if field.name == 'record_type' or field.name == 'folder' or field.name == 'this_month' %}
-                <div class="bg-zinc-100 dark:bg-zinc-800/40 border border-zinc-200 dark:border-zinc-700 rounded-xl px-2.5 py-1.5 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-600 transition-all duration-200 flex items-center shrink-0">
-                    {% render_field field class="appearance-none outline-none bg-transparent cursor-pointer text-zinc-700 dark:text-zinc-300 pr-3 text-xs font-medium border-none p-0 focus:ring-0" %}
+                <div class="bg-zinc-100 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700 rounded-xl px-2.5 py-1.5 text-xs font-medium text-zinc-600 dark:text-zinc-300 hover:border-zinc-300 dark:hover:border-zinc-600 transition-all duration-200 flex items-center shrink-0">
+                    {% render_field field class="appearance-none outline-none bg-transparent cursor-pointer text-zinc-700 dark:text-zinc-200 pr-3 text-xs font-medium border-none p-0 focus:ring-0" %}
                 </div>
             {% endif %}
         {% endfor %}
         <button type="button"
                 hx-get="{% url 'records:manual_merge_search' mode %}"
                 hx-target="#modal-{{ mode }}-results"
-                class="text-xs font-medium text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors cursor-pointer shrink-0">
+                class="text-xs font-medium text-zinc-500 hover:text-zinc-700 dark:text-zinc-300 dark:hover:text-zinc-100 transition-colors cursor-pointer shrink-0">
             Clear
         </button>
     </form>

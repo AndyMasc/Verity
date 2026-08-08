@@ -1,11 +1,11 @@
 {% load form_tags %}
 <button type="button"
         @click=" {% if mode == 'plaid' %} selectedPlaid = '{{ record.pk }}'; plaidTitle = '{{ record.title|escapejs }}'; {% else %} selectedDoc = '{{ record.pk }}'; docTitle = '{{ record.title|escapejs }}'; {% endif %} showModal = false; "
-        class="w-full text-left cursor-pointer rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900/20 hover:bg-zinc-100 dark:hover:bg-zinc-800/50 hover:border-zinc-300 dark:hover:border-zinc-600 hover:shadow-sm transition-all duration-200 p-4 mb-2 last:mb-0">
+        class="w-full text-left cursor-pointer rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/40 hover:bg-zinc-100 dark:hover:bg-zinc-800/70 hover:border-zinc-300 dark:hover:border-zinc-600 hover:shadow-sm transition-all duration-200 p-4 mb-2 last:mb-0">
     <div class="flex items-center justify-between gap-3">
         <div class="min-w-0 flex-1">
-            <p class="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate">{{ record.title }}</p>
-            <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+            <p class="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">{{ record.title }}</p>
+            <p class="text-xs text-zinc-500 dark:text-zinc-300 mt-0.5">
                 {% if record.merchant %}{{ record.merchant }}{% endif %}
                 {% if record.merchant and record.balance %}&middot;{% endif %}
                 {% if record.balance %}{{ record.balance|currency_format:record.currency }}{% endif %}
@@ -15,6 +15,6 @@
         <span class="shrink-0 inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-bold {{ record.badge_classes }} border uppercase tracking-wider">{{ record.get_record_type_display }}</span>
     </div>
     {% if record.notes %}
-        <p class="text-xs text-zinc-400 dark:text-zinc-500 mt-2 truncate text-left">{{ record.notes }}</p>
+        <p class="text-xs text-zinc-400 dark:text-zinc-400 mt-2 truncate text-left">{{ record.notes }}</p>
     {% endif %}
 </button>

@@ -71,7 +71,7 @@
             </form>
         </section>
         <main id="query-results-container"
-              class="relative min-h-0 w-full min-w-0 mt-6 dark:bg-zinc-900/30 bg-white p-2 sm:p-2.5 rounded-2xl shadow-sm dark:shadow-none ring-1 ring-inset ring-black/[0.04] dark:ring-white/[0.04]"
+              class="relative min-h-0 w-full min-w-0 mt-6 p-2 sm:p-2.5 rounded-2xl bg-white dark:bg-zinc-900/30 border border-zinc-200/60 dark:border-white/[0.05] shadow-2xs"
               hx-trigger="recordChanged from:body"
               hx-get="{% url 'records:view_all_records' %}"
               hx-target="#query-results-container"

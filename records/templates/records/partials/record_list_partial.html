@@ -1,7 +1,7 @@
 <div x-data="{ selectedRecord: null }"
      @click="if ($event.target.closest('[data-record-id]')) selectedRecord = $event.target.closest('[data-record-id]').dataset.recordId"
      x-init="$nextTick(() => updateVisibleIds([{% for record in records %}'{{ record.pk }}'{% if not forloop.last %},{% endif %}{% endfor %}]))"
-     class="divide-y divide-zinc-200/60 dark:divide-zinc-800/60">
+     class="divide-y divide-zinc-200/60 dark:divide-zinc-700/50">
     {% for record in records %}
         <div data-record-id="{{ record.pk }}"
              :class="selectedRecord === '{{ record.pk }}' ? 'ring-2 ring-inset ring-zinc-300 dark:ring-zinc-600' : ''"
