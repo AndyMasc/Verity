@@ -1,7 +1,7 @@
 """Custom backends for email delivery and optimized user loading.
 
-``DramatiqEmailBackend`` sends messages asynchronously via Dramatiq.
-``SelectRelatedModelBackend`` prefetches ``user.settings`` on every
+"DramatiqEmailBackend" sends messages asynchronously via Dramatiq.
+"SelectRelatedModelBackend" prefetches "user.settings" on every
 auth lookup to avoid per-view lazy FK queries.
 """
 
@@ -17,7 +17,7 @@ class DramatiqEmailBackend(BaseEmailBackend):
     """Email backend that enqueues each message as a Dramatiq background task.
 
     Extracts HTML alternatives from the message and forwards everything to
-    ``send_background_email`` for delivery through the Resend provider.
+    "send_background_email" for delivery through the Resend provider.
     """
 
     def send_messages(self, email_messages):
@@ -45,10 +45,10 @@ class DramatiqEmailBackend(BaseEmailBackend):
 
 
 class SelectRelatedModelBackend(ModelBackend):
-    """Auth backend that attaches ``UserSettings`` via ``select_related``.
+    """Auth backend that attaches "UserSettings" via "select_related".
 
     This eliminates the lazy FK query when templates or views access
-    ``request.user.settings`` — the join happens once during the initial
+    "request.user.settings" — the join happens once during the initial
     user load instead of on every access.
     """
 

@@ -34,8 +34,8 @@ class DocumentUploadService:
     """Validates and confirms R2 uploads for documents.
 
     Provides two entry points:
-    - ``validate()``: runs all checks and returns metadata on success.
-    - ``confirm()``: runs all checks and transitions document to UPLOADED on success.
+    - validate(): runs all checks and returns metadata on success.
+    - confirm(): runs all checks and transitions document to UPLOADED on success.
     """
 
     def __init__(self, document: DocumentData, key: str):

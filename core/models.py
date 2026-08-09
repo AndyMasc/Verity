@@ -16,7 +16,7 @@ class UserSettings(models.Model):
     """Per-user preferences controlling automation and notification behavior.
 
     Automatically created for every new user via the post_save signal in
-    ``core.signals``. A single row exists per user through the OneToOneField.
+    "core.signals". A single row exists per user through the OneToOneField.
     """
 
     user = models.OneToOneField(

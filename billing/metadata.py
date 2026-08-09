@@ -15,7 +15,7 @@ class ProductMetadata:
     """
     Metadata for a Stripe product.
 
-    ``category`` groups products into pricing tables:
+    "category" groups products into pricing tables:
       * "base_plan"    -> the main plan that determines plan features (Free/Pro/...)
       * "storage_plan" -> add-on storage products that only raise the storage limit
     """
@@ -104,17 +104,17 @@ def category_for_product(product_id: str | None) -> str | None:
 def _active_subscriptions(user):
     """Return the user's active subscriptions, from the customer plus the direct FK.
 
-    djstripe stores the subscription payload in ``stripe_data`` and exposes
-    ``status`` as a derived property, so status is filtered in Python.
+    djstripe stores the subscription payload in "stripe_data" and exposes
+    "status" as a derived property, so status is filtered in Python.
 
-    Subscriptions are collected from both the user's ``customer`` FK and any
-    Stripe Customer whose ``subscriber`` points at this user. The two can
-    diverge when a legacy customer (created without ``subscriber``) predates
-    ``Customer.get_or_create``: a later checkout then creates a fresh customer
+    Subscriptions are collected from both the user's "customer" FK and any
+    Stripe Customer whose "subscriber" points at this user. The two can
+    diverge when a legacy customer (created without "subscriber") predates
+    "Customer.get_or_create": a later checkout then creates a fresh customer
     and its subscriptions would otherwise be invisible on the dashboard.
 
     The result is memoized on the user instance so a single request (which
-    shares one ``request.user`` object across context processors and views)
+    shares one "request.user" object across context processors and views)
     runs the queries at most once.
     """
     cached = getattr(user, "_pt_active_subscriptions", _NOT_CACHED)
@@ -152,7 +152,7 @@ def _metas_for_subscription(subscription):
     """Yield ProductMetadata for each item on a single subscription.
 
     Items are prefetched together with their price and product by
-    ``_active_subscriptions`` (via ``Prefetch``), so this is served from the
+    "_active_subscriptions" (via "Prefetch"), so this is served from the
     query cache rather than issuing a query per subscription.
     """
     for item in subscription.items.all():
@@ -168,7 +168,7 @@ def _products_by_category(user) -> dict[str, ProductMetadata]:
     Exactly one plan per category is allowed. When several active
     subscriptions cover the same category (an old plan whose Stripe
     cancellation hasn't landed yet, a webhook-synced duplicate, ...), the
-    most recently created subscription wins so a new purchase *replaces*
+    most recently created subscription wins so a new purchase "replaces"
     rather than stacks with the previous one.
     """
     entries = []

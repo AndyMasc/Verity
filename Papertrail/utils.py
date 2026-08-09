@@ -20,11 +20,11 @@ _UNKNOWN_NAMESPACE = "unknown"
 
 
 def bump_paginator_count_version(namespace: str, user_id: int) -> None:
-    """Bump the per-user paginator count version for *namespace*.
+    """Bump the per-user paginator count version for "namespace".
 
     Called whenever rows backing a cached paginated list change so that
     stale cached COUNT results are not served until the TTL expires. The
-    version is stored per ``(namespace, user_id)`` so only the affected
+    version is stored per "(namespace, user_id)" so only the affected
     user's cached counts are invalidated.
     """
     key = f"pg_version:{namespace}:{user_id}"
@@ -38,12 +38,12 @@ def bump_paginator_count_version(namespace: str, user_id: int) -> None:
 class CachedPaginator(Paginator):
     """A Paginator that caches expensive queryset COUNT queries.
 
-    Django's default paginator runs a ``SELECT COUNT(*)`` on every
+    Django's default paginator runs a "SELECT COUNT(*)" on every
     page load, which can be slow for large tables. This subclass
     caches the count result keyed by the query's WHERE clause and
     model table, avoiding redundant queries within the TTL window.
 
-    The cache key is versioned per ``(namespace, user_id)``. Background
+    The cache key is versioned per "(namespace, user_id)". Background
     tasks that create or mutate rows call :func:`bump_paginator_count_version`
     so newly inserted rows are reflected immediately instead of being
     hidden by a stale cached count.

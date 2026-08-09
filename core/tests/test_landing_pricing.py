@@ -1,7 +1,7 @@
 """Regression tests for the pricing section on the public landing page.
 
 The landing page must render the pricing cards (they were silently blank when
-the view stopped passing ``pricing_context``) and must not send anonymous
+the view stopped passing "pricing_context") and must not send anonymous
 visitors into the login-required checkout flow.
 """
 

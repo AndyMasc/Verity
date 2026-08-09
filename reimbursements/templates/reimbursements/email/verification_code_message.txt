@@ -1,0 +1,8 @@
+Your Papertrail verification code is: {{ code }}
+
+Enter this code on the payment page to view and pay the reimbursement request sent to you. It expires in {{ minutes }} minutes.
+
+If you weren't expecting this email, you can safely ignore it.
+
+---
+Sent via Papertrail

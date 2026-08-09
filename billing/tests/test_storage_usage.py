@@ -2,7 +2,7 @@
 
 The counter must stay in sync with the active document set across every
 lifecycle transition: create, confirm-size, permanent delete, hard delete,
-and bulk ``QuerySet.delete()``.
+and bulk "QuerySet.delete()".
 """
 
 import pytest

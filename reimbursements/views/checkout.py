@@ -15,17 +15,18 @@ from .. import services
 from ..models import ReimbursementPackage
 
 
-@method_decorator(ratelimit(key="user", rate="30/m", method="GET"), name="dispatch")
-class PaymentSuccessView(LoginRequiredMixin, TemplateView):
+@method_decorator(ratelimit(key="ip", rate="30/m", method="GET"), name="dispatch")
+class PaymentSuccessView(TemplateView):
     template_name = "reimbursements/payment_success.html"
 
     def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
         context = super().get_context_data(**kwargs)
-        package_uuid = self.request.GET.get("package")
-        if package_uuid:
-            package = services.get_payment_success_package(self.request.user, package_uuid)
-            if package:
-                context["package"] = package
+        if self.request.user.is_authenticated:
+            package_uuid = self.request.GET.get("package")
+            if package_uuid:
+                package = services.get_payment_success_package(self.request.user, package_uuid)
+                if package:
+                    context["package"] = package
         return context
 
 

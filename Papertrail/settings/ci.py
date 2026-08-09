@@ -25,7 +25,7 @@ PASSWORD_HASHERS = [
 RATELIMIT_ENABLE = False
 
 # Use plain static file storage (no manifest hashing) so template-rendering
-# tests don't require a prior ``collectstatic`` run. ManifestStaticFilesStorage
+# tests don't require a prior "collectstatic" run. ManifestStaticFilesStorage
 # (base's non-DEBUG default) raises on uncollected files like css/dist/styles.css.
 STORAGES["staticfiles"]["BACKEND"] = (  # noqa: F405
     "django.contrib.staticfiles.storage.StaticFilesStorage"

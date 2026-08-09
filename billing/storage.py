@@ -1,16 +1,16 @@
 """Storage accounting: O(1) per-user byte usage via a denormalized counter.
 
-Usage checks used to run a ``SUM(file_size)`` over every document on each
+Usage checks used to run a "SUM(file_size)" over every document on each
 request, which grows linearly with the user's document count. Instead the
-documents layer maintains ``CustomUser.storage_used_bytes`` transactionally at
+documents layer maintains "CustomUser.storage_used_bytes" transactionally at
 every mutation point (upload confirm, permanent delete, bulk cleanup), and the
 checks here read that single row.
 
-The counter is kept in sync by signals on ``DocumentData`` (``pre_save`` /
-``post_save`` / ``post_delete``) so every lifecycle transition — including bulk
-``QuerySet.delete()`` and admin deletions — stays accurate. As a safety net,
-``reconcile_storage_usage`` recomputes counters from the source of truth (the
-``DocumentData`` table) and is exposed via a management command for drift
+The counter is kept in sync by signals on "DocumentData" ("pre_save" /
+"post_save" / "post_delete") so every lifecycle transition — including bulk
+"QuerySet.delete()" and admin deletions — stays accurate. As a safety net,
+"reconcile_storage_usage" recomputes counters from the source of truth (the
+"DocumentData" table) and is exposed via a management command for drift
 correction.
 """
 
@@ -39,7 +39,7 @@ def get_storage_usage_bytes(user) -> int:
 def adjust_storage_usage(user_id: int, delta: int) -> None:
     """Apply a signed byte delta to a user's storage counter (never negative).
 
-    Uses a single ``UPDATE ... F()`` so concurrent uploads/cleanups cannot
+    Uses a single "UPDATE ... F()" so concurrent uploads/cleanups cannot
     lose updates. Callers must invoke this inside the same transaction that
     mutates the documents so a rollback keeps the counter consistent.
     """

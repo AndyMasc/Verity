@@ -23,7 +23,7 @@ class BulkLimitExceededError(Exception):
 
 
 def archive_record(user: User, record: Record) -> None:
-    """Soft-delete *record* by marking it inactive and logging the action."""
+    """Soft-delete "record" by marking it inactive and logging the action."""
     with transaction.atomic():
         record.is_active = False
         record.save(update_fields=["is_active"])
@@ -46,9 +46,9 @@ def soft_delete_record(user: User, record: Record) -> None:
 
 
 def hard_delete_record(user: User, record: Record) -> None:
-    """Permanently delete *record* along with its associated documents.
+    """Permanently delete "record" along with its associated documents.
 
-    Associated ``DocumentData`` rows (and their R2 objects via signals) are
+    Associated "DocumentData" rows (and their R2 objects via signals) are
     hard-deleted before the record itself, all in one transaction. The caller
     is responsible for age checks and rate limiting.
     """
@@ -67,11 +67,11 @@ def hard_delete_record(user: User, record: Record) -> None:
 
 
 def kickoff_ocr_scan(user: User, document) -> str | None:
-    """Kick off OCR extraction for *document*, or return a user-facing warning.
+    """Kick off OCR extraction for "document", or return a user-facing warning.
 
     Guards on the monthly scan limit: when the limit is reached the document is
     marked ERROR and a message is returned for the view to surface. Returns
-    ``None`` when extraction was kicked off (or is already in flight).
+    "None" when extraction was kicked off (or is already in flight).
     """
     from django.core.cache import cache
 
@@ -103,7 +103,7 @@ def kickoff_ocr_scan(user: User, document) -> str | None:
 
 
 def _resolve_suggested_folder_id(document, initial: dict) -> int | None:
-    """Convert an OCR ``suggested_folder`` name into a Folder PK owned by the user."""
+    """Convert an OCR "suggested_folder" name into a Folder PK owned by the user."""
     from .models import Folder
 
     suggested = initial.pop("suggested_folder", None)
@@ -114,9 +114,9 @@ def _resolve_suggested_folder_id(document, initial: dict) -> int | None:
 
 
 def _coerce_date(value) -> _date | None:
-    """Parse an OCR-provided date into a ``datetime.date``, or None if unusable.
+    """Parse an OCR-provided date into a "datetime.date", or None if unusable.
 
-    Gemini returns dates as strings that may be bare ``YYYY-MM-DD`` or full ISO
+    Gemini returns dates as strings that may be bare "YYYY-MM-DD" or full ISO
     datetimes. Coercing here (rather than letting the model raise) keeps the
     auto-created record from failing on a malformed value.
     """
@@ -136,7 +136,7 @@ def _coerce_date(value) -> _date | None:
 def create_record_from_ocr(document_id: int) -> Record | None:
     """Create a Record from a document's persisted OCR output.
 
-    Idempotent: returns the existing ``associated_record`` when the document is
+    Idempotent: returns the existing "associated_record" when the document is
     already linked, so it is safe to call from both the OCR task and the status
     polling view. When a Plaid match is found the document record is merged into
     the bank transaction and the merged record is returned.
@@ -206,21 +206,21 @@ def bulk_toggle_archive(
     *,
     archive: bool,
 ) -> int:
-    """Bulk archive or unarchive records for *user*.
+    """Bulk archive or unarchive records for "user".
 
-    Uses ``QuerySet.update()`` and ``bulk_create()`` to avoid N+1 queries.
+    Uses "QuerySet.update()" and "bulk_create()" to avoid N+1 queries.
     Wraps everything in a single transaction so partial failures roll back.
 
     Args:
         record_ids: List of record IDs to toggle.
         user: The owning user (scoped for safety).
-        archive: ``True`` to archive, ``False`` to unarchive.
+        archive: "True" to archive, "False" to unarchive.
 
     Returns:
         Number of records affected.
 
     Raises:
-        BulkLimitExceededError: If *record_ids* contains more than ``BULK_LIMIT`` IDs.
+        BulkLimitExceededError: If "record_ids" contains more than "BULK_LIMIT" IDs.
     """
     if len(record_ids) > BULK_LIMIT:
         raise BulkLimitExceededError(

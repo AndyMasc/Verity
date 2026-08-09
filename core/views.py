@@ -1,6 +1,6 @@
 """Views for the core application: landing page, dashboard, profile, and health check.
 
-The dashboard view delegates aggregation to ``core.services.dashboard`` and
+The dashboard view delegates aggregation to "core.services.dashboard" and
 caches the result to reduce database load on repeated visits.
 """
 
@@ -101,7 +101,7 @@ def safe_webpush_save_info(request: HttpRequest) -> HttpResponse:
 
     Removes any existing SubscriptionInfo with the same endpoint to prevent
     stale or duplicate entries, then forwards the request to the upstream
-    ``save_info`` handler.
+    "save_info" handler.
     """
     try:
         post_data = json.loads(request.body.decode("utf-8"))
@@ -122,7 +122,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
     """Main dashboard displaying record summaries, expenses, and alerts.
 
     Aggregates data asynchronously and caches the result per user for
-    ``DASHBOARD_CACHE_TTL`` seconds to keep page loads fast.
+    "DASHBOARD_CACHE_TTL" seconds to keep page loads fast.
     """
 
     template_name = "core/dashboard.html"
@@ -194,10 +194,10 @@ def expense_chart_data(request: HttpRequest) -> JsonResponse:
     """Return monthly expense aggregates for the expense chart.
 
     Query params:
-        period - ``3m``, ``6m``, ``1y``, or ``all`` (default ``3m``).
+        period - "3m", "6m", "1y", or "all" (default "3m").
 
     Response:
-        ``{"months": [{"label": "Jan 24", "total": 1234.56}, ...], "currency": "$"}``
+        {"months": [{"label": "Jan 24", "total": 1234.56}, ...], "currency": "$"}
     """
     from .services.expenses import get_monthly_expense_series
 

@@ -15,7 +15,7 @@ from django.views import View
 from django.views.generic import UpdateView
 from django_ratelimit.decorators import ratelimit
 
-from records.models import Record
+from records.models import RecordShare
 
 from ..forms import DocumentUpdateForm
 from ..models import DocumentData
@@ -44,9 +44,11 @@ class ViewDocument(LoginRequiredMixin, UpdateView):
         return [self.template_name]
 
     def get_queryset(self):
+        # Documents attached to records that are shared with include_documents
+        # disabled (e.g. reimbursement grants) are hidden from the recipient.
         return DocumentData.objects.filter(
             Q(user=self.request.user)
-            | Q(associated_record__in=Record.objects.visible_to(self.request.user))
+            | Q(associated_record__in=RecordShare.document_visible_records(self.request.user))
         ).select_related("associated_record")
 
     def get_context_data(self, **kwargs: Any) -> dict[str, Any]:

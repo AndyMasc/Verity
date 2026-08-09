@@ -15,8 +15,8 @@ def process_stripe_event_task(trigger_id: int) -> None:
     """Applies a Stripe webhook event to the reimbursements flow, off the
     request path.
 
-    Enqueued from the djstripe ``webhook_post_process`` signal. Transient
-    failures raise out of ``process_stripe_event`` so Dramatiq retries; the
+    Enqueued from the djstripe "webhook_post_process" signal. Transient
+    failures raise out of "process_stripe_event" so Dramatiq retries; the
     surrounding transaction guarantees the event-id dedupe marker rolls back
     with any partial work.
     """

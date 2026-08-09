@@ -42,7 +42,7 @@ User = get_user_model()
 def run_auto_match(record_pk: int, has_plaid: bool) -> None:
     """Attempt to automatically match a newly saved record with its counterpart.
 
-    When *has_plaid* is True the record is a Plaid transaction and is matched
+    When "has_plaid" is True the record is a Plaid transaction and is matched
     against document records; otherwise it is a document record matched against
     Plaid transactions. Failures are logged but never propagated.
     """
@@ -80,7 +80,7 @@ def archive_expired_records() -> None:
     """Soft-delete all active records whose expiry date has passed.
 
     Only archives records belonging to users who opted into auto-archiving.
-    Records added after expiry are excluded (``expiry_date >= date_added``).
+    Records added after expiry are excluded ("expiry_date >= date_added").
     """
     today = timezone.now().date()
     active_expired_records = Record.objects.filter(
@@ -98,7 +98,7 @@ def archive_expired_records() -> None:
 def delete_7year_archived_records() -> None:
     """Permanently delete archived records older than seven years.
 
-    Respects the user's ``auto_delete_archived_records`` setting. Merged
+    Respects the user's "auto_delete_archived_records" setting. Merged
     document records (still referenced by an active MergeLog) are excluded.
     Associated S3 document objects are also deleted asynchronously.
     """
@@ -142,10 +142,10 @@ def delete_7year_archived_records() -> None:
 def send_expiry_notifications() -> None:
     """Send expiry notifications for records approaching their expiry date.
 
-    Respects each user's ``expiring_notifications_advance_time`` preference
+    Respects each user's "expiring_notifications_advance_time" preference
     (1, 3, 7, or 30 days). Creates DB notifications and dispatches email
     and web-push notifications per user. Records already notified are
-    skipped via the ``expiry_notification_sent`` flag.
+    skipped via the "expiry_notification_sent" flag.
     """
     today = timezone.now().date()
 

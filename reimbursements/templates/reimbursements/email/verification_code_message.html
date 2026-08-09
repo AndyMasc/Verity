@@ -1,0 +1,19 @@
+{% extends "account/email/base_message.html" %}
+{% block content %}
+    <h2 style="margin: 0 0 24px 0;
+               font-size: 20px;
+               font-weight: 700;
+               letter-spacing: -0.025em;
+               color: #18181b">Verify your email</h2>
+    <p style="margin: 0 0 16px 0;">Your one-time verification code is:</p>
+    <p style="margin: 0 0 16px 0; font-size: 32px; font-weight: 700; letter-spacing: 0.4em; color: #18181b; text-align: center;">
+        {{ code }}
+    </p>
+    <p style="margin: 0 0 16px 0; font-size: 13px; color: #71717a;">
+        Enter this code on the payment page to view and pay the reimbursement request sent to you.
+        It expires in {{ minutes }} minutes.
+    </p>
+    <p style="margin: 0; font-size: 12px; color: #71717a;">
+        If you weren't expecting this email, you can safely ignore it.
+    </p>
+{% endblock content %}

@@ -4,10 +4,14 @@ All share grants/revocations funnel through this module. Business rules:
 
 * Only the record owner may share or revoke (no share-chain escalation).
 * Shares are idempotent at the DB layer (unique constraint) and here.
-* A share grants the recipient the full view/edit experience; edits are
-  attributed via simple_history's ``history_user`` (prod: set by
-  HistoryRequestMiddleware).
-* Every grant/revoke is appended to ``AuditLog`` (record, actor).
+* Grants are purpose- and permission-scoped: "permission=edit" lets the
+  recipient view and edit (edits are attributed via simple_history's
+  "history_user", set by HistoryRequestMiddleware in prod); "view" is
+  read-only.
+* "include_documents" controls whether attached documents follow the
+  grant; "expires_at" ends access at a time; revoking sets "revoked_at"
+  instead of deleting the row so the grant survives in the audit trail.
+* Every grant/revoke is appended to "AuditLog" (record, actor).
 """
 
 from __future__ import annotations
@@ -16,6 +20,7 @@ import logging
 
 from django.contrib.auth import get_user_model
 from django.db import transaction
+from django.utils import timezone
 
 from Papertrail.views import create_audit_log
 
@@ -42,19 +47,109 @@ def can_share(user, record: Record) -> bool:
     return record.user_id == user.pk
 
 
-def share_record_with_users(
-    *, record: Record, owner, emails: list[str]
-) -> tuple[list[RecordShare], list[str]]:
-    """Share *record* with every existing account matching *emails*.
+def grant_access(
+    *,
+    record: Record,
+    user,
+    requester,
+    permission: str = RecordShare.Permission.EDIT,
+    purpose: str = "",
+    include_documents: bool = True,
+    expires_at=None,
+) -> tuple[RecordShare, bool]:
+    """Grant (or reactivate) a purpose- and permission-scoped share.
 
-    Returns ``(shares, unknown_emails)``. Raises ``NotOwner`` when *owner*
-    is not the record owner and ``SelfShare`` when the owner appears in the
-    recipient list. Emails without an account are returned (never silently
-    dropped, never silently shared).
+    Returns "(share, created)". Reactivates an existing grant that was
+    revoked or expired instead of raising on the unique constraint, so
+    re-granting (e.g. a refunded reimbursement) works without new rows.
+    Raises "NotOwner" unless "requester" owns the record and "SelfShare"
+    if "user" is the owner.
     """
-    if not can_share(owner, record):
+    if not can_share(requester, record):
         raise NotOwner("Only the record owner can share it")
+    if user.pk == record.user_id:
+        raise SelfShare("You cannot share a record with yourself")
 
+    defaults = {
+        "permission": permission,
+        "purpose": purpose,
+        "include_documents": include_documents,
+        "expires_at": expires_at,
+        "shared_by": requester,
+    }
+    with transaction.atomic():
+        share, created = RecordShare.objects.get_or_create(
+            record=record, user=user, defaults=defaults
+        )
+        if created:
+            create_audit_log(
+                user=requester,
+                action=AuditLog.Action.SHARE,
+                record=record,
+                details={
+                    "user": user.email,
+                    "user_id": user.pk,
+                    "permission": permission,
+                    "purpose": purpose,
+                    "include_documents": include_documents,
+                },
+            )
+            return share, created
+
+        if share.is_active:
+            return share, False
+
+        # Reactivate a revoked/expired grant with the latest settings.
+        share.permission = permission
+        share.purpose = purpose
+        share.include_documents = include_documents
+        share.expires_at = expires_at
+        share.revoked_at = None
+        share.shared_by = requester
+        share.save(
+            update_fields=[
+                "permission",
+                "purpose",
+                "include_documents",
+                "expires_at",
+                "revoked_at",
+                "shared_by",
+            ]
+        )
+        create_audit_log(
+            user=requester,
+            action=AuditLog.Action.SHARE,
+            record=record,
+            details={
+                "user": user.email,
+                "user_id": user.pk,
+                "permission": permission,
+                "purpose": purpose,
+                "include_documents": include_documents,
+                "reactivated": True,
+            },
+        )
+        return share, True
+
+
+def share_record_with_users(
+    *,
+    record: Record,
+    owner,
+    emails: list[str],
+    permission: str = RecordShare.Permission.EDIT,
+    purpose: str = "",
+    include_documents: bool = True,
+) -> tuple[list[RecordShare], list[str]]:
+    """Share "record" with every existing account matching "emails".
+
+    Returns "(shares, unknown_emails)" listing only "newly granted"
+    recipient shares (idempotent: existing active grants are skipped without
+    re-notification). Raises "NotOwner" when "owner" is not the record
+    owner and "SelfShare" when the owner appears in the recipient list.
+    Emails without an account are returned (never silently dropped, never
+    silently shared).
+    """
     recipients: list[User] = []
     unknown: list[str] = []
     for email in {e.strip().lower() for e in emails if e.strip()}:
@@ -66,24 +161,21 @@ def share_record_with_users(
         else:
             recipients.append(user)
 
+    shares: list[RecordShare] = []
     if not recipients:
-        return [], unknown
+        return shares, unknown
 
-    with transaction.atomic():
-        shares = []
-        for user in recipients:
-            share, created = RecordShare.objects.get_or_create(
-                record=record, user=user, defaults={"shared_by": owner}
-            )
-            if not created:
-                continue
+    for user in recipients:
+        share, created = grant_access(
+            record=record,
+            user=user,
+            requester=owner,
+            permission=permission,
+            purpose=purpose,
+            include_documents=include_documents,
+        )
+        if created:
             shares.append(share)
-            create_audit_log(
-                user=owner,
-                action=AuditLog.Action.SHARE,
-                record=record,
-                details={"user": user.email, "user_id": user.pk},
-            )
 
     for share in shares:
         _notify_share_recipient(record=record, share=share, actor=owner)
@@ -111,20 +203,26 @@ def _notify_share_recipient(*, record: Record, share: RecordShare, actor) -> Non
 
 
 def revoke_share(*, record: Record, actor, share: RecordShare) -> None:
-    """Revoke a record share; only the owner may revoke."""
+    """Revoke a record share; only the owner may revoke.
+
+    The row is kept with "revoked_at" set so the audit trail shows access
+    was granted and later removed.
+    """
     if not can_share(actor, record):
         raise NotOwner
-    share.delete()
-    create_audit_log(
-        user=actor,
-        action=AuditLog.Action.REVOKE_SHARE,
-        record=record,
-        details={"user": share.user.email, "user_id": share.user_id},
-    )
+    if share.revoked_at is None:
+        share.revoked_at = timezone.now()
+        share.save(update_fields=["revoked_at"])
+        create_audit_log(
+            user=actor,
+            action=AuditLog.Action.REVOKE_SHARE,
+            record=record,
+            details={"user": share.user.email, "user_id": share.user_id},
+        )
 
 
 def shares_for_viewer(*, record: Record, viewer) -> list[RecordShare]:
-    """Shares visible to the *viewer*: the full list for the owner, none others."""
+    """Shares visible to the "viewer": the full list for the owner, none others."""
     if record.user_id == viewer.pk:
         return list(record.shares.select_related("user", "shared_by").all())
     return []

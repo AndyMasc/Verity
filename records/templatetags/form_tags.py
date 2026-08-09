@@ -1,8 +1,8 @@
 """Custom template tags and filters used in record-related templates.
 
-Provides ``get_attr`` for dynamic attribute access, ``filter_url``
+Provides "get_attr" for dynamic attribute access, "filter_url"
 for building URLs that preserve existing query parameters while
-updating or removing specific filter values, and ``currency_symbol``
+updating or removing specific filter values, and "currency_symbol"
 for rendering currency-aware amount formatting.
 """
 
@@ -27,10 +27,10 @@ def get_attr(obj: Any, attr: str) -> Any:
 
 @register.simple_tag(takes_context=True)
 def filter_url(context: dict[str, Any], view_name: str, **kwargs: Any) -> str:
-    """Build a URL for *view_name* that merges *kwargs* into the current query params.
+    """Build a URL for "view_name" that merges "kwargs" into the current query params.
 
-    Set a param to ``None`` to remove it. Existing query parameters not
-    mentioned in *kwargs* are preserved, making it easy to toggle a single
+    Set a param to "None" to remove it. Existing query parameters not
+    mentioned in "kwargs" are preserved, making it easy to toggle a single
     filter without losing others.
     """
     request = context.get("request")
@@ -62,16 +62,16 @@ def currency_symbol(currency_code: str) -> str:
 def currency_format(amount, currency_code: str) -> str:
     """Format a monetary amount with the correct currency symbol.
 
-    Usage: ``{{ record.balance|currency_format:record.currency }}``
+    Usage: "{{ record.balance|currency_format:record.currency }}"
     """
     return _format_currency(amount, str(currency_code).lower())
 
 
 @register.filter
 def index(sequence, i: int):
-    """Return ``sequence[i]`` — safe list indexing in templates.
+    """Return "sequence[i]" — safe list indexing in templates.
 
-    Usage: ``{{ my_list|index:forloop.counter0 }}``
+    Usage: "{{ my_list|index:forloop.counter0 }}"
     """
     try:
         return sequence[int(i)]

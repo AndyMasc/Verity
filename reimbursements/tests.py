@@ -10,8 +10,15 @@ from django.urls import reverse
 from django.utils import timezone
 
 from billing.tests.helpers import give_pro_subscription
-from records.models import AuditLog, Record
-from reimbursements.models import PackagePayment, ReimbursementPackage, StripeAccount
+from records.models import AuditLog, Record, RecordShare
+from reimbursements import services
+from reimbursements.models import (
+    PackageEmailVerification,
+    PackagePayment,
+    ReimbursementPackage,
+    StripeAccount,
+)
+from reimbursements.verification import send_verification_code
 from reimbursements.views import validate_recipient_email
 from reimbursements.webhooks import process_stripe_event
 
@@ -132,6 +139,43 @@ class ReimbursementPackageModelTest(TestCase):
         pkg = _package(self.creator, expires_at=None)
         self.assertFalse(pkg.is_expired)
 
+    def test_mark_as_paid_without_payer_skips_record(self):
+        pkg = _package(self.creator, recipient=None, recipient_email="ext@test.com")
+        r = _record(self.creator, Decimal("25.00"))
+        pkg.records.add(r)
+        pkg.mark_as_paid(None)
+        pkg.refresh_from_db()
+        self.assertEqual(pkg.status, ReimbursementPackage.Status.PAID)
+        self.assertIsNone(pkg.paid_by)
+        self.assertIsNotNone(pkg.paid_at)
+        pkg.records.get().refresh_from_db()
+        self.assertTrue(pkg.records.get().reimbursed)
+        self.assertFalse(
+            Record.objects.filter(
+                title=f"Reimbursement: {pkg.title}",
+            ).exists()
+        )
+
+    def test_activate_queued_package(self):
+        pkg = _package(self.creator, status="queued")
+        self.assertTrue(pkg.activate())
+        pkg.refresh_from_db()
+        self.assertEqual(pkg.status, ReimbursementPackage.Status.OPEN)
+
+    def test_activate_open_package_noop(self):
+        pkg = _package(self.creator, status="open")
+        self.assertFalse(pkg.activate())
+        pkg.refresh_from_db()
+        self.assertEqual(pkg.status, ReimbursementPackage.Status.OPEN)
+
+    def test_recipient_address_prefers_user(self):
+        pkg = _package(self.creator, self.recipient)
+        self.assertEqual(pkg.recipient_address, self.recipient.email)
+
+    def test_recipient_address_falls_back_to_email(self):
+        pkg = _package(self.creator, recipient=None, recipient_email="ext@test.com")
+        self.assertEqual(pkg.recipient_address, "ext@test.com")
+
 
 class StripeAccountModelTest(TestCase):
     def test_is_active(self):
@@ -175,7 +219,7 @@ class ValidateRecipientEmailTest(TestCase):
         self.assertFalse(data["valid"])
         self.assertIn("yourself", data["error"].lower())
 
-    def test_nonexistent_email(self):
+    def test_external_email_is_valid(self):
         request = self.factory.post(
             self.url,
             data=json.dumps({"email": "nobody@test.com"}),
@@ -184,8 +228,22 @@ class ValidateRecipientEmailTest(TestCase):
         request.user = self.user
         response = validate_recipient_email(request)
         data = json.loads(response.content)
-        self.assertFalse(data["valid"])
-        self.assertNotIn("nobody@test.com", data["error"])
+        self.assertTrue(data["valid"])
+        self.assertFalse(data["registered"])
+
+    def test_registered_email_reports_user(self):
+        other = _user("registered@test.com")
+        request = self.factory.post(
+            self.url,
+            data=json.dumps({"email": "registered@test.com"}),
+            content_type="application/json",
+        )
+        request.user = self.user
+        response = validate_recipient_email(request)
+        data = json.loads(response.content)
+        self.assertTrue(data["valid"])
+        self.assertTrue(data["registered"])
+        self.assertEqual(data["name"], other.email)
 
     def test_empty_email(self):
         request = self.factory.post(
@@ -296,20 +354,25 @@ class CreatePackageFromRecordsViewTest(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn("yourself", data["error"].lower())
 
-    def test_nonexistent_recipient(self, _mock_notify, _mock_rl):
+    def test_external_recipient_creates_queued_package(self, _mock_notify, _mock_rl):
         r = _record(self.user)
         response = self.client.post(
             self.url,
             data=json.dumps(
                 {
                     "record_ids": [r.id],
-                    "title": "Fail",
+                    "title": "External",
                     "recipient_email": "ghost@test.com",
                 }
             ),
             content_type="application/json",
         )
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 200)
+        pkg = ReimbursementPackage.objects.get(title="External")
+        self.assertEqual(pkg.status, ReimbursementPackage.Status.QUEUED)
+        self.assertIsNone(pkg.recipient)
+        self.assertEqual(pkg.recipient_email, "ghost@test.com")
+        self.assertFalse(RecordShare.objects.filter(record=r).exists())
 
     def test_no_records(self, _mock_notify, _mock_rl):
         response = self.client.post(
@@ -964,3 +1027,180 @@ class StripeWebhookTest(TestCase):
         pkg.refresh_from_db()
         self.assertFalse(payment.is_completed)
         self.assertEqual(pkg.status, ReimbursementPackage.Status.OPEN)
+
+
+class ReimbursementRecordAccessTest(TestCase):
+    """Purpose-bound, temporary record access granted to package recipients."""
+
+    def setUp(self):
+        self.creator = _user("andy@test.com")
+        self.recipient = _user("sarah@test.com")
+        self.other_record = _record(self.creator)
+
+    def _package_with_records(self):
+        r1 = _record(self.creator)
+        r2 = _record(self.creator)
+        pkg, _ = services.create_reimbursement_package(
+            creator=self.creator,
+            recipient_email=self.recipient.email,
+            record_ids=[r1.pk, r2.pk],
+            title="Lunch receipts",
+            days_valid=7,
+        )
+        return pkg, r1, r2
+
+    def test_create_grants_temporary_view_access(self):
+        pkg, r1, r2 = self._package_with_records()
+        for r in (r1, r2):
+            share = RecordShare.objects.get(record=r, user=self.recipient)
+            self.assertEqual(share.permission, RecordShare.Permission.VIEW)
+            self.assertEqual(share.purpose, RecordShare.Purpose.REIMBURSEMENT)
+            self.assertTrue(share.include_documents)
+            self.assertEqual(share.expires_at, pkg.expires_at)
+            self.assertIsNone(share.revoked_at)
+
+    def test_create_only_grants_packaged_records(self):
+        _, r1, r2 = self._package_with_records()
+        visible = set(Record.objects.visible_to(self.recipient).values_list("pk", flat=True))
+        self.assertIn(r1.pk, visible)
+        self.assertIn(r2.pk, visible)
+        self.assertNotIn(self.other_record.pk, visible)
+        self.assertFalse(
+            RecordShare.objects.filter(record=self.other_record, user=self.recipient).exists()
+        )
+
+    def test_mark_as_paid_revokes_access(self):
+        pkg, r1, _ = self._package_with_records()
+        pkg.mark_as_paid(self.recipient)
+        share = RecordShare.objects.get(record=r1, user=self.recipient)
+        self.assertIsNotNone(share.revoked_at)
+        self.assertFalse(share.is_active)
+        self.assertNotIn(
+            r1.pk, Record.objects.visible_to(self.recipient).values_list("pk", flat=True)
+        )
+
+    def test_refund_restores_access(self):
+        pkg, r1, _ = self._package_with_records()
+        pkg.mark_as_paid(self.recipient)
+        pkg.mark_as_refunded()
+        share = RecordShare.objects.get(record=r1, user=self.recipient)
+        self.assertIsNone(share.revoked_at)
+        self.assertTrue(share.is_active)
+        self.assertIn(r1.pk, Record.objects.visible_to(self.recipient).values_list("pk", flat=True))
+
+    def test_deleted_package_revokes_access(self):
+        pkg, r1, _ = self._package_with_records()
+        pkg.delete_package(self.creator)
+        share = RecordShare.objects.get(record=r1, user=self.recipient)
+        self.assertIsNotNone(share.revoked_at)
+
+
+@patch("django_ratelimit.decorators.is_ratelimited", return_value=False)
+class PublicPayFlowTest(TestCase):
+    """External recipients verify their email before viewing or paying."""
+
+    def setUp(self):
+        self.creator = _user("creator@test.com")
+        _stripe_account(self.creator)
+        self.record = _record(self.creator, Decimal("25.00"))
+        self.pkg, _ = services.create_reimbursement_package(
+            creator=self.creator,
+            recipient_email="external@test.com",
+            record_ids=[self.record.pk],
+            title="External Request",
+            days_valid=7,
+        )
+        self.pay_url = reverse("reimbursements:pay-package", kwargs={"package_uuid": self.pkg.uuid})
+        self.request_code_url = reverse(
+            "reimbursements:pay-request-code", kwargs={"package_uuid": self.pkg.uuid}
+        )
+        self.verify_code_url = reverse(
+            "reimbursements:pay-verify-code", kwargs={"package_uuid": self.pkg.uuid}
+        )
+        self.checkout_url = reverse(
+            "reimbursements:pay-checkout", kwargs={"package_uuid": self.pkg.uuid}
+        )
+
+    def _post(self, url, data):
+        return self.client.post(url, data)
+
+    def test_unverified_visitor_only_sees_verification_step(self, _mock_rl):
+        resp = self.client.get(self.pay_url)
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "Verify your email")
+        self.assertNotContains(resp, "External Request")
+        self.assertNotContains(resp, "Requested Amount")
+
+    @patch("reimbursements.verification.send_background_email")
+    @patch("reimbursements.verification._generate_code", return_value="123456")
+    def test_verify_flow_unlocks_package(self, _mock_gen, mock_email, _mock_rl):
+        resp = self._post(self.request_code_url, {"email": "someone@else.com"})
+        self.assertEqual(resp.status_code, 302)
+        mock_email.send.assert_not_called()
+
+        resp = self._post(self.request_code_url, {"email": "external@test.com"})
+        self.assertEqual(resp.status_code, 302)
+        mock_email.send.assert_called_once()
+        verification = PackageEmailVerification.objects.get(package=self.pkg)
+        self.assertIsNone(verification.verified_at)
+
+        resp = self._post(self.verify_code_url, {"email": "external@test.com", "code": "000000"})
+        self.assertEqual(resp.status_code, 302)
+        verification.refresh_from_db()
+        self.assertEqual(verification.attempts, 1)
+        self.assertNotContains(self.client.get(self.pay_url), "External Request")
+
+        resp = self._post(self.verify_code_url, {"email": "external@test.com", "code": "123456"})
+        self.assertEqual(resp.status_code, 302)
+        with patch("reimbursements.models.get_rates", return_value={}):
+            page = self.client.get(self.pay_url)
+        self.assertContains(page, "External Request")
+        self.assertContains(page, "Requested Amount")
+        self.pkg.refresh_from_db()
+        self.assertEqual(self.pkg.status, ReimbursementPackage.Status.OPEN)
+
+    def test_expired_code_rejected(self, _mock_rl):
+        send_verification_code(self.pkg, "external@test.com")
+        verification = PackageEmailVerification.objects.get(package=self.pkg)
+        verification.expires_at = timezone.now() - timedelta(minutes=1)
+        verification.save(update_fields=["expires_at"])
+        resp = self._post(
+            self.verify_code_url,
+            {"email": "external@test.com", "code": "wrongcode"},
+        )
+        self.assertEqual(resp.status_code, 302)
+        verification.refresh_from_db()
+        self.assertIsNone(verification.verified_at)
+
+    def test_checkout_without_verification_redirects(self, _mock_rl):
+        with patch("reimbursements.services.create_checkout_session") as mock_session:
+            resp = self._post(self.checkout_url, {})
+        mock_session.assert_not_called()
+        self.assertEqual(resp.status_code, 302)
+        self.assertTrue(resp.url.startswith(self.pay_url))
+
+    @patch("reimbursements.services.create_checkout_session")
+    def test_verified_checkout_creates_external_payment(self, mock_session, _mock_rl):
+        session = self.client.session
+        session[f"_reimbursement_verified:{self.pkg.uuid}"] = True
+        session.save()
+
+        mock_session.return_value = type(
+            "S", (), {"id": "cs_new", "url": "https://checkout.stripe.com/x"}
+        )()
+        resp = self._post(self.checkout_url, {})
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(resp.url, "https://checkout.stripe.com/x")
+        mock_session.assert_called_once()
+        payment = PackagePayment.objects.get(package=self.pkg)
+        self.assertIsNone(payment.payer)
+        self.pkg.refresh_from_db()
+        self.assertEqual(self.pkg.status, ReimbursementPackage.Status.OPEN)
+
+    def test_paid_package_shows_already_paid(self, _mock_rl):
+        self.pkg.status = ReimbursementPackage.Status.PAID
+        self.pkg.save(update_fields=["status"])
+        resp = self.client.get(self.pay_url)
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "Already paid")
+        self.assertNotContains(resp, "External Request")

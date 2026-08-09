@@ -81,7 +81,7 @@ def retrieve_charge(charge_id: str) -> stripe.Charge:
 
 
 def get_payment_success_package(user, package_uuid: str) -> ReimbursementPackage | None:
-    """Return the package referenced by a payment-success redirect, if visible to *user*.
+    """Return the package referenced by a payment-success redirect, if visible to "user".
 
     Packages still open are re-checked against Stripe in the background so the
     page reflects the settled payment status.
@@ -117,7 +117,7 @@ def create_package_checkout(
     success_url: str,
     cancel_url: str,
 ) -> CheckoutOutcome:
-    """Create a Stripe Checkout Session for *package* and record the payment.
+    """Create a Stripe Checkout Session for "package" and record the payment.
 
     The package row is locked for the duration of the attempt so concurrent
     checkouts cannot double-pay it. Returns the Stripe-hosted checkout URL on
@@ -162,7 +162,10 @@ def create_package_checkout(
 
     try:
         idempotency_key = hashlib.sha256(
-            f"{_IDEMPOTENCY_PREFIX}:{package.uuid}:{payer.id}:{timezone.now().timestamp()}".encode()
+            (
+                f"{_IDEMPOTENCY_PREFIX}:{package.uuid}:"
+                f"{getattr(payer, 'id', 'external')}:{timezone.now().timestamp()}"
+            ).encode()
         ).hexdigest()
         checkout_session = create_checkout_session(**checkout_args, idempotency_key=idempotency_key)
     except stripe.error.StripeError:
@@ -195,13 +198,19 @@ def create_reimbursement_package(
 ) -> tuple[ReimbursementPackage | None, str | None]:
     """Create a reimbursement package from selected records.
 
-    Returns ``(package, None)`` on success, or ``(None, user-facing error)``
-    when the recipient does not exist, the sender targets themselves, or no
-    valid records were selected.
+    The package can be sent to any email address. When the address matches a
+    registered Papertrail user, that user is granted temporary,
+    purpose-bound, view-only access to each packaged record ("RecordShare"
+    with "purpose=reimbursement") and the package starts open. Otherwise the
+    package starts queued, awaiting the external recipient: they pay through
+    a public, unauthenticated page reached from the emailed link. Access is
+    revoked automatically when the package is paid or deleted, and restored
+    if it is refunded.
+
+    Returns "(package, None)" on success, or "(None, user-facing error)"
+    when the sender targets themselves, or no valid records were selected.
     """
     recipient = get_user_model().objects.filter(email__iexact=recipient_email).first()
-    if recipient is None:
-        return None, "No Papertrail user found with that email address."
     if recipient == creator:
         return None, "You cannot send a reimbursement package to yourself."
 
@@ -212,8 +221,66 @@ def create_reimbursement_package(
     package = ReimbursementPackage.objects.create_for(
         creator=creator,
         recipient=recipient,
+        recipient_email=recipient_email,
         title=title,
         records=records,
         days_valid=days_valid,
+        status=(
+            ReimbursementPackage.Status.OPEN
+            if recipient is not None
+            else ReimbursementPackage.Status.QUEUED
+        ),
     )
+    if recipient is not None:
+        _grant_package_access(package)
     return package, None
+
+
+def activate_queued_package(package: ReimbursementPackage) -> bool:
+    """Open a queued package for payment once the external payer arrives.
+
+    Returns True when the package transitioned from queued to open.
+    """
+    return package.activate()
+
+
+def _grant_package_access(package: ReimbursementPackage) -> None:
+    """Grant the recipient purpose-bound view access to each packaged record.
+
+    scoped to "expires_at" (package expiry) so access expires with the
+    package. Idempotent via the share service (active grants are left alone).
+    No-op for external recipients without a registered account.
+    """
+    if package.recipient is None:
+        return
+    from records.models import RecordShare
+    from records.shares import grant_access
+
+    grant_options = {
+        "permission": RecordShare.Permission.VIEW,
+        "purpose": RecordShare.Purpose.REIMBURSEMENT,
+        "include_documents": True,
+        "expires_at": package.expires_at,
+    }
+    for record in package.records.filter(is_active=True):
+        grant_access(
+            record=record,
+            user=package.recipient,
+            requester=package.creator,
+            **grant_options,
+        )
+
+
+def revoke_package_access(package: ReimbursementPackage) -> None:
+    """Revoke (soft) the access granted when the package was created."""
+    if package.recipient is None:
+        return
+    from records.models import RecordShare
+    from records.shares import revoke_share
+
+    shares = RecordShare.active_for(package.recipient).filter(
+        record__in=package.records.all(),
+        purpose=RecordShare.Purpose.REIMBURSEMENT,
+    )
+    for share in shares.select_related("record"):
+        revoke_share(record=share.record, actor=package.creator, share=share)

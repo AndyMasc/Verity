@@ -92,7 +92,7 @@ def _is_final_attempt() -> bool:
     """Return True when the current attempt is the last Dramatiq retry.
 
     Retries are owned by Dramatiq's Retries middleware, which tracks the
-    attempt count in ``message.options["retries"]``. Outside a worker context
+    attempt count in message.options["retries"]. Outside a worker context
     (direct calls) there is no retry, so any failure is treated as final.
     """
     message = CurrentMessage.get_current_message()

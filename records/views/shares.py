@@ -1,7 +1,7 @@
 """Record sharing views: grant, revoke, bulk grant, and the management partial.
 
-Sharing endpoints are gated on the ``RECORD_SHARING`` billing feature for
-the *granting* user; recipients' access is defined purely by the share row.
+Sharing endpoints are gated on the "RECORD_SHARING" billing feature for
+the "granting" user; recipients' access is defined purely by the share row.
 """
 
 import json
@@ -65,9 +65,21 @@ class ShareRecordView(LoginRequiredMixin, View):
 
         raw = request.POST.get("emails", "")
         emails = [e.strip() for e in raw.split(",") if e.strip()]
+        permission = request.POST.get("permission", RecordShare.Permission.EDIT)
+        if permission not in RecordShare.Permission.values:
+            permission = RecordShare.Permission.EDIT
+        include_documents = request.POST.get("include_documents") in {
+            "on",
+            "true",
+            "1",
+        }
         try:
             shares, unknown = share_services.share_record_with_users(
-                record=record, owner=request.user, emails=emails
+                record=record,
+                owner=request.user,
+                emails=emails,
+                permission=permission,
+                include_documents=include_documents,
             )
         except share_services.SelfShare as exc:
             messages.error(request, str(exc))
@@ -90,7 +102,7 @@ class ShareRecordView(LoginRequiredMixin, View):
 class BulkShareView(LoginRequiredMixin, View):
     """Sharing several selected records at once via email (owner only, Pro gated).
 
-    Accepts a JSON body with ``{"record_ids": [1, 2, 3], "emails": "a@x.com, b@y.com"}``
+    Accepts a JSON body with "{"record_ids": [1, 2, 3], "emails": "a@x.com, b@y.com"}"
     and shares every owned record with the listed recipients. Returns a JSON
     summary so the bulk action bar can surface counts via toast.
     """

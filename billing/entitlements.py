@@ -44,7 +44,7 @@ def get_monthly_scan_limit(user) -> int | None:
     """Return the user's monthly Quick Scan allowance, or None if unlimited.
 
     Driven by the user's base plan metadata, so new tiers only need to set
-    ``monthly_scan_limit`` in their product definition.
+    "monthly_scan_limit" in their product definition.
     """
     from .metadata import plan_for_user
 

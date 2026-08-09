@@ -1,13 +1,13 @@
 """Shared test helpers for the billing test suite.
 
-Views gated by ``billing.mixins.FeatureRequiredMixin`` redirect free users to
+Views gated by "billing.mixins.FeatureRequiredMixin" redirect free users to
 the pricing page, so tests that exercise those views need a user with a real
-active Pro subscription. ``give_pro_subscription`` builds the djstripe rows
-(Product / Price / SubscriptionItem / Customer) that ``metadata`` and the
+active Pro subscription. "give_pro_subscription" builds the djstripe rows
+(Product / Price / SubscriptionItem / Customer) that "metadata" and the
 entitlement layer read.
 
-``FakeSession`` mimics the small surface of a Stripe checkout Session that the
-views read, so tests can mock ``stripe.checkout.Session.retrieve`` without a
+"FakeSession" mimics the small surface of a Stripe checkout Session that the
+views read, so tests can mock "stripe.checkout.Session.retrieve" without a
 network call.
 """
 
@@ -42,10 +42,10 @@ class FakeSession:
 
 
 def give_pro_subscription(user) -> Subscription:
-    """Attach an active Papertrail Pro subscription to ``user``.
+    """Attach an active Papertrail Pro subscription to "user".
 
-    The customer is linked both via ``subscriber`` and the user's ``customer``
-    FK so ``metadata._active_subscriptions`` and the feature gates see it.
+    The customer is linked both via "subscriber" and the user's "customer"
+    FK so "metadata._active_subscriptions" and the feature gates see it.
     """
     customer = Customer.objects.create(
         id=f"cus_pro_{user.pk}",

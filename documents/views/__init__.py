@@ -1,7 +1,7 @@
 """Public view classes exposed by the documents views package.
 
 Re-exports every view from the sub-modules so they can be imported
-directly as ``documents.views.UploadView`` etc.
+directly as "documents.views.UploadView" etc.
 """
 
 from .detail import DeleteDocument, ViewDocument

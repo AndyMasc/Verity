@@ -2,7 +2,7 @@
 
 Routes cover record CRUD, folder management, merge operations (manual,
 undo, detach, replace), archive/unarchive, hard-delete, and the merge
-list view. All paths live under the ``records:`` namespace.
+list view. All paths live under the "records:" namespace.
 """
 
 from django.urls import path

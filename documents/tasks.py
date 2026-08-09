@@ -25,9 +25,9 @@ from .storage import BUCKET, get_s3_client
 def extract_document(document_id: int) -> dict[str, Any]:
     """Run Gemini OCR on a document and auto-create a Record from the result.
 
-    The record is created from the persisted ``ocr_raw_data`` so it survives
+    The record is created from the persisted "ocr_raw_data" so it survives
     even if the user closes the tab before the redirect. Merging with a Plaid
-    match (when warranted) happens inside ``create_record_from_ocr``.
+    match (when warranted) happens inside "create_record_from_ocr".
     """
     result = _ocr_extract(document_id)
     if isinstance(result, dict) and "error" not in result:

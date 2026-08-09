@@ -28,8 +28,8 @@ _HISTORY_MAX_ENTRIES_PER_SOURCE = 200
 class RecordHistoryView(LoginRequiredMixin, ListView):
     """Unified history timeline for a record, merging Record history, DocumentData history, and MergeLog entries.
 
-    Each entry is normalised into a ``SimpleNamespace`` with ``source_type``,
-    ``history_type``, and ``history_date`` so the template can render them
+    Each entry is normalised into a "SimpleNamespace" with "source_type",
+    "history_type", and "history_date" so the template can render them
     in a single chronological list.
     """
 

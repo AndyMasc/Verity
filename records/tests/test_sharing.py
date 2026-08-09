@@ -110,7 +110,9 @@ class TestShareService(SharingTestCase):
         shares, _ = self._share([self.recipient.email])
         share = shares[0]
         share_services.revoke_share(record=self.record, actor=self.owner, share=share)
-        assert not RecordShare.objects.filter(pk=share.pk).exists()
+        share.refresh_from_db()
+        assert share.revoked_at is not None  # row kept for the audit trail
+        assert not share.is_active
         assert self.record.pk not in Record.objects.visible_to(self.recipient).values_list(
             "pk", flat=True
         )
@@ -118,6 +120,60 @@ class TestShareService(SharingTestCase):
             record=self.record, action=AuditLog.Action.REVOKE_SHARE
         ).first()
         assert audit is not None and audit.user == self.owner
+
+    def test_share_idempotent_across_revocation(self):
+        shares, _ = self._share([self.recipient.email])
+        share_services.revoke_share(record=self.record, actor=self.owner, share=shares[0])
+        renewed, _ = self._share([self.recipient.email])
+        assert len(renewed) == 1  # re-grant reactivates the row
+        share = RecordShare.objects.get(record=self.record, user=self.recipient)
+        assert share.revoked_at is None
+        assert self.record.pk in Record.objects.visible_to(self.recipient).values_list(
+            "pk", flat=True
+        )
+
+    def test_view_only_share_cannot_edit(self):
+        from records import shares as svc
+
+        svc.grant_access(
+            record=self.record,
+            user=self.recipient,
+            requester=self.owner,
+            permission=RecordShare.Permission.VIEW,
+        )
+        response = self._detail_post(
+            self.recipient,
+            {
+                "title": "Blocked edit",
+                "merchant": "Office Depot",
+                "balance": "10.00",
+                "record_type": Record.RecordTypes.EXPENSE_RECEIPT,
+                "currency": "usd",
+                "transaction_date": "2026-01-15",
+                "notes": "Business lunch",
+                "payment_method": "Visa",
+            },
+        )
+        assert response.status_code == 403
+        self.record.refresh_from_db()
+        assert self.record.title != "Blocked edit"
+
+    def test_expired_share_loses_access(self):
+        from django.utils import timezone
+
+        from_share = share_services.grant_access(
+            record=self.record,
+            user=self.recipient,
+            requester=self.owner,
+            permission=RecordShare.Permission.VIEW,
+            expires_at=timezone.now() - timezone.timedelta(hours=1),
+        )[0]
+        assert not from_share.is_active
+        assert self.record.pk not in Record.objects.visible_to(self.recipient).values_list(
+            "pk", flat=True
+        )
+        # The row remains for audit purposes.
+        assert RecordShare.objects.filter(pk=from_share.pk).exists()
 
 
 class TestRecordDetailAccess(SharingTestCase):
@@ -323,6 +379,40 @@ class TestSharedDocuments(SharingTestCase):
         self.client.force_login(self.stranger)
         response = self.client.get(reverse("documents:view_document", args=[self.doc.pk]))
         assert response.status_code == 404
+
+    def test_share_without_documents_hides_attachments(self):
+        share_services.grant_access(
+            record=self.record,
+            user=self.recipient,
+            requester=self.owner,
+            include_documents=False,
+        )
+        self.client.force_login(self.recipient)
+        response = self.client.get(reverse("documents:view_document", args=[self.doc.pk]))
+        assert response.status_code == 404
+
+    def test_share_with_documents_can_view_attachments(self):
+        share_services.grant_access(
+            record=self.record,
+            user=self.recipient,
+            requester=self.owner,
+            include_documents=True,
+        )
+        self.client.force_login(self.recipient)
+        response = self.client.get(reverse("documents:view_document", args=[self.doc.pk]))
+        assert response.status_code == 200
+
+    def test_record_detail_hides_documents_when_not_included(self):
+        share_services.grant_access(
+            record=self.record,
+            user=self.recipient,
+            requester=self.owner,
+            include_documents=False,
+        )
+        self.client.force_login(self.recipient)
+        response = self.client.get(reverse("records:record_detail", args=[self.record.pk]))
+        assert response.status_code == 200
+        assert self.doc.title.encode() not in response.content
 
 
 class TestShareeUI(SharingTestCase):

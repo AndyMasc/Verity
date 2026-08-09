@@ -120,9 +120,9 @@ def reconcile_subscription_statuses(
     Local rows drift from Stripe when a webhook event is missed (endpoint
     downtime, exhausted Stripe retries, a crashed handler, ...). This refetches
     each local subscription from Stripe and updates its stored status to match,
-    so ``plan_for_user`` stops trusting stale ``active`` rows.
+    so "plan_for_user" stops trusting stale "active" rows.
 
-    Subscriptions that no longer exist in Stripe are marked ``canceled``.
+    Subscriptions that no longer exist in Stripe are marked "canceled".
 
     Args:
         subscription_ids: Optional filter; when None, all local subscriptions

@@ -64,7 +64,7 @@ class DocumentDeletionService:
     def hard_delete(document: DocumentData) -> DeletionResult:
         """Permanently delete a document from the database and queue R2 cleanup.
 
-        Identical to ``soft_delete``; kept as a thin alias for callers that
+        Identical to soft_delete; kept as a thin alias for callers that
         explicitly want a permanent delete.
         """
         return DocumentDeletionService.soft_delete(document)

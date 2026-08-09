@@ -69,11 +69,15 @@ class ReimbursementPackageQuerySet(models.QuerySet):
         records,
         currency: str | None = None,
         days_valid: int = 7,
+        recipient_email: str | None = None,
+        status: str | None = None,
     ):
         """Create a package and attach the given (validated, owned, active) records.
 
         Returns the created package. The caller is responsible for input
         validation; this only builds the row and its record links atomically.
+        "recipient_email" records the address the package was sent to, even
+        when it resolves to a registered user.
         """
         package_currency = currency or getattr(
             getattr(creator, "settings", None), "default_currency", "usd"
@@ -82,8 +86,10 @@ class ReimbursementPackageQuerySet(models.QuerySet):
             package = self.create(
                 creator=creator,
                 recipient=recipient,
+                recipient_email=recipient_email,
                 title=title,
                 currency=package_currency,
+                status=status or ReimbursementPackage.Status.OPEN,
                 expires_at=timezone.now() + timedelta(days=days_valid),
             )
             package.records.set(records)
@@ -118,7 +124,7 @@ class StripeAccount(models.Model):
     def sync_from_stripe(self) -> bool:
         """Refresh onboarding flags from Stripe.
 
-        Raises ``stripe.error.StripeError`` on API failure (the caller decides
+        Raises "stripe.error.StripeError" on API failure (the caller decides
         whether to surface or swallow it). Returns True once fully active.
         """
         from . import services
@@ -142,6 +148,7 @@ class StripeAccount(models.Model):
 
 class ReimbursementPackage(models.Model):
     class Status(models.TextChoices):
+        QUEUED = "queued", "Awaiting Payer"
         OPEN = "open", "Open for Payment"
         PAID = "paid", "Fully Paid"
 
@@ -158,6 +165,7 @@ class ReimbursementPackage(models.Model):
         blank=True,
         related_name="reimbursements_received",
     )
+    recipient_email = models.EmailField(max_length=254, null=True, blank=True, db_index=True)
     title = models.CharField(max_length=255)
     currency = models.CharField(
         max_length=3,
@@ -202,6 +210,32 @@ class ReimbursementPackage(models.Model):
     def is_deleted(self) -> bool:
         return self.deleted_at is not None
 
+    @property
+    def recipient_address(self) -> str | None:
+        """Email the package was sent to (registered user or external address)."""
+        if self.recipient is not None:
+            return self.recipient.email
+        return self.recipient_email
+
+    def activate(self) -> bool:
+        """Transition a queued (external-recipient) package to open for payment.
+
+        Returns True when the package was queued and is now open; False
+        otherwise (already open, paid, or expired).
+        """
+        with transaction.atomic():
+            locked = (
+                ReimbursementPackage.objects.select_for_update(skip_locked=True)
+                .filter(pk=self.pk, status=self.Status.QUEUED)
+                .first()
+            )
+            if locked is None:
+                return False
+            locked.status = self.Status.OPEN
+            locked.save(update_fields=["status"])
+            self.status = locked.status
+            return True
+
     def can_delete(self, user: User) -> bool:
         """Returns True if the given user is allowed to delete this package."""
         if self.deleted_at is not None:
@@ -214,13 +248,20 @@ class ReimbursementPackage(models.Model):
             return False
         self.deleted_at = timezone.now()
         self.save(update_fields=["deleted_at"])
+        try:
+            from .services import revoke_package_access
+
+            revoke_package_access(self)
+        except Exception:
+            logger.exception("Failed to revoke access for deleted package %s", self.uuid)
         return True
 
-    def mark_as_paid(self, payer: User, payer_currency: str | None = None):
+    def mark_as_paid(self, payer: User | None, payer_currency: str | None = None):
         """Marks package as paid, records who/when, updates linked records, and
-        creates a reimbursement record for the payer.
+        creates a reimbursement record for the payer (when the payer is a
+        registered user; external payers have no account to attach it to).
 
-        If *payer_currency* is given, the Record is created in that currency
+        If "payer_currency" is given, the Record is created in that currency
         using converted amounts.  Falls back to the package currency.
 
         Idempotent: if already paid, this is a no-op.
@@ -245,20 +286,33 @@ class ReimbursementPackage(models.Model):
             self.paid_by = locked.paid_by
             self.paid_at = locked.paid_at
             self.records.filter(is_active=True).update(reimbursed=True)
-            Record.objects.create(
-                user=payer,
-                title=f"Reimbursement: {self.title}",
-                transaction_date=locked.paid_at.strftime("%Y-%m-%d"),
-                merchant=self.creator.email,
-                balance=converted,
-                currency=record_currency,
-                record_type=Record.RecordTypes.EXPENSE_RECEIPT,
-                payment_method="Papertrail reimbursement transfer",
-                notes=(
+            if payer is not None:
+                notes = (
                     f"Reimbursement package '{self.title}' paid to {self.creator.email}. "
                     f"Amount: {format_currency(converted, record_currency)}. "
                     f"Date: {locked.paid_at.strftime('%Y-%m-%d')}."
-                ),
+                )
+                Record.objects.create(
+                    user=payer,
+                    title=f"Reimbursement: {self.title}",
+                    transaction_date=locked.paid_at.strftime("%Y-%m-%d"),
+                    merchant=self.creator.email,
+                    balance=converted,
+                    currency=record_currency,
+                    record_type=Record.RecordTypes.EXPENSE_RECEIPT,
+                    payment_method="Papertrail reimbursement transfer",
+                    notes=notes,
+                )
+        # Access expires when the workflow ends: the recipient no longer needs
+        # to review the records once the package is paid.
+        try:
+            from .services import revoke_package_access
+
+            revoke_package_access(self)
+        except Exception:
+            logger.exception(
+                "Failed to revoke package access after payment (package=%s)",
+                getattr(self, "uuid", self.pk),
             )
 
     def mark_as_refunded(self):
@@ -289,6 +343,16 @@ class ReimbursementPackage(models.Model):
                     title=f"Reimbursement: {self.title}",
                     record_type=Record.RecordTypes.EXPENSE_RECEIPT,
                 ).update(notes=Concat("notes", models.Value(" [REFUNDED]")))
+        # Refunds reopen the workflow, so restore the recipient's access.
+        try:
+            from .services import _grant_package_access
+
+            _grant_package_access(self)
+        except Exception:
+            logger.exception(
+                "Failed to restore package access after refund (package=%s)",
+                getattr(self, "uuid", self.pk),
+            )
 
     @property
     def is_expired(self) -> bool:
@@ -353,7 +417,7 @@ class ReimbursementPackage(models.Model):
         return account.stripe_account_id if account and account.is_active else None
 
     def can_be_paid_by(self, user: User) -> tuple[bool, str | None]:
-        """Return ``(ok, error_message)`` describing whether *user* may pay.
+        """Return "(ok, error_message)" describing whether "user" may pay.
 
         Covers the eligibility checks that don't need a row lock: the payer
         cannot be the package creator, the package must not be expired or
@@ -553,8 +617,8 @@ class ReimbursementPackage(models.Model):
     ) -> list[ReimbursementPackage]:
         """Precompute each package's converted display total in one pass.
 
-        Mutates ``_prefetched_converted_total`` on the given instances so
-        ``display_total`` avoids per-record conversion queries on the list page.
+        Mutates "_prefetched_converted_total" on the given instances so
+        "display_total" avoids per-record conversion queries on the list page.
         """
         if not packages:
             return packages
@@ -655,7 +719,7 @@ class PackagePayment(models.Model):
         """Mark this payment completed, storing the payment intent from the session.
 
         Accepts either a dict (normalized webhook payload) or a
-        ``stripe.CheckoutSession`` object (direct API retrieval).
+        "stripe.CheckoutSession" object (direct API retrieval).
         """
         self.is_completed = True
         payment_intent_id = (
@@ -671,3 +735,34 @@ class PackagePayment(models.Model):
         """Mark this payment as not completed (failed/refunded)."""
         self.is_completed = False
         self.save(update_fields=["is_completed"])
+
+
+class PackageEmailVerification(models.Model):
+    """One-time email verification for external (unauthenticated) payers.
+
+    External recipients prove they are the intended recipient by entering the
+    code emailed to the package's recipient address before they can view the
+    package or pay. Only the latest issued code is stored (hashed), with an
+    attempt budget and expiry to resist brute force.
+    """
+
+    package = models.OneToOneField(
+        ReimbursementPackage,
+        on_delete=models.CASCADE,
+        related_name="email_verification",
+    )
+    email = models.EmailField(max_length=254)
+    code_hash = models.CharField(max_length=64)
+    salt = models.UUIDField(default=uuid.uuid4, editable=False)
+    attempts = models.PositiveIntegerField(default=0)
+    expires_at = models.DateTimeField()
+    verified_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    @property
+    def is_expired(self) -> bool:
+        return timezone.now() > self.expires_at
+
+    def __str__(self) -> str:
+        return f"Verification for package {self.package_id} ({self.email})"

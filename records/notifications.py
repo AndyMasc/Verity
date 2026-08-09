@@ -1,6 +1,6 @@
 """Record sharing notifications: email, webpush, and in-app delivery.
 
-Funnels through ``core.services.notifications.send_multi_channel_notification``
+Funnels through "core.services.notifications.send_multi_channel_notification"
 so delivery respects each user's push/email preferences (set in settings) and
 runs asynchronously on the background broker.
 

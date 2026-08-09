@@ -123,7 +123,7 @@ def _bulk_response(
 def BulkArchiveView(request: HttpRequest) -> HttpResponse:
     """Archive multiple records at once.
 
-    Accepts a JSON body with ``{"record_ids": [1, 2, 3]}`` and archives
+    Accepts a JSON body with "{"record_ids": [1, 2, 3]}" and archives
     all active records belonging to the user.
     """
     record_ids, error = parse_record_ids(request)
@@ -147,7 +147,7 @@ def BulkArchiveView(request: HttpRequest) -> HttpResponse:
 def BulkUnarchiveView(request: HttpRequest) -> HttpResponse:
     """Restore multiple archived records at once.
 
-    Accepts a JSON body with ``{"record_ids": [1, 2, 3]}`` and restores
+    Accepts a JSON body with "{"record_ids": [1, 2, 3]}" and restores
     all inactive records belonging to the user.
     """
     record_ids, error = parse_record_ids(request)

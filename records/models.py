@@ -70,9 +70,9 @@ def _month_range(year: int, month: int) -> tuple[datetime.date, datetime.date]:
 class RecordQuerySet(models.QuerySet):
     """Custom QuerySet for Record that enforces safe deletion patterns.
 
-    Bulk ``delete()`` is blocked by default to prevent accidental data loss.
-    Use ``allow_bulk_delete()`` to opt in, or call ``record.delete()``
-    (soft-delete) / ``record.hard_delete()`` (permanent) instead.
+    Bulk "delete()" is blocked by default to prevent accidental data loss.
+    Use "allow_bulk_delete()" to opt in, or call "record.delete()"
+    (soft-delete) / "record.hard_delete()" (permanent) instead.
     """
 
     def delete(self) -> tuple[int, dict[str, int]]:
@@ -84,27 +84,42 @@ class RecordQuerySet(models.QuerySet):
         )
 
     def allow_bulk_delete(self) -> RecordQuerySet:
-        """Return a clone that permits ``QuerySet.delete()`` for maintenance tasks."""
+        """Return a clone that permits "QuerySet.delete()" for maintenance tasks."""
         qs = self.all()
         qs._allow_bulk_delete = True
         return qs
 
     def for_user(self, user: AbstractUser) -> RecordQuerySet:
-        """Scope the queryset to records belonging to *user*."""
+        """Scope the queryset to records belonging to "user"."""
         return self.filter(user=user)
 
     def shared_with_me(self, user: AbstractUser) -> RecordQuerySet:
-        """Records another user has explicitly shared with *user*."""
-        return self.filter(shares__user=user, is_active=True)
+        """Records another user has explicitly shared with "user" (active grants only)."""
+        now = timezone.now()
+        return self.filter(
+            Q(shares__user=user)
+            & Q(shares__revoked_at__isnull=True)
+            & (Q(shares__expires_at__isnull=True) | Q(shares__expires_at__gt=now)),
+            is_active=True,
+        ).distinct()
 
     def visible_to(self, user: AbstractUser) -> RecordQuerySet:
-        """Everything *user* may see: own records plus records shared with them.
+        """Everything "user" may see: own records plus records shared with them.
 
         This is the single access boundary for the application. Authoritative
         checks (detail views, mutations) must go through this queryset, never
-        ``for_user`` alone.
+        "for_user" alone. Shared access respects grant revocation and
+        expiry: revoked or expired grants no longer expose the record.
         """
-        return self.filter(Q(user=user) | Q(shares__user=user)).distinct()
+        now = timezone.now()
+        return self.filter(
+            Q(user=user)
+            | (
+                Q(shares__user=user)
+                & Q(shares__revoked_at__isnull=True)
+                & (Q(shares__expires_at__isnull=True) | Q(shares__expires_at__gt=now))
+            )
+        ).distinct()
 
     def active(self) -> RecordQuerySet:
         """Return only records that have not been soft-deleted."""
@@ -115,11 +130,11 @@ class RecordQuerySet(models.QuerySet):
         return self.filter(is_active=False)
 
     def with_documents(self) -> RecordQuerySet:
-        """Prefetch related ``DocumentData`` objects to avoid N+1 queries."""
+        """Prefetch related "DocumentData" objects to avoid N+1 queries."""
         return self.prefetch_related("documents")
 
     def expiring_soon(self, days: int = 30) -> RecordQuerySet:
-        """Return active records whose expiry falls within the next *days* days."""
+        """Return active records whose expiry falls within the next "days" days."""
         today = timezone.now().date()
         return self.active().filter(
             expiry_date__gte=today,
@@ -225,7 +240,7 @@ class Record(models.Model):
     """Central domain object representing an individual financial record.
 
     Stores metadata extracted from uploaded receipts or synced from Plaid bank
-    transactions. Records are soft-deleted by flipping ``is_active`` rather
+    transactions. Records are soft-deleted by flipping "is_active" rather
     than removing the row, preserving referential integrity for merge logs
     and audit history.
     """
@@ -347,7 +362,7 @@ class Record(models.Model):
         super().delete(using=using, keep_parents=keep_parents)
 
     def is_shared_with(self, user: AbstractUser) -> bool:
-        """True if *user* can access this record through a share."""
+        """True if "user" can access this record through a share."""
         if user.pk == self.user_id:
             return True
         return self.shares.filter(user=user).exists()
@@ -377,7 +392,7 @@ class Record(models.Model):
         return False
 
     def is_expiring_soon(self, days: int = 30) -> bool:
-        """True when the expiry date falls within the next *days* days."""
+        """True when the expiry date falls within the next "days" days."""
         if self.expiry_date:
             return self.expiry_date <= (timezone.now().date() + datetime.timedelta(days=days))
         return False
@@ -395,7 +410,7 @@ class MergeLog(models.Model):
 
     Captures snapshots of both records at merge time so the operation can be
     undone or the receipt replaced later without data loss. The
-    ``idempotency_key`` column prevents duplicate merges for the same pair.
+    "idempotency_key" column prevents duplicate merges for the same pair.
     """
 
     plaid_record = models.ForeignKey(
@@ -506,17 +521,33 @@ class AuditLog(models.Model):
 class RecordShare(models.Model):
     """An explicit grant of access to a record for another user.
 
-    Sharing grants the full view + edit experience: the recipient sees the
-    record in their list/search, can open and edit it, and their edits are
-    attributed to them in the record's history (simple_history already
-    records ``history_user`` per change).
+    Grants are purpose- and permission-scoped and may be temporary:
 
-    Model choices
-    -------------
-    * One row per (record, user) pair; the unique constraint makes grants
-      idempotent at the DB layer and is indexed for the ``visible_to``
-      queryset.
+    * 'permission' separates readers from editors; edits by editors are
+      attributed to them in the record's history (simple_history records
+      'history_user' per change).
+    * 'purpose' explains WHY access was granted (e.g. reimbursements).
+    * 'include_documents' controls whether the recipient also sees the
+      documents attached to the record.
+
+    Access lifecycle:
+    * 'expires_at' ends access at a deadline (reimbursement packages set
+      this to the package expiry).
+    * 'revoked_at' ends access immediately (owner revokes, or a package is
+      paid/refunded/cancelled).
+
+    Rows are never deleted: once 'expires_at' or 'revoked_at' is set
+    the grant enters the audit trail permanently. The unique '(record, user)'
+    constraint keeps at most one row per pair; re-granting after revocation
+    reactivates the row.
     """
+
+    class Permission(models.TextChoices):
+        EDIT = "edit", "View and edit"
+        VIEW = "view", "View only"
+
+    class Purpose(models.TextChoices):
+        REIMBURSEMENT = "reimbursement", "Reimbursement"
 
     record = models.ForeignKey(
         Record,
@@ -528,6 +559,23 @@ class RecordShare(models.Model):
         on_delete=models.CASCADE,
         related_name="shared_records",
     )
+    permission = models.CharField(
+        max_length=10,
+        choices=Permission.choices,
+        default=Permission.EDIT,
+        help_text="Edit grants the recipient the full view+edit experience.",
+    )
+    purpose = models.CharField(
+        max_length=32,
+        choices=Purpose.choices,
+        blank=True,
+        default="",
+        help_text="Optional reason for the grant (shown in audit trails).",
+    )
+    include_documents = models.BooleanField(
+        default=True,
+        help_text="Recipient may also view documents attached to the record.",
+    )
     shared_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -537,6 +585,18 @@ class RecordShare(models.Model):
         help_text="User who granted the share",
     )
     created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text="Access is automatically removed after this time.",
+    )
+    revoked_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text="Access was explicitly revoked at this time (audit keeps the row).",
+    )
 
     class Meta:
         ordering = ["created_at"]
@@ -554,3 +614,31 @@ class RecordShare(models.Model):
 
     def __str__(self) -> str:
         return f"share record={self.record_id} -> user={self.user_id}"
+
+    @property
+    def is_active(self) -> bool:
+        """Whether this grant currently gives access (not revoked nor expired)."""
+        if self.revoked_at is not None:
+            return False
+        return self.expires_at is None or self.expires_at > timezone.now()
+
+    @classmethod
+    def active_for(cls, user: AbstractUser) -> models.QuerySet:  # type: ignore[no-untyped-def]
+        """Grants currently granting user access (not revoked, not expired)."""
+        now = timezone.now()
+        return cls.objects.filter(
+            user=user,
+            revoked_at__isnull=True,
+        ).filter(models.Q(expires_at__isnull=True) | models.Q(expires_at__gt=now))
+
+    @classmethod
+    def document_visible_records(cls, user: AbstractUser) -> models.QuerySet:  # type: ignore[no-untyped-def]
+        """Records whose documents user may see via a share.
+
+        'include_documents=True' grants document visibility; records owned
+        by the user are always document-visible and handled by the caller.
+        """
+        return Record.objects.filter(
+            pk__in=cls.active_for(user).filter(include_documents=True).values("record_id"),
+            is_active=True,
+        )

@@ -34,9 +34,9 @@ _merge_mode_labels = {"plaid": "Bank Transaction", "doc": "Uploaded Receipt"}
 
 
 def _get_merge_candidate_qs(request: HttpRequest, mode: str) -> QuerySet[Record]:
-    """Return a cached queryset of merge candidates filtered by *mode*.
+    """Return a cached queryset of merge candidates filtered by "mode".
 
-    *mode* must be ``"plaid"`` (bank transactions) or ``"doc"`` (uploaded
+    "mode" must be ""plaid"" (bank transactions) or ""doc"" (uploaded
     receipts). The queryset is cached on the request object to avoid
     duplicate queries within a single view.
     """
@@ -59,7 +59,7 @@ class ManualMergeView(LoginRequiredMixin, FormView):
     """Process a manual merge between a Plaid record and a document record.
 
     Validates that both records belong to the current user, are active, and
-    have the correct Plaid status before delegating to ``merge_document_into_plaid``.
+    have the correct Plaid status before delegating to "merge_document_into_plaid".
     Rate-limited to 30 merges per hour.
     """
 

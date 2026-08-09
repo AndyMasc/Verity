@@ -1,6 +1,6 @@
 """URL configuration for the accounting application.
 
-All routes live under the ``accounting`` namespace. The app
+All routes live under the "accounting" namespace. The app
 allows for accounting integrations and export options.
 """
 

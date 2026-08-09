@@ -55,7 +55,7 @@ def calculate_match_score(record_a: Record, record_b: Record) -> int:
     """Return a composite score (0-120) measuring how likely two records refer to the same purchase.
 
     Scores are derived from balance proximity, date proximity, merchant
-    similarity, and title similarity. A score above ``MERGE_SCORE_THRESHOLD``
+    similarity, and title similarity. A score above "MERGE_SCORE_THRESHOLD"
     (55) indicates a probable match.
     """
     score = 0
@@ -112,10 +112,10 @@ def _apply_date_window(qs: QuerySet[Record], record: Record) -> QuerySet[Record]
 
 
 def find_best_plaid_match(record: Record) -> Record | None:
-    """Find the highest-scoring active Plaid record that matches *record*.
+    """Find the highest-scoring active Plaid record that matches "record".
 
-    Searches within a date window defined by ``MATCH_LOOKAHEAD_DAYS``. Returns
-    ``None`` when no candidate exceeds the merge score threshold.
+    Searches within a date window defined by "MATCH_LOOKAHEAD_DAYS". Returns
+    "None" when no candidate exceeds the merge score threshold.
     """
     qs = (
         Record.objects.filter(
@@ -152,7 +152,7 @@ def find_best_plaid_match(record: Record) -> Record | None:
 
 
 def find_document_matches_for_plaid(plaid_record: Record) -> list[tuple[Record, int]]:
-    """Return all document records that score above the merge threshold against *plaid_record*.
+    """Return all document records that score above the merge threshold against "plaid_record".
 
     Results are sorted highest score first. Used both by automatic matching
     and the manual merge search panel.
@@ -250,7 +250,7 @@ def merge_document_into_plaid(
     Transfers editable fields (products, notes, record_type, folder) from the
     document record onto the Plaid record, re-associates any DocumentData, and
     creates a MergeLog snapshot for undo support. Returns the locked Plaid
-    record on success, or ``None`` if the document is no longer mergeable.
+    record on success, or "None" if the document is no longer mergeable.
     """
     locked_plaid = Record.objects.select_for_update().get(pk=plaid_record.pk)
     fresh_doc = Record.objects.select_for_update().get(pk=document_record.pk)
@@ -301,9 +301,9 @@ def merge_document_into_plaid(
 def undo_merge(merge_log: MergeLog) -> Record | None:
     """Reverse a previously completed merge, restoring both records to their pre-merge state.
 
-    Operates inside an atomic block with ``select_for_update`` to prevent
+    Operates inside an atomic block with "select_for_update" to prevent
     concurrent modifications. Returns the restored document record, or
-    ``None`` if the merge was already undone.
+    "None" if the merge was already undone.
     """
     merge_log = MergeLog.objects.select_for_update().get(pk=merge_log.pk)
     if merge_log.undone_at:
@@ -346,7 +346,7 @@ def try_match_document_record(
 ) -> Record | None:
     """Attempt to automatically merge a newly created document record with its best Plaid match.
 
-    Returns the merged Plaid record on success, or ``None`` when no match is
+    Returns the merged Plaid record on success, or "None" when no match is
     found.
     """
     plaid_match = find_best_plaid_match(document_record)

@@ -10,7 +10,7 @@
     {% if shares %}
         <ul class="space-y-2.5">
             {% for share in shares %}
-                <li class="group flex items-center justify-between gap-3 py-2.5 px-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.04] hover:border-white/[0.08] transition-all duration-200">
+                <li class="group flex items-center justify-between gap-3 py-2.5 px-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.04] hover:border-white/[0.08] transition-all duration-200 {% if not share.is_active %}opacity-60{% endif %}">
                     <div class="flex items-center gap-3 min-w-0">
                         <div class="uppercase flex size-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-700 text-white text-[11px] font-bold shadow-sm shadow-indigo-500/20">
                             {{ share.user.email|slice:":1" }}
@@ -20,11 +20,17 @@
                                 {{ share.user.get_full_name|default:share.user.email }}
                             </p>
                             <p class="text-[10px] text-zinc-500 truncate">{{ share.user.email }}</p>
+                            <p class="text-[10px] text-zinc-500 truncate">
+                                {{ share.get_permission_display }}
+                                {% if share.include_documents %}&middot; documents{% endif %}
+                                {% if share.purpose %}&middot; {{ share.get_purpose_display|lower }}{% endif %}
+                                {% if share.revoked_at %}&middot; revoked {{ share.revoked_at|date:"M d, Y" }}{% elif share.expires_at %}&middot; until {{ share.expires_at|date:"M d, Y" }}{% endif %}
+                            </p>
                         </div>
                     </div>
                     <div class="flex items-center gap-2.5 shrink-0">
                         <span class="text-[10px] text-zinc-500 hidden sm:block tabular-nums">{{ share.created_at|date:"M d, Y" }}</span>
-                        {% if can_grant %}
+                        {% if can_grant and share.is_active %}
                             <form method="POST"
                                   action="{% url 'records:record_share_revoke' record.pk share.pk %}"
                                   onsubmit="return confirm('Revoke access for {{ share.user.email }}? This cannot be undone.');">
@@ -66,8 +72,29 @@
                     Share
                 </button>
             </div>
+            <div class="flex items-center gap-4 text-[11px] text-zinc-400">
+                <label class="inline-flex items-center gap-1.5">
+                    <input type="radio"
+                           name="permission"
+                           value="edit"
+                           checked
+                           class="accent-indigo-500">
+                    Can edit
+                </label>
+                <label class="inline-flex items-center gap-1.5">
+                    <input type="radio" name="permission" value="view" class="accent-indigo-500">
+                    View only
+                </label>
+                <label class="inline-flex items-center gap-1.5">
+                    <input type="checkbox"
+                           name="include_documents"
+                           checked
+                           class="accent-indigo-500">
+                    Include documents
+                </label>
+            </div>
             <p class="text-[10px] text-zinc-500 leading-relaxed">
-                Recipients can view and edit this record. Edits are attributed to them in the record history.
+                Recipients see only this record. View-only recipients cannot edit; edits by editors are attributed in record history.
             </p>
         </form>
     {% elif can_share_feature is False %}

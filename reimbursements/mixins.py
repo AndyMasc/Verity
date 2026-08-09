@@ -42,9 +42,9 @@ class StripeAccountRequiredMixin(UserPassesTestMixin):
 class ReimbursementRequestRequiredMixin(StripeAccountRequiredMixin, FeatureRequiredMixin):
     """Requires a connected Stripe account and the Quick Reimbursement feature.
 
-    Combines the Stripe Connect onboarding check (``StripeAccountRequiredMixin``)
-    with the paid-only ``QUICK_REIMBURSEMENT_REQUEST`` feature gate, reusing the
-    shared feature-gate logic from ``billing.mixins.FeatureRequiredMixin``.
+    Combines the Stripe Connect onboarding check ("StripeAccountRequiredMixin")
+    with the paid-only "QUICK_REIMBURSEMENT_REQUEST" feature gate, reusing the
+    shared feature-gate logic from "billing.mixins.FeatureRequiredMixin".
     """
 
     def test_func(self) -> bool:

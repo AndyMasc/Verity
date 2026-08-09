@@ -43,13 +43,13 @@ def htmx_response(
 
     When the caller is an HTMX request, returns a 204 with HX-Trigger toast
     (and optionally HX-Redirect).  When the caller is a normal browser request,
-    returns None so the view can fall through to ``messages`` + ``redirect()``.
+    returns None so the view can fall through to "messages" + "redirect()".
 
     Args:
         request: The incoming Django request.
         toast: Text shown in the toast notification.
-        toast_tags: Tailwind toast class (``"success"`` or ``"error"``).
-        redirect_url: If set, adds ``HX-Redirect`` to navigate the client.
+        toast_tags: Tailwind toast class ("success" or "error").
+        redirect_url: If set, adds "HX-Redirect" to navigate the client.
         status: HTTP status code (default 204 No Content).
     """
     if request.headers.get("HX-Request") != "true":
@@ -66,7 +66,7 @@ class CachedPaginatorMixin:
     """Mixin that replaces paginate_queryset with a CachedPaginator.
 
     Avoids re-running expensive COUNT queries on repeated page requests.
-    Use with ``ListView`` or ``FilterView`` that sets ``paginate_by``.
+    Use with "ListView" or "FilterView" that sets "paginate_by".
     """
 
     def paginate_queryset(self, queryset, page_size):
@@ -116,7 +116,7 @@ def parse_record_ids(
 ) -> tuple[list[int] | None, HttpResponse | None]:
     """Parse and validate record_ids from a JSON request body.
 
-    Returns ``(ids, None)`` on success or ``(None, error_response)`` on failure.
+    Returns "(ids, None)" on success or "(None, error_response)" on failure.
     Used by bulk archive/unarchive and export views.
     """
     try:

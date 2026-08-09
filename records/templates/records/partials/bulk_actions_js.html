@@ -15,8 +15,10 @@
             showPackageModal: false,
             packageTitle: 'Expense Reimbursement',
             recipientEmail: '',
+            includeDocuments: true,
             recipientStatus: '',
             recipientName: '',
+            recipientRegistered: false,
             packageError: '',
             emailCheckTimeout: null,
             showShareModal: false,
@@ -75,9 +77,10 @@
             openPackageModal() {
                 this.packageTitle = 'Expense Reimbursement';
                 this.recipientEmail = '';
-                this.recipientStatus = '';
+                this.includeDocuments = true;
+this.recipientStatus = '';
                 this.recipientName = '';
-                this.packageError = '';
+                this.recipientRegistered = false;
                 this.showPackageModal = true;
             },
 
@@ -140,6 +143,7 @@
                 clearTimeout(this.emailCheckTimeout);
                 this.recipientStatus = '';
                 this.recipientName = '';
+                this.recipientRegistered = false;
                 if (!this.recipientEmail.trim() || !this.recipientEmail.includes('@')) return;
                 this.emailCheckTimeout = setTimeout(() => this.checkEmail(), 500);
             },
@@ -158,7 +162,8 @@
                     const data = await resp.json();
                     if (data.valid) {
                         this.recipientStatus = 'valid';
-                        this.recipientName = data.name;
+                        this.recipientName = data.name || '';
+                        this.recipientRegistered = !!data.registered;
                     } else {
                         this.recipientStatus = 'invalid';
                         this.packageError = data.error;
@@ -193,6 +198,7 @@
                             record_ids: this.selectedIds.map(Number),
                             title: this.packageTitle.trim() || 'Expense Reimbursement',
                             recipient_email: this.recipientEmail.trim(),
+                            include_documents: this.includeDocuments,
                         }),
                     });
 

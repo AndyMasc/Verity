@@ -34,7 +34,7 @@ def enqueue_reimbursement_processing(**kwargs: Any) -> None:
     """Hands the Stripe event to the reimbursements pipeline as a Dramatiq task.
 
     Runs after djstripe has already synced the event. Enqueued via
-    ``on_commit`` so the worker never races the trigger row's transaction, and
+    "on_commit" so the worker never races the trigger row's transaction, and
     failures are retried by Dramatiq instead of blocking djstripe's processing.
     """
     trigger = kwargs.get("instance")
@@ -66,7 +66,7 @@ def process_stripe_event(event):
     deliveries and retries are no-ops. Runs inside the caller's transaction;
     transient failures raise (so the task queue retries) and permanent
     failures are logged and skipped. Accepts both raw dicts (as produced by
-    djstripe's ``WebhookEventTrigger.json_body``) and stripe.StripeObject
+    djstripe's "WebhookEventTrigger.json_body") and stripe.StripeObject
     payloads.
     """
     event_id = event.get("id")
@@ -140,7 +140,11 @@ def process_stripe_event(event):
                 },
             )
 
-            transaction.on_commit(lambda: _notify_package_paid(package.pk, payment.payer.pk))
+            transaction.on_commit(
+                lambda: _notify_package_paid(
+                    package.pk, payment.payer.pk if payment.payer else None
+                )
+            )
 
     elif event["type"] in (
         "checkout.session.async_payment_succeeded",
@@ -180,7 +184,11 @@ def process_stripe_event(event):
                     "payer_email": payment.payer.email if payment.payer else None,
                 },
             )
-            transaction.on_commit(lambda: _notify_package_paid(package.pk, payment.payer.pk))
+            transaction.on_commit(
+                lambda: _notify_package_paid(
+                    package.pk, payment.payer.pk if payment.payer else None
+                )
+            )
         else:
             payment.mark_failed()
             logger.warning(

@@ -81,7 +81,7 @@ def _locmem_cache(settings):  # type: ignore[no-untyped-def]
 
     The default cache backend is Redis (shared with the running web server and
     background workers). Tests override it with a per-process LocMemCache so
-    ``cache.clear()`` and cache key churn never touch the live cache.
+    "cache.clear()" and cache key churn never touch the live cache.
     """
     settings.CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
 

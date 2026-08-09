@@ -1,8 +1,8 @@
 """Django signals for the records module.
 
-Hooks into ``post_save`` on Record to trigger automatic matching with
+Hooks into "post_save" on Record to trigger automatic matching with
 Plaid transactions whenever a record is updated (not created). The
-matching task is enqueued inside ``transaction.on_commit`` to avoid
+matching task is enqueued inside "transaction.on_commit" to avoid
 race conditions with uncommitted data.
 """
 

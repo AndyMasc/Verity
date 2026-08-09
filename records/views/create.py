@@ -41,7 +41,7 @@ def _ocr_error_message(document: DocumentData) -> str:
 class AddRecordView(LoginRequiredMixin, CreateView):
     """Create a new record, either manually or via an uploaded document.
 
-    When a ``document_id`` is provided, this view shows a waiting spinner
+    When a "document_id" is provided, this view shows a waiting spinner
     while background processing completes, redirects to the record detail
     once available, or shows an error card on failure.
     """

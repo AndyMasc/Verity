@@ -10,8 +10,8 @@ from . import entitlements
 class FeatureRequiredMixin(UserPassesTestMixin):
     """Ensures the user's plan includes a given feature.
 
-    Set ``required_feature`` on the view to one of the constants from
-    ``billing.features``. Users without the feature are redirected to the
+    Set "required_feature" on the view to one of the constants from
+    "billing.features". Users without the feature are redirected to the
     pricing page (or given a JSON 403 for AJAX requests).
     """
 

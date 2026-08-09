@@ -46,12 +46,12 @@
         </nav>
         <header class="mb-6 sm:mb-10">
             <div class="flex flex-wrap items-center gap-2.5 mb-3">
-                <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-[11px] tracking-wider uppercase ring-1 ring-inset shadow-xs {% if package.status == 'paid' %} bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 ring-emerald-500/20 {% elif package.is_expired %} bg-zinc-500/10 text-zinc-500 dark:text-zinc-400 ring-zinc-500/20 {% else %} bg-amber-500/10 text-amber-600 dark:text-amber-400 ring-amber-500/20 {% endif %}">
+                <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-[11px] tracking-wider uppercase ring-1 ring-inset shadow-xs {% if package.status == 'paid' %} bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 ring-emerald-500/20 {% elif package.status == 'queued' %} bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 ring-indigo-500/20 {% elif package.is_expired %} bg-zinc-500/10 text-zinc-500 dark:text-zinc-400 ring-zinc-500/20 {% else %} bg-amber-500/10 text-amber-600 dark:text-amber-400 ring-amber-500/20 {% endif %}">
                     <span class="relative flex h-1.5 w-1.5">
-                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 {% if package.status == 'paid' %}bg-emerald-400 {% elif package.is_expired %}bg-zinc-400 {% else %}bg-amber-400{% endif %}"></span>
-                        <span class="relative inline-flex rounded-full h-1.5 w-1.5 {% if package.status == 'paid' %}bg-emerald-500 {% elif package.is_expired %}bg-zinc-500 {% else %}bg-amber-500{% endif %}"></span>
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 {% if package.status == 'paid' %}bg-emerald-400 {% elif package.status == 'queued' %}bg-indigo-400 {% elif package.is_expired %}bg-zinc-400 {% else %}bg-amber-400{% endif %}"></span>
+                        <span class="relative inline-flex rounded-full h-1.5 w-1.5 {% if package.status == 'paid' %}bg-emerald-500 {% elif package.status == 'queued' %}bg-indigo-500 {% elif package.is_expired %}bg-zinc-500 {% else %}bg-amber-500{% endif %}"></span>
                     </span>
-                    {% if package.status == 'paid' %}Paid{% elif package.is_expired %}Expired{% else %}Pending Settlement{% endif %}
+                    {% if package.status == 'paid' %}Paid{% elif package.status == 'queued' %}Awaiting Payer{% elif package.is_expired %}Expired{% else %}Pending Settlement{% endif %}
                 </div>
                 <span class="text-zinc-300 dark:text-zinc-700">·</span>
                 <span class="text-xs text-zinc-400 tabular-nums">{{ package.created_at|date:"M d, Y" }}</span>
@@ -99,10 +99,10 @@
                 <p class="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1.5">Creator</p>
                 <p class="text-[13px] text-zinc-900 dark:text-zinc-200 truncate font-medium">{{ package.creator.email }}</p>
             </div>
-            {% if package.recipient %}
+            {% if package.recipient_address %}
                 <div class="p-4 rounded-xl bg-white/60 dark:bg-zinc-900/20 backdrop-blur-md ring-1 ring-inset ring-black/[0.04] dark:ring-white/[0.04]">
                     <p class="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1.5">Recipient</p>
-                    <p class="text-[13px] text-zinc-900 dark:text-zinc-200 truncate font-medium">{{ package.recipient.email }}</p>
+                    <p class="text-[13px] text-zinc-900 dark:text-zinc-200 truncate font-medium">{{ package.recipient_address }}</p>
                 </div>
             {% endif %}
             {% if package.expires_at %}
@@ -127,12 +127,13 @@
                         <div class="p-4 space-y-3">
                             <div class="flex items-start justify-between gap-3">
                                 <div>
-                                    <p class="font-medium text-[13px] text-zinc-900 dark:text-zinc-100">
+                                    <a href="{% url 'records:record_detail' item.record.pk %}"
+                                       class="font-medium text-[13px] text-zinc-900 dark:text-zinc-100 hover:text-zinc-950 dark:hover:text-white transition-colors">
                                         {{ item.record.title|default:"Expense Item" }}
                                         {% if item.is_inactive %}
                                             <span class="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-zinc-200/70 dark:bg-zinc-700/50 text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">Archived</span>
                                         {% endif %}
-                                    </p>
+                                    </a>
                                     {% if item.record.merchant %}
                                         <p class="text-[11px] text-zinc-400 dark:text-zinc-500 mt-0.5">{{ item.record.merchant }}</p>
                                     {% endif %}
@@ -189,12 +190,13 @@
                             {% for item in record_items %}
                                 <tr class="group hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40 transition-colors duration-150">
                                     <td class="px-5 py-4 align-top">
-                                        <p class="font-medium text-[13px] text-zinc-900 dark:text-zinc-100 group-hover:text-zinc-950 dark:group-hover:text-white transition-colors">
+                                        <a href="{% url 'records:record_detail' item.record.pk %}"
+                                           class="font-medium text-[13px] text-zinc-900 dark:text-zinc-100 group-hover:text-zinc-950 dark:group-hover:text-white transition-colors">
                                             {{ item.record.title|default:"Expense Item" }}
                                             {% if item.is_inactive %}
                                                 <span class="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-zinc-200/70 dark:bg-zinc-700/50 text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">Archived</span>
                                             {% endif %}
-                                        </p>
+                                        </a>
                                         {% if item.record.merchant %}
                                             <p class="text-[11px] text-zinc-400 dark:text-zinc-500 mt-0.5">{{ item.record.merchant }}</p>
                                         {% endif %}

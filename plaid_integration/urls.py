@@ -1,6 +1,6 @@
 """URL routing for the Plaid banking integration module.
 
-All endpoints are namespaced under ``plaid:`` and prefixed with ``/plaid/``
+All endpoints are namespaced under "plaid:" and prefixed with "/plaid/"
 in the project-level URL config.
 """
 

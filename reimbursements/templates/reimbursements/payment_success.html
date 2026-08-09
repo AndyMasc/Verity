@@ -52,10 +52,12 @@
                         View Package
                     </a>
                 {% endif %}
-                <a href="{% url 'core:dashboard' %}"
-                   class="w-full inline-flex items-center justify-center px-4 py-2.5 text-[13px] font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 rounded-2xl hover:bg-white/60 dark:hover:bg-zinc-900/40 transition-all duration-200">
-                    Dashboard
-                </a>
+                {% if user.is_authenticated %}
+                    <a href="{% url 'core:dashboard' %}"
+                       class="w-full inline-flex items-center justify-center px-4 py-2.5 text-[13px] font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 rounded-2xl hover:bg-white/60 dark:hover:bg-zinc-900/40 transition-all duration-200">
+                        Dashboard
+                    </a>
+                {% endif %}
             </div>
         </div>
     </main>

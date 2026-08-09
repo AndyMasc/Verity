@@ -37,7 +37,7 @@ def ExportExcelAll(request: HttpRequest) -> HttpResponse:
 def ExportSelectedExcel(request: HttpRequest) -> HttpResponse:
     """Export a subset of records to xlsx.
 
-    Accepts a JSON body with ``{"record_ids": [1, 2, 3]}`` and exports
+    Accepts a JSON body with "{"record_ids": [1, 2, 3]}" and exports
     only those records belonging to the user.
     """
     record_ids, error = parse_record_ids(request)

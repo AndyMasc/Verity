@@ -37,7 +37,7 @@ def _base_payload() -> dict:
 def build_site_context() -> dict:
     """Return site URL, domain, and name for use in notification templates.
 
-    Falls back to a localhost default when ``SITE_URL`` is not configured.
+    Falls back to a localhost default when "SITE_URL" is not configured.
     """
     site_url = getattr(settings, "SITE_URL", "http://localhost:8000")
     parsed_url = urlparse(site_url)
@@ -164,7 +164,7 @@ def send_multi_channel_notification(
 
     Each channel is independently gated: push is skipped if the user has no
     subscription or has push disabled, email is skipped if the user has email
-    disabled, and the database record is only created when ``send_db`` is True
+    disabled, and the database record is only created when "send_db" is True
     and a message is provided.
     """
     if send_push and webpush_payload and _user_can_receive_push(user):

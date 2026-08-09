@@ -198,7 +198,7 @@ class CreatePackageFromRecordsView(LoginRequiredMixin, ReimbursementRequestRequi
         if error:
             return JsonResponse({"error": error}, status=400)
 
-        send_package_created_notification(package, package.recipient)
+        send_package_created_notification(package)
 
         redirect_url = reverse(
             "reimbursements:package-detail", kwargs={"package_uuid": package.uuid}

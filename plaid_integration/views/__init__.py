@@ -1,7 +1,7 @@
 """Public view classes exposed by the plaid_integration views package.
 
 Re-exports every view from the sub-modules so they can be imported
-directly as ``plaid_integration.views.CreateLinkTokenView`` etc.
+directly as "plaid_integration.views.CreateLinkTokenView" etc.
 """
 
 from .link import (

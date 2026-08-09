@@ -39,9 +39,9 @@ class FolderForm(forms.ModelForm):
 
 
 class TrimmedTextarea(forms.Textarea):
-    """Textarea widget that renders without Django's default ``value`` attribute.
+    """Textarea widget that renders without Django's default "value" attribute.
 
-    Prevents whitespace from being injected into the ``<textarea>``
+    Prevents whitespace from being injected into the "<textarea>"
     element on initial render, which would cause cursor-position issues
     and extra trailing newlines.
     """

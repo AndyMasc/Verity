@@ -20,7 +20,7 @@ class RecordFilter(django_filters.FilterSet):
     """FilterSet for the record list view with dynamic folder and type choices.
 
     Folder and record-type dropdowns are populated per-user and cached for
-    one hour. The ``expiring_soon`` and ``this_month`` filters are boolean
+    one hour. The "expiring_soon" and "this_month" filters are boolean
     toggles backed by custom methods rather than simple ORM lookups.
     """
 
@@ -113,7 +113,7 @@ class RecordFilter(django_filters.FilterSet):
                 type_filter.extra["choices"] = [("", "All Types"), *filtered]
 
     def filter_by_folder(self, queryset, name, value):  # noqa: ARG002
-        """Filter by folder ID, or return unfiled records when *value* is ``"none"``."""
+        """Filter by folder ID, or return unfiled records when "value" is ""none""."""
         if not value:
             return queryset
 
@@ -135,8 +135,8 @@ class RecordFilter(django_filters.FilterSet):
     def filter_this_month(self, queryset, name, value):  # noqa: ARG002
         """Filter to records whose transaction date falls in the current calendar month.
 
-        Uses explicit date boundaries instead of ``__month``/``__year`` lookups
-        so that PostgreSQL can leverage the B-tree index on ``transaction_date``.
+        Uses explicit date boundaries instead of "__month"/"__year" lookups
+        so that PostgreSQL can leverage the B-tree index on "transaction_date".
         """
         if value:
             now = timezone.now()
@@ -154,8 +154,8 @@ class RecordFilter(django_filters.FilterSet):
     def filter_merged(self, queryset, name, value):  # noqa: ARG002
         """Filter to records that are the Plaid side of an active merge.
 
-        Matches via explicit merge-log IDs instead of a ``merge_logs_as_plaid``
-        join: filtering on a nullable related field's ``isnull`` also matches
+        Matches via explicit merge-log IDs instead of a "merge_logs_as_plaid"
+        join: filtering on a nullable related field's "isnull" also matches
         records with no merge logs at all (the LEFT JOIN emits NULLs), which
         would surface every Plaid transaction as "merged".
         """
@@ -170,10 +170,10 @@ class RecordFilter(django_filters.FilterSet):
     def filter_shared(self, queryset, name, value):  # noqa: ARG002
         """Filter to records in any share involving the user, either direction.
 
-        Covers records shared *with* the user (they are the recipient) and
-        records the user shared *to* others (they are the grantor), matching
-        the "All Shared" summary metric. Uses ``shared_by`` from the share row
-        so the owner matters, and ``distinct()`` for recipient-with-many-shares.
+        Covers records shared "with" the user (they are the recipient) and
+        records the user shared "to" others (they are the grantor), matching
+        the "All Shared" summary metric. Uses "shared_by" from the share row
+        so the owner matters, and "distinct()" for recipient-with-many-shares.
         """
         if value:
             user = self.request.user

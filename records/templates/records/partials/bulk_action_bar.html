@@ -183,8 +183,14 @@
                             <span x-text="'Verified: ' + recipientName"></span>
                         </p>
                     </template>
+                    <template x-if="recipientStatus === 'valid' && !recipientName">
+                        <p class="mt-1.5 text-[12px] text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1.5">
+                            <span class="size-1.5 rounded-full bg-amber-500 dark:bg-amber-400"></span>
+                            <span>External recipient — they'll verify their email to pay</span>
+                        </p>
+                    </template>
                     <template x-if="recipientStatus !== 'valid'">
-                        <p class="mt-1.5 text-[12px] text-zinc-400 dark:text-zinc-500">Must be a registered Papertrail user.</p>
+                        <p class="mt-1.5 text-[12px] text-zinc-400 dark:text-zinc-500">Enter the recipient's email address.</p>
                     </template>
                 </div>
             </div>

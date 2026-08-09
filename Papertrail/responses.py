@@ -2,7 +2,7 @@
 
 Provides convenience functions that return consistent JSON error/success
 bodies. When the request comes from an HTMX client, responses include
-an ``HX-Trigger`` header to display toast notifications in the UI.
+an "HX-Trigger" header to display toast notifications in the UI.
 """
 
 import json
@@ -20,8 +20,8 @@ def api_error(
 ) -> HttpResponse:
     """Return a standardized JSON error response.
 
-    For HTMX requests, includes an ``HX-Trigger`` header that shows
-    an error toast in the frontend. The ``details`` dict is optional
+    For HTMX requests, includes an "HX-Trigger" header that shows
+    an error toast in the frontend. The "details" dict is optional
     and provides additional context for validation errors.
     """
     body: dict[str, Any] = {"error": {"code": code, "message": message}}

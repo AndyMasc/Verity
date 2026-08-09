@@ -26,7 +26,7 @@ request_id_var: contextvars.ContextVar[str] = contextvars.ContextVar("request_id
 class RequestIDMiddleware:
     """Attaches a unique request ID to every request for distributed tracing.
 
-    Uses an incoming ``X-Request-ID`` header when present, otherwise generates
+    Uses an incoming "X-Request-ID" header when present, otherwise generates
     a UUID. The ID is set on the request object, stored in a context variable
     for log correlation, and echoed in the response header.
     """
@@ -50,7 +50,7 @@ class RequestIDLogFilter(logging.Filter):
     """Injects the current request ID into every log record.
 
     Attach this filter to log handlers so that log lines can be correlated
-    with specific HTTP requests via the ``request_id`` attribute.
+    with specific HTTP requests via the "request_id" attribute.
     """
 
     def filter(self, record: logging.LogRecord) -> bool:
@@ -59,9 +59,9 @@ class RequestIDLogFilter(logging.Filter):
 
 
 class TimezoneMiddleware:
-    """Activates the user's timezone based on a ``user_timezone`` cookie.
+    """Activates the user's timezone based on a "user_timezone" cookie.
 
-    Sets ``django.utils.timezone`` to the correct zone so that all template
+    Sets "django.utils.timezone" to the correct zone so that all template
     date rendering and ORM queries use the user's local time. Falls back to
     the default timezone when the cookie is absent or contains an invalid name.
     """
@@ -89,7 +89,7 @@ class HtmxMessageMiddleware:
     """Bridges Django's message framework with HTMX responses.
 
     For HTMX requests that are not full-page redirects or refreshes, this
-    middleware serializes pending messages into an ``HX-Trigger`` header so
+    middleware serializes pending messages into an "HX-Trigger" header so
     the client-side can display them without a full page reload.
     """
 

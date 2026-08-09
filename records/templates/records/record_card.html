@@ -1,7 +1,6 @@
 {% load form_tags %}
 <div data-record-id="{{ record.pk }}"
      class="relative group bg-transparent hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40 transition-colors duration-150 border-b border-zinc-100 dark:border-zinc-800/40 last:border-none">
-    <!-- Desktop / tablet: fixed grid, aligned with the list header row -->
     <a href="{% url 'records:record_detail' record.pk %}"
        class="hidden sm:grid grid-cols-[32px_minmax(0,1fr)_160px_110px_90px_100px] items-center gap-4 px-4 py-3">
         <div class="relative w-5 h-5" @click.stop>
@@ -29,7 +28,6 @@
                 </span>
             </label>
         </div>
-        <!-- Col 1: icon chip + title + merchant/notes -->
         <div class="min-w-0 flex items-center gap-3">
             <span class="shrink-0 px-2 py-1 rounded-lg w-full truncate max-w-35 flex items-center justify-center text-[10px] font-bold {{ record.badge_classes }} border">
                 {{ record.get_record_type_display|upper }}
@@ -43,24 +41,19 @@
                 </p>
             </div>
         </div>
-        <!-- Col 2: Payment method (truncated cleanly) -->
         <div class="text-xs text-right mr-4 font-medium text-zinc-500 dark:text-zinc-400 truncate min-w-0">
             {{ record.payment_method }}
         </div>
-        <!-- Col 3: expiry (truncated cleanly) -->
         <div class="text-xs font-medium truncate min-w-0 {% if record.expiry_date %}text-zinc-700 dark:text-zinc-200{% else %}text-zinc-400 dark:text-zinc-600{% endif %}">
             {% if record.expiry_date %}{{ record.expiry_date|timeuntil }}{% else %}—{% endif %}
         </div>
-        <!-- Col 4: date -->
         <div class="text-xs text-zinc-500 dark:text-zinc-400 truncate">
             {% if record.transaction_date %}{{ record.transaction_date|date:"M d" }}{% else %}{{ record.date_added|date:"M d" }}{% endif %}
         </div>
-        <!-- Col 5: amount -->
         <div class="text-sm font-semibold text-zinc-950 dark:text-zinc-50 text-right tracking-tight truncate">
             {% if record.balance %}{{ record.balance|currency_format:record.currency }}{% else %}<span class="text-zinc-400 dark:text-zinc-600 font-normal">—</span>{% endif %}
         </div>
     </a>
-    <!-- Mobile: stacked, unchanged -->
     <a href="{% url 'records:record_detail' record.pk %}"
        class="sm:hidden flex items-center gap-3 pl-3 pr-4 py-3">
         <span class="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold {{ record.badge_classes }} border">

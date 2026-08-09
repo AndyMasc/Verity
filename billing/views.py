@@ -83,7 +83,7 @@ def create_portal_session(request: HttpRequest) -> HttpResponse:
 
 
 def _validated_price(price_id: str | None, category: str) -> str | None:
-    """Return the price ID only if it belongs to an active product in ``category``."""
+    """Return the price ID only if it belongs to an active product in "category"."""
     if not price_id:
         return None
     price = Price.objects.filter(id=price_id, active=True).select_related("product").first()

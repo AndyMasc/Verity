@@ -4,10 +4,10 @@
    associated R2 file is asynchronously removed via a background task on
    transaction commit.
 
-2. Storage accounting: keeps ``CustomUser.storage_used_bytes`` in sync with
-   the document set. ``pre_save`` snapshots the previously counted bytes,
-   ``post_save`` applies the delta, and ``post_delete`` subtracts the
-   permanently deleted document's contribution. ``QuerySet.delete()`` sends
+2. Storage accounting: keeps CustomUser.storage_used_bytes in sync with
+   the document set. pre_save snapshots the previously counted bytes,
+   "post_save" applies the delta, and "post_delete" subtracts the
+   permanently deleted document's contribution. "QuerySet.delete()" sends
    these signals per object, so bulk cleanup paths stay accurate too.
 """
 

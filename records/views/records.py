@@ -25,15 +25,15 @@ from Papertrail.views import CachedPaginatorMixin, htmx_response
 from .. import services
 from ..filters import RecordFilter
 from ..forms import RecordUpdateForm
-from ..models import MergeLog, Record
+from ..models import MergeLog, Record, RecordShare
 
 
 def snapshot_with_currency(snapshot: dict[str, Any] | None, fallback: str) -> dict[str, Any]:
-    """Ensure a MergeLog snapshot dict carries a ``currency`` key for templates.
+    """Ensure a MergeLog snapshot dict carries a "currency" key for templates.
 
     Snapshots created before currency was recorded lack the key; the detail
-    and history templates use it as a ``currency_format`` filter argument,
-    which raises ``VariableDoesNotExist`` when absent.
+    and history templates use it as a "currency_format" filter argument,
+    which raises "VariableDoesNotExist" when absent.
     """
     clean = dict(snapshot or {})
     clean.setdefault("currency", fallback)
@@ -77,8 +77,8 @@ DEFERRED_FIELDS = ("products",)
 class RecordListView(LoginRequiredMixin, CachedPaginatorMixin, FilterView):
     """Paginated, filterable list of the current user's records.
 
-    Supports ``smart_search`` via the ``search`` query param and HTMX
-    partial rendering for in-page updates. Uses ``CachedPaginator`` to
+    Supports "smart_search" via the "search" query param and HTMX
+    partial rendering for in-page updates. Uses "CachedPaginator" to
     avoid re-evaluating the queryset on repeated page requests.
     """
 
@@ -136,8 +136,15 @@ class RecordListView(LoginRequiredMixin, CachedPaginatorMixin, FilterView):
             shared_count=Count(
                 "id",
                 distinct=True,
-                filter=(Q(shares__user=self.request.user) | Q(shares__shared_by=self.request.user))
-                & Q(is_active=True),
+                filter=(
+                    (Q(shares__user=self.request.user) | Q(shares__shared_by=self.request.user))
+                    & Q(shares__revoked_at__isnull=True)
+                    & (
+                        Q(shares__expires_at__isnull=True)
+                        | Q(shares__expires_at__gt=timezone.now())
+                    )
+                    & Q(is_active=True)
+                ),
             ),
         )
 
@@ -224,6 +231,19 @@ class RecordDetailView(LoginRequiredMixin, UpdateView):
         seven_years_ago = timezone.now() - timedelta(days=365 * 7)
         context["seven_years_ago_unix"] = seven_years_ago.timestamp()
 
+        if self.object.user_id != self.request.user.pk:
+            share = RecordShare.active_for(self.request.user).filter(record=self.object).first()
+            context["share_permission"] = (
+                share.permission if share is not None else RecordShare.Permission.VIEW
+            )
+            # Documents follow the grant: include_documents=False hides them
+            # from the recipient even though the record itself is visible.
+            if share is None or not share.include_documents:
+                context["documents"] = []
+            else:
+                context["documents"] = list(self.object.documents.all())
+            context["is_shared_recipient"] = True
+
         if self.object.is_plaid_record:
             active_merge = (
                 MergeLog.objects.filter(
@@ -246,6 +266,25 @@ class RecordDetailView(LoginRequiredMixin, UpdateView):
 
     @transaction.atomic
     def form_valid(self, form):
+        # Only the owner or an editor-permission sharee may mutate the record.
+        if self.object.user_id != self.request.user.pk:
+            share = RecordShare.active_for(self.request.user).filter(record=self.object).first()
+            if share is None or share.permission != RecordShare.Permission.EDIT:
+                if self.request.headers.get("HX-Request") == "true":
+                    response = HttpResponse(status=204)
+                    response["HX-Trigger"] = json.dumps(
+                        {
+                            "showToast": {
+                                "text": "This record is shared with you as view-only.",
+                                "tags": "error",
+                            }
+                        }
+                    )
+                    return response
+                from django.http import HttpResponseForbidden
+
+                return HttpResponseForbidden("This record is shared with you as view-only.")
+
         messages.success(self.request, "Record updated successfully.")
         self.object = form.save()
 

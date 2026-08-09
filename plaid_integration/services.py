@@ -116,7 +116,7 @@ def trigger_initial_sync(plaid_item: PlaidItem) -> None:
 def dispatch_sync(plaid_item: PlaidItem) -> bool:
     """Enqueue a transaction sync for an item, debounced atomically by a per-item cooldown.
 
-    Returns ``True`` when the sync was dispatched, ``False`` when it was
+    Returns "True" when the sync was dispatched, "False" when it was
     skipped because the last sync fell within the cooldown window.
     """
     now = tz.now()

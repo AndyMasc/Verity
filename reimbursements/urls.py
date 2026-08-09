@@ -21,4 +21,24 @@ urlpatterns = [
         views.CreatePackageCheckoutView.as_view(),
         name="create-checkout",
     ),
+    path(
+        "pay/<uuid:package_uuid>/",
+        views.PackagePayView.as_view(),
+        name="pay-package",
+    ),
+    path(
+        "pay/<uuid:package_uuid>/verify/",
+        views.RequestVerificationCodeView.as_view(),
+        name="pay-request-code",
+    ),
+    path(
+        "pay/<uuid:package_uuid>/verify/confirm/",
+        views.VerifyEmailCodeView.as_view(),
+        name="pay-verify-code",
+    ),
+    path(
+        "pay/<uuid:package_uuid>/checkout/",
+        views.PayPackageCheckoutView.as_view(),
+        name="pay-checkout",
+    ),
 ]

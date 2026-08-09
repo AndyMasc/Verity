@@ -1,6 +1,6 @@
 """URL configuration for the core application.
 
-All routes live under the ``core`` namespace. The root path serves the landing
+All routes live under the "core" namespace. The root path serves the landing
 page for unauthenticated visitors and redirects to the dashboard for logged-in
 users.
 """

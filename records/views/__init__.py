@@ -1,7 +1,7 @@
 """Public view classes exposed by the records views package.
 
 Re-exports every view from the sub-modules so they can be imported
-directly as ``records.views.RecordListView`` etc.
+directly as "records.views.RecordListView" etc.
 """
 
 from .create import AddRecordView, CheckOCRStatus

@@ -22,7 +22,7 @@ class EncryptedJSONField(EncryptedTextField):
     NOTE: get_prep_value intentionally skips super() to avoid Django 6's
     TextField.get_prep_value calling self.to_python(), which would
     json.loads the JSON string back into a Python object before encryption,
-    resulting in ``str(list)`` (single-quoted Python repr) being stored
+    resulting in "str(list)" (single-quoted Python repr) being stored
     instead of valid JSON.
     """
 

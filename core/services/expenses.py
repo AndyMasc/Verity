@@ -17,13 +17,13 @@ PERIOD_MONTHS = {"3m": 3, "6m": 6, "1y": 12, "all": None}
 
 
 def get_monthly_expense_series(user, period: str = "3m") -> dict:
-    """Return per-month expense totals for *user* over *period*.
+    """Return per-month expense totals for "user" over "period".
 
     Args:
-        period: ``3m``, ``6m``, ``1y``, or ``all`` (default ``3m``).
+        period: "3m", "6m", "1y", or "all" (default "3m").
 
     Returns:
-        ``{"months": [{"label": "Jan 24", "total": 1234.56}, ...], "currency": "$"}``
+        "{"months": [{"label": "Jan 24", "total": 1234.56}, ...], "currency": "$"}"
     """
     months_back = PERIOD_MONTHS.get(period)
     user_currency = getattr(user.settings, "default_currency", "usd")
