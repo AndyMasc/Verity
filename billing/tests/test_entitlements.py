@@ -75,7 +75,7 @@ class EntitlementTests(TestCase):
         self.assertFalse(entitlements.has_feature(self.user, features.BANK_TRANSACTION_SYNC))
 
     def test_storage_addon_alone_does_not_unlock_pro_features(self):
-        self._add_subscription(status="active", product_id=metadata.STORAGE_UPGRADE_25.stripe_id)
+        self._add_subscription(status="active", product_id=metadata.STORAGE_UPGRADE_10.stripe_id)
         self.assertEqual(entitlements.get_plan(self.user), "free")
         self.assertEqual(entitlements.get_features(self.user), entitlements.FREE_FEATURES)
         self.assertFalse(entitlements.has_feature(self.user, features.UNLIMITED_SCANS))
@@ -151,11 +151,11 @@ class ContextProcessorTests(TestCase):
     def test_storage_addon_plan_name_is_not_free(self):
         from ..context_processors import subscription_status
 
-        self._add_subscription(status="active", product_id=metadata.STORAGE_UPGRADE_25.stripe_id)
+        self._add_subscription(status="active", product_id=metadata.STORAGE_UPGRADE_10.stripe_id)
         ctx = subscription_status(self._request())
-        self.assertEqual(ctx["plan_name"], metadata.STORAGE_UPGRADE_25.name)
+        self.assertEqual(ctx["plan_name"], metadata.STORAGE_UPGRADE_10.name)
         self.assertEqual(ctx["plan"], "free")
-        self.assertEqual(ctx["monthly_scan_limit"], 30)
+        self.assertEqual(ctx["monthly_scan_limit"], entitlements.FREE_MONTHLY_SCAN_LIMIT)
         self.assertNotIn(features.UNLIMITED_SCANS, ctx["features"])
 
     def test_pro_plan_name_is_dynamic(self):
@@ -245,20 +245,23 @@ class StorageLimitTests(TestCase):
         return sub
 
     def test_free_user_gets_free_storage_limit(self):
-        self.assertEqual(entitlements.get_storage_limit(self.user), 1)
+        self.assertEqual(entitlements.get_storage_limit(self.user), features.FREE_STORAGE_LIMIT_GB)
         self.assertEqual(metadata.plan_for_user(self.user).stripe_id, "free")
 
     def test_paid_user_gets_pro_storage_limit(self):
         self._add_subscription_with_product(metadata.PAPERTRAIL_PRO.stripe_id)
-        self.assertEqual(entitlements.get_storage_limit(self.user), 25)
+        self.assertEqual(entitlements.get_storage_limit(self.user), features.PRO_STORAGE_LIMIT_GB)
         self.assertEqual(
             metadata.plan_for_user(self.user).stripe_id,
             metadata.PAPERTRAIL_PRO.stripe_id,
         )
 
     def test_storage_addon_alone_boosts_storage_only(self):
-        self._add_subscription_with_product(metadata.STORAGE_UPGRADE_25.stripe_id)
-        self.assertEqual(entitlements.get_storage_limit(self.user), 26)
+        self._add_subscription_with_product(metadata.STORAGE_UPGRADE_10.stripe_id)
+        self.assertEqual(
+            entitlements.get_storage_limit(self.user),
+            features.FREE_STORAGE_LIMIT_GB + features.STORAGE_ADDITIONAL_GB,
+        )
         self.assertEqual(entitlements.get_plan(self.user), "free")
         self.assertEqual(metadata.plan_for_user(self.user).stripe_id, "free")
 
@@ -268,11 +271,14 @@ class StorageLimitTests(TestCase):
         )
         self._add_subscription_with_product(metadata.PAPERTRAIL_PRO.stripe_id, customer=customer)
         self._add_subscription_with_product(
-            metadata.STORAGE_UPGRADE_25.stripe_id, customer=customer
+            metadata.STORAGE_UPGRADE_10.stripe_id, customer=customer
         )
         self.user.customer = customer
         self.user.save()
-        self.assertEqual(entitlements.get_storage_limit(self.user), 50)
+        self.assertEqual(
+            entitlements.get_storage_limit(self.user),
+            features.PRO_STORAGE_LIMIT_GB + features.STORAGE_ADDITIONAL_GB,
+        )
         self.assertEqual(entitlements.get_plan(self.user), "paid")
         self.assertEqual(
             metadata.plan_for_user(self.user).stripe_id,

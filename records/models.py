@@ -93,6 +93,19 @@ class RecordQuerySet(models.QuerySet):
         """Scope the queryset to records belonging to *user*."""
         return self.filter(user=user)
 
+    def shared_with_me(self, user: AbstractUser) -> RecordQuerySet:
+        """Records another user has explicitly shared with *user*."""
+        return self.filter(shares__user=user, is_active=True)
+
+    def visible_to(self, user: AbstractUser) -> RecordQuerySet:
+        """Everything *user* may see: own records plus records shared with them.
+
+        This is the single access boundary for the application. Authoritative
+        checks (detail views, mutations) must go through this queryset, never
+        ``for_user`` alone.
+        """
+        return self.filter(Q(user=user) | Q(shares__user=user)).distinct()
+
     def active(self) -> RecordQuerySet:
         """Return only records that have not been soft-deleted."""
         return self.filter(is_active=True)
@@ -333,6 +346,16 @@ class Record(models.Model):
         """Permanently remove this record from the database. Irreversible."""
         super().delete(using=using, keep_parents=keep_parents)
 
+    def is_shared_with(self, user: AbstractUser) -> bool:
+        """True if *user* can access this record through a share."""
+        if user.pk == self.user_id:
+            return True
+        return self.shares.filter(user=user).exists()
+
+    @property
+    def shared_count(self) -> int:
+        return self.shares.count()
+
     def __str__(self):
         return self.title
 
@@ -452,6 +475,8 @@ class AuditLog(models.Model):
         HARD_DELETE = "hard_delete"
         ARCHIVE = "archive"
         UNARCHIVE = "unarchive"
+        SHARE = "share"  # record shared with a user
+        REVOKE_SHARE = "revoke_share"  # record share removed
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -476,3 +501,56 @@ class AuditLog(models.Model):
 
     def __str__(self) -> str:
         return f"{self.action} by user={self.user_id} record={self.record_id} at {self.created_at}"
+
+
+class RecordShare(models.Model):
+    """An explicit grant of access to a record for another user.
+
+    Sharing grants the full view + edit experience: the recipient sees the
+    record in their list/search, can open and edit it, and their edits are
+    attributed to them in the record's history (simple_history already
+    records ``history_user`` per change).
+
+    Model choices
+    -------------
+    * One row per (record, user) pair; the unique constraint makes grants
+      idempotent at the DB layer and is indexed for the ``visible_to``
+      queryset.
+    """
+
+    record = models.ForeignKey(
+        Record,
+        on_delete=models.CASCADE,
+        related_name="shares",
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="shared_records",
+    )
+    shared_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        help_text="User who granted the share",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["record", "user"],
+                name="unique_record_share",
+                violation_error_message="This record is already shared with that user.",
+            )
+        ]
+        indexes = [
+            models.Index(fields=["record"], name="idx_recordshare_record"),
+            models.Index(fields=["user"], name="idx_recordshare_user"),
+        ]
+
+    def __str__(self) -> str:
+        return f"share record={self.record_id} -> user={self.user_id}"

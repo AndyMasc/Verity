@@ -10,6 +10,7 @@ from datetime import datetime, time, timedelta
 from asgiref.sync import sync_to_async
 from django.core.cache import cache
 from django.db.models import Count, Q
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.timezone import make_aware
 
@@ -81,7 +82,7 @@ async def get_dashboard_context(user) -> dict:
     user_settings = await sync_to_async(UserSettings.objects.get_or_create)(user=user)
     user_currency = user_settings[0].default_currency
 
-    all_user_records = Record.objects.for_user(user)
+    all_user_records = Record.objects.visible_to(user)
     active_records_qs = all_user_records.active()
 
     (
@@ -121,7 +122,7 @@ async def get_dashboard_context(user) -> dict:
                 "notes",
                 "nickname",
                 "payment_method",
-            )[:3]
+            )[:4]
         ),
         _fetch_records(
             active_records_qs.filter(
@@ -191,25 +192,55 @@ async def get_dashboard_context(user) -> dict:
         .acount()
     )
 
+    monthly_expenses_total = await sync_to_async(_convert_total)(
+        [(b, c) for b, c in monthly_expense_rows if b], user_currency
+    )
+    sent_reimbursements_total = await sync_to_async(_convert_total)(
+        [(a, c) for a, c in sent_payment_rows], user_currency
+    )
+    received_reimbursements_total = await sync_to_async(_convert_total)(
+        [(a, c) for a, c in received_payment_rows], user_currency
+    )
+
+    records_list_url = reverse("records:view_all_records")
+    expiring_soon_count = len(expiring_soon)
+
     context = {
         "merged_records_count": merge_count,
         "records": recent_records,
         "expiring_soon": expiring_soon,
-        "expiring_soon_count": len(expiring_soon),
-        "monthly_expenses": await sync_to_async(_convert_total)(
-            [(b, c) for b, c in monthly_expense_rows if b], user_currency
-        ),
+        "expiring_soon_count": expiring_soon_count,
+        "monthly_expenses": monthly_expenses_total,
+        "metrics": [
+            {
+                "label": "Expenses",
+                "value": monthly_expenses_total,
+                "trailing": f"{local_date.strftime('%B')} \u2192",
+                "url": f"{records_list_url}?this_month=True",
+                "currency": user_currency,
+            },
+            {
+                "label": "Expiring Soon",
+                "value": expiring_soon_count,
+                "subtext": "record" if expiring_soon_count == 1 else "records",
+                "trailing": "View \u2192",
+                "url": f"{records_list_url}?expiring_soon=True",
+            },
+            {
+                "label": "Matched Entries",
+                "value": merge_count,
+                "subtext": "match" if merge_count == 1 else "matches",
+                "trailing": "Review \u2192",
+                "url": f"{records_list_url}?merged=True",
+            },
+        ],
         "orphaned_document_count": orphaned_count,
         "webpush_warning": webpush_warning,
         "notifications": notifications,
         "unread_notifications_count": unread_notifications_count,
-        "reimbursements_sent_total": await sync_to_async(_convert_total)(
-            [(a, c) for a, c in sent_payment_rows], user_currency
-        ),
+        "reimbursements_sent_total": sent_reimbursements_total,
         "reimbursements_sent_pending_count": reimb_stats["sent_pending_count"],
-        "reimbursements_received_total": await sync_to_async(_convert_total)(
-            [(a, c) for a, c in received_payment_rows], user_currency
-        ),
+        "reimbursements_received_total": received_reimbursements_total,
         "reimbursements_received_count": reimb_stats["received_count"],
         "has_packages": reimb_stats["has_packages"] > 0,
     }

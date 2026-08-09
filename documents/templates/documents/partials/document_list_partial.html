@@ -1,37 +1,73 @@
-<div class="divide-y divide-zinc-200/60 dark:divide-zinc-700/50">
+<div class="divide-y divide-zinc-200/60 dark:divide-zinc-800/50">
     {% for document in documents %}
-        <div class="group flex items-center gap-3 px-2 sm:px-3 py-3 sm:py-4 hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40 transition-colors duration-150">
+        <div class="group flex sm:grid sm:grid-cols-[minmax(0,1fr)_150px_130px_90px_44px] sm:items-center sm:gap-4 sm:px-4 sm:py-2.5 pl-3 pr-2 py-4 hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40 transition-colors duration-150">
+            <!-- Desktop: title / source / date / type / delete -->
             <a href="{% url 'documents:view_document' document.pk %}"
-               class="flex items-center gap-3 min-w-0 flex-1 pr-3">
-                <span class="shrink-0 inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider shadow-xs {% if document.did_ocr %} bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 border border-zinc-900 dark:border-zinc-100 {% else %} bg-zinc-100 text-zinc-600 dark:bg-zinc-800/80 dark:text-zinc-300 border border-zinc-200/80 dark:border-zinc-700/50 {% endif %}">
+               class="hidden sm:flex min-w-0 items-center gap-3 pr-3">
+                <span class="shrink-0 px-2 py-1 rounded-lg w-full truncate max-w-35 flex items-center justify-center text-[10px] font-bold {% if document.did_ocr %} bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 border border-zinc-900 dark:border-zinc-100 {% else %} bg-zinc-100 text-zinc-600 dark:bg-zinc-800/80 dark:text-zinc-300 border border-zinc-200/80 dark:border-zinc-700/50 {% endif %}">
                     {% if document.did_ocr %}OCR{% else %}File{% endif %}
                 </span>
                 <div class="min-w-0 flex-1">
                     <p class="font-medium text-zinc-950 dark:text-zinc-50 text-sm truncate group-hover:text-black dark:group-hover:text-white transition-colors">
                         {{ document.title }}
                     </p>
-                    <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-zinc-500 dark:text-zinc-300 mt-0.5">
-                        {% if document.associated_record %}
-                            <span class="inline-flex items-center gap-1 truncate max-w-[140px] sm:max-w-[180px]">
-                                <svg class="w-3 h-3 opacity-60 shrink-0"
-                                     fill="none"
-                                     viewBox="0 0 24 24"
-                                     stroke-width="1.8"
-                                     stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-                                </svg>
-                                {{ document.associated_record.title }}
-                            </span>
+                    <p class="text-[11px] text-zinc-400 dark:text-zinc-500 truncate mt-0.5">
+                        {% if document.notes %}
+                            <span class="italic">{{ document.notes }}</span>
+                        {% elif document.did_ocr %}
+                            OCR processed
+                        {% else %}
+                            Uploaded file
                         {% endif %}
-                        {% if document.associated_record %}<span class="text-zinc-400 dark:text-zinc-500">·</span>{% endif %}
-                        <span class="tabular-nums">{{ document.date_added|date:"M d, Y" }}</span>
-                        <span class="text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-300 border border-zinc-200/60 dark:border-zinc-700/60">
-                            {{ document.filepath|slice:"-4:"|cut:"." }}
-                        </span>
+                    </p>
+                </div>
+            </a>
+            <div class="hidden sm:block text-xs text-right mr-4 font-medium text-zinc-500 dark:text-zinc-400 truncate min-w-0">
+                {% if document.associated_record %}{{ document.associated_record.title }}{% else %}—{% endif %}
+            </div>
+            <div class="hidden sm:block text-xs font-medium truncate min-w-0 text-zinc-700 dark:text-zinc-200">
+                {{ document.date_added|date:"M d, Y" }}
+            </div>
+            <div class="hidden sm:block text-xs font-semibold text-zinc-500 dark:text-zinc-400 truncate">
+                {% if document.file_extension %}{{ document.file_extension|upper }}{% else %}—{% endif %}
+            </div>
+            <div class="hidden sm:flex justify-center relative z-20 sm:opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-150">
+                <form action="{% url 'documents:delete_document' document.pk %}"
+                      method="POST"
+                      onsubmit="return confirm('Delete this document permanently?');"
+                      class="inline">
+                    {% csrf_token %}
+                    <button type="submit"
+                            class="p-1.5 rounded-lg text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-all cursor-pointer"
+                            title="Delete document">
+                        <svg class="w-4 h-4"
+                             fill="none"
+                             viewBox="0 0 24 24"
+                             stroke-width="2"
+                             stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                        </svg>
+                    </button>
+                </form>
+            </div>
+            <!-- Mobile: stacked layout -->
+            <a href="{% url 'documents:view_document' document.pk %}"
+               class="sm:hidden flex items-center gap-3 min-w-0 flex-1">
+                <span class="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold max-w-8 truncate {% if document.did_ocr %} bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 border border-zinc-900 dark:border-zinc-100 {% else %} bg-zinc-100 text-zinc-600 dark:bg-zinc-800/80 dark:text-zinc-300 border border-zinc-200/80 dark:border-zinc-700/50 {% endif %}">
+                    {% if document.did_ocr %}OCR{% else %}{{ document.file_extension|upper|default:"File" }}{% endif %}
+                </span>
+                <div class="min-w-0 flex-1">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="font-medium text-zinc-950 dark:text-zinc-50 text-sm truncate">{{ document.title }}</span>
+                        <span class="text-xs font-medium text-zinc-500 dark:text-zinc-400 shrink-0">{{ document.date_added|date:"M d, y" }}</span>
+                    </div>
+                    <div class="flex items-center justify-between gap-2 text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                        <span class="truncate">{% if document.associated_record %}{{ document.associated_record.title }}{% else %}Unlinked{% endif %}</span>
+                        <span class="shrink-0">{% if document.file_extension %}{{ document.file_extension|upper }}{% else %}—{% endif %}</span>
                     </div>
                 </div>
             </a>
-            <div class="shrink-0 relative z-20 sm:opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-150">
+            <div class="sm:hidden flex items-center pr-1 relative z-20">
                 <form action="{% url 'documents:delete_document' document.pk %}"
                       method="POST"
                       onsubmit="return confirm('Delete this document permanently?');"
@@ -52,21 +88,7 @@
             </div>
         </div>
     {% empty %}
-        <div class="flex flex-col items-center justify-center text-center py-16 px-4">
-            <div class="p-3 bg-zinc-100 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/60 rounded-2xl mb-3 text-zinc-400 shadow-xs">
-                <svg class="w-5 h-5"
-                     fill="none"
-                     viewBox="0 0 24 24"
-                     stroke-width="1.8"
-                     stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5A3.375 3.375 0 0 0 10.125 2.25H8.25m2.25 0H5.625A2.25 2.25 0 0 0 3.375 4.5v15a2.25 2.25 0 0 0 2.25 2.25h13.5a2.25 2.25 0 0 0 2.25-2.25V11.25s-2.25 0-2.25-2.25" />
-                </svg>
-            </div>
-            <p class="text-xs font-semibold text-zinc-800 dark:text-zinc-200">No documents found</p>
-            <p class="text-[11px] text-zinc-400 dark:text-zinc-500 mt-1 max-w-xs">
-                Adjust your search or filter parameters to locate your documents.
-            </p>
-        </div>
+        {% include 'core/partials/empty_state.html' with empty_icon="document" empty_title="No documents found" empty_message="Adjust your search or filter parameters to locate your documents." %}
     {% endfor %}
     {% include "core/pagination_controls.html" %}
 </div>

@@ -57,8 +57,8 @@ class DocumentDetailService:
 
     @staticmethod
     def _search_records(request):
-        """Return user records matching the current search query for association."""
-        queryset = Record.objects.for_user(request.user).active()
+        """Return records visible to the user for association (own + shared)."""
+        queryset = Record.objects.visible_to(request.user).active()
         search_query = request.GET.get("search", "").strip()
         if search_query:
             queryset = queryset.smart_search(search_query)

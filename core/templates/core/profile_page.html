@@ -1,13 +1,12 @@
 {% extends "base.html" %}
-{% load i18n %}
-{% load widget_tweaks %}
+{% load i18n widget_tweaks %}
 {% block title %}
-    {% trans "Profile Settings" %}
-{% endblock %}
+    {% translate "Profile Settings" %}
+{% endblock title %}
 {% block extra_head %}
     {% load webpush_notifications %}
     {% webpush_header %}
-{% endblock %}
+{% endblock extra_head %}
 {% block content %}
     <div x-data="{ currentTab: $persist('general') }"
          class="max-w-6xl mx-auto py-12 px-4 sm:px-6 lg:px-8 text-zinc-900 dark:text-zinc-100"
@@ -390,4 +389,4 @@
             </main>
         </div>
     </div>
-{% endblock %}
+{% endblock content %}

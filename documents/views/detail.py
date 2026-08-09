@@ -6,13 +6,16 @@ from typing import Any
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction
-from django.http import HttpRequest, HttpResponse
+from django.db.models import Q
+from django.http import HttpRequest, HttpResponse, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.generic import UpdateView
 from django_ratelimit.decorators import ratelimit
+
+from records.models import Record
 
 from ..forms import DocumentUpdateForm
 from ..models import DocumentData
@@ -41,7 +44,10 @@ class ViewDocument(LoginRequiredMixin, UpdateView):
         return [self.template_name]
 
     def get_queryset(self):
-        return DocumentData.objects.filter(user=self.request.user)
+        return DocumentData.objects.filter(
+            Q(user=self.request.user)
+            | Q(associated_record__in=Record.objects.visible_to(self.request.user))
+        ).select_related("associated_record")
 
     def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
         context = super().get_context_data(**kwargs)
@@ -54,6 +60,20 @@ class ViewDocument(LoginRequiredMixin, UpdateView):
 
     @transaction.atomic
     def form_valid(self, form) -> HttpResponse:
+        if self.object.user_id != self.request.user.pk:
+            # Documents attached to records shared with you are view-only.
+            if self.request.headers.get("HX-Request") == "true":
+                response = HttpResponse(status=204)
+                response["HX-Trigger"] = json.dumps(
+                    {
+                        "showToast": {
+                            "text": "Documents on shared records are view-only.",
+                            "tags": "error",
+                        }
+                    }
+                )
+                return response
+            return HttpResponseForbidden("This document is view-only.")
         if "associated_record" in self.request.POST:
             record_id = self.request.POST.get("associated_record", "").strip()
             DocumentDetailService.associate_record(form.instance, record_id, self.request.user)

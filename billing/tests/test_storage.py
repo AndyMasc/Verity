@@ -7,12 +7,12 @@ from django.urls import reverse
 from django.utils import timezone
 from djstripe.models import Customer, Price, Product, Subscription, SubscriptionItem
 
-from .. import entitlements, metadata
+from .. import entitlements, features, metadata
 from .helpers import FakeSession
 
 
 class StoragePackEntitlementTests(TestCase):
-    """Pro plan + 25GB storage pack should show a 50GB limit."""
+    """Pro plan + 10GB storage pack should show a 15GB limit."""
 
     def setUp(self):
         self.customer = Customer.objects.create(
@@ -63,7 +63,7 @@ class StoragePackEntitlementTests(TestCase):
         price_id="price_storage",
         product_meta=None,
     ):
-        product_meta = product_meta or metadata.STORAGE_UPGRADE_25
+        product_meta = product_meta or metadata.STORAGE_UPGRADE_10
         storage_product, _ = Product.objects.get_or_create(
             id=product_meta.stripe_id,
             defaults={
@@ -103,7 +103,10 @@ class StoragePackEntitlementTests(TestCase):
             price_id="price_100",
             product_meta=metadata.STORAGE_UPGRADE_50,
         )
-        self.assertEqual(entitlements.get_storage_limit(self.user), 125)
+        self.assertEqual(
+            entitlements.get_storage_limit(self.user),
+            features.PRO_STORAGE_LIMIT_GB + features.STORAGE_ADDITIONAL_GB_50,
+        )
         self.assertEqual(
             [a.stripe_id for a in metadata.storage_addons_for_user(self.user)],
             [metadata.STORAGE_UPGRADE_50.stripe_id],
@@ -113,9 +116,12 @@ class StoragePackEntitlementTests(TestCase):
             "Papertrail Pro + 100GB Storage Upgrade",
         )
 
-    def test_limit_is_50_when_addon_shares_customer(self):
+    def test_limit_is_15_when_addon_shares_customer(self):
         self._make_storage_sub(self.customer)
-        self.assertEqual(entitlements.get_storage_limit(self.user), 50)
+        self.assertEqual(
+            entitlements.get_storage_limit(self.user),
+            features.PRO_STORAGE_LIMIT_GB + features.STORAGE_ADDITIONAL_GB,
+        )
         self.assertEqual(
             [a.stripe_id for a in metadata.storage_addons_for_user(self.user)],
             [metadata.STORAGE_UPGRADE_10.stripe_id],
@@ -125,7 +131,7 @@ class StoragePackEntitlementTests(TestCase):
             "Papertrail Pro + 25GB Storage Upgrade",
         )
 
-    def test_limit_is_50_when_addon_on_stray_customer(self):
+    def test_limit_is_15_when_addon_on_stray_customer(self):
         stray = Customer.objects.create(
             id="cus_stray",
             livemode=False,
@@ -133,7 +139,10 @@ class StoragePackEntitlementTests(TestCase):
             subscriber=self.user,
         )
         self._make_storage_sub(stray)
-        self.assertEqual(entitlements.get_storage_limit(self.user), 50)
+        self.assertEqual(
+            entitlements.get_storage_limit(self.user),
+            features.PRO_STORAGE_LIMIT_GB + features.STORAGE_ADDITIONAL_GB,
+        )
 
 
 class StoragePackConfirmFlowTests(TestCase):
@@ -213,7 +222,10 @@ class StoragePackConfirmFlowTests(TestCase):
         storage_sub = self._make_storage_sub()
         response = self._run_confirm(storage_sub, session_customer="cus_pro")
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(entitlements.get_storage_limit(self.user), 50)
+        self.assertEqual(
+            entitlements.get_storage_limit(self.user),
+            features.PRO_STORAGE_LIMIT_GB + features.STORAGE_ADDITIONAL_GB,
+        )
         self.assertEqual(
             metadata.plan_for_user(self.user).stripe_id,
             metadata.PAPERTRAIL_PRO.stripe_id,

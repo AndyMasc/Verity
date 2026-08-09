@@ -64,7 +64,7 @@
             </div>
         </div>
         {% with tp="modal-"|add:mode %}
-            {% include 'records/partials/merge/merge_search_panel.html' with records=records mode=mode target_prefix=tp page_obj=page_obj is_paginated=is_paginated %}
+            {% include 'records/partials/merge/merge_search_panel.html' with records=records mode=mode target_prefix=tp page_obj=page_obj is_paginated=is_paginated pagination_url=pagination_url %}
         {% endwith %}
     </div>
 </div>

@@ -1,0 +1,15 @@
+{% load form_tags %}
+Record Shared With You
+
+Hi {{ recipient_name }},
+
+{{ actor_name }} shared the record "{{ title }}" with you{% if amount %} for {{ amount|currency_format:currency }}{% endif %}.
+
+You can now view and edit this record. Your changes are tracked in the
+record history so your edits are attributed to you.
+
+View record: {{ record_url }}
+
+---
+Sent via Papertrail
+---

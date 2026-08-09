@@ -58,6 +58,7 @@ PAPERTRAIL_PRO = ProductMetadata(
         features.QUICK_REIMBURSEMENT_REQUEST,
         features.PRO_STORAGE_LIMIT,
         features.AUTO_TXN_CATEGORIZATION,
+        features.RECORD_SHARING,
     ],
     storage_limit_gb=features.PRO_STORAGE_LIMIT_GB,
 )

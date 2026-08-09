@@ -7,7 +7,7 @@ keeping the rest of the admin read-safe for regular staff.
 
 from django.contrib import admin, messages
 
-from .models import Folder, Record
+from .models import Folder, Record, RecordShare
 
 
 @admin.action(description="Hard-delete selected records (permanent)")
@@ -76,3 +76,15 @@ class RecordAdmin(admin.ModelAdmin):
 
 admin.site.register(Record, RecordAdmin)
 admin.site.register(Folder)
+
+
+@admin.register(RecordShare)
+class RecordShareAdmin(admin.ModelAdmin):
+    list_display = ("record", "user", "shared_by", "created_at")
+    list_filter = ("created_at",)
+    search_fields = ("record__title", "user__email")
+    date_hierarchy = "created_at"
+    raw_id_fields = ("record", "user", "shared_by")
+
+    def has_delete_permission(self, request, obj=None):  # noqa: ARG002
+        return request.user.is_superuser

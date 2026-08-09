@@ -1,0 +1,35 @@
+{# Reusable empty state shown when a list query has no results. #}
+{# Expects: empty_title (required), empty_icon (optional: "document", "record", "search", else generic), empty_message (optional). #}
+<div class="flex flex-col items-center justify-center gap-3 py-14 px-6 text-center">
+    {% if empty_icon == "document" %}
+        <svg class="size-10 text-zinc-300 dark:text-zinc-600"
+             fill="none"
+             viewBox="0 0 24 24"
+             stroke-width="1.5"
+             stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+        </svg>
+    {% elif empty_icon == "records" %}
+        <svg class="size-10 text-zinc-300 dark:text-zinc-600"
+             fill="none"
+             viewBox="0 0 24 24"
+             stroke-width="1.5"
+             stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m3-9h3.375c.621 0 1.125.504 1.125 1.125V18a2.25 2.25 0 0 1-2.25 2.25M16.5 7.5V18a2.25 2.25 0 0 0 2.25 2.25M16.5 7.5V4.875c0-.621-.504-1.125-1.125-1.125H4.125C3.504 3.75 3 4.254 3 4.875V18a2.25 2.25 0 0 0 2.25 2.25h13.5M6 7.5h3v3H6v-3Z" />
+        </svg>
+    {% else %}
+        <svg class="size-10 text-zinc-300 dark:text-zinc-600"
+             fill="none"
+             viewBox="0 0 24 24"
+             stroke-width="1.5"
+             stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+        </svg>
+    {% endif %}
+    <div>
+        <h3 class="text-sm font-semibold text-zinc-700 dark:text-zinc-200">{{ empty_title }}</h3>
+        {% if empty_message %}
+            <p class="mt-1 text-xs text-zinc-400 dark:text-zinc-500">{{ empty_message }}</p>
+        {% endif %}
+    </div>
+</div>

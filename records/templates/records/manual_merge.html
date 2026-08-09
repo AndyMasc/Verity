@@ -1,43 +1,56 @@
 {% extends "base.html" %}
+{% load form_tags %}
 {% block content %}
     <div x-data="mergeForm"
-         class="w-full min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center py-10 px-4 sm:px-6 lg:px-8 bg-zinc-50/50 dark:bg-zinc-950/40">
-        <div class="w-full max-w-3xl mx-auto flex flex-col items-center">
-            <h1 class="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 text-center mb-1.5">Manual Record Merge</h1>
-            <p class="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 text-center max-w-md mb-10">
-                Reconcile your books by pairing a bank transaction with an uploaded record.
-            </p>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 w-full">
+         class="w-full min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center py-16 px-4 sm:px-6 lg:px-8 bg-zinc-50/50 dark:bg-zinc-950/40 selection:bg-zinc-900 selection:text-white dark:selection:bg-white dark:selection:text-black">
+        <div class="w-full max-w-2xl mx-auto flex flex-col items-center relative">
+            <!-- Ambient Glow Accent -->
+            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-500/5 dark:bg-indigo-500/10 rounded-full blur-3xl pointer-events-none -z-10">
+            </div>
+            <!-- Header Section -->
+            <div class="text-center space-y-2 mb-10">
+                <h1 class="text-2xl sm:text-3xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">Manual Record Merge</h1>
+                <p class="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 max-w-md mx-auto">
+                    Pair a verified bank transaction with an uploaded document record to reconcile your ledger.
+                </p>
+            </div>
+            <!-- Merge Slots Grid with Central Connector -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full relative">
                 {% include 'records/partials/merge/merge_slot.html' with mode="plaid" label="Bank Transaction" icon="bank" selectedState="selectedPlaid" selectedTitle="plaidTitle" %}
+                <!-- Center Visual Node Indicator (Desktop) -->
+                <div class="hidden sm:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-white/[0.08] shadow-sm items-center justify-center text-zinc-400">
+                    <svg class="w-3.5 h-3.5"
+                         fill="none"
+                         viewBox="0 0 24 24"
+                         stroke-width="2"
+                         stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21 3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
+                    </svg>
+                </div>
                 {% include 'records/partials/merge/merge_slot.html' with mode="doc" label="Uploaded Receipt" icon="receipt" selectedState="selectedDoc" selectedTitle="docTitle" %}
             </div>
+            <!-- Submit Form Section -->
             <form method="POST" class="w-full mt-6">
                 {% csrf_token %}
                 <input type="hidden" name="plaid_record_id" x-bind:value="selectedPlaid">
                 <input type="hidden" name="document_record_id" x-bind:value="selectedDoc">
                 <button type="submit"
                         x-bind:disabled="!canMerge"
-                        x-bind:class="canMerge ? 'bg-zinc-950 hover:bg-zinc-900 dark:bg-zinc-50 dark:hover:bg-zinc-200 text-white dark:text-zinc-950 shadow-[0_4px_20px_rgba(0,0,0,0.15)] dark:shadow-[0_4px_20px_rgba(255,255,255,0.08)] cursor-pointer active:scale-[0.99]' : 'bg-zinc-200 dark:bg-zinc-900 text-zinc-400 dark:text-zinc-600 cursor-not-allowed'"
-                        class="w-full py-2 px-4 rounded-2xl text-xs font-bold tracking-wide uppercase transition-all duration-200 flex items-center justify-center gap-2 border border-transparent dark:border-zinc-800/80">
-                    <svg xmlns="http://www.w3.org/2000/svg"
-                         fill="none"
-                         viewBox="0 0 24 24"
-                         stroke-width="2.5"
-                         stroke="currentColor"
-                         class="size-4 shrink-0">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 3v1.5M3 21v-6m0 0 2.77-.693a9 9 0 0 1 6.208.682l.108.054a9 9 0 0 0 6.086.71l3.114-.732a48.524 48.524 0 0 1-.005-10.499l-3.11.732a9 9 0 0 1-6.085-.711l-.108-.054a9 9 0 0 0-6.208-.682L3 4.5M3 15V4.5" />
-                    </svg>
+                        x-bind:class="canMerge ? 'bg-black text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200 shadow-lg shadow-black/10 dark:shadow-white/10 cursor-pointer active:scale-[0.99]' : 'bg-zinc-100 dark:bg-zinc-900/40 text-zinc-400 dark:text-zinc-600 border border-zinc-200 dark:border-white/[0.04] cursor-not-allowed'"
+                        class="w-full py-3 px-4 rounded-xl text-xs font-semibold tracking-wider uppercase transition-all duration-200 flex items-center justify-center gap-2">
                     <span x-show="!canMerge">Awaiting Record Selection</span>
-                    <span x-show="canMerge">ready to Merge</span>
+                    <span x-show="canMerge">Merge</span>
                 </button>
             </form>
-            <div class="flex items-center gap-2 mt-8 text-xs font-medium text-zinc-400 dark:text-zinc-600">
-                <a href="{% url 'records:merge_list' %}"
-                   class="hover:text-zinc-950 dark:hover:text-zinc-100 transition-colors py-1">View merges</a>
-                <span>·</span>
-                <span>Manual Override Mode</span>
+            <!-- Footer Meta Links -->
+            <div class="flex items-center gap-3 mt-8 text-xs font-medium text-zinc-400 dark:text-zinc-500">
+                <a href="{% filter_url 'records:view_all_records' merged='True' %}"
+                   class="hover:text-zinc-950 dark:hover:text-zinc-100 transition-colors py-1">View merged history</a>
+                <span class="text-zinc-300 dark:text-zinc-800">·</span>
+                <span>Manual Override Protocol</span>
             </div>
         </div>
+        <!-- Modal Overlay -->
         <div id="modal-overlay"
              x-show="showModal"
              x-transition:enter="transition ease-out duration-250"
@@ -49,16 +62,17 @@
              x-cloak
              class="fixed inset-0 z-50 flex items-center justify-center p-4"
              @keyup.escape.window="showModal = false">
-            <div class="fixed inset-0 bg-zinc-900/40 dark:bg-black/60 backdrop-blur-sm"
+            <div class="fixed inset-0 bg-zinc-900/40 dark:bg-black/70 backdrop-blur-md transition-opacity"
                  @click="showModal = false"></div>
             <div x-transition:enter="transition ease-out duration-300"
-                 x-transition:enter-start="opacity-0 scale-98 translate-y-2"
+                 x-transition:enter-start="opacity-0 scale-[0.98] translate-y-2"
                  x-transition:enter-end="opacity-100 scale-100 translate-y-0"
                  x-transition:leave="transition ease-in duration-200"
                  x-transition:leave-start="opacity-100 scale-100 translate-y-0"
-                 x-transition:leave-end="opacity-0 scale-98 translate-y-2"
-                 class="relative bg-white/90 dark:bg-zinc-900/90 backdrop-blur-2xl rounded-2xl shadow-2xl border border-black/5 dark:border-white/10 w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
-                <div class="p-6 overflow-y-auto min-h-0 flex-1" id="modal-inner"></div>
+                 x-transition:leave-end="opacity-0 scale-[0.98] translate-y-2"
+                 class="relative bg-white dark:bg-[#0c0c0e] backdrop-blur-2xl rounded-2xl shadow-[0_24px_64px_rgba(0,0,0,0.15)] dark:shadow-[0_24px_64px_rgba(0,0,0,0.8)] border border-zinc-200 dark:border-white/[0.08] ring-1 ring-zinc-900/[0.04] dark:ring-white/[0.04] w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
+                <div class="p-6 overflow-y-auto min-h-0 flex-1 scrollbar-none"
+                     id="modal-inner"></div>
             </div>
         </div>
     </div>
@@ -77,4 +91,4 @@
             }));
         });
     </script>
-{% endblock %}
+{% endblock content %}

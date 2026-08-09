@@ -9,22 +9,21 @@ import json
 import posthog
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.core.paginator import Paginator
+from django.core.paginator import Page, Paginator
 from django.db.models import QuerySet
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.utils.decorators import method_decorator
 from django.views.generic.base import View
 from django.views.generic.edit import FormView
-from django_filters.views import FilterView
 from django_ratelimit.decorators import ratelimit
 
 from documents.models import DocumentData
 from Papertrail.responses import api_error
 from Papertrail.views import create_audit_log
 
-from ..filters import MergeLogFilter, RecordFilter
+from ..filters import RecordFilter
 from ..forms import ManualMergeForm
 from ..matching import merge_document_into_plaid, undo_merge
 from ..models import AuditLog, MergeLog, Record
@@ -66,7 +65,7 @@ class ManualMergeView(LoginRequiredMixin, FormView):
 
     template_name = "records/manual_merge.html"
     form_class = ManualMergeForm
-    success_url = reverse_lazy("records:merge_list")
+    success_url = reverse_lazy("records:view_all_records")
 
     @method_decorator(ratelimit(key="user", rate="30/h", method="POST", block=True))
     def dispatch(self, *args, **kwargs):
@@ -144,6 +143,15 @@ class ManualMergeView(LoginRequiredMixin, FormView):
         return redirect(self.success_url)
 
 
+def _next_merge_page_url(request: HttpRequest, mode: str, page_obj: Page) -> str | None:
+    """Absolute URL for the next page of merge search results, or None on the last page."""
+    if not page_obj.has_next():
+        return None
+    params = request.GET.copy()
+    params["page"] = str(page_obj.next_page_number())
+    return f"{reverse('records:manual_merge_search', args=[mode])}?{params.urlencode()}"
+
+
 class ManualMergeSearchView(LoginRequiredMixin, View):
     """HTMX endpoint that returns a paginated, filterable list of merge candidates for a given mode."""
 
@@ -169,6 +177,7 @@ class ManualMergeSearchView(LoginRequiredMixin, View):
                 "target_prefix": f"modal-{mode}",
                 "page_obj": page_obj,
                 "is_paginated": page_obj.has_other_pages(),
+                "pagination_url": _next_merge_page_url(request, mode, page_obj),
             },
         )
 
@@ -195,29 +204,9 @@ class ManualMergeModalView(LoginRequiredMixin, View):
                 "filter": filter_instance,
                 "page_obj": page_obj,
                 "is_paginated": page_obj.has_other_pages(),
+                "pagination_url": _next_merge_page_url(request, mode, page_obj),
             },
         )
-
-
-class MergeListView(LoginRequiredMixin, FilterView):
-    """Paginated list of active merges for the current user with search support."""
-
-    model = MergeLog
-    template_name = "records/merge_list.html"
-    context_object_name = "merges"
-    filterset_class = MergeLogFilter
-    paginate_by = 25
-
-    def get_queryset(self):
-        return MergeLog.objects.filter(
-            plaid_record__user=self.request.user,
-            undone_at__isnull=True,
-        ).select_related("plaid_record", "document_record", "document")
-
-    def get_template_names(self):
-        if self.request.headers.get("HX-Target") == "merge-list-container":
-            return ["records/partials/merge/merge_list_partial.html"]
-        return [self.template_name]
 
 
 class UndoMergeView(LoginRequiredMixin, View):
@@ -273,4 +262,4 @@ class UndoMergeView(LoginRequiredMixin, View):
                 )
                 return response
             messages.success(request, "Merge undone. Records and document restored.")
-        return redirect("records:merge_list")
+        return redirect("records:view_all_records")

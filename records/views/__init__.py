@@ -11,7 +11,6 @@ from .merges import (
     ManualMergeModalView,
     ManualMergeSearchView,
     ManualMergeView,
-    MergeListView,
     UndoMergeView,
 )
 from .record_state import (
@@ -38,7 +37,6 @@ __all__ = [
     "ManualMergeModalView",
     "ManualMergeSearchView",
     "ManualMergeView",
-    "MergeListView",
     "RecordDetailView",
     "RecordHistoryView",
     "RecordListView",

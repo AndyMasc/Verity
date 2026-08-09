@@ -1,35 +1,12 @@
 {% with tp=target_prefix|default:mode %}
-    <div class="space-y-1">
+    <div class="space-y-1.5 py-4">
         {% for record in records %}
             {% include 'records/partials/merge/merge_selection_card.html' %}
         {% empty %}
-            <div class="text-center py-8 text-xs font-medium text-zinc-500 dark:text-zinc-400">No matching records found.</div>
+            <div class="text-center py-10 text-xs font-medium text-zinc-500 dark:text-zinc-400 bg-zinc-50/50 dark:bg-zinc-900/20 rounded-xl border border-dashed border-zinc-200 dark:border-zinc-800">
+                No matching records found.
+            </div>
         {% endfor %}
-        {% if is_paginated %}
-            <nav class="flex items-center justify-between gap-2 mt-3"
-                 aria-label="Pagination">
-                {% if page_obj.has_previous %}
-                    <button type="button"
-                            class="px-3 py-1.5 text-xs font-medium text-zinc-600 dark:text-zinc-200 bg-zinc-100 dark:bg-zinc-800/70 border border-zinc-200/50 dark:border-zinc-700/60 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white transition-all duration-200 cursor-pointer active:scale-[0.97]"
-                            hx-get="{% url 'records:manual_merge_search' mode %}?page={{ page_obj.previous_page_number }}"
-                            hx-target="#{{ tp }}-results"
-                            hx-include="#{{ tp }}-filter-form, #{{ tp }}-search"
-                            hx-indicator="#{{ tp }}-indicator">Previous</button>
-                {% else %}
-                    <div></div>
-                {% endif %}
-                <span class="text-xs text-zinc-500 dark:text-zinc-300">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
-                {% if page_obj.has_next %}
-                    <button type="button"
-                            class="px-3 py-1.5 text-xs font-medium text-zinc-600 dark:text-zinc-200 bg-zinc-100 dark:bg-zinc-800/70 border border-zinc-200/50 dark:border-zinc-700/60 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white transition-all duration-200 cursor-pointer active:scale-[0.97]"
-                            hx-get="{% url 'records:manual_merge_search' mode %}?page={{ page_obj.next_page_number }}"
-                            hx-target="#{{ tp }}-results"
-                            hx-include="#{{ tp }}-filter-form, #{{ tp }}-search"
-                            hx-indicator="#{{ tp }}-indicator">Next</button>
-                {% else %}
-                    <div></div>
-                {% endif %}
-            </nav>
-        {% endif %}
+        {% include 'core/pagination_controls.html' with pagination_url=pagination_url pagination_target="#"|add:tp|add:"-results" pagination_include="#"|add:tp|add:"-search, #"|add:tp|add:"-filter-form" pagination_indicator="#"|add:tp|add:"-indicator" %}
     </div>
 {% endwith %}

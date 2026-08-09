@@ -92,6 +92,14 @@ def _bulk_response(
     verb: str,
 ) -> HttpResponse:
     """Build an HTMX-compatible response for a bulk archive/unarchive operation."""
+    if count == 0:
+        return JsonResponse(
+            {
+                "error": f"No records were {verb}. Only the owner can archive "
+                "a record, and it must be in the opposite state.",
+            },
+            status=400,
+        )
     if request.headers.get("HX-Request") == "true":
         response = HttpResponse(status=200)
         response["HX-Trigger"] = json.dumps(

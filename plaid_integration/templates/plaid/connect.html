@@ -3,7 +3,7 @@
 {% block title %}Connect Bank | Papertrail{% endblock %}
 {% block extra_head %}
     <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
-{% endblock %}
+{% endblock extra_head %}
 {% block content %}
     <div class="max-w-7xl mx-auto py-12 px-6 space-y-10 font-sans antialiased">
         <header class="flex items-center justify-between gap-4 pb-6 border-b border-zinc-200/60 dark:border-zinc-800/60">
@@ -137,7 +137,7 @@
             </div>
         {% endif %}
     </div>
-{% endblock %}
+{% endblock content %}
 {% block head %}
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -295,4 +295,4 @@
             });
         });
     </script>
-{% endblock %}
+{% endblock head %}

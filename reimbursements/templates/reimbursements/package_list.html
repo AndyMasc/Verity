@@ -4,7 +4,6 @@
 {% block content %}
     <main class="min-h-screen w-full max-w-6xl mx-auto px-4 py-16"
           x-data="{ tab: 'all', q: '' }">
-        <!-- Header & Action Toolbar -->
         <header class="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-2 mb-12">
             <div class="space-y-1">
                 <a href="{% url 'core:dashboard' %}"
@@ -22,7 +21,6 @@
                 <p class="text-sm text-zinc-500 dark:text-zinc-400">All reimbursement packages you've sent or received.</p>
             </div>
             <div class="flex items-center gap-3">
-                <!-- Search -->
                 <div class="relative">
                     <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none"
                          fill="none"
@@ -36,7 +34,6 @@
                            placeholder="Search packages..."
                            class="w-full md:w-56 pl-10 pr-4 py-1.5 text-sm rounded-xl bg-zinc-100/60 dark:bg-zinc-900/60 border border-zinc-200/60 dark:border-zinc-800/80 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-600 transition-all shadow-sm">
                 </div>
-                <!-- Tabs -->
                 <div class="inline-flex p-1 rounded-xl bg-zinc-100/80 dark:bg-zinc-900/80 backdrop-blur-xl border border-zinc-200/60 dark:border-zinc-800/80 shadow-sm text-sm">
                     <button @click="tab = 'all'"
                             :class="tab === 'all' ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm font-medium' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200'"
@@ -50,7 +47,6 @@
                 </div>
             </div>
         </header>
-        <!-- Stripe Notice -->
         {% if not stripe_connected %}
             <div class="mb-10 px-4 py-3.5 rounded-2xl border border-zinc-200/60 dark:border-zinc-800/80 bg-zinc-50/50 dark:bg-zinc-900/30 backdrop-blur-xl flex items-center justify-between shadow-sm">
                 <p class="text-sm text-zinc-600 dark:text-zinc-400 font-medium">Connect Stripe to send reimbursement requests.</p>
@@ -60,11 +56,9 @@
                 </a>
             </div>
         {% endif %}
-        <!-- Sections Container with Fixed Min-Height to Prevent Page Layout Jumping -->
         <div class="space-y-10 min-h-[50vh]">
             {% for label, pkgs, type in sections %}
                 <section x-show="tab === 'all' || tab === '{{ type }}'" class="space-y-3">
-                    <!-- Section Header -->
                     <div class="flex items-center justify-between pb-2">
                         <h2 class="text-xs font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">{{ label }}</h2>
                         {% if pkgs %}
@@ -73,7 +67,6 @@
                             </span>
                         {% endif %}
                     </div>
-                    <!-- Section Content -->
                     {% if pkgs %}
                         <ul class="divide-y divide-zinc-200/20 dark:divide-zinc-800/20 border border-zinc-200/40 dark:border-zinc-800/60 rounded-2xl bg-white/40 dark:bg-zinc-900/30 backdrop-blur-xl overflow-hidden shadow-sm">
                             {% for pkg in pkgs %}
@@ -81,12 +74,9 @@
                                     <a href="{% url 'reimbursements:package-detail' pkg.uuid %}"
                                        x-show="q === '' || '{{ pkg.title|escapejs }}'.toLowerCase().includes(q.toLowerCase())"
                                        class="group flex items-center justify-between px-4 py-3.5 hover:bg-zinc-100/50 dark:hover:bg-zinc-800/40 transition-all duration-150">
-                                        <!-- Left -->
                                         <div class="flex items-center gap-3.5 min-w-0">
-                                            <!-- Status Dot -->
                                             <span class="w-2 h-2 rounded-full shrink-0 {% if pkg.status == 'paid' %}bg-emerald-500 {% elif pkg.is_expired %}bg-zinc-400 dark:bg-zinc-600 {% else %}bg-amber-500 animate-pulse{% endif %}">
                                             </span>
-                                            <!-- Title + Meta -->
                                             <div class="min-w-0">
                                                 <p class="text-sm font-medium text-zinc-900 dark:text-zinc-200 truncate group-hover:text-zinc-950 dark:group-hover:text-white transition-colors">
                                                     {{ pkg.title }}
@@ -104,7 +94,6 @@
                                                 </p>
                                             </div>
                                         </div>
-                                        <!-- Right -->
                                         <div class="flex items-center gap-4 shrink-0 ml-4">
                                             <span class="text-sm font-medium tabular-nums text-zinc-900 dark:text-zinc-200">
                                                 {{ pkg.display_total|currency_format:pkg.currency }}
@@ -136,7 +125,6 @@
                 </section>
             {% endfor %}
         </div>
-        <!-- Pagination -->
         {% if is_paginated %}
             <nav class="flex items-center justify-between pt-6 mt-12 border-t border-zinc-200/40 dark:border-zinc-800/40">
                 {% if page_obj.has_previous %}
@@ -161,4 +149,4 @@
             </nav>
         {% endif %}
     </main>
-{% endblock %}
+{% endblock content %}

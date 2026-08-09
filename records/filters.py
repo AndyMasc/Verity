@@ -1,13 +1,14 @@
-"""Django-filters FilterSets for record and merge-log list views.
+"""Django-filters FilterSets for record list views.
 
-Provides the filter definitions used by RecordListView and MergeListView,
-including per-user caching of folder and record-type choices to avoid
-repeated database queries on every page load.
+Provides the filter definitions used by RecordListView, including
+per-user caching of folder and record-type choices to avoid repeated
+database queries on every page load.
 """
 
 import django_filters
 from django import forms
 from django.core.cache import cache
+from django.db.models import Q
 from django.utils import timezone
 
 from .models import Folder, MergeLog, Record
@@ -53,6 +54,18 @@ class RecordFilter(django_filters.FilterSet):
         label="Records from this month",
         field_name="this_month_records",
         widget=forms.Select(choices=[(False, "All Time"), (True, "This Month")]),
+    )
+
+    merged = django_filters.BooleanFilter(
+        method="filter_merged",
+        label="Merged",
+        widget=forms.Select(choices=[(False, "All Records"), (True, "Merged")]),
+    )
+
+    shared = django_filters.BooleanFilter(
+        method="filter_shared",
+        label="Shared with me",
+        widget=forms.Select(choices=[(False, "All Records"), (True, "Shared with me")]),
     )
 
     class Meta:
@@ -138,18 +151,31 @@ class RecordFilter(django_filters.FilterSet):
             )
         return queryset
 
+    def filter_merged(self, queryset, name, value):  # noqa: ARG002
+        """Filter to records that are the Plaid side of an active merge.
 
-class MergeLogFilter(django_filters.FilterSet):
-    """FilterSet for the merge list view. Supports free-text search across merge metadata."""
+        Matches via explicit merge-log IDs instead of a ``merge_logs_as_plaid``
+        join: filtering on a nullable related field's ``isnull`` also matches
+        records with no merge logs at all (the LEFT JOIN emits NULLs), which
+        would surface every Plaid transaction as "merged".
+        """
+        if value:
+            merged_plaid_ids = MergeLog.objects.filter(
+                plaid_record__user=self.request.user,
+                undone_at__isnull=True,
+            ).values_list("plaid_record_id", flat=True)
+            return queryset.filter(pk__in=merged_plaid_ids)
+        return queryset
 
-    search = django_filters.CharFilter(method="filter_search", label="Search")
+    def filter_shared(self, queryset, name, value):  # noqa: ARG002
+        """Filter to records in any share involving the user, either direction.
 
-    class Meta:
-        model = MergeLog
-        fields = []
-
-    def filter_search(self, queryset, name, value):  # noqa: ARG002
-        """Case-insensitive search against the ``search_text`` denormalised column."""
-        if not value:
-            return queryset
-        return queryset.filter(search_text__icontains=value)
+        Covers records shared *with* the user (they are the recipient) and
+        records the user shared *to* others (they are the grantor), matching
+        the "All Shared" summary metric. Uses ``shared_by`` from the share row
+        so the owner matters, and ``distinct()`` for recipient-with-many-shares.
+        """
+        if value:
+            user = self.request.user
+            return queryset.filter(Q(shares__user=user) | Q(shares__shared_by=user)).distinct()
+        return queryset

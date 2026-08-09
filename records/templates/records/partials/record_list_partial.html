@@ -1,24 +1,12 @@
 <div x-data="{ selectedRecord: null }"
      @click="if ($event.target.closest('[data-record-id]')) selectedRecord = $event.target.closest('[data-record-id]').dataset.recordId"
-     x-init="$nextTick(() => updateVisibleIds([{% for record in records %}'{{ record.pk }}'{% if not forloop.last %},{% endif %}{% endfor %}]))"
-     class="divide-y divide-zinc-200/60 dark:divide-zinc-700/50">
+     class="divide-y divide-zinc-200/60 dark:divide-zinc-800/50">
     {% for record in records %}
         <div data-record-id="{{ record.pk }}"
-             :class="selectedRecord === '{{ record.pk }}' ? 'ring-2 ring-inset ring-zinc-300 dark:ring-zinc-600' : ''"
+             :class="selectedRecord === '{{ record.pk }}' ? 'ring-2 ring-inset ring-zinc-300 dark:ring-zinc-600 bg-zinc-50/50 dark:bg-white/[0.01]' : ''"
              class="transition-all duration-200">{% include 'records/record_card.html' with list_view=True %}</div>
     {% empty %}
-        <div class="flex flex-col items-center justify-center text-center py-12 px-4">
-            <div class="p-3 bg-zinc-100 dark:bg-zinc-800/60 border border-zinc-200/60 dark:border-zinc-700/50 rounded-2xl mb-3 text-zinc-400">
-                <svg class="w-5 h-5"
-                     fill="none"
-                     viewBox="0 0 24 24"
-                     stroke-width="1.5"
-                     stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
-                </svg>
-            </div>
-            <p class="text-xs font-medium text-zinc-500 dark:text-zinc-400">No matching records found for this query.</p>
-        </div>
+        {% include 'core/partials/empty_state.html' with empty_title="No matching records found for this query." %}
     {% endfor %}
     {% include "core/pagination_controls.html" %}
 </div>

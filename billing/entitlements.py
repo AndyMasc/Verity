@@ -19,6 +19,7 @@ PAID_ONLY_FEATURES = frozenset(
         features.BANK_TRANSACTION_SYNC,
         features.QUICK_REIMBURSEMENT_REQUEST,
         features.AUTO_TXN_CATEGORIZATION,
+        features.RECORD_SHARING,
     }
 )
 

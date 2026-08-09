@@ -40,7 +40,9 @@ class RecordHistoryView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         from django.db.models import Q
 
-        self._record = get_object_or_404(Record, pk=self.kwargs["pk"], user=self.request.user)
+        self._record = get_object_or_404(
+            Record.objects.visible_to(self.request.user), pk=self.kwargs["pk"]
+        )
 
         record_entries = list(
             self._record.history.select_related("history_user")[:_HISTORY_MAX_ENTRIES_PER_SOURCE]

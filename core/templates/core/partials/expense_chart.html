@@ -129,7 +129,7 @@
                 if (this.animation.frame) cancelAnimationFrame(this.animation.frame);
                 this.animation.progress = 0;
                 const start = performance.now();
-                const duration = 800; 
+                const duration = 800;
                 const tick = (now) => {
                     const elapsed = now - start;
                     this.animation.progress = Math.min(elapsed / duration, 1);
@@ -215,7 +215,7 @@
                         const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 50);
                         glow.addColorStop(0, isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.08)');
                         glow.addColorStop(1, isDark ? 'rgba(255,255,255,0)' : 'rgba(0,0,0,0)');
-                        
+
                         ctx.beginPath();
                         ctx.arc(p.x, p.y, 50, 0, Math.PI * 2);
                         ctx.fillStyle = glow;
@@ -348,10 +348,10 @@
                         value: this.formatCurrency(closest.data.total),
                     };
 
-                    this.draw(); 
+                    this.draw();
                 } else {
                     this.tooltip.visible = false;
-                    this.draw(); 
+                    this.draw();
                 }
             }
         }

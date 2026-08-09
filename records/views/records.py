@@ -9,6 +9,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction
+from django.db.models import Count, Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -37,6 +38,20 @@ def snapshot_with_currency(snapshot: dict[str, Any] | None, fallback: str) -> di
     clean = dict(snapshot or {})
     clean.setdefault("currency", fallback)
     return clean
+
+
+def _record_list_url(request, **kwargs: Any) -> str:
+    """Build a records list URL that merges *kwargs* into the current query params."""
+    params = request.GET.copy()
+    for key, value in kwargs.items():
+        if value is None:
+            params.pop(key, None)
+        else:
+            params[key] = str(value)
+    base_url = reverse("records:view_all_records")
+    if params:
+        return f"{base_url}?{params.urlencode()}"
+    return base_url
 
 
 LIST_FIELDS = (
@@ -78,11 +93,103 @@ class RecordListView(LoginRequiredMixin, CachedPaginatorMixin, FilterView):
         return super().dispatch(*args, **kwargs)
 
     def get_queryset(self):
-        qs = Record.objects.for_user(self.request.user).only(*LIST_FIELDS)
+        qs = Record.objects.visible_to(self.request.user)
+        # Archived records are only reachable via the explicit "is_active" filter
+        # (the sidebar Archive link, the Active/All chips). Without a filter the
+        # list shows active records only, so archiving visibly removes a record.
+        if "is_active" not in self.request.GET:
+            qs = qs.filter(is_active=True)
         search_query = self.request.GET.get("search", "").strip()
         if search_query:
-            return qs.smart_search(search_query)
-        return qs.order_by("-last_edited")
+            qs = qs.smart_search(search_query)
+            # Also match merged records via their merged receipt's metadata so searching for a receipt title/merchant surfaces the merged entry.
+            merged_plaid_ids = MergeLog.objects.filter(
+                plaid_record__user=self.request.user,
+                undone_at__isnull=True,
+                search_text__icontains=search_query,
+            ).values_list("plaid_record_id", flat=True)
+            if merged_plaid_ids:
+                qs = qs | Record.objects.visible_to(self.request.user).filter(
+                    pk__in=merged_plaid_ids
+                )
+
+        self.filterset = self.filterset_class(self.request.GET, queryset=qs, request=self.request)
+        return self.filterset.qs.order_by("-last_edited").only(*LIST_FIELDS)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        now = timezone.now().date()
+        expiring_cutoff = now + timedelta(days=30)
+        base_qs = Record.objects.visible_to(self.request.user)
+
+        metrics = base_qs.aggregate(
+            total_count=Count("id", distinct=True),
+            active_count=Count("id", distinct=True, filter=Q(is_active=True)),
+            expiring_count=Count(
+                "id",
+                distinct=True,
+                filter=Q(expiry_date__gte=now, expiry_date__lte=expiring_cutoff)
+                & Q(is_active=True),
+            ),
+            inactive_count=Count("id", distinct=True, filter=Q(is_active=False)),
+            shared_count=Count(
+                "id",
+                distinct=True,
+                filter=(Q(shares__user=self.request.user) | Q(shares__shared_by=self.request.user))
+                & Q(is_active=True),
+            ),
+        )
+
+        merged_plaid_ids = MergeLog.objects.filter(
+            plaid_record__user=self.request.user,
+            undone_at__isnull=True,
+        ).values_list("plaid_record_id", flat=True)
+        metrics["merged_count"] = base_qs.filter(pk__in=merged_plaid_ids, is_active=True).count()
+
+        # Counts above are active-only (they must match the default list, which
+        # hides archived records). The "All Records" card deliberately counts
+        # everything and links with an explicit is_active="" so the list shows
+        # all records, archived included.
+        all_records_url = _record_list_url(self.request, is_active="", merged=None, shared=None)
+        context["metrics"] = [
+            {
+                "label": "All Records",
+                "value": metrics["total_count"],
+                "url": all_records_url,
+            },
+            {
+                "label": "Active",
+                "value": metrics["active_count"],
+                "url": _record_list_url(self.request, is_active="True"),
+            },
+            {
+                "label": "Expiring Soon",
+                "value": metrics["expiring_count"],
+                "url": _record_list_url(self.request, expiring_soon="True"),
+            },
+            {
+                "label": "Inactive",
+                "value": metrics["inactive_count"],
+                "url": _record_list_url(self.request, is_active="False"),
+            },
+            {
+                "label": "Merged",
+                "value": metrics["merged_count"],
+                "subtext": "match" if metrics["merged_count"] == 1 else "matches",
+                "url": _record_list_url(self.request, merged="True"),
+            },
+            {
+                "label": "All Shared",
+                "value": metrics["shared_count"],
+                "subtext": None,
+                "url": _record_list_url(self.request, shared="True"),
+            },
+        ]
+
+        context.update(metrics)
+        context["filter"] = self.filterset
+        return context
 
     def get_template_names(self):
         if self.request.headers.get("HX-Target") == "query-results-container":
@@ -110,7 +217,7 @@ class RecordDetailView(LoginRequiredMixin, UpdateView):
         return [self.template_name]
 
     def get_queryset(self):
-        return Record.objects.for_user(self.request.user).with_documents()
+        return Record.objects.visible_to(self.request.user).with_documents()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

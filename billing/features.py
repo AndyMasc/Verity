@@ -8,6 +8,7 @@ INCLUDES_ALL_FREE = "All free features"
 PRO_STORAGE_LIMIT_GB = 5
 PRO_STORAGE_LIMIT = f"{PRO_STORAGE_LIMIT_GB} GB cloud storage"
 AUTO_TXN_CATEGORIZATION = "Automatic transaction categorization and matching"
+RECORD_SHARING = "Collaborative records"  # Gate for granting record access to others
 
 # Free plan features
 FREE_MONTHLY_SCAN_LIMIT = 20

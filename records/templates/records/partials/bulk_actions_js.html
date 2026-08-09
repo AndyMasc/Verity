@@ -8,7 +8,6 @@
     function recordBulkActions() {
         return {
             selectedIds: [],
-            allVisibleIds: [],
             archiving: false,
             unarchiving: false,
             exporting: false,
@@ -20,9 +19,26 @@
             recipientName: '',
             packageError: '',
             emailCheckTimeout: null,
+            showShareModal: false,
+            shareEmails: '',
+            sharing: false,
+            shareError: '',
+
+            _collectVisibleIds() {
+                // All currently rendered record rows, including pages appended
+                // by infinite scroll. data-record-id appears on both the poster
+                // wrapper and the card root, so dedupe.
+                const container = document.getElementById('query-results-container')
+                    || document.getElementById('dashboard-content');
+                if (!container) return [];
+                return [...new Set(
+                    [...container.querySelectorAll('[data-record-id]')].map(el => el.dataset.recordId)
+                )];
+            },
 
             get allVisibleSelected() {
-                return this.allVisibleIds.length > 0 && this.allVisibleIds.every(id => this.selectedIds.includes(id));
+                const visible = this._collectVisibleIds();
+                return visible.length > 0 && visible.every(id => this.selectedIds.includes(id));
             },
 
             toggleSelect(id) {
@@ -34,19 +50,16 @@
             },
 
             toggleSelectAll() {
+                const visible = this._collectVisibleIds();
                 if (this.allVisibleSelected) {
-                    this.selectedIds = this.selectedIds.filter(id => !this.allVisibleIds.includes(id));
+                    this.selectedIds = this.selectedIds.filter(id => !visible.includes(id));
                 } else {
-                    this.selectedIds = [...new Set([...this.selectedIds, ...this.allVisibleIds])];
+                    this.selectedIds = [...new Set([...this.selectedIds, ...visible])];
                 }
             },
 
             clearSelection() {
                 this.selectedIds = [];
-            },
-
-            updateVisibleIds(ids) {
-                this.allVisibleIds = ids;
             },
 
             _getCsrfToken() {
@@ -66,6 +79,61 @@
                 this.recipientName = '';
                 this.packageError = '';
                 this.showPackageModal = true;
+            },
+
+            openShareModal() {
+                this.shareEmails = '';
+                this.shareError = '';
+                this.showShareModal = true;
+            },
+
+            async bulkShare() {
+                this.shareError = '';
+                const emails = this.shareEmails
+                    .split(',')
+                    .map(e => e.trim())
+                    .filter(e => e.length > 0);
+                if (emails.length === 0) {
+                    this.shareError = 'Enter at least one recipient email.';
+                    return;
+                }
+                this.sharing = true;
+                try {
+                    const response = await fetch("{% url 'records:bulk_share' %}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': this._getCsrfToken(),
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        body: JSON.stringify({
+                            record_ids: this.selectedIds.map(Number),
+                            emails: emails.join(', '),
+                        }),
+                    });
+                    const data = await response.json().catch(() => ({}));
+                    if (response.ok) {
+                        this.showShareModal = false;
+                        this.selectedIds = [];
+                        this._toast(
+                            'Shared ' + data.shared + ' record' + (data.shared === 1 ? '' : 's') +
+                            ' with ' + emails.length + ' recipient' + (emails.length === 1 ? '' : 's') + '.',
+                            25
+                        );
+                        if (data.unknown?.length) {
+                            this._toast(
+                                'No account found for: ' + data.unknown.join(', '),
+                                40
+                            );
+                        }
+                    } else {
+                        this.shareError = data.error || 'Failed to share records.';
+                    }
+                } catch {
+                    this.shareError = 'A network error occurred. Please try again.';
+                } finally {
+                    this.sharing = false;
+                }
             },
 
             onEmailInput() {
@@ -191,8 +259,9 @@
                     if (response.ok) {
                         this._toast('Records archived.', 25);
                     } else {
+                        const data = await response.json().catch(() => ({}));
+                        this._toast(data.error || 'Failed to archive records.', 40);
                         this._rollbackOptimisticRemove(ids);
-                        this._toast('Failed to archive records.', 40);
                     }
                 } catch {
                     this._rollbackOptimisticRemove(ids);
@@ -222,8 +291,9 @@
                     if (response.ok) {
                         this._toast('Records restored.', 25);
                     } else {
+                        const data = await response.json().catch(() => ({}));
+                        this._toast(data.error || 'Failed to restore records.', 40);
                         this._rollbackOptimisticRemove(ids);
-                        this._toast('Failed to restore records.', 40);
                     }
                 } catch {
                     this._rollbackOptimisticRemove(ids);

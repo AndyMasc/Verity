@@ -316,7 +316,7 @@ TAILWIND_USE_STANDALONE_BINARY = True
 SITE_ID = 1
 
 # List view pagination
-PAGINATE_BY = 20
+PAGINATE_BY = 8
 
 # Logging
 LOGGING = {

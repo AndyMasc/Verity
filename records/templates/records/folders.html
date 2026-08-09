@@ -1,21 +1,21 @@
 {% extends "base.html" %}
 {% load widget_tweaks %}
 {% block content %}
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-6">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-6 selection:bg-zinc-900 selection:text-white dark:selection:bg-white dark:selection:text-black">
         <header class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mt-5">
             <div>
-                <h1 class="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 capitalize">Folders</h1>
-                <p class="text-sm text-zinc-500 dark:text-zinc-400 mt-1">Group related records for quick access.</p>
+                <h1 class="text-2xl sm:text-3xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50 capitalize">Folders</h1>
+                <p class="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mt-1">Group related records for quick access and streamlined management.</p>
             </div>
             <button type="button"
                     hx-get="{% url 'records:create_folder' %}"
                     hx-target="#modal-container"
                     hx-swap="innerHTML"
-                    class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-3.5 py-2 text-xs font-medium text-white bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white rounded-2xl transition-all duration-200 shadow-xs active:scale-[0.98] cursor-pointer">
-                <svg class="w-3.5 h-3.5"
+                    class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 text-xs font-medium text-white bg-black dark:text-black dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-200 rounded-xl shadow-sm transition-all duration-200 cursor-pointer active:scale-[0.98]">
+                <svg class="size-4"
                      fill="none"
                      viewBox="0 0 24 24"
-                     stroke-width="2.5"
+                     stroke-width="2"
                      stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                 </svg>
@@ -24,16 +24,16 @@
         </header>
         <section class="space-y-3" aria-label="Directory Search Matrix">
             <div class="relative w-full group">
-                <div class="absolute inset-y-0 left-4 flex items-center pointer-events-none text-zinc-400 dark:text-zinc-500 group-focus-within:text-zinc-800 dark:group-focus-within:text-zinc-200 transition-colors">
+                <div class="absolute inset-y-0 left-3.5 flex items-center pointer-events-none text-zinc-400 dark:text-zinc-500 transition-colors">
                     <svg class="w-4 h-4"
                          fill="none"
                          viewBox="0 0 24 24"
-                         stroke-width="2.2"
+                         stroke-width="2"
                          stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.604 10.604z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
                     </svg>
                 </div>
-                <input class="w-full bg-zinc-50/50 dark:bg-zinc-900/40 border border-zinc-200/80 dark:border-zinc-800 py-3.5 pl-11 pr-14 text-xs font-medium rounded-2xl text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 shadow-2xs focus:outline-none focus:bg-white dark:focus:bg-zinc-900 focus:border-zinc-400 dark:focus:border-zinc-600 focus:ring-2 focus:ring-zinc-900/5 dark:focus:ring-white/5 transition-all duration-200"
+                <input class="w-full bg-white dark:bg-zinc-900/40 border border-zinc-200 dark:border-white/[0.06] py-3 pl-10 pr-4 text-xs font-normal rounded-xl text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 shadow-2xs focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-white/40 focus:border-zinc-900 dark:focus:border-white transition-all duration-200"
                        placeholder="Search folders by name..."
                        id="folder-search"
                        type="search"
@@ -46,10 +46,17 @@
         </section>
         <div id="folder-list-indicator"
              class="htmx-indicator relative z-10 hidden">
-            <div class="absolute inset-0 bg-white/40 dark:bg-zinc-950/40 backdrop-blur-[1px] flex items-center justify-center rounded-xl"
+            <div class="absolute inset-0 bg-white/60 dark:bg-zinc-950/60 backdrop-blur-[2px] flex items-center justify-center rounded-xl"
                  style="top: -2rem;
                         bottom: -2rem">
-                <div class="animate-pulse text-xs font-medium text-zinc-500 dark:text-zinc-400 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 px-3 py-1.5 rounded-xl shadow-xs">
+                <div class="text-xs font-medium text-zinc-900 dark:text-zinc-100 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800/80 px-4 py-2.5 rounded-xl shadow-md flex items-center gap-2.5">
+                    <svg class="w-3.5 h-3.5 animate-spin text-zinc-500"
+                         fill="none"
+                         viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                        </path>
+                    </svg>
                     Syncing Directory...
                 </div>
             </div>
@@ -65,4 +72,4 @@
             document.getElementById('modal-container').innerHTML = '';
         });
     </script>
-{% endblock %}
+{% endblock content %}

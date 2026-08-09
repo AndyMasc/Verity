@@ -1,6 +1,54 @@
 {% extends "base.html" %}
 {% block content %}
     {% include "records/partials/record_form_partial.html" %}
+    <div id="share-modal" class="relative z-50 hidden" aria-modal="true">
+        <div class="fixed inset-0 bg-zinc-900/40 dark:bg-black/60 backdrop-blur-sm transition-opacity duration-200"
+             onclick="toggleShareModal(false)"></div>
+        <div class="fixed inset-0 z-10 w-screen overflow-y-auto p-4 sm:p-6 md:p-20 flex items-center justify-center">
+            <div class="bg-white/90 dark:bg-zinc-900/90 backdrop-blur-2xl rounded-2xl border border-black/5 dark:border-white/10 w-full max-w-md space-y-4 p-5 sm:p-6 shadow-[0_16px_64px_rgba(0,0,0,0.2)]">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="space-y-1">
+                        <h3 class="text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">Share this record</h3>
+                        <p class="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">Recipients can view and edit this record. Edits are attributed to them in the record history.</p>
+                    </div>
+                    <button type="button"
+                            onclick="toggleShareModal(false)"
+                            class="shrink-0 p-2 rounded-xl text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
+                        <svg class="w-4 h-4"
+                             fill="none"
+                             viewBox="0 0 24 24"
+                             stroke-width="2"
+                             stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="relative">
+                    <div id="share-panel-body" class="min-h-[90px]"></div>
+                    <div class="htmx-indicator hidden absolute inset-0 flex items-center justify-center bg-white/60 dark:bg-zinc-900/60 backdrop-blur-[2px] rounded-2xl">
+                        <svg class="animate-spin w-5 h-5 text-emerald-600 dark:text-emerald-400"
+                             fill="none"
+                             viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="flex items-center justify-end gap-2.5 pt-1">
+                    <button onclick="toggleShareModal(false)"
+                            class="px-4 py-2 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        function toggleShareModal(open) {
+            var modal = document.getElementById('share-modal');
+            if (modal) modal.classList.toggle('hidden', !open);
+        }
+    </script>
     <div class="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6 sm:space-y-8 pb-16">
         {% if active_merge %}
             <section class="group relative overflow-hidden rounded-3xl bg-white/70 dark:bg-zinc-900/50 backdrop-blur-2xl ring-1 ring-inset ring-black/[0.08] dark:ring-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.04)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.2)] p-6 sm:p-10 transition-all duration-300">
@@ -53,7 +101,7 @@
                 </div>
             </section>
         {% endif %}
-        {% if record.date_added|date:"U" < seven_years_ago_unix %}
+        {% if record.date_added|date:"U" < seven_years_ago_unix and request.user == record.user %}
             <section class="relative overflow-hidden rounded-3xl bg-gradient-to-b from-rose-500/[0.05] to-rose-500/[0.01] dark:from-rose-500/[0.1] dark:to-rose-500/[0.02] p-6 sm:p-10 backdrop-blur-2xl ring-1 ring-inset ring-rose-500/20 dark:ring-rose-500/30 shadow-[0_8px_32px_rgba(244,63,94,0.04)]">
                 <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
                     <div class="space-y-1.5">
@@ -90,12 +138,12 @@
         {% endif %}
     </div>
     <script>
-    document.body.addEventListener('htmx:beforeSwap', function(evt) {
-        if (evt.detail.xhr.status === 422) {
-            evt.detail.shouldSwap = true;
-            evt.detail.isError = false;
-        }
-    });
+        document.body.addEventListener('htmx:beforeSwap', function(evt) {
+            if (evt.detail.xhr.status === 422) {
+                evt.detail.shouldSwap = true;
+                evt.detail.isError = false;
+            }
+        });
     </script>
     {% include 'core/toast.html' %}
-{% endblock %}
+{% endblock content %}

@@ -8,6 +8,7 @@ list view. All paths live under the ``records:`` namespace.
 from django.urls import path
 
 from . import views
+from .views import shares as share_views
 
 app_name = "records"
 urlpatterns = [
@@ -15,6 +16,21 @@ urlpatterns = [
         "record_detail/<int:pk>/history/",
         views.RecordHistoryView.as_view(),
         name="record_history",
+    ),
+    path(
+        "record_detail/<int:pk>/shares/",
+        share_views.RecordSharingSectionView.as_view(),
+        name="record_shares_panel",
+    ),
+    path(
+        "record_detail/<int:pk>/shares/add/",
+        share_views.ShareRecordView.as_view(),
+        name="record_share",
+    ),
+    path(
+        "record_detail/<int:pk>/shares/<int:share_pk>/revoke/",
+        share_views.RevokeShareView.as_view(),
+        name="record_share_revoke",
     ),
     path("view_all_records/", views.RecordListView.as_view(), name="view_all_records"),
     path(
@@ -60,7 +76,6 @@ urlpatterns = [
         views.FolderDeleteView.as_view(),
         name="delete_folder",
     ),
-    path("merges/", views.MergeListView.as_view(), name="merge_list"),
     path("merges/manual/", views.ManualMergeView.as_view(), name="manual_merge"),
     path(
         "merges/manual/search/<str:mode>/",
@@ -87,5 +102,10 @@ urlpatterns = [
         "bulk-unarchive/",
         views.BulkUnarchiveView,
         name="bulk_unarchive",
+    ),
+    path(
+        "bulk-share/",
+        share_views.BulkShareView.as_view(),
+        name="bulk_share",
     ),
 ]

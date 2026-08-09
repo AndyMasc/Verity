@@ -1,0 +1,52 @@
+{# Simple filter dropdown pills for the documents list. #}
+{# Expects FilterView context: ``filter`` (bound filterset) + ``request``. #}
+{% load form_tags %}
+<div class="flex flex-wrap items-center gap-1.5">
+    <span class="text-[10px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500 mr-0.5">Filter:</span>
+    <label data-filter-url="{% url 'documents:document_list_view' %}"
+           class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium text-zinc-600 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/60 rounded-full">
+        <span>Status</span>
+        <select data-filter-select="status"
+                class="appearance-none bg-transparent outline-none text-[11px] font-medium cursor-pointer">
+            <option value="">All</option>
+            {% for value, label in filter.form.status.field.choices %}
+                {% if value %}
+                    <option value="{{ value }}"
+                            {% if request.GET.status == value %}selected{% endif %}>{{ label }}</option>
+                {% endif %}
+            {% endfor %}
+        </select>
+    </label>
+    <label data-filter-url="{% url 'documents:document_list_view' %}"
+           class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium text-zinc-600 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/60 rounded-full">
+        <span>Type</span>
+        <select data-filter-select="file_type"
+                class="appearance-none bg-transparent outline-none text-[11px] font-medium cursor-pointer">
+            <option value="">All</option>
+            {% for value, label in filter.form.file_type.field.choices %}
+                {% if value %}
+                    <option value="{{ value }}"
+                            {% if request.GET.file_type == value %}selected{% endif %}>{{ label }}</option>
+                {% endif %}
+            {% endfor %}
+        </select>
+    </label>
+</div>
+<script>
+    document.querySelectorAll('[data-filter-select]').forEach(select => {
+        select.addEventListener('change', () => {
+            const url = new URL(select.closest('[data-filter-url]').dataset.filterUrl, window.location.origin);
+            for (const key of ['status', 'file_type']) {
+                const other = document.querySelector(`[data-filter-select="${key}"]`);
+                if (!other || other === select || !other.value) continue;
+                url.searchParams.set(key, other.value);
+            }
+            if (select.value) {
+                url.searchParams.set(select.name, select.value);
+            } else {
+                url.searchParams.delete(select.name);
+            }
+            window.location.href = url.toString();
+        });
+    });
+</script>
