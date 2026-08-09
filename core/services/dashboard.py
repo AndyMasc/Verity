@@ -213,7 +213,7 @@ async def get_dashboard_context(user) -> dict:
         "monthly_expenses": monthly_expenses_total,
         "metrics": [
             {
-                "label": "Expenses",
+                "label": f"{datetime.now().strftime('%B')} Expenses",
                 "value": monthly_expenses_total,
                 "trailing": f"{local_date.strftime('%B')} \u2192",
                 "url": f"{records_list_url}?this_month=True",
