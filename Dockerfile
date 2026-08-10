@@ -34,6 +34,9 @@ COPY --from=builder /root/.local /home/appuser/.local
 # Copy application code
 COPY --chown=appuser:appuser . .
 
+# Ensure /app and staticfiles directory are writable by appuser
+RUN mkdir -p /app/staticfiles && chown -R appuser:appuser /app
+
 # Switch to non-root user
 USER appuser
 
