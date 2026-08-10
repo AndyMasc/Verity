@@ -105,7 +105,6 @@ def reconcile_documents() -> None:
     Removes pending uploads older than 30 minutes and errored documents
     older than 2 days, deleting both the R2 objects and database records.
     """
-    s3 = get_s3_client()
     stale_cutoff = timezone.now() - timedelta(minutes=30)
     abandoned_uploads = DocumentData.objects.filter(
         filepath__isnull=False,
@@ -113,20 +112,21 @@ def reconcile_documents() -> None:
         date_added__lt=stale_cutoff,
     )
 
-    deleted_ids = []
-    for doc in abandoned_uploads.iterator(chunk_size=200):
-        if not doc.filepath:
-            continue
-        try:
-            s3.delete_object(Bucket=BUCKET, Key=normalize_s3_key(doc.filepath))
-            deleted_ids.append(doc.id)
-        except Exception as e:
-            logger.error("Failed cleanup of object storage for upload %s: %s", doc.id, e)
-            continue
+    upload_data = list(abandoned_uploads.values_list("id", "filepath"))
+    upload_paths = [normalize_s3_key(fp) for _, fp in upload_data if fp]
+    upload_ids = [doc_id for doc_id, _ in upload_data]
 
-    if deleted_ids:
-        DocumentData.objects.filter(id__in=deleted_ids).delete()
-        logger.info("Reconciliation: cleaned up %d stale pending uploads.", len(deleted_ids))
+    if upload_ids:
+        storage_ok = True
+        if upload_paths:
+            try:
+                delete_r2_objects_batch(upload_paths)
+            except Exception as e:
+                logger.error("Failed cleanup of object storage for stale uploads: %s", e)
+                storage_ok = False
+        if storage_ok:
+            DocumentData.objects.filter(id__in=upload_ids).delete()
+            logger.info("Reconciliation: cleaned up %d stale pending uploads.", len(upload_ids))
 
     dangling_records = DocumentData.objects.filter(
         status=DocumentStatus.ERROR,
