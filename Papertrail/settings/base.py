@@ -28,7 +28,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 database_config = env.db("DATABASE_URL", default="sqlite:///db.sqlite3")
 if "sqlite" in database_config["ENGINE"]:
     database_config.setdefault("OPTIONS", {})["timeout"] = 30
-else:
+elif not DEBUG:
     database_config.setdefault("OPTIONS", {})["sslmode"] = "require"
 DATABASES = {"default": database_config}
 DATABASES["default"].setdefault("CONN_MAX_AGE", env.int("DB_CONN_MAX_AGE", default=600))
