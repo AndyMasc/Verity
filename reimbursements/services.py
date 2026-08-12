@@ -16,6 +16,7 @@ from django.db.models import Q
 from django.utils import timezone
 
 from billing.services import _configure
+from billing.services import retrieve_checkout_session as _retrieve_billing_checkout_session
 from core.exchange_rates import get_rates
 from records.models import Record
 
@@ -37,8 +38,7 @@ class CheckoutOutcome:
 
 def retrieve_checkout_session(session_id: str) -> stripe.checkout.Session:
     """Fetch a Stripe Checkout Session. Raises StripeError on failure."""
-    _configure()
-    return stripe.checkout.Session.retrieve(str(session_id))
+    return _retrieve_billing_checkout_session(str(session_id))
 
 
 def create_checkout_session(**kwargs: Any) -> stripe.checkout.Session:

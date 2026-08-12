@@ -63,8 +63,12 @@ class DocumentUpdateForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        # Scope the record picker to the current user's records so other
+        # users' record titles/ids are never enumerated.
+        user = kwargs.pop("user", None)
         super().__init__(*args, **kwargs)
         self.fields["associated_record"].required = False
-        self.fields["associated_record"].queryset = self.fields[
-            "associated_record"
-        ].queryset.active()
+        queryset = self.fields["associated_record"].queryset
+        if user is not None:
+            queryset = queryset.filter(user=user)
+        self.fields["associated_record"].queryset = queryset.active()

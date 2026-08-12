@@ -15,10 +15,6 @@ from billing.views import subscription_confirm
 from core.views import safe_webpush_save_info
 
 
-def trigger_error(request):  # noqa: ARG001
-    1 / 0  # noqa: B018
-
-
 def forbidden_view(request, *args, **kwargs):  # noqa: ARG001
     """Return a 403 response for disabled password management endpoints."""
     return HttpResponseForbidden("Password features are disabled.")
@@ -28,8 +24,6 @@ handler403 = "Papertrail.views.handler403"
 
 
 urlpatterns = [
-    # Trigger error for Sentry testing
-    path("sentry-debug/", trigger_error),
     # Landing page
     path("", include("core.urls")),
     # Admin URLs

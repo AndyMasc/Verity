@@ -30,6 +30,10 @@ if "sqlite" in database_config["ENGINE"]:
     database_config.setdefault("OPTIONS", {})["timeout"] = 30
 else:
     database_config.setdefault("OPTIONS", {})["sslmode"] = "require"
+    # Neon's pooled endpoint (transaction-mode pooling) can't keep PostgreSQL
+    # named cursors alive between transactions, so server-side cursors used by
+    # QuerySet.iterator() fail with "portal does not exist". Force client-side.
+    database_config["DISABLE_SERVER_SIDE_CURSORS"] = True
 DATABASES = {"default": database_config}
 DATABASES["default"].setdefault("CONN_MAX_AGE", env.int("DB_CONN_MAX_AGE", default=600))
 
@@ -68,6 +72,8 @@ INSTALLED_APPS = [
     "django_filters",
     "simple_history",
     "django.contrib.humanize",
+    # Storage
+    "storages",
     # Local apps
     "core.apps.CoreConfig",
     "documents.apps.DocumentsConfig",
@@ -98,8 +104,6 @@ MIDDLEWARE = [
     "csp.middleware.CSPMiddleware",
     "core.middleware.TimezoneMiddleware",  # Get user timezone via cookie
     "allauth.account.middleware.AccountMiddleware",
-    # Crum
-    "crum.CurrentRequestUserMiddleware",
 ]
 
 if not DEBUG:
@@ -139,7 +143,6 @@ CONTENT_SECURITY_POLICY = {
         "img-src": ("'self'", "data:", "blob:", "https:"),
         "connect-src": (
             "'self'",
-            "https://*.upstash.io",
             "https://*.resend.com",
             "https://*.plaid.com",
             "https://cdn.plaid.com",
@@ -243,6 +246,7 @@ TEMPLATES = [
 # Per-process backends like LocMemCache would otherwise leave the web server
 # with stale cached values (e.g. paginator counts) after a background task
 # creates or mutates records.
+REDIS_URL = env("REDIS_URL", default="redis://localhost:6379/1")
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
@@ -278,6 +282,15 @@ AWS_DEFAULT_ACL = None
 AWS_QUERYSTRING_AUTH = True
 AWS_S3_VERIFY = True
 AWS_S3_MAX_MEMORY_SIZE = 5 * 1024 * 1024
+
+# Static file storage
+S3_STATIC_BUCKET_NAME = env("S3_STATIC_BUCKET_NAME", default="")
+S3_STATIC_ENDPOINT_URL = env("S3_STATIC_ENDPOINT_URL", default="")
+S3_STATIC_ACCESS_KEY_ID = env("S3_STATIC_ACCESS_KEY_ID", default="")
+S3_STATIC_SECRET_ACCESS_KEY = env("S3_STATIC_SECRET_ACCESS_KEY", default="")
+S3_STATIC_DEFAULT_ACL = None
+S3_STATIC_CDN_DOMAIN = env("S3_STATIC_CDN_DOMAIN", default="")
+
 STORAGES = {
     "default": {
         "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
@@ -288,13 +301,24 @@ STORAGES = {
             "secret_key": AWS_SECRET_ACCESS_KEY,
             "region_name": AWS_S3_REGION_NAME,
             "default_acl": AWS_DEFAULT_ACL,
-            "querystring_auth": AWS_QUERYSTRING_AUTH,
+            "querystring_auth": AWS_QUERYSTRING_AUTH,  # Keep True for private files
             "file_overwrite": False,
             "custom_domain": False,
         },
     },
     "staticfiles": {
-        "BACKEND": "django.contrib.staticfiles.storage.ManifestStaticFilesStorage",
+        "BACKEND": "storages.backends.s3boto3.S3ManifestStaticStorage",
+        "OPTIONS": {
+            "bucket_name": S3_STATIC_BUCKET_NAME,
+            "endpoint_url": S3_STATIC_ENDPOINT_URL,
+            "access_key": S3_STATIC_ACCESS_KEY_ID,
+            "secret_key": S3_STATIC_SECRET_ACCESS_KEY,
+            "default_acl": S3_STATIC_DEFAULT_ACL,
+            "querystring_auth": False,
+            "file_overwrite": True,
+            "custom_domain": S3_STATIC_CDN_DOMAIN,
+            "location": "static",
+        },
     },
 }
 DATA_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
@@ -309,6 +333,8 @@ USE_I18N = True
 USE_TZ = True
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATIC_URL = "static/"
+if S3_STATIC_CDN_DOMAIN:
+    STATIC_URL = f"https://{S3_STATIC_CDN_DOMAIN}/static/"
 
 
 TAILWIND_APP_NAME = "theme"
@@ -399,6 +425,9 @@ FERNET_KEYS = [
 STRIPE_SECRET_KEY = env("STRIPE_SECRET_KEY")
 STRIPE_PUBLISHABLE_KEY = env("STRIPE_PUBLISHABLE_KEY")
 DJSTRIPE_FOREIGN_KEY_TO_FIELD = env("DJSTRIPE_FOREIGN_KEY_TO_FIELD")
+# dj-stripe verifies incoming webhook signatures against this secret. Without
+# it, webhook events are accepted based only on a DB-synced endpoint row.
+DJSTRIPE_WEBHOOK_SECRET = env("STRIPE_WEBHOOK_SECRET", default="")
 
 
 # Sentry

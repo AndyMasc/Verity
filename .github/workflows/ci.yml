@@ -17,31 +17,29 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.14"
+          python-version: "3.13"
           cache: pip
-
       - name: Install dependencies
         run: pip install -r requirements-dev.txt
-
       - name: Ruff lint
         run: ruff check .
-
       - name: Ruff format check
         run: ruff format --check .
-
       - name: Mypy
         run: mypy .
-
       - name: Bandit (security)
         run: bandit -q -r core documents records plaid_integration accounting reimbursements billing Papertrail -x "*/migrations/*,*/tests/*,*/test_*,venv/*"
+      - name: pip-audit (dependency vulnerabilities)
+        run: pip-audit
 
   test:
-    name: Tests (PostgreSQL + Redis)
+    name: Tests (PostgreSQL + Redis + RabbitMQ)
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    
+    # These run temporarily on the GitHub server just for tests
     services:
       postgres:
         image: postgres:16-alpine
@@ -76,20 +74,16 @@ jobs:
           --health-retries 5
 
     env:
-      # Test settings: CI-safe (MD5 hasher, no rate limiting, Postgres DB).
       DJANGO_SETTINGS_MODULE: Papertrail.settings.ci
       DATABASE_URL: postgres://postgres:postgres@localhost:5432/papertrail
       REDIS_URL: redis://localhost:6379/0
       RABBIT_MQ_URL: amqp://guest:guest@localhost:5672/
       SECRET_KEY: ci-secret-key-not-for-production
       ALLOWED_HOSTS: localhost,127.0.0.1
-      # Placeholders: base.py requires these at settings load. Tests mock
-      # external services; swap these for real secrets if integration tests
-      # that hit external APIs are enabled.
       R2_ACCESS_KEY_ID: ci-r2-key
       R2_SECRET_ACCESS_KEY: ci-r2-secret
       R2_STORAGE_BUCKET_NAME: ci-bucket
-      R2_S3_ENDPOINT_URL: https://ci.example.com
+      R2_S3_ENDPOINT_URL: https://example.com
       R2_PAPERTRAIL_STORAGE_ACCOUNT_ID: ci-account
       GEMINI_API_KEY: ci-gemini-key
       RESEND_API_KEY: ci-resend-key
@@ -108,24 +102,28 @@ jobs:
       STRIPE_SECRET_KEY: sk_test_ci
       STRIPE_PUBLISHABLE_KEY: pk_test_ci
       DJSTRIPE_FOREIGN_KEY_TO_FIELD: djstripe_id
-      SENTRY_DSN: https://ci@sentry.example.com/1
+      SENTRY_DSN: https://example.com
 
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.14"
+          python-version: "3.13"
           cache: pip
-
       - name: Install dependencies
         run: pip install -r requirements-dev.txt
-
       - name: Django system checks
         run: python manage.py check
-
       - name: No missing migrations
         run: python manage.py makemigrations --check --dry-run
-
       - name: Run tests
-        run: pytest
+        run: pytest --cov=. --cov-report=term-missing --cov-fail-under=0
+
+  docker-build:
+    name: Docker build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build production image
+        run: docker build --progress=plain -t papertrail:ci .

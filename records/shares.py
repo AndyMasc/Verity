@@ -132,6 +132,35 @@ def grant_access(
         return share, True
 
 
+def resolve_recipients(emails: list[str]) -> tuple[list[User], list[str]]:
+    """Resolve recipient accounts from a list of emails using a single query.
+
+    Returns "(recipients, unknown_emails)". Case-insensitive matching mirrors
+    the per-email ``email__iexact`` lookup but avoids one query per address.
+    """
+    from django.db.models import Q
+
+    email_set = {e.strip().lower() for e in emails if e.strip()}
+    if not email_set:
+        return [], []
+
+    email_filter = Q()
+    for email in email_set:
+        email_filter |= Q(email__iexact=email)
+
+    users_by_email = {u.email.lower(): u for u in User.objects.filter(email_filter)}
+
+    recipients: list[User] = []
+    unknown: list[str] = []
+    for email in email_set:
+        user = users_by_email.get(email)
+        if user is None:
+            unknown.append(email)
+        else:
+            recipients.append(user)
+    return recipients, unknown
+
+
 def share_record_with_users(
     *,
     record: Record,
@@ -140,6 +169,7 @@ def share_record_with_users(
     permission: str = RecordShare.Permission.EDIT,
     purpose: str = "",
     include_documents: bool = True,
+    recipients: list[User] | None = None,
 ) -> tuple[list[RecordShare], list[str]]:
     """Share "record" with every existing account matching "emails".
 
@@ -149,17 +179,18 @@ def share_record_with_users(
     owner and "SelfShare" when the owner appears in the recipient list.
     Emails without an account are returned (never silently dropped, never
     silently shared).
+
+    "recipients" may be passed in to reuse a batch resolution across
+    multiple records (see BulkShareView) and avoid re-querying per record.
     """
-    recipients: list[User] = []
-    unknown: list[str] = []
-    for email in {e.strip().lower() for e in emails if e.strip()}:
-        user = User.objects.filter(email__iexact=email).first()
-        if user is None:
-            unknown.append(email)
-        elif user.pk == record.user_id:
+    if recipients is None:
+        recipients, unknown = resolve_recipients(emails)
+    else:
+        unknown = []
+
+    for user in recipients:
+        if user.pk == record.user_id:
             raise SelfShare("You cannot share a record with yourself")
-        else:
-            recipients.append(user)
 
     shares: list[RecordShare] = []
     if not recipients:

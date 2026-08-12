@@ -51,6 +51,11 @@ class ViewDocument(LoginRequiredMixin, UpdateView):
             | Q(associated_record__in=RecordShare.document_visible_records(self.request.user))
         ).select_related("associated_record")
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = self.request.user
+        return kwargs
+
     def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
         context = super().get_context_data(**kwargs)
         ctx = DocumentDetailService.build_context(self.object, self.request)

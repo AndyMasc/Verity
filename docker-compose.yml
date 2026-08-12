@@ -1,137 +1,54 @@
-version: '3.8'
-
 services:
   web:
     build:
       context: .
       dockerfile: Dockerfile
-    ports:
-      - "8000:8000"
-    environment: &common-env
-      - DEBUG=1
-      - DJANGO_ENV=development
-      - SECRET_KEY=${SECRET_KEY:-django-insecure-dev-key-change-in-production}
-      - DATABASE_URL=postgres://papertrail:papertrail@db:5432/papertrail
-      - REDIS_URL=redis://:your_secure_redis_password@redis:6379/0
-      - RABBIT_MQ_URL=amqp://guest:guest@rabbitmq:5672/
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
-      - RESEND_API_KEY=${RESEND_API_KEY}
-      - DEFAULT_FROM_EMAIL=${DEFAULT_FROM_EMAIL:-Papertrail <onboarding@resend.dev>}
-      - R2_ACCESS_KEY_ID=${R2_ACCESS_KEY_ID}
-      - R2_SECRET_ACCESS_KEY=${R2_SECRET_ACCESS_KEY}
-      - R2_STORAGE_BUCKET_NAME=${R2_STORAGE_BUCKET_NAME}
-      - R2_S3_ENDPOINT_URL=${R2_S3_ENDPOINT_URL}
-      - R2_PAPERTRAIL_STORAGE_ACCOUNT_ID=${R2_PAPERTRAIL_STORAGE_ACCOUNT_ID}
-      - GOOGLE_OAUTH_CLIENT_ID=${GOOGLE_OAUTH_CLIENT_ID}
-      - GOOGLE_OAUTH_CLIENT_SECRET=${GOOGLE_OAUTH_CLIENT_SECRET}
-      - GITHUB_OAUTH_CLIENT_ID=${GITHUB_OAUTH_CLIENT_ID}
-      - GITHUB_OAUTH_CLIENT_SECRET=${GITHUB_OAUTH_CLIENT_SECRET}
-      - WEB_PUSH_PUBLIC_KEY=${WEB_PUSH_PUBLIC_KEY}
-      - WEB_PUSH_PRIVATE_KEY=${WEB_PUSH_PRIVATE_KEY}
-      - WEB_PUSH_EMAIL=${WEB_PUSH_EMAIL:-dev@example.com}
-      - SITE_URL=${SITE_URL:-http://localhost:8000}
-      - NGROK_HTTPS_TUNNEL_URL=${NGROK_HTTPS_TUNNEL_URL:-http://localhost:8000}
-      - PLAID_CLIENT_ID=${PLAID_CLIENT_ID}
-      - PLAID_SECRET=${PLAID_SECRET}
-      - PLAID_ENV=${PLAID_ENV:-sandbox}
-      - PLAID_WEBHOOK_URL=${PLAID_WEBHOOK_URL:-http://localhost:8000/plaid/webhook/}
-    volumes:
-      - .:/app
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
+    restart: always
+    # Migrations + staticfiles on start (single-node Hetzner deploy), then serve
+    # the ASGI app with uvicorn's worker — matches Procfile's `web` process.
     command: >
       sh -c "python manage.py migrate --noinput &&
-             python manage.py runserver 0.0.0.0:8000"
+              python manage.py collectstatic --noinput &&
+              gunicorn Papertrail.asgi:application -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000 --workers 3 --timeout 120"
+    expose:
+      - "8000"
+    env_file:
+      - .env
+    networks:
+      - coolify-infra
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/core/health/"]
+      interval: 30s
+      timeout: 10s
+      start_period: 15s
+      retries: 3
 
-  dramatiq:
+  # Background worker for handling Dramatiq actors/tasks
+  worker:
     build:
       context: .
       dockerfile: Dockerfile
-    environment: *common-env
-    volumes:
-      - .:/app
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-    command: python manage.py rundramatiq
+    restart: always
+    # Reuses the same build but overrides the web server command
+    command: python manage.py rundramatiq --processes=2 --threads=4
+    env_file:
+      - .env
+    networks:
+      - coolify-infra
 
-  periodiq:
+  # Scheduler for running periodic/cron tasks via Periodiq
+  scheduler:
     build:
       context: .
       dockerfile: Dockerfile
-    environment: *common-env
-    volumes:
-      - .:/app
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
+    restart: always
+    # Periodiq hooks into existing dramatiq codebase
     command: python manage.py runperiodiq
+    env_file:
+      - .env
+    networks:
+      - coolify-infra
 
-  db:
-    image: postgres:16-alpine
-    ports:
-      - "5432:5432"
-    environment:
-      - POSTGRES_USER=papertrail
-      - POSTGRES_PASSWORD=papertrail
-      - POSTGRES_DB=papertrail
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U papertrail"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-  rabbitmq:
-    image: rabbitmq:3-alpine
-    restart: always
-    ports:
-      - "5672:5672"
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-  redis:
-    image: redis:7-alpine
-    restart: always
-    command: >
-      redis-server 
-      --requirepass your_secure_redis_password
-      --maxmemory 256mb
-      --maxmemory-policy allkeys-lru
-      --timeout 0
-      --save 60 1
-      --appendonly yes
-    ports:
-      - "127.0.0.1:6379:6379"
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "-a", "your_secure_redis_password", "ping"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-volumes:
-  postgres_data:
-  redis_data:
-  rabbitmq_data:
-    
+networks:
+  coolify-infra:
+    external: true

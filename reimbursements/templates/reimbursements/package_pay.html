@@ -2,156 +2,286 @@
 {% load form_tags %}
 {% block title %}Reimbursement | Papertrail{% endblock %}
 {% block content %}
-    <main class="min-h-screen w-full max-w-3xl mx-auto px-4 sm:px-6 py-10 sm:py-16">
-        {% if state == "verify" %}
-            <div class="rounded-2xl bg-white/70 dark:bg-zinc-900/40 backdrop-blur-xl ring-1 ring-inset ring-black/[0.05] dark:ring-white/[0.06] shadow-[0_4px_24px_rgba(0,0,0,0.02)] p-6 sm:p-10 max-w-md mx-auto">
-                <div class="w-11 h-11 rounded-xl bg-zinc-100 dark:bg-zinc-800 ring-1 ring-inset ring-black/[0.04] dark:ring-white/[0.04] flex items-center justify-center mb-6">
-                    <svg class="w-5 h-5 text-zinc-500 dark:text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
-                    </svg>
-                </div>
-                <h1 class="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-50 mb-1.5">Verify your email</h1>
-                {% if verify_step == "email" %}
-                    <p class="text-[13px] text-zinc-500 dark:text-zinc-400 leading-relaxed mb-6">
-                        This reimbursement can only be viewed and paid by the intended recipient.
-                        Enter the email address this request was sent to, and we'll email you a one-time
-                        verification code.
-                    </p>
-                    <form method="post" action="{% url 'reimbursements:pay-request-code' package.uuid %}" class="space-y-4">
-                        {% csrf_token %}
-                        <input type="email"
-                               name="email"
-                               required
-                               autocomplete="email"
-                               placeholder="you@example.com"
-                               class="w-full px-4 py-3 text-sm rounded-2xl bg-white/80 dark:bg-zinc-800/60 border border-zinc-200/70 dark:border-zinc-700/70 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-600 transition-all">
-                        <button type="submit"
-                                class="w-full inline-flex items-center justify-center px-6 py-3 text-xs font-medium text-white bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-white rounded-2xl transition-all duration-200 shadow-sm active:scale-[0.97]">
-                            Send verification code
-                        </button>
-                    </form>
-                {% else %}
-                    <p class="text-[13px] text-zinc-500 dark:text-zinc-400 leading-relaxed mb-6">
-                        Enter the email this request was sent to and the verification code we emailed you.
-                        The code expires in 10 minutes.
-                    </p>
-                    <form method="post" action="{% url 'reimbursements:pay-verify-code' package.uuid %}" class="space-y-4">
-                        {% csrf_token %}
-                        <input type="email"
-                               name="email"
-                               required
-                               autocomplete="email"
-                               placeholder="you@example.com"
-                               class="w-full px-4 py-3 text-sm rounded-2xl bg-white/80 dark:bg-zinc-800/60 border border-zinc-200/70 dark:border-zinc-700/70 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-600 transition-all">
-                        <input type="text"
-                               name="code"
-                               required
-                               inputmode="numeric"
-                               autocomplete="one-time-code"
-                               placeholder="6-digit code"
-                               maxlength="6"
-                               class="w-full px-4 py-3 text-sm tracking-[0.3em] text-center rounded-2xl bg-white/80 dark:bg-zinc-800/60 border border-zinc-200/70 dark:border-zinc-700/70 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-600 transition-all">
-                        <button type="submit"
-                                class="w-full inline-flex items-center justify-center px-6 py-3 text-xs font-medium text-white bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-white rounded-2xl transition-all duration-200 shadow-sm active:scale-[0.97]">
-                            Confirm
-                        </button>
-                    </form>
-                    <form method="post" action="{% url 'reimbursements:pay-request-code' package.uuid %}" class="mt-4">
-                        {% csrf_token %}
-                        <input type="hidden" name="email" value="{{ request.POST.email|default:'' }}">
-                        <button type="submit" class="w-full text-center text-xs font-medium text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
-                            Didn't get the code? Resend it
-                        </button>
-                    </form>
-                {% endif %}
-            </div>
-        {% elif state == "paid" %}
-            <div class="rounded-2xl bg-white/70 dark:bg-zinc-900/40 backdrop-blur-xl ring-1 ring-inset ring-black/[0.05] dark:ring-white/[0.06] shadow-[0_4px_24px_rgba(0,0,0,0.02)] p-6 sm:p-10 max-w-md mx-auto text-center">
-                <div class="w-11 h-11 rounded-xl bg-emerald-50 dark:bg-emerald-500/[0.06] ring-1 ring-inset ring-emerald-200/50 dark:ring-emerald-500/[0.1] flex items-center justify-center mx-auto mb-6">
-                    <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400/80" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                    </svg>
-                </div>
-                <h1 class="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-50 mb-1.5">Already paid</h1>
-                <p class="text-[13px] text-zinc-500 dark:text-zinc-400 leading-relaxed">This reimbursement request has already been paid.</p>
-            </div>
-        {% elif state == "expired" %}
-            <div class="rounded-2xl bg-white/70 dark:bg-zinc-900/40 backdrop-blur-xl ring-1 ring-inset ring-black/[0.05] dark:ring-white/[0.06] shadow-[0_4px_24px_rgba(0,0,0,0.02)] p-6 sm:p-10 max-w-md mx-auto text-center">
-                <div class="w-11 h-11 rounded-xl bg-zinc-100 dark:bg-zinc-800 ring-1 ring-inset ring-black/[0.04] dark:ring-white/[0.04] flex items-center justify-center mx-auto mb-6">
-                    <svg class="w-5 h-5 text-zinc-500 dark:text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                </div>
-                <h1 class="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-50 mb-1.5">Link expired</h1>
-                <p class="text-[13px] text-zinc-500 dark:text-zinc-400 leading-relaxed">This reimbursement request has expired. Please ask the sender to extend it.</p>
-            </div>
-        {% else %}
-            <div class="rounded-2xl bg-white/70 dark:bg-zinc-900/40 backdrop-blur-xl ring-1 ring-inset ring-black/[0.05] dark:ring-white/[0.06] shadow-[0_4px_24px_rgba(0,0,0,0.02)] overflow-hidden">
-                <div class="p-6 sm:p-8 border-b border-black/[0.04] dark:border-white/[0.04]">
-                    <div class="flex flex-wrap items-center gap-2.5 mb-2">
-                        <span class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-[11px] tracking-wider uppercase bg-amber-500/10 text-amber-600 dark:text-amber-400 ring-1 ring-inset ring-amber-500/20">
-                            <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
-                            Awaiting Payment
+    <main class="relative min-h-screen w-full overflow-hidden selection:bg-zinc-900 selection:text-white dark:selection:bg-white dark:selection:text-zinc-900 font-sans antialiased">
+        <div class="absolute inset-0 bg-[radial-gradient(#e4e4e7_1px,transparent_1px)] dark:bg-[radial-gradient(#27272a_1px,transparent_1px)] [background-size:24px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none opacity-40 dark:opacity-20">
+        </div>
+        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[350px] bg-gradient-to-b from-[#5A67FF]/10 via-transparent to-transparent blur-3xl pointer-events-none">
+        </div>
+        <div class="relative max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-20">
+            <div class="grid grid-cols-1 lg:grid-cols-[1fr_1.15fr] gap-12 lg:gap-24 items-start">
+                <div class="lg:sticky lg:top-20">
+                    <a href="{% url 'core:landing_page' %}"
+                       target="_blank"
+                       rel="noopener"
+                       class="inline-flex items-center gap-2.5 mb-10 group">
+                        <span class="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-sm group-hover:scale-105 transition-transform duration-200">
+                            <span class="w-2 h-2 rounded-full bg-[#5A67FF]"></span>
                         </span>
-                        <span class="text-xs text-zinc-400 tabular-nums">{{ package.created_at|date:"M d, Y" }}</span>
-                    </div>
-                    <h1 class="text-2xl sm:text-3xl font-semibold tracking-tighter text-zinc-900 dark:text-zinc-50 break-words">
-                        {{ package.title }}
+                        <span class="font-bold tracking-tight text-zinc-950 dark:text-zinc-50 text-lg">Papertrail<span class="text-[#5A67FF]">.</span></span>
+                    </a>
+                    <h1 class="text-3xl sm:text-4xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50 leading-[1.15]">
+                        The Papertrail behind every reimbursement.
                     </h1>
-                </div>
-                <div class="p-6 sm:p-8 space-y-8">
-                    <div>
-                        <p class="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-2">Requested Amount</p>
-                        <div class="flex items-baseline gap-2.5 flex-wrap">
-                            <span class="text-3xl sm:text-4xl font-semibold tracking-tighter tabular-nums text-zinc-900 dark:text-zinc-50 break-all">
-                                {{ converted_total|currency_format:user_currency }}
-                            </span>
-                            <span class="px-2 py-0.5 rounded-lg text-[11px] font-medium uppercase bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 ring-1 ring-inset ring-black/[0.04] dark:ring-white/[0.04]">
-                                {{ user_currency }}
-                            </span>
+                    <p class="mt-4 text-base text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                        This request is evidence-backed by a verified purchase record in Papertrail—never just an unverified message asking for money.
+                    </p>
+                    <div class="mt-10 space-y-6">
+                        <div class="flex items-start gap-4 group">
+                            <div class="w-9 h-9 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex items-center justify-center text-zinc-700 dark:text-zinc-300 shrink-0 shadow-xs group-hover:border-[#5A67FF]/40 transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg"
+                                     fill="none"
+                                     viewBox="0 0 24 24"
+                                     stroke-width="1.5"
+                                     stroke="currentColor"
+                                     class="size-4">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="text-sm font-semibold text-zinc-950 dark:text-zinc-100">Zero bare attachments</p>
+                                <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 leading-relaxed">Documents are encrypted at rest and served exclusively through time-limited signed links.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-4 group">
+                            <div class="w-9 h-9 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex items-center justify-center text-zinc-700 dark:text-zinc-300 shrink-0 shadow-xs group-hover:border-[#5A67FF]/40 transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg"
+                                     fill="none"
+                                     viewBox="0 0 24 24"
+                                     stroke-width="1.5"
+                                     stroke="currentColor"
+                                     class="size-4">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="text-sm font-semibold text-zinc-950 dark:text-zinc-100">Audit-ready visibility</p>
+                                <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 leading-relaxed">Every view and access attempt is securely logged until the transaction settles.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-4 group">
+                            <div class="w-9 h-9 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex items-center justify-center text-zinc-700 dark:text-zinc-300 shrink-0 shadow-xs group-hover:border-[#5A67FF]/40 transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg"
+                                     fill="none"
+                                     viewBox="0 0 24 24"
+                                     stroke-width="1.5"
+                                     stroke="currentColor"
+                                     class="size-4">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="text-sm font-semibold text-zinc-950 dark:text-zinc-100">Automated ledger tracking</p>
+                                <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 leading-relaxed">Instantly matched to certified ledger items with zero manual reconciliation required.</p>
+                            </div>
                         </div>
                     </div>
-                    <div class="p-4 rounded-xl bg-white/60 dark:bg-zinc-900/20 ring-1 ring-inset ring-black/[0.04] dark:ring-white/[0.04]">
-                        <p class="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1.5">Requested by</p>
-                        <p class="text-[13px] text-zinc-900 dark:text-zinc-200 truncate font-medium">{{ package.creator.email }}</p>
+                    <div class="mt-12 pt-8 border-t border-zinc-200/80 dark:border-zinc-800/80">
+                        <p class="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                            Want to sync, generate, and audit your own team's reimbursements?
+                            <a href="{% url 'account_signup' %}"
+                               class="font-semibold text-[#5A67FF] hover:underline">Sign up &rarr;</a>
+                        </p>
                     </div>
-                    <div>
-                        <h2 class="text-[13px] font-semibold tracking-tight text-zinc-900 dark:text-zinc-50 mb-3">Items</h2>
-                        <ul class="divide-y divide-black/[0.03] dark:divide-white/[0.03] rounded-xl ring-1 ring-inset ring-black/[0.04] dark:ring-white/[0.04]">
-                            {% for item in record_items %}
-                                <li class="flex items-start justify-between gap-3 px-4 py-3.5">
-                                    <div class="min-w-0">
-                                        <p class="font-medium text-[13px] text-zinc-900 dark:text-zinc-100 truncate">
-                                            {{ item.record.title|default:"Expense Item" }}
-                                        </p>
-                                        {% if item.record.merchant %}
-                                            <p class="text-[11px] text-zinc-400 dark:text-zinc-500 mt-0.5 truncate">{{ item.record.merchant }}</p>
-                                        {% endif %}
+                </div>
+                <div>
+                    {% if state == "verify" %}
+                        <div class="rounded-3xl bg-white/80 dark:bg-zinc-900/60 backdrop-blur-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-xl shadow-zinc-950/5 p-8 sm:p-10 max-w-md mx-auto">
+                            <div class="flex items-center justify-between mb-6">
+                                <h1 class="text-xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">Verify identity</h1>
+                                <span class="px-2.5 py-1 rounded-full text-[10px] font-mono uppercase bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">Secure 2FA</span>
+                            </div>
+                            {% if verify_step == "email" %}
+                                <p class="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed mb-6">
+                                    For security, this reimbursement can only be accessed by the intended recipient. Enter your destination email address to receive a secure one-time code.
+                                </p>
+                                <form method="post"
+                                      action="{% url 'reimbursements:pay-request-code' package.uuid %}"
+                                      class="space-y-4">
+                                    {% csrf_token %}
+                                    <div>
+                                        <label class="block text-[11px] font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 mb-2">Recipient Email</label>
+                                        <input type="email"
+                                               name="email"
+                                               required
+                                               autocomplete="email"
+                                               placeholder="you@example.com"
+                                               class="w-full px-4 py-3 text-sm rounded-xl bg-zinc-50 dark:bg-zinc-950/50 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-[#5A67FF]/20 focus:border-[#5A67FF] transition-all shadow-2xs">
                                     </div>
-                                    <div class="text-right shrink-0">
-                                        <p class="font-medium text-[13px] text-zinc-900 dark:text-zinc-100 tabular-nums">
-                                            {{ item.requested_converted|currency_format:item.converted_currency }}
-                                        </p>
-                                        <p class="text-[10px] text-zinc-400 dark:text-zinc-500 uppercase">{{ item.converted_currency }}</p>
+                                    <button type="submit"
+                                            class="w-full inline-flex items-center justify-center px-6 py-3 text-xs font-semibold text-white bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200 rounded-xl transition-all duration-200 shadow-xs active:scale-[0.98]">
+                                        Send verification code
+                                    </button>
+                                </form>
+                            {% else %}
+                                <p class="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed mb-6">
+                                    We sent a 6-digit code to <span class="font-semibold text-zinc-900 dark:text-zinc-100">{{ request.POST.email|default:"your email" }}</span>. The code expires in 10 minutes.
+                                </p>
+                                <form method="post"
+                                      action="{% url 'reimbursements:pay-verify-code' package.uuid %}"
+                                      class="space-y-4">
+                                    {% csrf_token %}
+                                    <input type="hidden"
+                                           name="email"
+                                           value="{{ request.POST.email|default:'' }}">
+                                    <div>
+                                        <label class="block text-[11px] font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 mb-2">Verification Code</label>
+                                        <input type="text"
+                                               name="code"
+                                               required
+                                               inputmode="numeric"
+                                               autocomplete="one-time-code"
+                                               placeholder="123 456"
+                                               maxlength="6"
+                                               class="w-full px-4 py-3 text-center tracking-widest font-mono text-lg rounded-xl bg-zinc-50 dark:bg-zinc-950/50 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-[#5A67FF]/20 focus:border-[#5A67FF] transition-all shadow-2xs">
                                     </div>
-                                </li>
-                            {% empty %}
-                                <li class="py-12 text-center text-xs text-zinc-400 dark:text-zinc-500">No items attached to this package.</li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                    <form method="post" action="{% url 'reimbursements:pay-checkout' package.uuid %}" class="w-full">
-                        {% csrf_token %}
-                        <button type="submit"
-                                class="group w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 text-xs font-medium text-white bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-white rounded-2xl transition-all duration-200 shadow-[0_1px_2px_rgba(0,0,0,0.1),0_4px_12px_rgba(0,0,0,0.1)] active:scale-[0.97]">
-                            <span>Pay</span>
-                            <span class="tabular-nums font-semibold">{{ converted_total|currency_format:user_currency }}</span>
-                            <span class="text-[10px] opacity-60">{{ user_currency|upper }}</span>
-                        </button>
-                        <p class="text-center text-[11px] text-zinc-400 dark:text-zinc-500 mt-3">Secured by Stripe. You will be redirected to complete payment.</p>
-                    </form>
+                                    <button type="submit"
+                                            class="w-full inline-flex items-center justify-center px-6 py-3 text-xs font-semibold text-white bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200 rounded-xl transition-all duration-200 shadow-xs active:scale-[0.98]">
+                                        Verify & Continue
+                                    </button>
+                                </form>
+                                <form method="post"
+                                      action="{% url 'reimbursements:pay-request-code' package.uuid %}"
+                                      class="mt-4 text-center">
+                                    {% csrf_token %}
+                                    <input type="hidden"
+                                           name="email"
+                                           value="{{ request.POST.email|default:'' }}">
+                                    <button type="submit"
+                                            class="text-xs font-semibold text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
+                                        Didn't get the code? Resend
+                                    </button>
+                                </form>
+                            {% endif %}
+                        </div>
+                        <div class="flex items-center justify-center gap-2 text-center text-[11px] text-zinc-500 dark:text-zinc-400 mt-6 font-medium">
+                            <span>Backed by Papertrail</span>
+                            <span>&middot;</span>
+                            <span class="inline-flex items-center gap-1 text-zinc-700 dark:text-zinc-300">
+                                <svg class="w-3.5 h-3.5 text-[#635BFF]"
+                                     fill="currentColor"
+                                     viewBox="0 0 24 24">
+                                    <path d="M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.402 0-.846.79-1.362 2.112-1.362 1.83 0 3.038.614 3.978 1.458l1.32-2.11C16.892 3.81 15.05 3 12.632 3 9.42 3 7.21 4.75 7.21 7.476c0 2.648 2.052 3.82 4.49 4.72 2.37.874 3.09 1.482 3.09 2.454 0 1.018-.946 1.548-2.484 1.548-2.062 0-3.41-.856-4.414-1.92l-1.38 2.072C7.818 19.34 9.944 20 12.44 20c3.356 0 5.626-1.652 5.626-4.524 0-2.614-1.89-3.79-4.09-4.326z" />
+                                </svg>
+                                Secured by Stripe
+                            </span>
+                        </div>
+                    {% elif state == "paid" %}
+                        <div class="rounded-3xl bg-white/80 dark:bg-zinc-900/60 backdrop-blur-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-xl shadow-zinc-950/5 p-8 sm:p-12 max-w-md mx-auto text-center">
+                            <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto mb-6 shadow-xs">
+                                <svg class="w-6 h-6 text-emerald-600 dark:text-emerald-400"
+                                     fill="none"
+                                     viewBox="0 0 24 24"
+                                     stroke="currentColor"
+                                     stroke-width="2.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                                </svg>
+                            </div>
+                            <h1 class="text-xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50 mb-2">Request already paid</h1>
+                            <p class="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">This reimbursement package has already been settled and closed.</p>
+                        </div>
+                        <p class="text-center text-[11px] text-zinc-500 dark:text-zinc-400 mt-6 font-medium">
+                            Powered by Papertrail &middot; Secured by Stripe
+                        </p>
+                    {% elif state == "expired" %}
+                        <div class="rounded-3xl bg-white/80 dark:bg-zinc-900/60 backdrop-blur-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-xl shadow-zinc-950/5 p-8 sm:p-12 max-w-md mx-auto text-center">
+                            <div class="w-12 h-12 rounded-2xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center mx-auto mb-6 shadow-xs">
+                                <svg class="w-6 h-6 text-zinc-600 dark:text-zinc-300"
+                                     fill="none"
+                                     viewBox="0 0 24 24"
+                                     stroke="currentColor"
+                                     stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                            <h1 class="text-xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50 mb-2">Link has expired</h1>
+                            <p class="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">This secure payment link is no longer active. Please request a refreshed link from the sender.</p>
+                        </div>
+                        <p class="text-center text-[11px] text-zinc-500 dark:text-zinc-400 mt-6 font-medium">
+                            Powered by Papertrail &middot; Secured by Stripe
+                        </p>
+                    {% else %}
+                        <div class="rounded-3xl bg-white/80 dark:bg-zinc-900/60 backdrop-blur-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-2xl shadow-zinc-950/10 overflow-hidden">
+                            <!-- Header Section -->
+                            <div class="p-6 sm:p-8 border-b border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-50/50 dark:bg-zinc-950/30">
+                                <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+                                    <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[11px] font-bold tracking-wider uppercase bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                                        Awaiting Payment
+                                    </span>
+                                    <span class="text-xs text-zinc-500 dark:text-zinc-400 font-mono">{{ package.created_at|date:"M d, Y" }}</span>
+                                </div>
+                                <h2 class="text-2xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50 break-words">{{ package.title }}</h2>
+                            </div>
+                            <!-- Body Section -->
+                            <div class="p-6 sm:p-8 space-y-6">
+                                <!-- Amount Display Box -->
+                                <div class="p-5 rounded-2xl bg-zinc-50 dark:bg-zinc-950/40 border border-zinc-200/80 dark:border-zinc-800/80">
+                                    <p class="text-[11px] font-bold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 mb-1">Total Due</p>
+                                    <div class="flex items-baseline gap-3 flex-wrap">
+                                        <span class="text-3xl sm:text-4xl font-semibold tracking-tight tabular-nums text-zinc-950 dark:text-zinc-50 break-all">
+                                            {{ converted_total|currency_format:user_currency }}
+                                        </span>
+                                        <span class="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold uppercase bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700 shadow-2xs">
+                                            {{ user_currency }}
+                                        </span>
+                                    </div>
+                                    <div class="mt-4 pt-3 border-t border-zinc-200/60 dark:border-zinc-800/60 flex items-center justify-between text-xs">
+                                        <span class="text-zinc-500 dark:text-zinc-400 font-medium">Requested by</span>
+                                        <span class="font-semibold text-zinc-900 dark:text-zinc-200 truncate max-w-[220px]">{{ package.creator.email }}</span>
+                                    </div>
+                                </div>
+                                <!-- Items List -->
+                                <div>
+                                    <h3 class="text-xs font-bold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 mb-3">Line Items</h3>
+                                    <ul class="divide-y divide-zinc-200/80 dark:divide-zinc-800/80 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-950/20 overflow-hidden shadow-2xs">
+                                        {% for item in record_items %}
+                                            <li class="flex items-center justify-between gap-4 px-4 py-3.5 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/30 transition-colors">
+                                                <div class="min-w-0">
+                                                    <p class="font-semibold text-xs text-zinc-900 dark:text-zinc-100 truncate">
+                                                        {{ item.record.title|default:"Expense Item" }}
+                                                    </p>
+                                                    {% if item.record.merchant %}
+                                                        <p class="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5 truncate">{{ item.record.merchant }}</p>
+                                                    {% endif %}
+                                                </div>
+                                                <div class="text-right shrink-0">
+                                                    <p class="font-semibold text-xs text-zinc-900 dark:text-zinc-100 tabular-nums">
+                                                        {{ item.requested_converted|currency_format:item.converted_currency }}
+                                                    </p>
+                                                    <p class="text-[10px] text-zinc-600 dark:text-zinc-400 uppercase font-mono">{{ item.converted_currency }}</p>
+                                                </div>
+                                            </li>
+                                        {% empty %}
+                                            <li class="py-10 text-center text-xs text-zinc-500 dark:text-zinc-400 font-medium">No records attached.</li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                                <form method="post"
+                                      action="{% url 'reimbursements:pay-checkout' package.uuid %}"
+                                      class="space-y-4 pt-2">
+                                    {% csrf_token %}
+                                    <button type="submit"
+                                            class="group w-full inline-flex items-center justify-center gap-2.5 px-6 py-4 text-xs font-semibold text-white bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200 rounded-2xl transition-all duration-200 shadow-md active:scale-[0.98]">
+                                        <span>Proceed to Checkout</span>
+                                        <span class="opacity-40">&bull;</span>
+                                        <span class="tabular-nums font-bold">{{ converted_total|currency_format:user_currency }}</span>
+                                        <svg class="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5"
+                                             fill="none"
+                                             viewBox="0 0 24 24"
+                                             stroke="currentColor"
+                                             stroke-width="2.5">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                                        </svg>
+                                    </button>
+                                    <p class="text-center text-[11px] text-zinc-500 dark:text-zinc-400 font-medium">
+                                        Powered by Papertrail &middot; Secured by Stripe
+                                    </p>
+                                </form>
+                            </div>
+                        </div>
+                    {% endif %}
                 </div>
             </div>
-        {% endif %}
+        </div>
     </main>
 {% endblock content %}

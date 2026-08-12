@@ -1,6 +1,10 @@
 """Service layer for all document operations.
 
 Re-exports key classes and functions for convenient access from other modules.
+
+The OCR pipeline (``.ocr``) is intentionally NOT re-exported here: it pulls in
+the Gemini client and image-processing stack (OpenCV/numpy), which only
+background workers need. Import it directly as ``documents.services.ocr``.
 """
 
 from .cleanup import (
@@ -10,7 +14,6 @@ from .cleanup import (
 )
 from .deletion import DocumentDeletionService
 from .detail import DocumentDetailService
-from .ocr import extract
 from .upload import UploadService
 from .validation import DocumentUploadService, UploadResult
 
@@ -25,6 +28,5 @@ __all__ = [
     "UploadService",
     "bulk_delete_documents",
     "delete_orphaned_documents",
-    "extract",
     "reconcile_documents",
 ]

@@ -90,7 +90,8 @@ class CachedPaginator(Paginator):
         return f"pg_version:{self._namespace}:{self._user_id or 0}"
 
     def _make_count_cache_key(self) -> str:
-        assert isinstance(self.object_list, QuerySet)
+        if not isinstance(self.object_list, QuerySet):
+            raise TypeError("CachedPaginator count caching requires a QuerySet")
         where = str(self.object_list.query.where)
         version = cache.get(self._version_key) or 0
         raw = f"pg:{self.object_list.query.model._meta.db_table}:{where}:{version}"

@@ -27,7 +27,7 @@ SESSION_COOKIE_SECURE = env.bool("SESSION_COOKIE_SECURE", default=True)
 CSRF_COOKIE_SECURE = env.bool("CSRF_COOKIE_SECURE", default=True)
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
-# Override base LOGGING with production JSON formatter
+# Override base LOGGING with JSON formatter
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,

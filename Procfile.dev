@@ -1,6 +1,9 @@
-web: python manage.py runserver
-dramatiq: python manage.py rundramatiq
+web: python manage.py tailwind dev
+
+dramatiq_default: python manage.py rundramatiq --threads 16 -Q default
+dramatiq_ocr: python manage.py rundramatiq --threads 2 -Q ocr-tasks
+dramatiq_maintenance: python manage.py rundramatiq --threads 1 -Q maintenance
+
 periodiq: python manage.py runperiodiq
-tailwind: python manage.py tailwind start
 stripe: python manage.py stripe_listen
 ngrok: ngrok http 8000

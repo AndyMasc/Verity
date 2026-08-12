@@ -220,7 +220,7 @@ The production Dockerfile uses a multi-stage build with a non-root user, runs mi
 - [ ] Set up Resend for email delivery
 - [ ] Configure VAPID keys for web push
 - [ ] Set up SSL/TLS termination
-- [ ] Configure `DJANGO_SETTINGS_MODULE=Papertrail.settings.production`
+- [ ] Set `DJANGO_ENV=production` (dispatcher in `Papertrail/settings/__init__.py` loads `settings/production.py`)
 
 ## License
 

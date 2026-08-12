@@ -5,13 +5,10 @@ images for optimal Gemini OCR performance, plus mapping extracted JSON
 to record form fields.
 """
 
+from __future__ import annotations
+
 import json
 import logging
-
-import cv2
-import numpy as np
-from deskew import determine_skew
-from pillow_heif import is_supported, read_heif
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +51,10 @@ def ocr_data_to_form_initial(data: dict | None) -> dict:
 
 def _decode_image(image_bytes: bytes) -> np.ndarray | None:
     """Decode image bytes into an OpenCV BGR array, supporting HEIC via pillow-heif."""
+    import cv2
+    import numpy as np
+    from pillow_heif import is_supported, read_heif
+
     if is_supported(image_bytes):
         try:
             heif_file = read_heif(image_bytes)
@@ -75,6 +76,9 @@ def _deskew_image(img: np.ndarray) -> np.ndarray:
     Downsamples to SKEW_MAX_DIM for angle detection performance, then
     applies the rotation at full resolution if the angle exceeds the threshold.
     """
+    import cv2
+    from deskew import determine_skew
+
     h, w = img.shape[:2]
     scale = SKEW_MAX_DIM / max(h, w)
     if scale < 1.0:
@@ -103,6 +107,8 @@ def _deskew_image(img: np.ndarray) -> np.ndarray:
 
 def _resize_image(img: np.ndarray) -> np.ndarray:
     """Scale image so the longest dimension does not exceed MAX_DIMENSION."""
+    import cv2
+
     h, w = img.shape[:2]
     if max(h, w) > MAX_DIMENSION:
         scale = MAX_DIMENSION / max(h, w)
@@ -112,6 +118,8 @@ def _resize_image(img: np.ndarray) -> np.ndarray:
 
 def _encode_webp(img: np.ndarray) -> bytes:
     """Encode an OpenCV image to WebP bytes at the configured quality level."""
+    import cv2
+
     encode_param = [int(cv2.IMWRITE_WEBP_QUALITY), WEBP_QUALITY]
     success, encoded_img = cv2.imencode(".webp", img, encode_param)
     if not success:

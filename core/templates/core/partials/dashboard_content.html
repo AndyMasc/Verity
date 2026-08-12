@@ -1,5 +1,5 @@
 {% load form_tags %}
-<main class="flex flex-col max-w-7xl py-8 mx-auto min-h-screen space-y-4 text-zinc-900 dark:text-zinc-100 antialiased font-sans"
+<main class="flex flex-col max-w-7xl py-8 mx-auto min-h-screen text-zinc-900 dark:text-zinc-100 antialiased font-sans"
       x-data="recordBulkActions()"
       id="dashboard-content"
       hx-get="{% url 'core:dashboard' %}"
@@ -7,112 +7,119 @@
       hx-target="this"
       hx-select="#dashboard-content"
       hx-swap="outerHTML">
-    <header class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-            <a href="{% url 'core:profile_page' %}" class="group inline-block">
-                <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-200/80 dark:border-white/[0.06] shadow-2xs transition-all duration-200 group-hover:border-zinc-300 dark:group-hover:border-white/[0.12] group-hover:bg-zinc-200/50 dark:group-hover:bg-zinc-800/80">
-                    <span class="relative flex size-1.5">
-                        <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#5A67FF] opacity-40"></span>
-                        <span class="relative inline-flex size-1.5 rounded-full bg-[#5A67FF]"></span>
-                    </span>
-                    <span class="text-xs font-semibold text-zinc-800 dark:text-zinc-200 tracking-tight">{{ request.user.username }}</span>
+    
+    <div class="my-auto w-full space-y-4">
+        <header class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+                <a href="{% url 'core:profile_page' %}" class="group inline-block">
+                    <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-200/80 dark:border-white/[0.06] shadow-2xs transition-all duration-200 group-hover:border-zinc-300 dark:group-hover:border-white/[0.12] group-hover:bg-zinc-200/50 dark:group-hover:bg-zinc-800/80">
+                        <span class="relative flex size-1.5">
+                            <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#5A67FF] opacity-40"></span>
+                            <span class="relative inline-flex size-1.5 rounded-full bg-[#5A67FF]"></span>
+                        </span>
+                        <span class="text-xs font-semibold text-zinc-800 dark:text-zinc-200 tracking-tight">{{ request.user.username }}</span>
+                    </div>
+                </a>
+            </div>
+            <div class="flex items-center gap-2">
+                <a href="{% url 'records:view_all_records' %}"
+                   class="px-3.5 py-1.5 rounded-xl bg-zinc-100 dark:bg-zinc-800/40 border border-zinc-200/60 dark:border-white/[0.05] text-[12px] font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200/70 dark:hover:bg-zinc-800/60 active:scale-[0.98] transition-all">
+                    Search
+                </a>
+                <a href="{% url 'documents:upload_document' %}"
+                   class="px-3.5 py-1.5 rounded-xl bg-zinc-900 dark:bg-zinc-100 text-[12px] font-medium text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-white/95 active:scale-[0.98] transition-all shadow-2xs">
+                    Upload File
+                </a>
+            </div>
+        </header>
+
+        {% include 'core/partials/metric_cards.html' %}
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+            <div class="lg:col-span-7 xl:col-span-8 flex flex-col">
+                <div class="flex-1 flex flex-col rounded-2xl dark:bg-zinc-900/30 bg-white border border-zinc-200/60 dark:border-white/[0.05] p-5 md:p-6 shadow-2xs">
+                    {% include 'core/partials/expense_chart.html' %}
                 </div>
-            </a>
-        </div>
-        <div class="flex items-center gap-2">
-            <a href="{% url 'records:view_all_records' %}"
-               class="px-3.5 py-1.5 rounded-xl bg-zinc-100 dark:bg-zinc-800/40 border border-zinc-200/60 dark:border-white/[0.05] text-[12px] font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200/70 dark:hover:bg-zinc-800/60 active:scale-[0.98] transition-all">
-                Search
-            </a>
-            <a href="{% url 'documents:upload_document' %}"
-               class="px-3.5 py-1.5 rounded-xl bg-zinc-900 dark:bg-zinc-100 text-[12px] font-medium text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-white/95 active:scale-[0.98] transition-all shadow-2xs">
-                Upload File
-            </a>
-        </div>
-    </header>
-    {% include 'core/partials/metric_cards.html' %}
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
-        <div class="lg:col-span-7 xl:col-span-8 flex flex-col">
-            <div class="flex-1 flex flex-col rounded-2xl dark:bg-zinc-900/30 bg-white border border-zinc-200/60 dark:border-white/[0.05] p-5 md:p-6 shadow-2xs">
-                {% include 'core/partials/expense_chart.html' %}
+            </div>
+            <div class="lg:col-span-5 xl:col-span-4 flex flex-col justify-between gap-5">
+                <section class="flex-1 flex flex-col justify-between rounded-2xl dark:bg-zinc-900/30 bg-white border border-zinc-200/60 dark:border-white/[0.05] p-5 md:p-6 shadow-2xs">
+                    <div class="min-h-40">
+                        {% url 'core:notifications' as notifications_url %}
+                        {% include 'core/partials/section_header.html' with title="Notifications" badge_text=unread_notifications_count|stringformat:"s"|add:" unread" view_all_url=notifications_url %}
+                        <div class="mt-3.5 space-y-2">
+                            {% for notification in notifications|slice:":3" %}
+                                <div class="flex items-center justify-between gap-2.5 px-3.5 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200/60 dark:border-white/[0.035] hover:border-zinc-300/80 dark:hover:border-white/[0.07] transition-colors">
+                                    <div class="flex items-center gap-2 min-w-0">
+                                        <span class="block size-1.5 rounded-full bg-[#5A67FF] shrink-0"></span>
+                                        <span class="text-xs font-medium text-zinc-800 dark:text-zinc-200 truncate">
+                                            {{ notification.subject|default:"Notice" }} <span class="text-zinc-500 dark:text-zinc-400 font-normal">&middot; {{ notification.message|truncatechars:28 }}</span>
+                                        </span>
+                                    </div>
+                                    <span class="text-[10px] text-zinc-400 dark:text-zinc-500 shrink-0">{{ notification.sent_at|timesince }} ago</span>
+                                </div>
+                            {% empty %}
+                                <div class="flex flex-col items-center justify-center text-center">
+                                    <div class="size-9 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-400 dark:text-zinc-500 mb-3">
+                                        <svg xmlns="http://www.w3.org/2000/svg"
+                                             fill="none"
+                                             viewBox="0 0 24 24"
+                                             stroke-width="1.5"
+                                             stroke="currentColor"
+                                             class="size-4">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M9.143 17.082a24.248 24.248 0 0 0 3.844.148m-3.844-.148a23.856 23.856 0 0 1-5.455-1.31 8.964 8.964 0 0 0 2.3-5.542m3.155 6.852a3 3 0 0 0 5.667 1.97m1.965-2.277L21 21m-4.225-4.225a23.81 23.81 0 0 0 3.536-1.003A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6.53 6.53m10.245 10.245L6.53 6.53M3 3l3.53 3.53" />
+                                        </svg>
+                                    </div>
+                                    <p class="text-xs font-medium text-zinc-700 dark:text-zinc-300">All caught up!</p>
+                                    <p class="text-[11px] text-zinc-400 dark:text-zinc-500 mt-0.5">Unread notifications will appear here.</p>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </section>
+                <section class="flex-1 flex flex-col justify-between rounded-2xl dark:bg-zinc-900/30 bg-white border border-zinc-200/60 dark:border-white/[0.05] p-5 md:p-6 shadow-2xs">
+                    {% url 'reimbursements:package-list' as reimbursements_url %}
+                    {% include 'core/partials/section_header.html' with title="Reimbursements" view_all_url=reimbursements_url %}
+                    <div class="mt-3.5 grid grid-cols-2 gap-3">
+                        <div class="p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200/60 dark:border-white/[0.035]">
+                            <h3 class="text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Sent</h3>
+                            <p class="text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 mt-1 truncate">
+                                {{ reimbursements_sent_total|default:"0.00"|currency_format:user.settings.default_currency }}
+                            </p>
+                            <p class="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 mt-0.5">{{ reimbursements_sent_pending_count }} pending</p>
+                        </div>
+                        <div class="p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200/60 dark:border-white/[0.035]">
+                            <h3 class="text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Received</h3>
+                            <p class="text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 mt-1 truncate">
+                                {{ reimbursements_received_total|default:"0.00"|currency_format:user.settings.default_currency }}
+                            </p>
+                            <p class="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 mt-0.5">{{ reimbursements_received_count }} completed</p>
+                        </div>
+                    </div>
+                </section>
             </div>
         </div>
-        <div class="lg:col-span-5 xl:col-span-4 flex flex-col justify-between gap-5">
-            <section class="flex-1 flex flex-col justify-between rounded-2xl dark:bg-zinc-900/30 bg-white border border-zinc-200/60 dark:border-white/[0.05] p-5 md:p-6 shadow-2xs">
-                <div class="min-h-40">
-                    {% url 'core:notifications' as notifications_url %}
-                    {% include 'core/partials/section_header.html' with title="Notifications" badge_text=unread_notifications_count|stringformat:"s"|add:" unread" view_all_url=notifications_url %}
-                    <div class="mt-3.5 space-y-2">
-                        {% for notification in notifications|slice:":3" %}
-                            <div class="flex items-center justify-between gap-2.5 px-3.5 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200/60 dark:border-white/[0.035] hover:border-zinc-300/80 dark:hover:border-white/[0.07] transition-colors">
-                                <div class="flex items-center gap-2 min-w-0">
-                                    <span class="block size-1.5 rounded-full bg-[#5A67FF] shrink-0"></span>
-                                    <span class="text-xs font-medium text-zinc-800 dark:text-zinc-200 truncate">
-                                        {{ notification.subject|default:"Notice" }} <span class="text-zinc-500 dark:text-zinc-400 font-normal">&middot; {{ notification.message|truncatechars:28 }}</span>
-                                    </span>
-                                </div>
-                                <span class="text-[10px] text-zinc-400 dark:text-zinc-500 shrink-0">{{ notification.sent_at|timesince }} ago</span>
-                            </div>
-                        {% empty %}
-                            <div class="flex flex-col items-center justify-center text-center">
-                                <div class="size-9 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-400 dark:text-zinc-500 mb-3">
-                                    <svg xmlns="http://www.w3.org/2000/svg"
-                                         fill="none"
-                                         viewBox="0 0 24 24"
-                                         stroke-width="1.5"
-                                         stroke="currentColor"
-                                         class="size-4">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.143 17.082a24.248 24.248 0 0 0 3.844.148m-3.844-.148a23.856 23.856 0 0 1-5.455-1.31 8.964 8.964 0 0 0 2.3-5.542m3.155 6.852a3 3 0 0 0 5.667 1.97m1.965-2.277L21 21m-4.225-4.225a23.81 23.81 0 0 0 3.536-1.003A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6.53 6.53m10.245 10.245L6.53 6.53M3 3l3.53 3.53" />
-                                    </svg>
-                                </div>
-                                <p class="text-xs font-medium text-zinc-700 dark:text-zinc-300">All caught up!</p>
-                                <p class="text-[11px] text-zinc-400 dark:text-zinc-500 mt-0.5">Unread notifications will appear here.</p>
-                            </div>
-                        {% endfor %}
+
+        <section class="flex flex-col rounded-2xl dark:bg-zinc-900/30 bg-white border border-zinc-200/60 dark:border-white/[0.05] p-6 pb-2 shadow-2xs">
+            {% url 'records:view_all_records' as view_all_records_url %}
+            {% include 'core/partials/section_header.html' with title="Recent Activity" view_all_url=view_all_records_url %}
+            <div class="flex-1 flex flex-col divide-y divide-zinc-200/60 dark:divide-white/[0.035] min-h-[180px]">
+                {% for record in records %}
+                    {% include 'records/record_card.html' %}
+                {% empty %}
+                    <div class="py-12 flex flex-col items-center justify-center text-center">
+                        <div class="size-9 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-400 dark:text-zinc-500 mb-3">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                            </svg>
+                        </div>
+                        <p class="text-xs font-medium text-zinc-700 dark:text-zinc-300">No activity yet</p>
+                        <p class="text-[11px] text-zinc-400 dark:text-zinc-500 mt-0.5">Upload a file or create a record to get started.</p>
                     </div>
-                </div>
-            </section>
-            <section class="flex-1 flex flex-col justify-between rounded-2xl dark:bg-zinc-900/30 bg-white border border-zinc-200/60 dark:border-white/[0.05] p-5 md:p-6 shadow-2xs">
-                {% url 'reimbursements:package-list' as reimbursements_url %}
-                {% include 'core/partials/section_header.html' with title="Reimbursements" view_all_url=reimbursements_url %}
-                <div class="mt-3.5 grid grid-cols-2 gap-3">
-                    <div class="p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200/60 dark:border-white/[0.035]">
-                        <h3 class="text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Sent</h3>
-                        <p class="text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 mt-1 truncate">
-                            {{ reimbursements_sent_total|default:"0.00"|currency_format:user.settings.default_currency }}
-                        </p>
-                        <p class="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 mt-0.5">{{ reimbursements_sent_pending_count }} pending</p>
-                    </div>
-                    <div class="p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200/60 dark:border-white/[0.035]">
-                        <h3 class="text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Received</h3>
-                        <p class="text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 mt-1 truncate">
-                            {{ reimbursements_received_total|default:"0.00"|currency_format:user.settings.default_currency }}
-                        </p>
-                        <p class="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 mt-0.5">{{ reimbursements_received_count }} completed</p>
-                    </div>
-                </div>
-            </section>
-        </div>
+                {% endfor %}
+            </div>
+        </section>
     </div>
-    <section class="flex flex-col rounded-2xl dark:bg-zinc-900/30 bg-white border border-zinc-200/60 dark:border-white/[0.05] p-6 pb-2 shadow-2xs">
-        {% url 'records:view_all_records' as view_all_records_url %}
-        {% include 'core/partials/section_header.html' with title="Recent Activity" view_all_url=view_all_records_url %}
-        <div class="flex-1 flex flex-col divide-y divide-zinc-200/60 dark:divide-white/[0.035] min-h-[180px]">
-            {% for record in records %}
-                {% include 'records/record_card.html' %}
-            {% empty %}
-                <div class="py-12 flex flex-col items-center justify-center text-center">
-                    <div class="size-9 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-400 dark:text-zinc-500 mb-3">
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                        </svg>
-                    </div>
-                    <p class="text-xs font-medium text-zinc-700 dark:text-zinc-300">No activity yet</p>
-                    <p class="text-[11px] text-zinc-400 dark:text-zinc-500 mt-0.5">Upload a file or create a record to get started.</p>
-                </div>
-            {% endfor %}
-        </div>
-    </section>
+
     {% include 'records/partials/bulk_action_bar.html' %}
 </main>
 {% include 'records/partials/bulk_actions_js.html' %}

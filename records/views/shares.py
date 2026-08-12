@@ -134,17 +134,19 @@ class BulkShareView(LoginRequiredMixin, View):
                 {"error": "None of the selected records can be shared."}, status=403
             )
 
+        recipients, unknown = share_services.resolve_recipients(emails)
         total_shares = 0
-        unknown: set[str] = set()
         for record in owned:
             try:
-                shares, unknown_for_record = share_services.share_record_with_users(
-                    record=record, owner=request.user, emails=emails
+                shares, _ = share_services.share_record_with_users(
+                    record=record,
+                    owner=request.user,
+                    emails=emails,
+                    recipients=recipients,
                 )
             except share_services.SelfShare:
                 continue
             total_shares += len(shares)
-            unknown.update(unknown_for_record)
 
         return JsonResponse(
             {

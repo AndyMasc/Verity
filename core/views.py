@@ -13,6 +13,7 @@ import posthog
 from asgiref.sync import async_to_sync
 from django.conf import settings
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.cache import cache
 from django.db import DatabaseError, connection
@@ -96,12 +97,15 @@ def health_check(request: HttpRequest) -> JsonResponse:  # noqa: ARG001
 
 @require_POST
 @csrf_exempt
+@login_required
 def safe_webpush_save_info(request: HttpRequest) -> HttpResponse:
     """Deduplicate webpush subscriptions before delegating to django-webpush.
 
     Removes any existing SubscriptionInfo with the same endpoint to prevent
     stale or duplicate entries, then forwards the request to the upstream
-    "save_info" handler.
+    "save_info" handler. Requires an authenticated user; the endpoint stays
+    CSRF-exempt because subscriptions are registered from service-worker
+    contexts that cannot carry the CSRF token.
     """
     try:
         post_data = json.loads(request.body.decode("utf-8"))

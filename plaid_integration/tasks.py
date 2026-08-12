@@ -180,19 +180,54 @@ def sync_and_convert_for_item_task(plaid_item_id: int | str) -> dict[str, Any]:
                 )
                 stats["removed"] += archived
 
-            for txn in data.get("added", []):
-                Record.objects.update_or_create(
-                    plaid_transaction_id=txn["transaction_id"],
-                    defaults=_txn_to_record_defaults(txn, plaid_item, folder_cache),
-                )
-                stats["added"] += 1
+            added_txns = data.get("added", [])
+            modified_txns = data.get("modified", [])
+            batch = added_txns + modified_txns
 
-            for txn in data.get("modified", []):
-                Record.objects.update_or_create(
-                    plaid_transaction_id=txn["transaction_id"],
-                    defaults=_txn_to_record_defaults(txn, plaid_item, folder_cache),
+            if batch:
+                txn_ids = [t["transaction_id"] for t in batch]
+                existing_ids = set(
+                    Record.objects.filter(plaid_transaction_id__in=txn_ids).values_list(
+                        "plaid_transaction_id", flat=True
+                    )
                 )
-                stats["modified"] += 1
+
+                now = timezone.now()
+                to_create: list[Record] = []
+                to_update: list[Record] = []
+                for txn in batch:
+                    record = Record(
+                        plaid_transaction_id=txn["transaction_id"],
+                        last_edited=now,
+                        **_txn_to_record_defaults(txn, plaid_item, folder_cache),
+                    )
+                    if txn["transaction_id"] in existing_ids:
+                        to_update.append(record)
+                    else:
+                        to_create.append(record)
+
+                if to_create:
+                    Record.objects.bulk_create(to_create)
+                if to_update:
+                    Record.objects.bulk_update(
+                        to_update,
+                        fields=[
+                            "user",
+                            "plaid_item",
+                            "title",
+                            "merchant",
+                            "balance",
+                            "currency",
+                            "transaction_date",
+                            "record_type",
+                            "notes",
+                            "folder",
+                            "payment_method",
+                            "last_edited",
+                        ],
+                    )
+                stats["added"] += len(added_txns)
+                stats["modified"] += len(modified_txns)
 
             cursor = data.get("next_cursor", cursor)
             has_more = data.get("has_more", False)

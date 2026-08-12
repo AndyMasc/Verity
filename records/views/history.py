@@ -6,7 +6,7 @@ from django.views.generic.list import ListView
 
 from documents.models import DocumentData
 
-from ..models import MergeLog, Record
+from ..models import MergeLog, Record, RecordShare
 from ..types import HistoryEntry
 from .records import snapshot_with_currency
 
@@ -44,32 +44,42 @@ class RecordHistoryView(LoginRequiredMixin, ListView):
             Record.objects.visible_to(self.request.user), pk=self.kwargs["pk"]
         )
 
+        if self._record.user_id == self.request.user.pk:
+            can_see_documents = True
+        else:
+            # Documents follow the grant: a share with include_documents=False
+            # hides attached documents from the recipient, mirroring
+            # RecordDetailView. Document history must not leak their titles/notes.
+            share = RecordShare.active_for(self.request.user).filter(record=self._record).first()
+            can_see_documents = share is not None and share.include_documents
+
         record_entries = list(
             self._record.history.select_related("history_user")[:_HISTORY_MAX_ENTRIES_PER_SOURCE]
         )
         for h in record_entries:
             h.source_type = "record"
 
-        doc_ids = set(self._record.documents.values_list("pk", flat=True))
-        doc_ids.update(
-            v["pk"]
-            for v in DocumentData.history.filter(associated_record=self._record)
-            .values("pk")
-            .distinct()
-        )
-
-        doc_entries = (
-            list(
-                DocumentData.history.filter(pk__in=doc_ids).select_related("history_user")[
-                    :_HISTORY_MAX_ENTRIES_PER_SOURCE
-                ]
+        if can_see_documents:
+            doc_ids = set(self._record.documents.values_list("pk", flat=True))
+            doc_ids.update(
+                v["pk"]
+                for v in DocumentData.history.filter(associated_record=self._record)
+                .values("pk")
+                .distinct()
             )
-            if doc_ids
-            else []
-        )
-
-        for h in doc_entries:
-            h.source_type = "document"
+            doc_entries = (
+                list(
+                    DocumentData.history.filter(pk__in=doc_ids).select_related("history_user")[
+                        :_HISTORY_MAX_ENTRIES_PER_SOURCE
+                    ]
+                )
+                if doc_ids
+                else []
+            )
+            for h in doc_entries:
+                h.source_type = "document"
+        else:
+            doc_entries = []
 
         merged = record_entries + doc_entries
 

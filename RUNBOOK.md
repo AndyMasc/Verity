@@ -34,7 +34,7 @@ will not boot without it, in any environment.
 
 | Process          | Command                                                                                           | Purpose                      |
 | ---------------- | ------------------------------------------------------------------------------------------------- | ---------------------------- |
-| `web`            | `gunicorn Papertrail.asgi:application -k uvicorn_worker.UvicornWorker` (prod) / `runserver` (dev) | HTTP server                  |
+| `web`            | `gunicorn Papertrail.asgi:application -k uvicorn.workers.UvicornWorker` (prod) / `runserver` (dev) | HTTP server                  |
 | `worker`         | `python manage.py rundramatiq`                                                                    | Consumes Dramatiq task queue |
 | `scheduler`      | `python manage.py runperiodiq`                                                                    | Fires periodic (cron) tasks  |
 | `tailwind` (dev) | `python manage.py tailwind start`                                                                 | CSS watcher                  |

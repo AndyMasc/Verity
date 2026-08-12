@@ -14,6 +14,7 @@ from django.conf import settings
 from django.db import models
 from django.db.models import Q
 from django.utils import timezone
+from django.utils.functional import cached_property
 from simple_history.models import HistoricalRecords
 
 if TYPE_CHECKING:
@@ -201,7 +202,7 @@ class DocumentData(models.Model):
         """True when the document has reached a final state (completed or error)."""
         return self.status in (DocumentStatus.COMPLETED, DocumentStatus.ERROR)
 
-    @property
+    @cached_property
     def presigned_view_url(self) -> str:
         """Generate a temporary S3 presigned URL for viewing the document."""
         from .storage import generate_read_presigned_url

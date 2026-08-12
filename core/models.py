@@ -75,3 +75,11 @@ class Notification(models.Model):
     message = models.TextField()
     is_read = models.BooleanField(default=False)
     sent_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(
+                fields=["recipient", "is_read", "-sent_at"],
+                name="idx_notif_recipient_read_sent",
+            ),
+        ]
