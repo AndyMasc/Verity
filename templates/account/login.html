@@ -6,7 +6,7 @@
     {% #container heading="Sign in to Papertrail." subheading=subheading %}
     {% if not SOCIALACCOUNT_ONLY %}
         {% url 'account_login' as action_url %}
-        {% #form form=form url=action_url button_text="Sign in magically" %}
+        {% #form form=form url=action_url button_text="Sign in" %}
         {% csrf_token %}
         {% /form %}
     {% endif %}

@@ -243,6 +243,8 @@ class RecordDetailView(LoginRequiredMixin, UpdateView):
             else:
                 context["documents"] = list(self.object.documents.all())
             context["is_shared_recipient"] = True
+        else:
+            context["documents"] = list(self.object.documents.all())
 
         if self.object.is_plaid_record:
             active_merge = (

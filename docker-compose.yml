@@ -4,23 +4,19 @@ services:
       context: .
       dockerfile: Dockerfile
     restart: always
-    # Migrations + staticfiles on start (single-node Hetzner deploy), then serve
-    # the ASGI app with uvicorn's worker — matches Procfile's `web` process.
+    # Uvicorn is async, so 2 workers can lots of concurrent requests.
     command: >
-      sh -c "python manage.py migrate --noinput &&
-              python manage.py collectstatic --noinput &&
-              gunicorn Papertrail.asgi:application -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000 --workers 3 --timeout 120"
+      sh -c "python manage.py collectstatic --noinput &&
+              gunicorn Papertrail.asgi:application -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000 --workers 2 --timeout 120"
     expose:
       - "8000"
     env_file:
       - .env
-    networks:
-      - coolify-infra
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/core/health/"]
       interval: 30s
       timeout: 10s
-      start_period: 15s
+      start_period: 30s
       retries: 3
 
   # Background worker for handling Dramatiq actors/tasks
@@ -29,12 +25,12 @@ services:
       context: .
       dockerfile: Dockerfile
     restart: always
-    # Reuses the same build but overrides the web server command
-    command: python manage.py rundramatiq --processes=2 --threads=4
+    # Limited to 1 process and 2 threads so that can run on low ram server
+    command: python manage.py rundramatiq --processes=1 --threads=2
     env_file:
       - .env
-    networks:
-      - coolify-infra
+    depends_on:
+      - web
 
   # Scheduler for running periodic/cron tasks via Periodiq
   scheduler:
@@ -42,13 +38,8 @@ services:
       context: .
       dockerfile: Dockerfile
     restart: always
-    # Periodiq hooks into existing dramatiq codebase
     command: python manage.py runperiodiq
     env_file:
       - .env
-    networks:
-      - coolify-infra
-
-networks:
-  coolify-infra:
-    external: true
+    depends_on:
+      - web

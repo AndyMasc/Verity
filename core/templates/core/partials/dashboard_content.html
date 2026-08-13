@@ -7,7 +7,6 @@
       hx-target="this"
       hx-select="#dashboard-content"
       hx-swap="outerHTML">
-    
     <div class="my-auto w-full space-y-4">
         <header class="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
@@ -32,9 +31,7 @@
                 </a>
             </div>
         </header>
-
         {% include 'core/partials/metric_cards.html' %}
-
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
             <div class="lg:col-span-7 xl:col-span-8 flex flex-col">
                 <div class="flex-1 flex flex-col rounded-2xl dark:bg-zinc-900/30 bg-white border border-zinc-200/60 dark:border-white/[0.05] p-5 md:p-6 shadow-2xs">
@@ -98,7 +95,6 @@
                 </section>
             </div>
         </div>
-
         <section class="flex flex-col rounded-2xl dark:bg-zinc-900/30 bg-white border border-zinc-200/60 dark:border-white/[0.05] p-6 pb-2 shadow-2xs">
             {% url 'records:view_all_records' as view_all_records_url %}
             {% include 'core/partials/section_header.html' with title="Recent Activity" view_all_url=view_all_records_url %}
@@ -119,7 +115,6 @@
             </div>
         </section>
     </div>
-
     {% include 'records/partials/bulk_action_bar.html' %}
 </main>
 {% include 'records/partials/bulk_actions_js.html' %}

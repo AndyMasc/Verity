@@ -62,4 +62,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 # In prod, run multiple instances of the app. One for web, one for each dramatiq
 # queue (each uses a different number of threads), one for periodiq — see Procfile.
 # Uses the ASGI app with uvicorn's worker, matching Procfile's `web` process.
-CMD ["gunicorn", "Papertrail.asgi:application", "-k", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000", "--workers", "3", "--timeout", "120"]
+CMD ["gunicorn", "Papertrail.asgi:application", "-k", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000", "--workers", "2", "--timeout", "120"]

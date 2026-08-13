@@ -25,10 +25,14 @@ from .storage import BUCKET, get_s3_client
 
 REDIS_URL = settings.REDIS_URL
 backend = RedisBackend(url=REDIS_URL)
-rate_limiter = BucketRateLimiter(backend, "ocr-rpm-limiter", limit=1, bucket=4000) # 1 request per 4 seconds (15 requests per minute) to avoid boundary bursts (eg, 15 requests in the last second of a minute).
+rate_limiter = BucketRateLimiter(
+    backend, "ocr-rpm-limiter", limit=1, bucket=4000
+)  # 1 request per 4 seconds (15 requests per minute) to avoid boundary bursts (eg, 15 requests in the last second of a minute).
 
 
-@dramatiq.actor(queue_name="ocr-tasks", max_retries=MAX_OCR_RETRIES, min_backoff=10_000, max_backoff=300_000)
+@dramatiq.actor(
+    queue_name="ocr-tasks", max_retries=MAX_OCR_RETRIES, min_backoff=10_000, max_backoff=300_000
+)
 def extract_document(document_id: int) -> dict[str, Any]:
     """Run Gemini OCR on a document and auto-create a Record from the result.2
 
@@ -41,6 +45,7 @@ def extract_document(document_id: int) -> dict[str, Any]:
         result = _ocr_extract(document_id)
     if isinstance(result, dict) and "error" not in result:
         from records.services import create_record_from_ocr
+
         create_record_from_ocr(document_id)
     return result
 
