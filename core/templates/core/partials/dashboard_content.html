@@ -49,13 +49,13 @@
                                     <div class="flex items-center gap-2 min-w-0">
                                         <span class="block size-1.5 rounded-full bg-[#5A67FF] shrink-0"></span>
                                         <span class="text-xs font-medium text-zinc-800 dark:text-zinc-200 truncate">
-                                            {{ notification.subject|default:"Notice" }} <span class="text-zinc-500 dark:text-zinc-400 font-normal">&middot; {{ notification.message|truncatechars:28 }}</span>
+                                            {{ notification.subject|default:"Notice" }} <span class="text-zinc-500 dark:text-zinc-400 font-normal">{{ notification.message|truncatechars:28 }}</span>
                                         </span>
                                     </div>
                                     <span class="text-[10px] text-zinc-400 dark:text-zinc-500 shrink-0">{{ notification.sent_at|timesince }} ago</span>
                                 </div>
                             {% empty %}
-                                <div class="flex flex-col items-center justify-center text-center">
+                                <div class="flex flex-col items-center justify-center text-center mt-5">
                                     <div class="size-9 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-400 dark:text-zinc-500 mb-3">
                                         <svg xmlns="http://www.w3.org/2000/svg"
                                              fill="none"
