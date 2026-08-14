@@ -2,6 +2,7 @@ from pathlib import Path
 
 import environ
 import sentry_sdk
+from sentry_sdk.utils import BadDsn
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -29,7 +30,7 @@ database_config = env.db("DATABASE_URL", default="sqlite:///db.sqlite3")
 if "sqlite" in database_config["ENGINE"]:
     database_config.setdefault("OPTIONS", {})["timeout"] = 30
 else:
-    database_config.setdefault("OPTIONS", {})["sslmode"] = "require"
+    database_config.setdefault("OPTIONS", {})["sslmode"] = env("DB_SSLMODE", default="require")
     # Neon's pooled endpoint (transaction-mode pooling) can't keep PostgreSQL
     # named cursors alive between transactions, so server-side cursors used by
     # QuerySet.iterator() fail with "portal does not exist". Force client-side.
@@ -87,6 +88,13 @@ INSTALLED_APPS = [
     # Stripe
     "djstripe",
 ]
+
+# django-webpush 0.3.6 (latest on PyPI) ships model code without its final
+# migration (0006_alter_subscriptioninfo_user_agent), so `makemigrations`
+# reports a phantom pending change. Provide the migrations from this project.
+MIGRATION_MODULES = {
+    "webpush": "webpush_migrations",
+}
 
 MIDDLEWARE = [
     "core.middleware.RequestIDMiddleware",
@@ -432,24 +440,31 @@ DJSTRIPE_WEBHOOK_SECRET = env("STRIPE_WEBHOOK_SECRET", default="")
 
 # Sentry
 _is_prod = env("SENTRY_ENVIRONMENT", default="development") == "production"
-sentry_sdk.init(
-    dsn=env("SENTRY_DSN"),
-    environment=env("SENTRY_ENVIRONMENT", default="development"),
-    # Add data like request headers and IP for users,
-    # see https://docs.sentry.io/platforms/python/data-management/data-collected/ for more info
-    send_default_pii=False,
-    # Enable sending logs to Sentry
-    enable_logs=True,
-    # Set traces_sample_rate to 1.0 to capture 100%
-    # of transactions for tracing.
-    traces_sample_rate=1.0 if not _is_prod else 0.1,
-    # Set profile_session_sample_rate to 1.0 to profile 100%
-    # of profile sessions.
-    profile_session_sample_rate=1.0 if not _is_prod else 0.1,
-    # Set profile_lifecycle to "trace" to automatically
-    # run the profiler on when there is an active transaction
-    profile_lifecycle="trace",
-)
+_sentry_dsn = env("SENTRY_DSN", default="")
+if _sentry_dsn:
+    try:
+        sentry_sdk.init(
+            dsn=_sentry_dsn,
+            environment=env("SENTRY_ENVIRONMENT", default="development"),
+            # Add data like request headers and IP for users,
+            # see https://docs.sentry.io/platforms/python/data-management/data-collected/ for more info
+            send_default_pii=False,
+            # Enable sending logs to Sentry
+            enable_logs=True,
+            # Set traces_sample_rate to 1.0 to capture 100%
+            # of transactions for tracing.
+            traces_sample_rate=1.0 if not _is_prod else 0.1,
+            # Set profile_session_sample_rate to 1.0 to profile 100%
+            # of profile sessions.
+            profile_session_sample_rate=1.0 if not _is_prod else 0.1,
+            # Set profile_lifecycle to "trace" to automatically
+            # run the profiler on when there is an active transaction
+            profile_lifecycle="trace",
+        )
+    except BadDsn:
+        # CI/dev placeholders (e.g. "https://example.com") are not valid DSNs;
+        # skip Sentry rather than crash the process.
+        sentry_sdk.init(dsn="")
 
 # Unfold customization
 UNFOLD = {

@@ -5,7 +5,8 @@ destructive actions (hard-delete, soft-delete) to superusers while
 keeping the rest of the admin read-safe for regular staff.
 """
 
-from typing import ClassVar
+from collections.abc import Callable
+from typing import Any, ClassVar
 
 from django.contrib import admin, messages
 
@@ -37,7 +38,7 @@ class RecordAdmin(admin.ModelAdmin):
     list_display = ("title", "user", "is_active", "last_edited")
     list_filter = ("is_active", "record_type")
     search_fields = ("title", "merchant")
-    actions: ClassVar[list[str]] = [hard_delete_records]
+    actions: ClassVar[list[Callable[..., Any]]] = [hard_delete_records]
 
     def get_actions(self, request):
         actions = super().get_actions(request)

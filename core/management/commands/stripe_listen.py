@@ -1,4 +1,4 @@
-import subprocess
+import subprocess  # nosec B404
 import uuid
 
 from django.core.management.base import BaseCommand
@@ -10,7 +10,7 @@ class Command(BaseCommand):
 
     def handle(self, *_args, **_options):
         # Fetch the temporary session secret
-        secret_proc = subprocess.run(
+        secret_proc = subprocess.run(  # nosec B603, B607 - local dev helper wrapping the Stripe CLI
             ["stripe", "listen", "--print-secret"],  # noqa: S607
             capture_output=True,
             text=True,
@@ -58,7 +58,7 @@ class Command(BaseCommand):
         )
 
         # Trigger the multi-forwarding listener process
-        subprocess.run(  # noqa: S603
+        subprocess.run(  # noqa: S603  # nosec B603, B607 - local dev helper wrapping the Stripe CLI
             [  # noqa: S607
                 "stripe",
                 "listen",

@@ -94,7 +94,7 @@ class TestShareService(SharingTestCase):
         assert RecordShare.objects.filter(record=self.record, user=self.recipient).count() == 1
 
     def test_self_share_rejected(self):
-        with self.assertRaises(share_services.SelfShare):
+        with self.assertRaises(share_services.SelfShareError):
             self._share([self.owner.email])
 
     def test_unknown_emails_returned_not_shared(self):
@@ -107,7 +107,7 @@ class TestShareService(SharingTestCase):
 
     def test_non_owner_cannot_share(self):
         self._share([self.stranger.email])
-        with self.assertRaises(share_services.NotOwner):
+        with self.assertRaises(share_services.NotOwnerError):
             share_services.share_record_with_users(
                 record=self.record, owner=self.stranger, emails=[self.recipient.email]
             )

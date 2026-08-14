@@ -326,7 +326,7 @@ class Record(models.Model):
 
     class Meta:
         ordering: ClassVar[list[str]] = ["-last_edited"]
-        indexes: ClassVar[list[str]] = [
+        indexes: ClassVar[list[models.Index]] = [
             models.Index(fields=["user", "is_active"], name="idx_record_user_active"),
             models.Index(fields=["user", "-last_edited"], name="idx_record_user_edited"),
             models.Index(fields=["user", "record_type"], name="idx_record_user_type"),
@@ -436,10 +436,10 @@ class MergeLog(models.Model):
 
     class Meta:
         ordering: ClassVar[list[str]] = ["-created_at"]
-        indexes: ClassVar[list[str]] = [
+        indexes: ClassVar[list[models.Index]] = [
             models.Index(fields=["search_text"], name="idx_mergelog_search"),
         ]
-        constraints: ClassVar[list[str]] = [
+        constraints: ClassVar[list[models.UniqueConstraint]] = [
             models.UniqueConstraint(
                 fields=["plaid_record", "document_record"],
                 name="unique_active_merge",
@@ -509,7 +509,7 @@ class AuditLog(models.Model):
 
     class Meta:
         ordering: ClassVar[list[str]] = ["-created_at"]
-        indexes: ClassVar[list[str]] = [
+        indexes: ClassVar[list[models.Index]] = [
             models.Index(fields=["user", "action"], name="idx_auditlog_user_action"),
             models.Index(fields=["record", "action"], name="idx_auditlog_record_action"),
         ]
@@ -600,14 +600,14 @@ class RecordShare(models.Model):
 
     class Meta:
         ordering: ClassVar[list[str]] = ["created_at"]
-        constraints: ClassVar[list[str]] = [
+        constraints: ClassVar[list[models.UniqueConstraint]] = [
             models.UniqueConstraint(
                 fields=["record", "user"],
                 name="unique_record_share",
                 violation_error_message="This record is already shared with that user.",
             )
         ]
-        indexes: ClassVar[list[str]] = [
+        indexes: ClassVar[list[models.Index]] = [
             models.Index(fields=["record"], name="idx_recordshare_record"),
             models.Index(fields=["user"], name="idx_recordshare_user"),
         ]

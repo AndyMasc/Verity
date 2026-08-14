@@ -144,7 +144,7 @@ class DocumentData(models.Model):
 
     class Meta:
         ordering: ClassVar[list[str]] = ["-date_added"]
-        indexes: ClassVar[list[str]] = [
+        indexes: ClassVar[list[models.Index]] = [
             models.Index(fields=["user", "associated_record"], name="idx_doc_user_record"),
             models.Index(fields=["user", "file_extension"], name="idx_doc_user_ext"),
             models.Index(fields=["date_added", "file_hash"], name="idx_doc_date_hash"),
@@ -161,7 +161,7 @@ class DocumentData(models.Model):
             ),
             models.Index(fields=["status", "date_added"], name="idx_doc_reconcile_error"),
         ]
-        constraints: ClassVar[list[str]] = [
+        constraints: ClassVar[list[models.UniqueConstraint]] = [
             models.UniqueConstraint(
                 fields=["user", "file_hash"],
                 name="unique_user_file_hash",

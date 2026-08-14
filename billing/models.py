@@ -148,7 +148,7 @@ class ScanUsage(models.Model):
     count = models.PositiveIntegerField(default=0)
 
     class Meta:
-        constraints: ClassVar[list[str]] = [
+        constraints: ClassVar[list[models.UniqueConstraint]] = [
             models.UniqueConstraint(fields=["user", "period"], name="unique_scan_usage_period")
         ]
 

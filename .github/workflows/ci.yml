@@ -30,12 +30,12 @@ jobs:
       - name: Mypy
         run: mypy .
       - name: Bandit (security)
-        run: bandit -q -r core documents records plaid_integration accounting reimbursements billing Verity -x "*/migrations/*,*/tests/*,*/test_*,venv/*"
+        run: bandit -q -r core documents records plaid_integration accounting reimbursements billing Verity -x "*/migrations/*,*/tests/*,*/tests.py,*/test_*,venv/*"
       - name: pip-audit (dependency vulnerabilities)
         run: pip-audit
 
   test:
-    name: Tests (PostgreSQL + Redis + RabbitMQ)
+    name: Tests (PostgreSQL + Valkey + LavinMQ)
     runs-on: ubuntu-latest
     timeout-minutes: 45
     
@@ -76,6 +76,7 @@ jobs:
     env:
       DJANGO_SETTINGS_MODULE: Verity.settings.ci
       DATABASE_URL: postgres://postgres:postgres@localhost:5432/verity
+      DB_SSLMODE: disable
       REDIS_URL: redis://localhost:6379/0
       RABBIT_MQ_URL: amqp://guest:guest@localhost:5672/
       SECRET_KEY: ci-secret-key-not-for-production

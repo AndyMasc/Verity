@@ -199,7 +199,7 @@ class ReimbursementPackage(models.Model):
 
     class Meta:
         ordering: ClassVar[list[str]] = ["-created_at"]
-        indexes: ClassVar[list[str]] = [
+        indexes: ClassVar[list[models.Index]] = [
             models.Index(fields=["status", "expires_at"]),
             models.Index(fields=["creator", "deleted_at"]),
             models.Index(fields=["recipient", "deleted_at"]),
