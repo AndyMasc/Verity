@@ -8,10 +8,12 @@ from djstripe.models import WebhookEndpoint
 class Command(BaseCommand):
     help = "Automates a single local Stripe listener handling both Account and Connect scopes."
 
-    def handle(self, *args, **options):
+    def handle(self, *_args, **_options):
         # Fetch the temporary session secret
         secret_proc = subprocess.run(
-            ["stripe", "listen", "--print-secret"], capture_output=True, text=True
+            ["stripe", "listen", "--print-secret"],  # noqa: S607
+            capture_output=True,
+            text=True,
         )
         secret = secret_proc.stdout.strip()
 
@@ -56,8 +58,8 @@ class Command(BaseCommand):
         )
 
         # Trigger the multi-forwarding listener process
-        subprocess.run(
-            [
+        subprocess.run(  # noqa: S603
+            [  # noqa: S607
                 "stripe",
                 "listen",
                 "--forward-to",

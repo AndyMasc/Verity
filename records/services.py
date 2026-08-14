@@ -86,7 +86,7 @@ def kickoff_ocr_scan(user: User, document) -> str | None:
 
     if not entitlements.can_scan(user):
         message = (
-            "Quick Scan limit reached. Upgrade to Papertrail Pro for "
+            "Quick Scan limit reached. Upgrade to Verity Pro for "
             "unlimited Quick Scans, or enter the details manually."
         )
         cache.set(cache_key, {"error": message}, timeout=600)

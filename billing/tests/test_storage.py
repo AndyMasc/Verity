@@ -27,10 +27,10 @@ class StoragePackEntitlementTests(TestCase):
         self.user.save()
 
         pro_product = Product.objects.create(
-            id=metadata.PAPERTRAIL_PRO.stripe_id,
+            id=metadata.VERITY_PRO.stripe_id,
             livemode=False,
             active=True,
-            name="Papertrail Pro",
+            name="Verity Pro",
         )
         pro_price = Price.objects.create(
             id="price_pro",
@@ -113,7 +113,7 @@ class StoragePackEntitlementTests(TestCase):
         )
         self.assertEqual(
             " + ".join(p.name for p in metadata.active_products_for_user(self.user)),
-            "Papertrail Pro + 100GB Storage Upgrade",
+            "Verity Pro + 100GB Storage Upgrade",
         )
 
     def test_limit_is_15_when_addon_shares_customer(self):
@@ -128,7 +128,7 @@ class StoragePackEntitlementTests(TestCase):
         )
         self.assertEqual(
             " + ".join(p.name for p in metadata.active_products_for_user(self.user)),
-            "Papertrail Pro + 25GB Storage Upgrade",
+            "Verity Pro + 25GB Storage Upgrade",
         )
 
     def test_limit_is_15_when_addon_on_stray_customer(self):
@@ -161,10 +161,10 @@ class StoragePackConfirmFlowTests(TestCase):
         self.user.save()
 
         pro_product = Product.objects.create(
-            id=metadata.PAPERTRAIL_PRO.stripe_id,
+            id=metadata.VERITY_PRO.stripe_id,
             livemode=False,
             active=True,
-            name="Papertrail Pro",
+            name="Verity Pro",
         )
         pro_price = Price.objects.create(
             id="price_pro",
@@ -228,7 +228,7 @@ class StoragePackConfirmFlowTests(TestCase):
         )
         self.assertEqual(
             metadata.plan_for_user(self.user).stripe_id,
-            metadata.PAPERTRAIL_PRO.stripe_id,
+            metadata.VERITY_PRO.stripe_id,
         )
 
     def test_create_checkout_reuses_existing_customer(self):

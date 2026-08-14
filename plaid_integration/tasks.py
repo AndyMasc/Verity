@@ -1,4 +1,4 @@
-"""Async tasks for syncing Plaid transactions into Papertrail records.
+"""Async tasks for syncing Plaid transactions into Verity records.
 
 Uses Plaid's Transactions Sync endpoint to incrementally fetch new,
 modified, and removed transactions. Converts them into Record objects
@@ -75,7 +75,7 @@ def _get_payment_method(plaid_item: PlaidItem, account_id: str) -> str:
     while isinstance(accounts, str):
         try:
             accounts = json.loads(accounts)
-        except json.JSONDecodeError, TypeError:
+        except (json.JSONDecodeError, TypeError):
             return ""
 
     if not isinstance(accounts, list):

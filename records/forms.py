@@ -5,6 +5,8 @@ business-requirement rules (e.g. notes and payment method are mandatory for
 expense receipts and invoices).
 """
 
+from typing import ClassVar
+
 from django import forms
 from django.core.exceptions import ValidationError
 from django.forms.utils import flatatt
@@ -25,8 +27,8 @@ class FolderForm(forms.ModelForm):
 
     class Meta:
         model = Folder
-        fields = ["name"]
-        widgets = {
+        fields: ClassVar[list[str]] = ["name"]
+        widgets: ClassVar[dict[str, object]] = {
             "name": forms.TextInput(
                 attrs={
                     "class": "w-full bg-white dark:bg-zinc-950 border border-zinc-200/50 dark:border-zinc-800/50 py-2.5 px-3.5 text-xs rounded-xl dark:text-zinc-100 text-zinc-900 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-600 transition-all duration-150 char-limit",
@@ -125,7 +127,7 @@ class BaseRecordForm(forms.ModelForm):
 
     class Meta:
         model = Record
-        fields = [
+        fields: ClassVar[list[str]] = [
             "title",
             "products",
             "merchant",

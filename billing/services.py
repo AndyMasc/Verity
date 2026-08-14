@@ -89,7 +89,7 @@ def pricing_context(user) -> dict:
         meta = metadata.PRODUCTS.get(product.id)
         product.features_list = meta.features if meta else []
 
-    free_plan = metadata.PAPERTRAIL_FREE
+    free_plan = metadata.VERITY_FREE
     free_plan.features_list = free_plan.features
     free_plan.prices = []
     free_plan.metadata = {"category": "base_plan"}

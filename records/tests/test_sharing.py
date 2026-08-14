@@ -79,7 +79,13 @@ class TestShareService(SharingTestCase):
         assert share.shared_by == self.owner
         audit = AuditLog.objects.filter(record=self.record, action=AuditLog.Action.SHARE).first()
         assert audit is not None and audit.user == self.owner
-        assert audit.details == {"user": self.recipient.email, "user_id": self.recipient.pk}
+        assert audit.details == {
+            "user": self.recipient.email,
+            "user_id": self.recipient.pk,
+            "permission": RecordShare.Permission.EDIT,
+            "purpose": "",
+            "include_documents": True,
+        }
 
     def test_share_idempotent(self):
         self._share([self.recipient.email])
@@ -403,6 +409,8 @@ class TestSharedDocuments(SharingTestCase):
         assert response.status_code == 200
 
     def test_record_detail_hides_documents_when_not_included(self):
+        self.doc.title = "Shared Receipt PDF"
+        self.doc.save(update_fields=["title"])
         share_services.grant_access(
             record=self.record,
             user=self.recipient,
@@ -412,7 +420,7 @@ class TestSharedDocuments(SharingTestCase):
         self.client.force_login(self.recipient)
         response = self.client.get(reverse("records:record_detail", args=[self.record.pk]))
         assert response.status_code == 200
-        assert self.doc.title.encode() not in response.content
+        assert b"Shared Receipt PDF" not in response.content
 
 
 class TestShareeUI(SharingTestCase):

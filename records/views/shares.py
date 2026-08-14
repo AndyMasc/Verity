@@ -18,8 +18,8 @@ from django_ratelimit.decorators import ratelimit
 
 from billing.entitlements import has_feature
 from billing.features import RECORD_SHARING
-from Papertrail.views import parse_record_ids
 from records.models import Record, RecordShare
+from Verity.views import parse_record_ids
 
 from .. import shares as share_services
 
@@ -81,9 +81,9 @@ class ShareRecordView(LoginRequiredMixin, View):
                 permission=permission,
                 include_documents=include_documents,
             )
-        except share_services.SelfShare as exc:
+        except share_services.SelfShareError as exc:
             messages.error(request, str(exc))
-        except share_services.NotOwner as exc:
+        except share_services.NotOwnerError as exc:
             messages.error(request, str(exc))
         else:
             if shares:
@@ -144,7 +144,7 @@ class BulkShareView(LoginRequiredMixin, View):
                     emails=emails,
                     recipients=recipients,
                 )
-            except share_services.SelfShare:
+            except share_services.SelfShareError:
                 continue
             total_shares += len(shares)
 
@@ -168,6 +168,6 @@ class RevokeShareView(LoginRequiredMixin, View):
         try:
             share_services.revoke_share(record=record, actor=request.user, share=share)
             messages.success(request, f"Access revoked for {share.user.email}")
-        except share_services.NotOwner as exc:
+        except share_services.NotOwnerError as exc:
             messages.error(request, str(exc))
         return redirect("records:record_detail", pk=pk)

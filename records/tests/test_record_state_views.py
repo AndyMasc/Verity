@@ -368,9 +368,8 @@ class BulkArchiveViewTest(TestCase):
             content_type="application/json",
             HTTP_HX_REQUEST="true",
         )
-        self.assertEqual(response.status_code, 200)
-        trigger = json.loads(response["HX-Trigger"])
-        self.assertEqual(trigger["showToast"]["message"], "0 records archived.")
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("No records were archived", response.json()["error"])
 
     def test_get_not_allowed(self):
         self.client.force_login(self.user)

@@ -11,5 +11,5 @@ record history so your edits are attributed to you.
 View record: {{ record_url }}
 
 ---
-Sent via Papertrail
+Sent via Verity
 ---

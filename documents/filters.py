@@ -4,6 +4,8 @@ Provides dynamic filter choices for file type and processing status.
 File-type choices are cached per user to avoid repeated queries.
 """
 
+from typing import ClassVar
+
 import django_filters
 from django import forms
 from django.core.cache import cache
@@ -41,7 +43,7 @@ class DocumentFilter(django_filters.FilterSet):
 
     class Meta:
         model = DocumentData
-        fields = []
+        fields: ClassVar[list[str]] = []
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

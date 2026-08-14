@@ -7,6 +7,7 @@ required to start a checkout.
 """
 
 from typing import Any
+from urllib.parse import urlencode
 
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
@@ -22,6 +23,15 @@ from ..models import ReimbursementPackage
 from ..verification import send_verification_code, verify_code
 
 _VERIFIED_SESSION_PREFIX = "_reimbursement_verified"
+
+
+def _code_step_url(pay_url: str, email: str) -> str:
+    """The pay page URL at the code-entry step, carrying the verified address.
+
+    The code step needs the recipient email to re-submit it with the code.
+    Without it the email field renders empty and verification can't complete.
+    """
+    return f"{pay_url}?step=code&{urlencode({'email': email})}"
 
 
 def _verified_in_session(request: HttpRequest, package: ReimbursementPackage) -> bool:
@@ -60,7 +70,8 @@ class PackagePayView(View):
             step = request.GET.get("step", "email")
             if step not in ("email", "code"):
                 step = "email"
-            return self._render(request, package, state="verify", verify_step=step)
+            email = request.GET.get("email", "")
+            return self._render(request, package, state="verify", verify_step=step, email=email)
 
         services.activate_queued_package(package)
         package.refresh_from_db()
@@ -85,6 +96,7 @@ class PackagePayView(View):
         context = {
             "package": package,
             "is_public": True,
+            "email": "",
             **extra,
         }
         return render(request, self.template_name, context)
@@ -112,7 +124,7 @@ class RequestVerificationCodeView(View):
         messages.success(
             request, "A verification code was sent to your inbox. It expires in 10 minutes."
         )
-        return redirect(f"{pay_url}?step=code")
+        return redirect(_code_step_url(pay_url, email))
 
 
 @method_decorator(ratelimit(key="ip", rate="10/m", method="POST", block=True), name="dispatch")
@@ -129,12 +141,12 @@ class VerifyEmailCodeView(View):
 
         if not email or not code:
             messages.error(request, "Enter both your email and the verification code.")
-            return redirect(f"{pay_url}?step=code")
+            return redirect(_code_step_url(pay_url, email))
 
         ok, error = verify_code(package, email, code)
         if not ok:
             messages.error(request, error)
-            return redirect(f"{pay_url}?step=code")
+            return redirect(_code_step_url(pay_url, email))
 
         _mark_verified_in_session(request, package)
         return redirect(pay_url)

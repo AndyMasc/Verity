@@ -27,12 +27,14 @@ select = [
     "PERF", # Perflint (Finds performance antipatterns in loops)
     "RUF",  # Ruff-specific rules
 ]
+# EN DASH is intentional typography in currency/display labels.
+allowed-confusables = ["–"]
 ignore = [
     "E501",  # line too long (handled automatically by format section)
     "N802",  # function name should be lowercase (Django views use snake_case)
     "N803",  # argument name should be lowercase
     "N806",  # variable in function should be lowercase
-    "N999",  # Papertrail package name exception
+    "N999",  # Verity package name exception
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -40,10 +42,11 @@ ignore = [
 "**/migrations/**" = ["ALL"]
 "**/tests/**" = ["ALL"]
 "**/test_*.py" = ["ALL"]
+"**/tests.py" = ["ALL"]
 
 [tool.ruff.lint.isort]
 force-single-line = false
-known-first-party = ["core", "documents", "records", "plaid_integration", "Papertrail", "accounting", "billing"]
+known-first-party = ["core", "documents", "records", "plaid_integration", "Verity", "accounting", "billing"]
 
 [tool.ruff.format]
 quote-style = "double"
@@ -62,7 +65,8 @@ exclude = [
     "tests/",
     "venv/",
     "__pycache__/",
-    "manage.py"
+    "manage.py",
+    "conftest.py"
 ]
 
 # Structural catch-all for untyped third-party libraries missing stubs
@@ -81,7 +85,21 @@ module = [
     "numpy.*",
     "cv2.*",
     "deskew.*",
-    "reimbursements.*"
+    "reimbursements.*",
+    "djstripe.*",
+    "stripe.*",
+    "cachalot.*",
+    "environ",
+    "fernet_fields",
+    "periodiq",
+    "pillow_heif.*",
+    "plaid.*",
+    "rest_framework.*",
+    "simple_history",
+    "django_dramatiq",
+    "django_periodiq",
+    "import_export",
+    "openpyxl"
 ]
 ignore_missing_imports = true
 
@@ -89,13 +107,14 @@ ignore_missing_imports = true
 [[tool.mypy.overrides]]
 module = [
     "*.models",
-    "Papertrail.*",
+    "Verity.*",
     "documents.*",
     "core.*",
     "records.*",
     "plaid_integration.*",
     "accounting.*",
-    "billing.*"
+    "billing.*",
+    "reimbursements.*"
 ]
 ignore_missing_imports = true
 disable_error_code = [
@@ -129,7 +148,7 @@ exclude_lines = [
 ]
 
 [tool.pytest.ini_options]
-DJANGO_SETTINGS_MODULE = "Papertrail.settings.local"
+DJANGO_SETTINGS_MODULE = "Verity.settings.local"
 python_files = ["tests.py", "test_*.py", "tests_*.py", "*_tests.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]

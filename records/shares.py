@@ -22,7 +22,7 @@ from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.utils import timezone
 
-from Papertrail.views import create_audit_log
+from Verity.views import create_audit_log
 
 from .models import AuditLog, Record, RecordShare
 
@@ -34,11 +34,11 @@ class ShareError(Exception):
     """Base class for share validation failures."""
 
 
-class NotOwner(ShareError):
+class NotOwnerError(ShareError):
     """Only the record owner can share/revoke."""
 
 
-class SelfShare(ShareError):
+class SelfShareError(ShareError):
     pass
 
 
@@ -62,13 +62,13 @@ def grant_access(
     Returns "(share, created)". Reactivates an existing grant that was
     revoked or expired instead of raising on the unique constraint, so
     re-granting (e.g. a refunded reimbursement) works without new rows.
-    Raises "NotOwner" unless "requester" owns the record and "SelfShare"
+    Raises "NotOwnerError" unless "requester" owns the record and "SelfShareError"
     if "user" is the owner.
     """
     if not can_share(requester, record):
-        raise NotOwner("Only the record owner can share it")
+        raise NotOwnerError("Only the record owner can share it")
     if user.pk == record.user_id:
-        raise SelfShare("You cannot share a record with yourself")
+        raise SelfShareError("You cannot share a record with yourself")
 
     defaults = {
         "permission": permission,
@@ -175,8 +175,8 @@ def share_record_with_users(
 
     Returns "(shares, unknown_emails)" listing only "newly granted"
     recipient shares (idempotent: existing active grants are skipped without
-    re-notification). Raises "NotOwner" when "owner" is not the record
-    owner and "SelfShare" when the owner appears in the recipient list.
+    re-notification). Raises "NotOwnerError" when "owner" is not the record
+    owner and "SelfShareError" when the owner appears in the recipient list.
     Emails without an account are returned (never silently dropped, never
     silently shared).
 
@@ -190,7 +190,7 @@ def share_record_with_users(
 
     for user in recipients:
         if user.pk == record.user_id:
-            raise SelfShare("You cannot share a record with yourself")
+            raise SelfShareError("You cannot share a record with yourself")
 
     shares: list[RecordShare] = []
     if not recipients:
@@ -240,7 +240,7 @@ def revoke_share(*, record: Record, actor, share: RecordShare) -> None:
     was granted and later removed.
     """
     if not can_share(actor, record):
-        raise NotOwner
+        raise NotOwnerError
     if share.revoked_at is None:
         share.revoked_at = timezone.now()
         share.save(update_fields=["revoked_at"])

@@ -43,7 +43,7 @@ class NotificationsServiceTest(TestCase):
         Site.objects.all().delete()
         context = build_site_context()
         self.assertIn("site_url", context)
-        self.assertEqual(context["current_site"]["name"], "Papertrail")
+        self.assertEqual(context["current_site"]["name"], "Verity")
 
     def test_build_expiry_webpush_payload(self):
         from core.services.notifications import build_expiry_webpush_payload
@@ -130,7 +130,7 @@ class NotificationsServiceTest(TestCase):
             send_push=True,
             send_email=True,
         )
-        mock_push.delay.assert_called_once()
+        mock_push.send.assert_called_once()
         mock_email.assert_called_once()
 
     @patch("core.services.notifications.send_email_notification")

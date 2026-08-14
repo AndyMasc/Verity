@@ -6,6 +6,7 @@ view so that the view layer only handles HTTP concerns.
 
 import asyncio
 from datetime import datetime, time, timedelta
+from typing import cast
 
 from asgiref.sync import sync_to_async
 from django.core.cache import cache
@@ -184,6 +185,19 @@ async def get_dashboard_context(user) -> dict:
         _fetch_notifications(user),
         _fetch_unread_notifications_count(user),
     )
+
+    # asyncio.gather unions heterogeneous coroutine results; pin the real types
+    # so downstream arithmetic/subscripting is checked properly.
+    merge_count = cast(int, merge_count)
+    monthly_expense_rows = cast(list[tuple[str, str]], monthly_expense_rows)
+    recent_records = cast(list, recent_records)
+    expiring_soon = cast(list, expiring_soon)
+    webpush_warning = cast(str | None, webpush_warning)
+    sent_payment_rows = cast(list[tuple[str, str]], sent_payment_rows)
+    reimb_stats = cast(dict[str, int], reimb_stats)
+    received_payment_rows = cast(list[tuple[str, str]], received_payment_rows)
+    notifications = cast(list, notifications)
+    unread_notifications_count = cast(int, unread_notifications_count)
 
     orphaned_count = (
         await DocumentData.objects.for_user(user)

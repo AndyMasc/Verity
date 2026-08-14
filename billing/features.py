@@ -1,6 +1,6 @@
 # Pro plan features
 UNLIMITED_SCANS = "Unlimited quick scans"
-BANK_TRANSACTION_SYNC = "Bank transaction sync"
+BANK_TRANSACTION_SYNC = "Bank transaction sync (US, CA, & supported EU institutions)"
 QUICK_REIMBURSEMENT_REQUEST = (
     "One-click reimbursement requests"  # Can generate and pay reimbursement requests
 )

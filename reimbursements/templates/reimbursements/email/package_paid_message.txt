@@ -8,4 +8,4 @@ Hi {{ creator_name }},
 View details: {{ package_url }}
 
 ---
-Sent via Papertrail
+Sent via Verity

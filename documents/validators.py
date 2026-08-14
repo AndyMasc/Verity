@@ -16,7 +16,7 @@ try:
     import magic as python_magic
 
     HAS_MAGIC = True
-except ImportError, OSError:
+except (ImportError, OSError):
     python_magic = None  # type: ignore[assignment]
     HAS_MAGIC = False
 

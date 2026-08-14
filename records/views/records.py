@@ -20,7 +20,7 @@ from django.views.generic.edit import UpdateView
 from django_filters.views import FilterView
 from django_ratelimit.decorators import ratelimit
 
-from Papertrail.views import CachedPaginatorMixin, htmx_response
+from Verity.views import CachedPaginatorMixin, htmx_response
 
 from .. import services
 from ..filters import RecordFilter

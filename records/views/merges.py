@@ -20,8 +20,8 @@ from django.views.generic.edit import FormView
 from django_ratelimit.decorators import ratelimit
 
 from documents.models import DocumentData
-from Papertrail.responses import api_error
-from Papertrail.views import create_audit_log
+from Verity.responses import api_error
+from Verity.views import create_audit_log
 
 from ..filters import RecordFilter
 from ..forms import ManualMergeForm

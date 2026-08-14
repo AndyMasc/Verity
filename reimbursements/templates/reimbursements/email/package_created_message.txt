@@ -8,4 +8,4 @@ Hi {{ recipient_name }},
 View and pay: {{ package_url }}
 
 ---
-Sent via Papertrail
+Sent via Verity

@@ -1,8 +1,8 @@
-"""Root URL configuration for the Papertrail project.
+"""Root URL configuration for the Verity project.
 
 Routes all top-level URL patterns including admin, third-party apps,
 and the module-specific URL includes. Password management endpoints
-are intentionally blocked since Papertrail uses external auth.
+are intentionally blocked since Verity uses external auth.
 """
 
 from django.conf import settings
@@ -20,7 +20,7 @@ def forbidden_view(request, *args, **kwargs):  # noqa: ARG001
     return HttpResponseForbidden("Password features are disabled.")
 
 
-handler403 = "Papertrail.views.handler403"
+handler403 = "Verity.views.handler403"
 
 
 urlpatterns = [

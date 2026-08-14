@@ -47,7 +47,7 @@ def build_site_context() -> dict:
         current_site = Site.objects.get_current()
         site_info = {"domain": current_site.domain, "name": current_site.name}
     except Site.DoesNotExist:
-        site_info = {"domain": site_domain, "name": "Papertrail"}
+        site_info = {"domain": site_domain, "name": "Verity"}
 
     return {
         "site_url": site_url,

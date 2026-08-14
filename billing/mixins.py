@@ -32,7 +32,7 @@ class FeatureRequiredMixin(UserPassesTestMixin):
         if self.request.content_type and "application/json" in self.request.content_type:
             return JsonResponse(
                 {
-                    "error": "This feature requires the Papertrail Pro plan.",
+                    "error": "This feature requires the Verity Pro plan.",
                     "redirect_url": pricing_url,
                 },
                 status=403,
@@ -40,6 +40,6 @@ class FeatureRequiredMixin(UserPassesTestMixin):
 
         messages.warning(
             self.request,
-            "This feature requires the Papertrail Pro plan. Upgrade to continue.",
+            "This feature requires the Verity Pro plan. Upgrade to continue.",
         )
         return redirect(pricing_url)

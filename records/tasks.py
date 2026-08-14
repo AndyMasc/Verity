@@ -188,7 +188,7 @@ def send_expiry_notifications() -> None:
         notifications_to_create.append(
             Notification(
                 recipient=user,
-                subject="Expiring Records on Papertrail",
+                subject="Expiring Records on Verity",
                 message=f"Your record '{record.title}' is expiring on {record.expiry_date}.",
             )
         )
@@ -243,7 +243,7 @@ def send_expiry_notifications() -> None:
 
         send_multi_channel_notification(
             user=user,
-            subject="Expiring Records on Papertrail",
+            subject="Expiring Records on Verity",
             text_body=render_to_string("notifications/expiring_record_email.txt", context),
             html_body=render_to_string("notifications/expiring_record_email.html", context),
             webpush_payload=webpush_payload,

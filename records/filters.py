@@ -5,6 +5,8 @@ per-user caching of folder and record-type choices to avoid repeated
 database queries on every page load.
 """
 
+from typing import ClassVar
+
 import django_filters
 from django import forms
 from django.core.cache import cache
@@ -70,7 +72,7 @@ class RecordFilter(django_filters.FilterSet):
 
     class Meta:
         model = Record
-        fields = []
+        fields: ClassVar[list[str]] = []
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

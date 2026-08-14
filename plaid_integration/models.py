@@ -40,7 +40,7 @@ class EncryptedJSONField(EncryptedTextField):
         if value is not None and isinstance(value, str):
             try:
                 return json.loads(value)
-            except ValueError, TypeError:
+            except (ValueError, TypeError):
                 return value
         return value
 
@@ -49,7 +49,7 @@ class EncryptedJSONField(EncryptedTextField):
         if value is not None and isinstance(value, str):
             try:
                 return json.loads(value)
-            except ValueError, TypeError:
+            except (ValueError, TypeError):
                 return value
         return super().to_python(value)
 
@@ -69,17 +69,17 @@ class PlaidItem(models.Model):
     access_token = EncryptedCharField(max_length=512)
     next_cursor = models.CharField(
         max_length=255,
-        null=True,
         blank=True,
+        default="",
         db_index=True,
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     last_synced_at = models.DateTimeField(null=True, blank=True)
-    last_error_code = models.CharField(max_length=255, null=True, blank=True)
-    last_error_message = models.TextField(null=True, blank=True)
+    last_error_code = models.CharField(max_length=255, blank=True, default="")
+    last_error_message = models.TextField(blank=True, default="")
     last_error_at = models.DateTimeField(null=True, blank=True)
-    institution_name = models.CharField(max_length=255, null=True, blank=True)
+    institution_name = models.CharField(max_length=255, blank=True, default="")
     accounts_data = EncryptedJSONField(null=True, blank=True)
 
     def __str__(self) -> str:

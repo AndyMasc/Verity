@@ -105,10 +105,9 @@ class HtmxMessageMiddleware:
             and "HX-Refresh" not in response
         ):
             storage = get_messages(request)
-            messages_list: list[dict[str, Any]] = []
-
-            for message in storage:
-                messages_list.append({"message": str(message.message), "level": message.level})
+            messages_list: list[dict[str, Any]] = [
+                {"message": str(message.message), "level": message.level} for message in storage
+            ]
 
             if messages_list:
                 hx_trigger = response.get("HX-Trigger")

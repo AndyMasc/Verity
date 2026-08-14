@@ -15,7 +15,7 @@ def validate_recipient_email(request: HttpRequest) -> JsonResponse:
 
     Reimbursements may be sent to any email address. The endpoint confirms
     the address is well-formed and reports whether it matches a registered
-    Papertrail user (who gets the in-app flow) or an external recipient (who
+    Verity user (who gets the in-app flow) or an external recipient (who
     pays through the public, verified link). No personal details (e.g. the
     recipient's name) are disclosed.
     """

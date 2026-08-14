@@ -31,7 +31,7 @@ class ProductMetadata:
     monthly_scan_limit: int | None = None
 
 
-PAPERTRAIL_FREE = ProductMetadata(
+VERITY_FREE = ProductMetadata(
     stripe_id="free",
     name="Free",
     description="For personal use",
@@ -46,9 +46,9 @@ PAPERTRAIL_FREE = ProductMetadata(
     monthly_scan_limit=features.FREE_MONTHLY_SCAN_LIMIT,
 )
 
-PAPERTRAIL_PRO = ProductMetadata(
+VERITY_PRO = ProductMetadata(
     stripe_id="prod_V0BRybbfIkmRH4",
-    name="Papertrail Pro",
+    name="Verity Pro",
     description="For small businesses and teams",
     category="base_plan",
     features=[
@@ -86,8 +86,8 @@ STORAGE_UPGRADE_50 = ProductMetadata(
 )
 
 PRODUCTS = {
-    PAPERTRAIL_PRO.stripe_id: PAPERTRAIL_PRO,
-    PAPERTRAIL_FREE.stripe_id: PAPERTRAIL_FREE,
+    VERITY_PRO.stripe_id: VERITY_PRO,
+    VERITY_FREE.stripe_id: VERITY_FREE,
     STORAGE_UPGRADE_10.stripe_id: STORAGE_UPGRADE_10,
     STORAGE_UPGRADE_50.stripe_id: STORAGE_UPGRADE_50,
 }
@@ -171,10 +171,11 @@ def _products_by_category(user) -> dict[str, ProductMetadata]:
     most recently created subscription wins so a new purchase "replaces"
     rather than stacks with the previous one.
     """
-    entries = []
-    for subscription in _active_subscriptions(user):
-        for meta in _metas_for_subscription(subscription):
-            entries.append((subscription.created, subscription.pk, meta))
+    entries = [
+        (subscription.created, subscription.pk, meta)
+        for subscription in _active_subscriptions(user)
+        for meta in _metas_for_subscription(subscription)
+    ]
     winners: dict[str, ProductMetadata] = {}
     for _created, _pk, meta in sorted(entries, key=lambda e: (e[0], e[1]), reverse=True):
         winners.setdefault(meta.category, meta)
@@ -183,7 +184,7 @@ def _products_by_category(user) -> dict[str, ProductMetadata]:
 
 def plan_for_user(user) -> ProductMetadata:
     """Return the user's base plan (drives plan features), or Free if none."""
-    return _products_by_category(user).get("base_plan", PAPERTRAIL_FREE)
+    return _products_by_category(user).get("base_plan", VERITY_FREE)
 
 
 def storage_addons_for_user(user) -> list[ProductMetadata]:

@@ -1,6 +1,7 @@
 """Plaid status, sync, and disconnect views."""
 
 import logging
+from typing import ClassVar
 
 import plaid
 from django.conf import settings
@@ -29,8 +30,8 @@ class PlaidStatusView(APIView):
     frontend polls for connection health.
     """
 
-    authentication_classes = [authentication.SessionAuthentication]
-    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes: ClassVar[list] = [authentication.SessionAuthentication]
+    permission_classes: ClassVar[list] = [permissions.IsAuthenticated]
 
     def get(self, request: Request) -> Response:
         """Return cached Plaid connection status for the authenticated user."""
@@ -69,8 +70,8 @@ class PlaidStatusView(APIView):
 class SyncTransactionsView(APIView):
     """Trigger an on-demand transaction sync for a Plaid bank item."""
 
-    authentication_classes = [authentication.SessionAuthentication]
-    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes: ClassVar[list] = [authentication.SessionAuthentication]
+    permission_classes: ClassVar[list] = [permissions.IsAuthenticated]
 
     def post(self, request: Request) -> Response:
         """Trigger transaction sync (direct background task in Prod, sandbox webhook in Sandbox)."""
@@ -115,8 +116,8 @@ class SyncTransactionsView(APIView):
 class DisconnectBankView(APIView):
     """Remove a linked bank item from both Plaid and the local database."""
 
-    authentication_classes = [authentication.SessionAuthentication]
-    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes: ClassVar[list] = [authentication.SessionAuthentication]
+    permission_classes: ClassVar[list] = [permissions.IsAuthenticated]
 
     def post(self, request: Request, item_id: str) -> Response:
         """Disconnect and delete the specified bank item."""

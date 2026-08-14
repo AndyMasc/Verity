@@ -1,6 +1,7 @@
 """Bank linking views: token creation, exchange, and connect page."""
 
 import logging
+from typing import ClassVar
 
 import plaid
 import posthog
@@ -53,15 +54,15 @@ class CreateLinkTokenView(FeatureRequiredMixin, APIView):
     """Create a Plaid Link token for a new bank connection."""
 
     required_feature = features.BANK_TRANSACTION_SYNC
-    authentication_classes = [authentication.SessionAuthentication]
-    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes: ClassVar[list] = [authentication.SessionAuthentication]
+    permission_classes: ClassVar[list] = [permissions.IsAuthenticated]
 
     def post(self, request: Request) -> Response:
         """Issue a new link token for the requesting user."""
         try:
             request_obj = LinkTokenCreateRequest(
                 user=LinkTokenCreateRequestUser(client_user_id=str(request.user.id)),
-                client_name="Papertrail",
+                client_name="Verity",
                 products=[Products("transactions")],
                 country_codes=[CountryCode("US")],
                 language="en",
@@ -78,8 +79,8 @@ class CreateUpdateLinkTokenView(FeatureRequiredMixin, APIView):
     """Create a Plaid Link token to update credentials for an existing bank item."""
 
     required_feature = features.BANK_TRANSACTION_SYNC
-    authentication_classes = [authentication.SessionAuthentication]
-    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes: ClassVar[list] = [authentication.SessionAuthentication]
+    permission_classes: ClassVar[list] = [permissions.IsAuthenticated]
 
     def post(self, request: Request, item_id: str) -> Response:
         """Issue an update-mode link token for the specified bank item."""
@@ -91,7 +92,7 @@ class CreateUpdateLinkTokenView(FeatureRequiredMixin, APIView):
         try:
             request_obj = LinkTokenCreateRequest(
                 user=LinkTokenCreateRequestUser(client_user_id=str(request.user.id)),
-                client_name="Papertrail",
+                client_name="Verity",
                 products=[Products("transactions")],
                 country_codes=[CountryCode("US")],
                 language="en",
@@ -109,8 +110,8 @@ class PublicTokenExchange(FeatureRequiredMixin, APIView):
     """Exchange a Plaid public token for a persistent access token."""
 
     required_feature = features.BANK_TRANSACTION_SYNC
-    authentication_classes = [authentication.SessionAuthentication]
-    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes: ClassVar[list] = [authentication.SessionAuthentication]
+    permission_classes: ClassVar[list] = [permissions.IsAuthenticated]
 
     def post(self, request: Request) -> Response:
         """Exchange the public token and persist the new PlaidItem."""

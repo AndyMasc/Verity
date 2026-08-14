@@ -20,8 +20,8 @@ POSTHOG_DISABLED = env.bool("POSTHOG_DISABLED", default=False)
 SECRET_KEY = env("SECRET_KEY")
 DEBUG = env.bool("DEBUG", default=False)
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS")
-ROOT_URLCONF = "Papertrail.urls"
-WSGI_APPLICATION = "Papertrail.wsgi.application"
+ROOT_URLCONF = "Verity.urls"
+WSGI_APPLICATION = "Verity.wsgi.application"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Database
@@ -263,14 +263,14 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 # Email
 EMAIL_BACKEND = "core.backends.DramatiqEmailBackend"  # Queue email sends as background tasks
 ANYMAIL = {"RESEND_API_KEY": env("RESEND_API_KEY")}
-DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="Papertrail <onboarding@resend.dev>")
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="Verity <onboarding@resend.dev>")
 
 # Storage (S3/R2) - Uploads use signed urls in Cloudflare R2
 R2_ACCESS_KEY_ID = env("R2_ACCESS_KEY_ID")
 R2_SECRET_ACCESS_KEY = env("R2_SECRET_ACCESS_KEY")
 R2_STORAGE_BUCKET_NAME = env("R2_STORAGE_BUCKET_NAME")
 R2_S3_ENDPOINT_URL = env("R2_S3_ENDPOINT_URL")
-R2_PAPERTRAIL_STORAGE_ACCOUNT_ID = env("R2_PAPERTRAIL_STORAGE_ACCOUNT_ID")
+R2_VERITY_STORAGE_ACCOUNT_ID = env("R2_VERITY_STORAGE_ACCOUNT_ID")
 
 AWS_S3_FILE_OVERWRITE = False
 AWS_ACCESS_KEY_ID = R2_ACCESS_KEY_ID
@@ -453,8 +453,8 @@ sentry_sdk.init(
 
 # Unfold customization
 UNFOLD = {
-    "SITE_TITLE": "Papertrail Portal",
-    "SITE_HEADER": "Papertrail",
+    "SITE_TITLE": "Verity Portal",
+    "SITE_HEADER": "Verity",
     "SITE_SYMBOL": "description",  # Material Symbol
     "SHOW_HISTORY": True,
     "SHOW_VIEW_ON_SITE": True,

@@ -3,6 +3,7 @@ import logging
 import dramatiq
 import stripe
 from django.db import transaction
+from periodiq import cron
 
 from . import services
 from .models import PackagePayment, ReimbursementPackage
@@ -36,6 +37,13 @@ def process_stripe_event_task(trigger_id: int) -> None:
 
 @dramatiq.actor(max_retries=3)
 def sync_payment_status(package_uuid: str, payment_id: int) -> None:
+    """Reconcile a single pending payment against Stripe.
+
+    Triggered from page views while a package is still open. Uses the same
+    amount cross-check, audit log, and paid notification as the webhook path
+    so a payment that settled without a processed webhook is recorded
+    identically.
+    """
     try:
         package = ReimbursementPackage.objects.get(uuid=package_uuid)
     except ReimbursementPackage.DoesNotExist:
@@ -46,10 +54,22 @@ def sync_payment_status(package_uuid: str, payment_id: int) -> None:
         return
 
     try:
-        payment = PackagePayment.objects.get(pk=payment_id, package=package)
+        payment = PackagePayment.objects.select_related("package", "payer").get(
+            pk=payment_id, package=package
+        )
     except PackagePayment.DoesNotExist:
         return
 
+    if _sync_payment_from_stripe(payment, source="payment_synced"):
+        logger.info("Background sync: marked package %s as paid", package_uuid)
+
+
+def _sync_payment_from_stripe(payment, *, source: str) -> bool:
+    """Fetch a payment's Checkout Session and apply it when settled.
+
+    Returns True when the payment was settled and applied. Raises on Stripe
+    API failure so the caller can trigger a retry.
+    """
     try:
         session = services.retrieve_checkout_session(payment.stripe_checkout_session_id)
     except stripe.error.StripeError as e:
@@ -58,13 +78,64 @@ def sync_payment_status(package_uuid: str, payment_id: int) -> None:
             payment.stripe_checkout_session_id,
             e,
         )
-        raise  # Trigger Dramatiq retry
+        raise
 
-    if session.payment_status == "paid":
-        payment.complete_from_session(session)
-        payer_currency = getattr(payment, "payer_currency", None) or "usd"
-        package.mark_as_paid(payer=payment.payer, payer_currency=payer_currency)
-        logger.info("Background sync: marked package %s as paid", package_uuid)
+    if session.payment_status != "paid":
+        return False
+
+    from .webhooks import apply_paid_session
+
+    if not apply_paid_session(payment, session, source=source):
+        logger.error(
+            "Package %s: session %s amount check failed — skipping mark-as-paid",
+            payment.package.uuid,
+            session.id,
+        )
+        return False
+    return True
+
+
+@dramatiq.actor(max_retries=3, min_backoff=2, periodic=cron("*/15 * * * *"))
+def reconcile_pending_payments_task() -> None:
+    """Periodically reconcile open packages' pending payments against Stripe.
+
+    A webhook delivery can be missed or dropped (djstripe's object sync
+    failing on a transient Stripe race, a downed worker, Stripe giving up
+    after failed retries), leaving an open package that was actually paid
+    stuck at "awaiting payment". This task refetches the Checkout Session for
+    each pending payment so recorded state never trusts stale local data.
+    Per-payment failures are logged and skipped so one bad session doesn't
+    block the rest.
+    """
+    package_ids = (
+        ReimbursementPackage.objects.filter(
+            status=ReimbursementPackage.Status.OPEN,
+            payments__is_completed=False,
+        )
+        .values_list("pk", flat=True)
+        .distinct()
+    )
+
+    for package_id in package_ids:
+        payment = (
+            PackagePayment.objects.select_related("package", "payer")
+            .filter(package_id=package_id, is_completed=False)
+            .order_by("-created_at")
+            .first()
+        )
+        if payment is None:
+            continue
+        try:
+            if _sync_payment_from_stripe(payment, source="payment_synced"):
+                logger.info(
+                    "Reconciliation: marked package %s as paid",
+                    payment.package.uuid,
+                )
+        except Exception:
+            logger.exception(
+                "Reconciliation failed for package %s",
+                package_id,
+            )
 
 
 @dramatiq.actor

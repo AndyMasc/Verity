@@ -72,7 +72,7 @@ class PlaidViewsTest(TestCase):
     def test_plaid_status_not_connected(self):
         from django.core.cache import cache
 
-        cache.clear()
+        cache.delete(f"plaid_status:{self.user.id}")
         self.plaid_item.delete()
         response = self.client.get(reverse("plaid:status"))
         data = response.json()
@@ -140,7 +140,7 @@ class PlaidWebhookViewTest(TestCase):
         )
         response = plaid_webhook(request)
         self.assertEqual(response.status_code, 200)
-        mock_task.delay.assert_called_once_with(self.plaid_item.id)
+        mock_task.send.assert_called_once_with(self.plaid_item.id)
 
     @override_settings(PLAID_ENV="sandbox", PLAID_SYNC_COOLDOWN_SECONDS=60)
     @patch("plaid_integration.tasks.sync_and_convert_for_item_task")
@@ -160,16 +160,16 @@ class PlaidWebhookViewTest(TestCase):
             content_type="application/json",
         )
         plaid_webhook(request)
-        mock_task.delay.assert_called_once_with(self.plaid_item.id)
+        mock_task.send.assert_called_once_with(self.plaid_item.id)
 
         plaid_webhook(request)
-        mock_task.delay.assert_called_once_with(self.plaid_item.id)
+        mock_task.send.assert_called_once_with(self.plaid_item.id)
 
         PlaidItem.objects.filter(id=self.plaid_item.id).update(
             last_synced_at=dj_tz.now() - timedelta(seconds=120)
         )
         plaid_webhook(request)
-        self.assertEqual(mock_task.delay.call_count, 2)
+        self.assertEqual(mock_task.send.call_count, 2)
 
     @override_settings(PLAID_ENV="sandbox", PLAID_SYNC_COOLDOWN_SECONDS=60)
     @patch("plaid_integration.tasks.sync_and_convert_for_item_task")
@@ -187,7 +187,7 @@ class PlaidWebhookViewTest(TestCase):
         plaid_webhook(request)
         self.plaid_item.refresh_from_db()
         self.assertIsNotNone(self.plaid_item.last_synced_at)
-        mock_task.delay.assert_called_once_with(self.plaid_item.id)
+        mock_task.send.assert_called_once_with(self.plaid_item.id)
 
     @override_settings(PLAID_ENV="sandbox")
     def test_item_login_required_webhook(self):

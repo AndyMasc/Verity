@@ -12,7 +12,7 @@ from django.contrib.auth import get_user_model
 from django.http import HttpRequest, HttpResponse
 from django.test import TestCase
 
-from Papertrail.views import create_audit_log, htmx_response, parse_record_ids
+from Verity.views import create_audit_log, htmx_response, parse_record_ids
 from records.models import AuditLog, Record
 
 User = get_user_model()

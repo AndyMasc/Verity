@@ -1,4 +1,4 @@
-"""Standardized API response helpers for the Papertrail project.
+"""Standardized API response helpers for the Verity project.
 
 Provides convenience functions that return consistent JSON error/success
 bodies. When the request comes from an HTMX client, responses include
