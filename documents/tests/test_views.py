@@ -4,6 +4,7 @@ from unittest.mock import patch
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
+from django.conf import settings
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
@@ -302,7 +303,7 @@ class DocumentListViewTest(TestCase):
             )
         response = self.client.get(self.url)
         self.assertTrue(response.context["is_paginated"])
-        self.assertEqual(len(response.context["documents"]), 20)
+        self.assertEqual(len(response.context["documents"]), settings.PAGINATE_BY)
 
     def test_pagination_second_page(self):
         self.client.force_login(self.user)
@@ -314,7 +315,10 @@ class DocumentListViewTest(TestCase):
                 file_hash=f"hash{i:04d}",
             )
         response = self.client.get(self.url, {"page": 2})
-        self.assertEqual(len(response.context["documents"]), 10)
+        self.assertEqual(
+            len(response.context["documents"]),
+            min(settings.PAGINATE_BY, 30 - settings.PAGINATE_BY),
+        )
 
     def test_pagination_invalid_page_returns_404(self):
         self.client.force_login(self.user)

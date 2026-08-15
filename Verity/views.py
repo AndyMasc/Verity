@@ -1,4 +1,4 @@
-"""Shared view utilities and mixins for the Papertrail project.
+"""Shared view utilities and mixins for the Verity project.
 
 Provides reusable helpers for HTMX responses, pagination, audit
 logging, and JSON body parsing that are used across multiple Django apps.
@@ -15,7 +15,7 @@ from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import render
 from django_ratelimit.exceptions import Ratelimited
 
-from Papertrail.utils import CachedPaginator
+from Verity.utils import CachedPaginator
 
 if TYPE_CHECKING:
     from django.contrib.auth.models import AbstractUser
@@ -122,7 +122,7 @@ def parse_record_ids(
     try:
         data = json.loads(request.body)
         record_ids = data.get("record_ids", [])
-    except json.JSONDecodeError, AttributeError:
+    except (json.JSONDecodeError, AttributeError):
         return None, HttpResponse(
             '{"error": "Invalid request body"}',
             status=400,

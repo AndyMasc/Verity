@@ -5,8 +5,8 @@ from django.http import HttpRequest, HttpResponse
 from django.views.decorators.http import require_POST
 from django_ratelimit.decorators import ratelimit
 
-from Papertrail.views import parse_record_ids
 from records.models import Record
+from Verity.views import parse_record_ids
 
 from .services import export_records_to_excel
 

@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import logging
+from typing import ClassVar
 
 import stripe
 from django.conf import settings
@@ -58,7 +61,7 @@ class CustomUser(AbstractUser):
 
         try:
             client_reference_id = int(session.client_reference_id)
-        except TypeError, ValueError:
+        except (TypeError, ValueError):
             return None
 
         try:
@@ -145,7 +148,7 @@ class ScanUsage(models.Model):
     count = models.PositiveIntegerField(default=0)
 
     class Meta:
-        constraints = [
+        constraints: ClassVar[list[models.UniqueConstraint]] = [
             models.UniqueConstraint(fields=["user", "period"], name="unique_scan_usage_period")
         ]
 

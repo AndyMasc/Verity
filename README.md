@@ -1,12 +1,12 @@
-# Papertrail
+# Verity
 
-A modern document and record management platform built with Django, HTMX, and Tailwind CSS. Papertrail helps individuals and businesses organize receipts, invoices, bank transactions, and financial documents with AI-powered OCR, automatic bank synchronization via Plaid, and compliance-aware retention policies.
+A modern document and record management platform built with Django, HTMX, and Tailwind CSS. Verity helps individuals and businesses organize receipts, invoices, bank transactions, and financial documents with AI-powered OCR, automatic bank synchronization via Plaid, and compliance-aware retention policies.
 
 ## Architecture
 
 ```
-Papertrail/
-├── Papertrail/              # Django project configuration
+Verity/
+├── Verity/              # Django project configuration
 │   ├── settings/            # Split settings (base, local, production)
 │   ├── responses.py         # HTMX-aware API response helpers
 │   └── utils.py             # CachedPaginator utility
@@ -57,7 +57,7 @@ Papertrail/
 1. **Clone and configure:**
 
 ```bash
-git clone <repo-url> && cd Papertrail
+git clone <repo-url> && cd Verity
 python -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env  # Fill in your values
@@ -79,7 +79,7 @@ python manage.py tailwind runserver
 
 ### Environment Variables
 
-See `Papertrail/settings/base.py` for the full list. Required variables:
+See `Verity/settings/base.py` for the full list. Required variables:
 
 | Variable | Description |
 |----------|------------|
@@ -201,10 +201,10 @@ GitHub Actions runs on every push/PR to `main`:
 
 ```bash
 # Build
-docker build -t papertrail .
+docker build -t verity .
 
 # Run
-docker run -p 8000:8000 --env-file .env papertrail
+docker run -p 8000:8000 --env-file .env verity
 ```
 
 The production Dockerfile uses a multi-stage build with a non-root user, runs migrations at startup, and serves via gunicorn.
@@ -220,7 +220,7 @@ The production Dockerfile uses a multi-stage build with a non-root user, runs mi
 - [ ] Set up Resend for email delivery
 - [ ] Configure VAPID keys for web push
 - [ ] Set up SSL/TLS termination
-- [ ] Set `DJANGO_ENV=production` (dispatcher in `Papertrail/settings/__init__.py` loads `settings/production.py`)
+- [ ] Set `DJANGO_ENV=production` (dispatcher in `Verity/settings/__init__.py` loads `settings/production.py`)
 
 ## License
 

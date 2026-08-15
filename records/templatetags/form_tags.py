@@ -75,5 +75,5 @@ def index(sequence, i: int):
     """
     try:
         return sequence[int(i)]
-    except IndexError, TypeError, ValueError:
+    except (IndexError, TypeError, ValueError):
         return ""

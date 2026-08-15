@@ -150,7 +150,7 @@ class PackageDeleteView(LoginRequiredMixin, View):
 def _clamp_days_valid(raw: Any) -> int:
     try:
         return max(1, min(365, int(raw)))
-    except TypeError, ValueError:
+    except (TypeError, ValueError):
         return 7
 
 

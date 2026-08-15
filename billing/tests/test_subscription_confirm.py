@@ -25,10 +25,10 @@ class SubscriptionConfirmTests(TestCase):
             stripe_data={"status": "active"},
         )
         pro_product = Product.objects.create(
-            id=metadata.PAPERTRAIL_PRO.stripe_id,
+            id=metadata.VERITY_PRO.stripe_id,
             livemode=False,
             active=True,
-            name="Papertrail Pro",
+            name="Verity Pro",
         )
         pro_price = Price.objects.create(
             id="price_pro",
@@ -66,7 +66,7 @@ class SubscriptionConfirmTests(TestCase):
                 "billing.services.retrieve_subscription",
                 return_value={
                     "id": "sub_test",
-                    "items": {"data": [{"price": {"product": metadata.PAPERTRAIL_PRO.stripe_id}}]},
+                    "items": {"data": [{"price": {"product": metadata.VERITY_PRO.stripe_id}}]},
                 },
             ),
             mock.patch(

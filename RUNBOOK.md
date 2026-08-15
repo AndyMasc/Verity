@@ -1,8 +1,8 @@
-# Papertrail — Operations Runbook
+# Verity — Operations Runbook
 
-Everything required to run Papertrail in **development** and **production**, including
+Everything required to run Verity in **development** and **production**, including
 every external service, environment variable, webhook registration, and recurring job.
-Compiled from the code itself (`Papertrail/settings/base.py`, `production.py`,
+Compiled from the code itself (`Verity/settings/base.py`, `production.py`,
 `Dockerfile`, `Procfile`, `tasks.py`, webhook handlers) — not from memory.
 
 ---
@@ -34,7 +34,7 @@ will not boot without it, in any environment.
 
 | Process          | Command                                                                                           | Purpose                      |
 | ---------------- | ------------------------------------------------------------------------------------------------- | ---------------------------- |
-| `web`            | `gunicorn Papertrail.asgi:application -k uvicorn.workers.UvicornWorker` (prod) / `runserver` (dev) | HTTP server                  |
+| `web`            | `gunicorn Verity.asgi:application -k uvicorn.workers.UvicornWorker` (prod) / `runserver` (dev) | HTTP server                  |
 | `worker`         | `python manage.py rundramatiq`                                                                    | Consumes Dramatiq task queue |
 | `scheduler`      | `python manage.py runperiodiq`                                                                    | Fires periodic (cron) tasks  |
 | `tailwind` (dev) | `python manage.py tailwind start`                                                                 | CSS watcher                  |
@@ -50,14 +50,14 @@ Template: `cp .env.example .env`
 
 | Variable                 | Required      | Notes                                                                                                                       |
 | ------------------------ | ------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `DJANGO_ENV`             | prod          | `production` routes `Papertrail/settings/__init__.py` to `settings/production.py`; anything else loads `settings/local.py`. |
-| `DJANGO_SETTINGS_MODULE` | –             | Dockerfile sets `Papertrail.settings`. Alternatively point directly at `Papertrail.settings.production`.                    |
+| `DJANGO_ENV`             | prod          | `production` routes `Verity/settings/__init__.py` to `settings/production.py`; anything else loads `settings/local.py`. |
+| `DJANGO_SETTINGS_MODULE` | –             | Dockerfile sets `Verity.settings`. Alternatively point directly at `Verity.settings.production`.                    |
 | `SECRET_KEY`             | yes           | `python -c "import secrets; print(secrets.token_urlsafe(64))"`                                                              |
 | `DEBUG`                  | prod: `false` | `production.py` refuses to boot if `true`                                                                                   |
 | `ALLOWED_HOSTS`          | yes (prod)    | comma list, e.g. `app.example.com,www.example.com`                                                                          |
 | `CSRF_TRUSTED_ORIGINS`   | prod          | e.g. `https://app.example.com`                                                                                              |
 | `CORS_ALLOWED_ORIGINS`   | optional      | only if a separate client origin exists                                                                                     |
-| `DATABASE_URL`           | prod          | `postgres://user:pass@host:5432/papertrail`; dev defaults to `sqlite:///db.sqlite3`                                         |
+| `DATABASE_URL`           | prod          | `postgres://user:pass@host:5432/verity`; dev defaults to `sqlite:///db.sqlite3`                                         |
 | `DB_CONN_MAX_AGE`        | optional      | default `600`                                                                                                               |
 | `REDIS_URL`              | prod          | only consumed when `DEBUG=False`                                                                                            |
 | `DEFAULT_FROM_EMAIL`     | optional      | default `onboarding@resend.dev` — change in prod to a verified Resend sender                                                |
@@ -76,7 +76,7 @@ Template: `cp .env.example .env`
 | `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` | R2 API token (Object Read/Write, scoped to the bucket)              |
 | `R2_STORAGE_BUCKET_NAME`                    | private bucket; uploads use presigned URLs, no public access needed |
 | `R2_S3_ENDPOINT_URL`                        | `https://<account-id>.r2.cloudflarestorage.com`                     |
-| `R2_PAPERTRAIL_STORAGE_ACCOUNT_ID`          | Cloudflare account ID                                               |
+| `R2_VERITY_STORAGE_ACCOUNT_ID`          | Cloudflare account ID                                               |
 
 ### Google Gemini
 
@@ -152,7 +152,7 @@ venv/bin/python -c "from py_vapid import Vapid01; v = Vapid01(); v.generate_keys
 
 ```bash
 # 1. Code + environment
-git clone <repo-url> && cd Papertrail
+git clone <repo-url> && cd Verity
 python -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
 pip install -r requirements-dev.txt        # ruff, mypy, pytest
@@ -216,7 +216,7 @@ cp .env.example .env
 # Set: DJANGO_ENV=production, DEBUG=false, ALLOWED_HOSTS, CSRF_TRUSTED_ORIGINS,
 #      DATABASE_URL, REDIS_URL, RABBIT_MQ_URL + all keys from section 2.
 
-docker build -t papertrail .
+docker build -t verity .
 ```
 
 **The app runs as three processes** (see `Procfile`): `web` (gunicorn + uvicorn
@@ -242,7 +242,7 @@ scheduler as separate containers/services, or use a process manager.
 **Stripe:**
 
 1. The URL must include the `djstripe_uuid` of a locally-synced
-   `WebhookEndpoint` row (see `Papertrail/urls.py`). In dev, `stripe_listen`
+   `WebhookEndpoint` row (see `Verity/urls.py`). In dev, `stripe_listen`
    creates it. In prod: create the endpoint in the Stripe dashboard, sync it
    locally, fix the URL to include the UUID, and store the signing secret on
    the row (`djstripe_validation_method="verify_signature"`).

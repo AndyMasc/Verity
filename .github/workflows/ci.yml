@@ -30,12 +30,12 @@ jobs:
       - name: Mypy
         run: mypy .
       - name: Bandit (security)
-        run: bandit -q -r core documents records plaid_integration accounting reimbursements billing Papertrail -x "*/migrations/*,*/tests/*,*/test_*,venv/*"
+        run: bandit -q -r core documents records plaid_integration accounting reimbursements billing Verity -x "*/migrations/*,*/tests/*,*/tests.py,*/test_*,venv/*"
       - name: pip-audit (dependency vulnerabilities)
         run: pip-audit
 
   test:
-    name: Tests (PostgreSQL + Redis + RabbitMQ)
+    name: Tests (PostgreSQL + Valkey + LavinMQ)
     runs-on: ubuntu-latest
     timeout-minutes: 45
     
@@ -46,7 +46,7 @@ jobs:
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: papertrail
+          POSTGRES_DB: verity
         ports:
           - 5432:5432
         options: >-
@@ -74,8 +74,9 @@ jobs:
           --health-retries 5
 
     env:
-      DJANGO_SETTINGS_MODULE: Papertrail.settings.ci
-      DATABASE_URL: postgres://postgres:postgres@localhost:5432/papertrail
+      DJANGO_SETTINGS_MODULE: Verity.settings.ci
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/verity
+      DB_SSLMODE: disable
       REDIS_URL: redis://localhost:6379/0
       RABBIT_MQ_URL: amqp://guest:guest@localhost:5672/
       SECRET_KEY: ci-secret-key-not-for-production
@@ -84,7 +85,7 @@ jobs:
       R2_SECRET_ACCESS_KEY: ci-r2-secret
       R2_STORAGE_BUCKET_NAME: ci-bucket
       R2_S3_ENDPOINT_URL: https://example.com
-      R2_PAPERTRAIL_STORAGE_ACCOUNT_ID: ci-account
+      R2_VERITY_STORAGE_ACCOUNT_ID: ci-account
       GEMINI_API_KEY: ci-gemini-key
       RESEND_API_KEY: ci-resend-key
       GOOGLE_OAUTH_CLIENT_ID: ci-google-id
@@ -126,4 +127,4 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build production image
-        run: docker build --progress=plain -t papertrail:ci .
+        run: docker build --progress=plain -t verity:ci .

@@ -14,8 +14,8 @@ def subscription_status(request: HttpRequest) -> dict[str, Any]:
             "is_subscribed": False,
             "subscription_cancel_at_period_end": False,
             "plan": "free",
-            "plan_name": metadata.PAPERTRAIL_FREE.name,
-            "monthly_scan_limit": metadata.PAPERTRAIL_FREE.monthly_scan_limit,
+            "plan_name": metadata.VERITY_FREE.name,
+            "monthly_scan_limit": metadata.VERITY_FREE.monthly_scan_limit,
             "features": list(entitlements.get_features(user)),
         }
 
@@ -25,7 +25,7 @@ def subscription_status(request: HttpRequest) -> dict[str, Any]:
 
     active_products = metadata.active_products_for_user(user)
     plan_name = " + ".join(product.name for product in active_products) or (
-        metadata.PAPERTRAIL_FREE.name
+        metadata.VERITY_FREE.name
     )
 
     return {

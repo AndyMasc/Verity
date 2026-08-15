@@ -4,6 +4,8 @@ Extends django-allauth signup and login forms to support a passwordless
 authentication flow, and provides a ModelForm for UserSettings preferences.
 """
 
+from typing import ClassVar
+
 from allauth.account.forms import LoginForm, SignupForm
 from django import forms
 
@@ -42,7 +44,7 @@ class UpdateUserSettingsForm(forms.ModelForm):
 
     class Meta:
         model = UserSettings
-        fields = [
+        fields: ClassVar[list[str]] = [
             "default_currency",
             "auto_archive_expired_records",
             "auto_delete_archived_records",

@@ -3,11 +3,12 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    image: main-image:latest # Specific name of built image so others can reuse it
     restart: always
     # Uvicorn is async, so 2 workers can lots of concurrent requests.
     command: >
       sh -c "python manage.py collectstatic --noinput &&
-              gunicorn Papertrail.asgi:application -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000 --workers 2 --timeout 120"
+              gunicorn Verity.asgi:application -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000 --workers 2 --timeout 120"
     expose:
       - "8000"
     env_file:
@@ -21,25 +22,23 @@ services:
 
   # Background worker for handling Dramatiq actors/tasks
   worker:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: main-image:latest # Reuses web image, rather than building a brand new one
     restart: always
     # Limited to 1 process and 2 threads so that can run on low ram server
-    command: python manage.py rundramatiq --processes=1 --threads=2
+    command: python manage.py rundramatiq --processes=1 --threads=2 --max-tasks=500
     env_file:
       - .env
     depends_on:
-      - web
+      web:
+        condition: service_healthy
 
   # Scheduler for running periodic/cron tasks via Periodiq
   scheduler:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: main-image:latest # Reuses web image, rather than building a brand new one
     restart: always
     command: python manage.py runperiodiq
     env_file:
       - .env
     depends_on:
-      - web
+      web:
+        condition: service_healthy

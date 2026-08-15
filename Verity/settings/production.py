@@ -14,7 +14,7 @@ CORS_ALLOW_ALL_ORIGINS = False
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS")
 
 # Origins allowed to submit unsafe (POST) requests, e.g.
-# ["https://app.papertrail.example", "https://www.papertrail.example"].
+# ["https://app.verity.example", "https://www.verity.example"].
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
 
 # Transport security is enabled by base when DEBUG is off; reinforce it here

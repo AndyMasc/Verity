@@ -5,6 +5,7 @@ and a ModelForm for updating document title, notes, and record association.
 """
 
 from pathlib import Path
+from typing import ClassVar
 
 from django import forms
 from django.core.exceptions import ValidationError
@@ -57,8 +58,8 @@ class DocumentUpdateForm(forms.ModelForm):
 
     class Meta:
         model = DocumentData
-        fields = ["title", "notes", "associated_record"]
-        widgets = {
+        fields: ClassVar[list[str]] = ["title", "notes", "associated_record"]
+        widgets: ClassVar[dict[str, object]] = {
             "title": forms.TextInput(attrs={"maxlength": "200", "data-maxlength": "200"}),
         }
 

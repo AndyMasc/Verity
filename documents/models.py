@@ -8,7 +8,7 @@ row and the R2 object are removed immediately.
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from django.conf import settings
 from django.db import models
@@ -143,8 +143,8 @@ class DocumentData(models.Model):
     history = HistoricalRecords(m2m_fields=[])
 
     class Meta:
-        ordering = ["-date_added"]
-        indexes = [
+        ordering: ClassVar[list[str]] = ["-date_added"]
+        indexes: ClassVar[list[models.Index]] = [
             models.Index(fields=["user", "associated_record"], name="idx_doc_user_record"),
             models.Index(fields=["user", "file_extension"], name="idx_doc_user_ext"),
             models.Index(fields=["date_added", "file_hash"], name="idx_doc_date_hash"),
@@ -161,12 +161,15 @@ class DocumentData(models.Model):
             ),
             models.Index(fields=["status", "date_added"], name="idx_doc_reconcile_error"),
         ]
-        constraints = [
+        constraints: ClassVar[list[models.UniqueConstraint]] = [
             models.UniqueConstraint(
                 fields=["user", "file_hash"],
                 name="unique_user_file_hash",
             )
         ]
+
+    def __str__(self):
+        return f"{self.filepath}"
 
     def save(self, *args, **kwargs):
         """Persist the document, auto-deriving file_extension from filepath if blank."""
@@ -184,9 +187,6 @@ class DocumentData(models.Model):
     def hard_delete(self, using=None, keep_parents=False):
         """Permanently remove the database record regardless of OCR status."""
         super().delete(using=using, keep_parents=keep_parents)
-
-    def __str__(self):
-        return f"{self.filepath}"
 
     @property
     def is_processing(self) -> bool:

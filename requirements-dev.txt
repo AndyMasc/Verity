@@ -2,9 +2,7 @@
 
 # Code quality / linting
 bandit==1.9.4
-black==26.5.1
 cssbeautifier==2.0.3
-curlylint==0.13.1
 djhtml==3.0.11
 djlint==1.40.2
 EditorConfig==0.17.1

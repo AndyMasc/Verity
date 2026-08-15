@@ -5,6 +5,7 @@ HTMX partial responses for seamless in-page folder management.
 """
 
 import json
+from typing import ClassVar
 
 import posthog
 from django.contrib import messages
@@ -41,7 +42,7 @@ class FolderListView(LoginRequiredMixin, ListView):
     model = Folder
     template_name = "records/folders.html"
     context_object_name = "folders"
-    ordering = ["-created_at"]
+    ordering: ClassVar[list[str]] = ["-created_at"]
     paginate_by = 12
 
     def get_template_names(self):

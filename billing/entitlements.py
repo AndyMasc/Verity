@@ -32,12 +32,12 @@ def get_plan(user) -> str:
     """Return 'paid' or 'free' based on the user's active base plan.
 
     Storage add-ons alone never unlock paid features; only a base-plan
-    product (e.g. Papertrail Pro) does.
+    product (e.g. Verity Pro) does.
     """
-    from .metadata import PAPERTRAIL_FREE, plan_for_user
+    from .metadata import VERITY_FREE, plan_for_user
 
     plan = plan_for_user(user)
-    return "paid" if plan.stripe_id != PAPERTRAIL_FREE.stripe_id else "free"
+    return "paid" if plan.stripe_id != VERITY_FREE.stripe_id else "free"
 
 
 def get_monthly_scan_limit(user) -> int | None:

@@ -1,7 +1,7 @@
 services:
-  redis:
-    image: redis:7-alpine
-    command: redis-server --requirepass test123
+  valkey:
+    image: valkey/valkey:latest
+    command: valkey-server --requirepass test123
     ports:
       - "6379:6379"
 

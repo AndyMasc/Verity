@@ -1,6 +1,6 @@
 """Core domain models for the records module.
 
-Defines the data layer for Papertrail's record-keeping system: expense records,
+Defines the data layer for Verity's record-keeping system: expense records,
 folders for organisation, merge tracking between Plaid and document records,
 and an audit log that captures every significant mutation.
 """
@@ -13,7 +13,7 @@ import re
 from decimal import Decimal, InvalidOperation
 from functools import reduce
 from operator import or_
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from django.conf import settings
 from django.db import models
@@ -175,7 +175,7 @@ class RecordQuerySet(models.QuerySet):
             try:
                 val = Decimal(clean_num)
                 conditions |= Q(balance__gte=val, balance__lt=val + 1)
-            except InvalidOperation, ValueError, OverflowError:
+            except (InvalidOperation, ValueError, OverflowError):
                 pass
 
         start: datetime.date | None = None
@@ -325,8 +325,8 @@ class Record(models.Model):
     history = HistoricalRecords()
 
     class Meta:
-        ordering = ["-last_edited"]
-        indexes = [
+        ordering: ClassVar[list[str]] = ["-last_edited"]
+        indexes: ClassVar[list[models.Index]] = [
             models.Index(fields=["user", "is_active"], name="idx_record_user_active"),
             models.Index(fields=["user", "-last_edited"], name="idx_record_user_edited"),
             models.Index(fields=["user", "record_type"], name="idx_record_user_type"),
@@ -351,6 +351,16 @@ class Record(models.Model):
             models.Index(fields=["user", "balance"], name="idx_record_user_balance"),
         ]
 
+    def __str__(self):
+        return self.title
+
+    def save(self, *args, **kwargs):
+        if self.pk and self.is_plaid_record:
+            protected = {"plaid_transaction_id", "plaid_item"}
+            if update_fields := kwargs.get("update_fields"):
+                kwargs["update_fields"] = [f for f in update_fields if f not in protected]
+        super().save(*args, **kwargs)
+
     def delete(self, using=None, keep_parents=False):  # noqa: ARG002
         """Soft-delete the record by marking it inactive rather than removing it."""
         self.is_active = False
@@ -370,9 +380,6 @@ class Record(models.Model):
     @property
     def shared_count(self) -> int:
         return self.shares.count()
-
-    def __str__(self):
-        return self.title
 
     @property
     def badge_classes(self) -> str:
@@ -396,13 +403,6 @@ class Record(models.Model):
         if self.expiry_date:
             return self.expiry_date <= (timezone.now().date() + datetime.timedelta(days=days))
         return False
-
-    def save(self, *args, **kwargs):
-        if self.pk and self.is_plaid_record:
-            protected = {"plaid_transaction_id", "plaid_item"}
-            if update_fields := kwargs.get("update_fields"):
-                kwargs["update_fields"] = [f for f in update_fields if f not in protected]
-        super().save(*args, **kwargs)
 
 
 class MergeLog(models.Model):
@@ -435,11 +435,11 @@ class MergeLog(models.Model):
     )
 
     class Meta:
-        ordering = ["-created_at"]
-        indexes = [
+        ordering: ClassVar[list[str]] = ["-created_at"]
+        indexes: ClassVar[list[models.Index]] = [
             models.Index(fields=["search_text"], name="idx_mergelog_search"),
         ]
-        constraints = [
+        constraints: ClassVar[list[models.UniqueConstraint]] = [
             models.UniqueConstraint(
                 fields=["plaid_record", "document_record"],
                 name="unique_active_merge",
@@ -447,6 +447,9 @@ class MergeLog(models.Model):
                 violation_error_message="An active merge already exists for this pair.",
             ),
         ]
+
+    def __str__(self) -> str:
+        return f"Merge {self.pk}: plaid={self.plaid_record_id} <- doc={self.document_record_id}"
 
     def save(
         self,
@@ -467,9 +470,6 @@ class MergeLog(models.Model):
             using=using,
             update_fields=update_fields,
         )
-
-    def __str__(self) -> str:
-        return f"Merge {self.pk}: plaid={self.plaid_record_id} <- doc={self.document_record_id}"
 
 
 class AuditLog(models.Model):
@@ -508,8 +508,8 @@ class AuditLog(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
 
     class Meta:
-        ordering = ["-created_at"]
-        indexes = [
+        ordering: ClassVar[list[str]] = ["-created_at"]
+        indexes: ClassVar[list[models.Index]] = [
             models.Index(fields=["user", "action"], name="idx_auditlog_user_action"),
             models.Index(fields=["record", "action"], name="idx_auditlog_record_action"),
         ]
@@ -599,15 +599,15 @@ class RecordShare(models.Model):
     )
 
     class Meta:
-        ordering = ["created_at"]
-        constraints = [
+        ordering: ClassVar[list[str]] = ["created_at"]
+        constraints: ClassVar[list[models.UniqueConstraint]] = [
             models.UniqueConstraint(
                 fields=["record", "user"],
                 name="unique_record_share",
                 violation_error_message="This record is already shared with that user.",
             )
         ]
-        indexes = [
+        indexes: ClassVar[list[models.Index]] = [
             models.Index(fields=["record"], name="idx_recordshare_record"),
             models.Index(fields=["user"], name="idx_recordshare_user"),
         ]

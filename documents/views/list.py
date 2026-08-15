@@ -9,7 +9,7 @@ from django.utils.decorators import method_decorator
 from django_filters.views import FilterView
 from django_ratelimit.decorators import ratelimit
 
-from Papertrail.views import CachedPaginatorMixin
+from Verity.views import CachedPaginatorMixin
 
 from ..filters import DocumentFilter
 from ..models import DocumentData

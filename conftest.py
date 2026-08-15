@@ -1,4 +1,4 @@
-"""Shared pytest fixtures and factory definitions for Papertrail tests."""
+"""Shared pytest fixtures and factory definitions for Verity tests."""
 
 from __future__ import annotations
 

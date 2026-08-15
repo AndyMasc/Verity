@@ -15,6 +15,7 @@ from django.conf import settings
 from django.template.loader import render_to_string
 from django.utils import timezone
 
+from core.services.notifications import build_site_context
 from core.tasks import send_background_email
 
 from .models import PackageEmailVerification, ReimbursementPackage
@@ -64,14 +65,19 @@ def send_verification_code(package: ReimbursementPackage, email: str) -> bool:
         },
     )
 
-    subject = "Your Papertrail verification code"
+    subject = "Your Verity verification code"
+    context = {
+        "code": code,
+        "minutes": int(CODE_TTL.total_seconds() // 60),
+        **build_site_context(),
+    }
     html_body = render_to_string(
         "reimbursements/email/verification_code_message.html",
-        {"code": code, "minutes": int(CODE_TTL.total_seconds() // 60)},
+        context,
     )
     text_body = render_to_string(
         "reimbursements/email/verification_code_message.txt",
-        {"code": code, "minutes": int(CODE_TTL.total_seconds() // 60)},
+        context,
     )
     send_background_email.send(
         subject=subject,

@@ -80,6 +80,12 @@ def retrieve_charge(charge_id: str) -> stripe.Charge:
     return stripe.Charge.retrieve(str(charge_id))
 
 
+def retrieve_payment_intent(payment_intent_id: str) -> stripe.PaymentIntent:
+    """Fetch a Stripe PaymentIntent. Raises StripeError on failure."""
+    _configure()
+    return stripe.PaymentIntent.retrieve(str(payment_intent_id))
+
+
 def get_payment_success_package(user, package_uuid: str) -> ReimbursementPackage | None:
     """Return the package referenced by a payment-success redirect, if visible to "user".
 
@@ -145,20 +151,26 @@ def create_package_checkout(
         "line_items": items.line_items,
         "mode": "payment",
         "metadata": {"package_uuid": str(package.uuid)},
+        # Also carried on the PaymentIntent so reversal events (charge.refunded,
+        # charge.failed, charge.dispute.*) can be routed back to the payment
+        # even if they arrive before checkout.session.completed is processed.
+        "payment_intent_data": {"metadata": {"package_uuid": str(package.uuid)}},
         "success_url": success_url,
         "cancel_url": cancel_url,
     }
 
     if locked.payout_account_id:
         rates = get_rates("USD")
-        checkout_args["payment_intent_data"] = {
-            "application_fee_amount": package.platform_fee_cents(
-                items.total_cents, currency, rates
-            ),
-            "transfer_data": {
-                "destination": locked.payout_account_id,
-            },
-        }
+        checkout_args["payment_intent_data"].update(
+            {
+                "application_fee_amount": package.platform_fee_cents(
+                    items.total_cents, currency, rates
+                ),
+                "transfer_data": {
+                    "destination": locked.payout_account_id,
+                },
+            }
+        )
 
     try:
         idempotency_key = hashlib.sha256(
@@ -199,7 +211,7 @@ def create_reimbursement_package(
     """Create a reimbursement package from selected records.
 
     The package can be sent to any email address. When the address matches a
-    registered Papertrail user, that user is granted temporary,
+    registered Verity user, that user is granted temporary,
     purpose-bound, view-only access to each packaged record ("RecordShare"
     with "purpose=reimbursement") and the package starts open. Otherwise the
     package starts queued, awaiting the external recipient: they pay through

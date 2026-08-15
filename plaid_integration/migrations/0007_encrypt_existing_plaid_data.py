@@ -66,7 +66,7 @@ def encrypt_plaid_data(apps, schema_editor):
                 try:
                     parsed = json.loads(acct_str)
                     json_str = json.dumps(parsed)
-                except json.JSONDecodeError, TypeError:
+                except (json.JSONDecodeError, TypeError):
                     json_str = acct_str
                 encrypted_accts = fernet.encrypt(json_str.encode("utf-8"))
                 token_updates.append("accounts_data = %s")

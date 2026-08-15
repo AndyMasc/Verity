@@ -1,4 +1,4 @@
-"""Shared utility classes for the Papertrail project."""
+"""Shared utility classes for the Verity project."""
 
 from __future__ import annotations
 

@@ -3,6 +3,7 @@ from datetime import date
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
+from django.conf import settings
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
@@ -83,7 +84,7 @@ class RecordListViewTest(TestCase):
             )
         response = self.client.get(self.url)
         self.assertTrue(response.context["is_paginated"])
-        self.assertEqual(len(response.context["records"]), 20)
+        self.assertEqual(len(response.context["records"]), settings.PAGINATE_BY)
 
     def test_pagination_second_page(self):
         self.client.force_login(self.user)
@@ -95,7 +96,10 @@ class RecordListViewTest(TestCase):
                 transaction_date=date(2024, 6, 15),
             )
         response = self.client.get(self.url, {"page": 2})
-        self.assertEqual(len(response.context["records"]), 10)
+        self.assertEqual(
+            len(response.context["records"]),
+            min(settings.PAGINATE_BY, 30 - settings.PAGINATE_BY),
+        )
 
     def test_pagination_invalid_page_returns_404(self):
         self.client.force_login(self.user)

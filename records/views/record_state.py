@@ -17,7 +17,7 @@ from django.views.decorators.http import require_POST
 from django_ratelimit.decorators import ratelimit
 
 from core.services.dashboard import invalidate_dashboard_cache
-from Papertrail.views import parse_record_ids
+from Verity.views import parse_record_ids
 
 from ..models import Record
 from ..services import (

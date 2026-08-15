@@ -1,4 +1,4 @@
-"""Tests for Papertrail shared utilities.
+"""Tests for Verity shared utilities.
 
 Covers CachedPaginator count caching, _make_count_cache_key,
 and non-QuerySet fallback.
@@ -11,7 +11,7 @@ from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.test import TestCase
 
-from Papertrail.utils import PAGINATOR_COUNT_CACHE_TTL, CachedPaginator
+from Verity.utils import PAGINATOR_COUNT_CACHE_TTL, CachedPaginator
 
 User = get_user_model()
 

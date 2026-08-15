@@ -1,6 +1,6 @@
 [build-system]
 requires = ["setuptools>=75.0"]
-build-backend = "setuptools.backends._legacy:_Backend"
+build-backend = "setuptools.build_meta"
 
 [tool.ruff]
 target-version = "py313"
@@ -27,23 +27,26 @@ select = [
     "PERF", # Perflint (Finds performance antipatterns in loops)
     "RUF",  # Ruff-specific rules
 ]
+# EN DASH is intentional typography in currency/display labels.
+allowed-confusables = ["–"]
 ignore = [
     "E501",  # line too long (handled automatically by format section)
     "N802",  # function name should be lowercase (Django views use snake_case)
     "N803",  # argument name should be lowercase
     "N806",  # variable in function should be lowercase
-    "N999",  # Papertrail package name exception
+    "N999",  # Verity package name exception
 ]
 
 [tool.ruff.lint.per-file-ignores]
-# Added trailing asterisks so nested migration folders and test files match completely
-"**/migrations/**" = ["ALL"]
+# Ignores all standard and custom migration folders (e.g. webpush_migrations)
+"**/*migrations*/**" = ["ALL"]
 "**/tests/**" = ["ALL"]
 "**/test_*.py" = ["ALL"]
+"**/tests.py" = ["ALL"]
 
 [tool.ruff.lint.isort]
 force-single-line = false
-known-first-party = ["core", "documents", "records", "plaid_integration", "Papertrail", "accounting", "billing"]
+known-first-party = ["core", "documents", "records", "plaid_integration", "Verity", "accounting", "billing"]
 
 [tool.ruff.format]
 quote-style = "double"
@@ -56,13 +59,13 @@ disallow_untyped_defs = true
 no_implicit_optional = true
 warn_redundant_casts = true
 warn_unused_ignores = true
-# Use valid relative path regex syntax for Mypy exclusions
 exclude = [
-    "migrations/",
+    ".*migrations.*",
     "tests/",
     "venv/",
     "__pycache__/",
-    "manage.py"
+    "manage.py",
+    "conftest.py"
 ]
 
 # Structural catch-all for untyped third-party libraries missing stubs
@@ -81,7 +84,21 @@ module = [
     "numpy.*",
     "cv2.*",
     "deskew.*",
-    "reimbursements.*"
+    "reimbursements.*",
+    "djstripe.*",
+    "stripe.*",
+    "cachalot.*",
+    "environ",
+    "fernet_fields",
+    "periodiq",
+    "pillow_heif.*",
+    "plaid.*",
+    "rest_framework.*",
+    "simple_history",
+    "django_dramatiq",
+    "django_periodiq",
+    "import_export",
+    "openpyxl"
 ]
 ignore_missing_imports = true
 
@@ -89,13 +106,14 @@ ignore_missing_imports = true
 [[tool.mypy.overrides]]
 module = [
     "*.models",
-    "Papertrail.*",
+    "Verity.*",
     "documents.*",
     "core.*",
     "records.*",
     "plaid_integration.*",
     "accounting.*",
-    "billing.*"
+    "billing.*",
+    "reimbursements.*"
 ]
 ignore_missing_imports = true
 disable_error_code = [
@@ -114,7 +132,7 @@ disable_error_code = [
 
 [tool.coverage.run]
 source = ["core", "documents", "records", "plaid_integration"]
-omit = ["*/migrations/*", "*/tests/*", "*/test_*"]
+omit = ["*migrations*", "*/tests/*", "*/test_*"]
 
 [tool.coverage.report]
 fail_under = 80
@@ -129,7 +147,7 @@ exclude_lines = [
 ]
 
 [tool.pytest.ini_options]
-DJANGO_SETTINGS_MODULE = "Papertrail.settings.local"
+DJANGO_SETTINGS_MODULE = "Verity.settings.local"
 python_files = ["tests.py", "test_*.py", "tests_*.py", "*_tests.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
@@ -137,7 +155,10 @@ addopts = [
     "--strict-markers",
     "--tb=short",
     "-q",
-    "--numprocesses=auto",
+    # More than 3 xdist workers causes concurrent test-database creation to
+    # race inside Django's post_migrate signal (intermittent
+    # ForeignKeyViolation on auth_permission -> django_content_type).
+    "--numprocesses=2",
 ]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",

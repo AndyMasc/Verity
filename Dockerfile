@@ -27,8 +27,8 @@ RUN --mount=type=cache,target=/root/.cache/pip pip install -r requirements.txt
 FROM python:3.13-slim-bookworm AS runner
 
 ENV PYTHONUNBUFFERED=1
-ENV DJANGO_SETTINGS_MODULE=Papertrail.settings
-# Dispatcher in Papertrail/settings/__init__.py loads production.py when set.
+ENV DJANGO_SETTINGS_MODULE=Verity.settings
+# Dispatcher in Verity/settings/__init__.py loads production.py when set.
 # Overridable at runtime via env_file/Coolify envs.
 ENV DJANGO_ENV=production
 ENV PATH="/opt/venv/bin:$PATH"
@@ -62,4 +62,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 # In prod, run multiple instances of the app. One for web, one for each dramatiq
 # queue (each uses a different number of threads), one for periodiq — see Procfile.
 # Uses the ASGI app with uvicorn's worker, matching Procfile's `web` process.
-CMD ["gunicorn", "Papertrail.asgi:application", "-k", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000", "--workers", "2", "--timeout", "120"]
+CMD ["gunicorn", "Verity.asgi:application", "-k", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000", "--workers", "2", "--timeout", "120"]

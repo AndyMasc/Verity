@@ -42,7 +42,7 @@ class FakeSession:
 
 
 def give_pro_subscription(user) -> Subscription:
-    """Attach an active Papertrail Pro subscription to "user".
+    """Attach an active Verity Pro subscription to "user".
 
     The customer is linked both via "subscriber" and the user's "customer"
     FK so "metadata._active_subscriptions" and the feature gates see it.
@@ -64,9 +64,9 @@ def give_pro_subscription(user) -> Subscription:
         stripe_data={"status": "active"},
     )
     product, _ = Product.objects.get_or_create(
-        id=metadata.PAPERTRAIL_PRO.stripe_id,
+        id=metadata.VERITY_PRO.stripe_id,
         livemode=False,
-        defaults={"active": True, "name": "Papertrail Pro"},
+        defaults={"active": True, "name": "Verity Pro"},
     )
     price, _ = Price.objects.get_or_create(
         id=f"price_pro_{user.pk}",

@@ -2,6 +2,7 @@ from pathlib import Path
 
 import environ
 import sentry_sdk
+from sentry_sdk.utils import BadDsn
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -20,8 +21,8 @@ POSTHOG_DISABLED = env.bool("POSTHOG_DISABLED", default=False)
 SECRET_KEY = env("SECRET_KEY")
 DEBUG = env.bool("DEBUG", default=False)
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS")
-ROOT_URLCONF = "Papertrail.urls"
-WSGI_APPLICATION = "Papertrail.wsgi.application"
+ROOT_URLCONF = "Verity.urls"
+WSGI_APPLICATION = "Verity.wsgi.application"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Database
@@ -29,7 +30,7 @@ database_config = env.db("DATABASE_URL", default="sqlite:///db.sqlite3")
 if "sqlite" in database_config["ENGINE"]:
     database_config.setdefault("OPTIONS", {})["timeout"] = 30
 else:
-    database_config.setdefault("OPTIONS", {})["sslmode"] = "require"
+    database_config.setdefault("OPTIONS", {})["sslmode"] = env("DB_SSLMODE", default="require")
     # Neon's pooled endpoint (transaction-mode pooling) can't keep PostgreSQL
     # named cursors alive between transactions, so server-side cursors used by
     # QuerySet.iterator() fail with "portal does not exist". Force client-side.
@@ -87,6 +88,13 @@ INSTALLED_APPS = [
     # Stripe
     "djstripe",
 ]
+
+# django-webpush 0.3.6 (latest on PyPI) ships model code without its final
+# migration (0006_alter_subscriptioninfo_user_agent), so `makemigrations`
+# reports a phantom pending change. Provide the migrations from this project.
+MIGRATION_MODULES = {
+    "webpush": "webpush_migrations",
+}
 
 MIDDLEWARE = [
     "core.middleware.RequestIDMiddleware",
@@ -263,14 +271,14 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 # Email
 EMAIL_BACKEND = "core.backends.DramatiqEmailBackend"  # Queue email sends as background tasks
 ANYMAIL = {"RESEND_API_KEY": env("RESEND_API_KEY")}
-DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="Papertrail <onboarding@resend.dev>")
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="Verity <onboarding@resend.dev>")
 
 # Storage (S3/R2) - Uploads use signed urls in Cloudflare R2
 R2_ACCESS_KEY_ID = env("R2_ACCESS_KEY_ID")
 R2_SECRET_ACCESS_KEY = env("R2_SECRET_ACCESS_KEY")
 R2_STORAGE_BUCKET_NAME = env("R2_STORAGE_BUCKET_NAME")
 R2_S3_ENDPOINT_URL = env("R2_S3_ENDPOINT_URL")
-R2_PAPERTRAIL_STORAGE_ACCOUNT_ID = env("R2_PAPERTRAIL_STORAGE_ACCOUNT_ID")
+R2_VERITY_STORAGE_ACCOUNT_ID = env("R2_VERITY_STORAGE_ACCOUNT_ID")
 
 AWS_S3_FILE_OVERWRITE = False
 AWS_ACCESS_KEY_ID = R2_ACCESS_KEY_ID
@@ -432,29 +440,36 @@ DJSTRIPE_WEBHOOK_SECRET = env("STRIPE_WEBHOOK_SECRET", default="")
 
 # Sentry
 _is_prod = env("SENTRY_ENVIRONMENT", default="development") == "production"
-sentry_sdk.init(
-    dsn=env("SENTRY_DSN"),
-    environment=env("SENTRY_ENVIRONMENT", default="development"),
-    # Add data like request headers and IP for users,
-    # see https://docs.sentry.io/platforms/python/data-management/data-collected/ for more info
-    send_default_pii=False,
-    # Enable sending logs to Sentry
-    enable_logs=True,
-    # Set traces_sample_rate to 1.0 to capture 100%
-    # of transactions for tracing.
-    traces_sample_rate=1.0 if not _is_prod else 0.1,
-    # Set profile_session_sample_rate to 1.0 to profile 100%
-    # of profile sessions.
-    profile_session_sample_rate=1.0 if not _is_prod else 0.1,
-    # Set profile_lifecycle to "trace" to automatically
-    # run the profiler on when there is an active transaction
-    profile_lifecycle="trace",
-)
+_sentry_dsn = env("SENTRY_DSN", default="")
+if _sentry_dsn:
+    try:
+        sentry_sdk.init(
+            dsn=_sentry_dsn,
+            environment=env("SENTRY_ENVIRONMENT", default="development"),
+            # Add data like request headers and IP for users,
+            # see https://docs.sentry.io/platforms/python/data-management/data-collected/ for more info
+            send_default_pii=False,
+            # Enable sending logs to Sentry
+            enable_logs=True,
+            # Set traces_sample_rate to 1.0 to capture 100%
+            # of transactions for tracing.
+            traces_sample_rate=1.0 if not _is_prod else 0.1,
+            # Set profile_session_sample_rate to 1.0 to profile 100%
+            # of profile sessions.
+            profile_session_sample_rate=1.0 if not _is_prod else 0.1,
+            # Set profile_lifecycle to "trace" to automatically
+            # run the profiler on when there is an active transaction
+            profile_lifecycle="trace",
+        )
+    except BadDsn:
+        # CI/dev placeholders (e.g. "https://example.com") are not valid DSNs;
+        # skip Sentry rather than crash the process.
+        sentry_sdk.init(dsn="")
 
 # Unfold customization
 UNFOLD = {
-    "SITE_TITLE": "Papertrail Portal",
-    "SITE_HEADER": "Papertrail",
+    "SITE_TITLE": "Verity Portal",
+    "SITE_HEADER": "Verity",
     "SITE_SYMBOL": "description",  # Material Symbol
     "SHOW_HISTORY": True,
     "SHOW_VIEW_ON_SITE": True,

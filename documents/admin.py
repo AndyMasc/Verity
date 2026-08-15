@@ -1,3 +1,6 @@
+from collections.abc import Callable
+from typing import Any, ClassVar
+
 from django.contrib import admin, messages
 
 from .models import DocumentData
@@ -18,7 +21,7 @@ class DocumentDataAdmin(admin.ModelAdmin):
     list_display = ("title", "user", "status", "did_ocr")
     list_filter = ("status", "did_ocr")
     search_fields = ("title",)
-    actions = [hard_delete_documents]
+    actions: ClassVar[list[Callable[..., Any]]] = [hard_delete_documents]
 
     def get_actions(self, request):
         actions = super().get_actions(request)

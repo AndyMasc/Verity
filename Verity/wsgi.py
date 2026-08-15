@@ -1,5 +1,5 @@
 """
-WSGI config for Papertrail project.
+WSGI config for Verity project.
 
 It exposes the WSGI callable as a module-level variable named "application".
 
@@ -11,6 +11,6 @@ import os
 
 from django.core.wsgi import get_wsgi_application
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "Papertrail.settings")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "Verity.settings")
 
 application = get_wsgi_application()

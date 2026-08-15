@@ -57,7 +57,7 @@ class EntitlementTests(TestCase):
         self.assertTrue(entitlements.has_feature(self.user, features.LIMITED_SCANS))
 
     def test_paid_plan_features_include_free(self):
-        self._add_subscription(status="active", product_id=metadata.PAPERTRAIL_PRO.stripe_id)
+        self._add_subscription(status="active", product_id=metadata.VERITY_PRO.stripe_id)
         self.assertEqual(entitlements.get_plan(self.user), "paid")
         self.assertEqual(entitlements.get_features(self.user), entitlements.PAID_FEATURES)
         self.assertTrue(entitlements.has_feature(self.user, features.UNLIMITED_SCANS))
@@ -66,11 +66,11 @@ class EntitlementTests(TestCase):
         self.assertTrue(entitlements.has_feature(self.user, features.LIMITED_SCANS))
 
     def test_trialing_counts_as_paid(self):
-        self._add_subscription(status="trialing", product_id=metadata.PAPERTRAIL_PRO.stripe_id)
+        self._add_subscription(status="trialing", product_id=metadata.VERITY_PRO.stripe_id)
         self.assertEqual(entitlements.get_plan(self.user), "paid")
 
     def test_canceled_subscription_is_free(self):
-        self._add_subscription(status="canceled", product_id=metadata.PAPERTRAIL_PRO.stripe_id)
+        self._add_subscription(status="canceled", product_id=metadata.VERITY_PRO.stripe_id)
         self.assertEqual(entitlements.get_plan(self.user), "free")
         self.assertFalse(entitlements.has_feature(self.user, features.BANK_TRANSACTION_SYNC))
 
@@ -138,7 +138,7 @@ class ContextProcessorTests(TestCase):
         ctx = subscription_status(request)
         self.assertFalse(ctx["is_subscribed"])
         self.assertEqual(ctx["plan"], "free")
-        self.assertEqual(ctx["plan_name"], metadata.PAPERTRAIL_FREE.name)
+        self.assertEqual(ctx["plan_name"], metadata.VERITY_FREE.name)
 
     def test_subscription_with_non_active_status_is_free(self):
         from ..context_processors import subscription_status
@@ -161,9 +161,9 @@ class ContextProcessorTests(TestCase):
     def test_pro_plan_name_is_dynamic(self):
         from ..context_processors import subscription_status
 
-        self._add_subscription(status="active", product_id=metadata.PAPERTRAIL_PRO.stripe_id)
+        self._add_subscription(status="active", product_id=metadata.VERITY_PRO.stripe_id)
         ctx = subscription_status(self._request())
-        self.assertEqual(ctx["plan_name"], metadata.PAPERTRAIL_PRO.name)
+        self.assertEqual(ctx["plan_name"], metadata.VERITY_PRO.name)
         self.assertEqual(ctx["plan"], "paid")
         self.assertIsNone(ctx["monthly_scan_limit"])
 
@@ -249,11 +249,11 @@ class StorageLimitTests(TestCase):
         self.assertEqual(metadata.plan_for_user(self.user).stripe_id, "free")
 
     def test_paid_user_gets_pro_storage_limit(self):
-        self._add_subscription_with_product(metadata.PAPERTRAIL_PRO.stripe_id)
+        self._add_subscription_with_product(metadata.VERITY_PRO.stripe_id)
         self.assertEqual(entitlements.get_storage_limit(self.user), features.PRO_STORAGE_LIMIT_GB)
         self.assertEqual(
             metadata.plan_for_user(self.user).stripe_id,
-            metadata.PAPERTRAIL_PRO.stripe_id,
+            metadata.VERITY_PRO.stripe_id,
         )
 
     def test_storage_addon_alone_boosts_storage_only(self):
@@ -269,7 +269,7 @@ class StorageLimitTests(TestCase):
         customer = Customer.objects.create(
             id="cus_pro_addon", livemode=False, created=timezone.now()
         )
-        self._add_subscription_with_product(metadata.PAPERTRAIL_PRO.stripe_id, customer=customer)
+        self._add_subscription_with_product(metadata.VERITY_PRO.stripe_id, customer=customer)
         self._add_subscription_with_product(
             metadata.STORAGE_UPGRADE_10.stripe_id, customer=customer
         )
@@ -282,13 +282,13 @@ class StorageLimitTests(TestCase):
         self.assertEqual(entitlements.get_plan(self.user), "paid")
         self.assertEqual(
             metadata.plan_for_user(self.user).stripe_id,
-            metadata.PAPERTRAIL_PRO.stripe_id,
+            metadata.VERITY_PRO.stripe_id,
         )
 
     def test_storage_usage_counts_document_sizes(self):
         from documents.models import DocumentData
 
-        self._add_subscription_with_product(metadata.PAPERTRAIL_PRO.stripe_id)
+        self._add_subscription_with_product(metadata.VERITY_PRO.stripe_id)
         for i, size in enumerate((1024**3, 2 * 1024**3)):
             DocumentData.objects.create(
                 user=self.user,

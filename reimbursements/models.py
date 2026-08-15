@@ -1,9 +1,11 @@
+from __future__ import annotations
+
 import logging
 import uuid
 from dataclasses import dataclass, field
 from datetime import timedelta
 from decimal import ROUND_DOWN, Decimal
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from django.conf import settings
 from django.db import models, transaction
@@ -86,7 +88,7 @@ class ReimbursementPackageQuerySet(models.QuerySet):
             package = self.create(
                 creator=creator,
                 recipient=recipient,
-                recipient_email=recipient_email,
+                recipient_email=recipient_email or "",
                 title=title,
                 currency=package_currency,
                 status=status or ReimbursementPackage.Status.OPEN,
@@ -104,12 +106,15 @@ class StripeAccount(models.Model):
         on_delete=models.CASCADE,
         related_name="stripe_account",
     )
-    stripe_account_id = models.CharField(max_length=255, blank=True, null=True)
+    stripe_account_id = models.CharField(max_length=255, blank=True, default="")
     stripe_details_submitted = models.BooleanField(default=False)
     charges_enabled = models.BooleanField(default=False)
     payouts_enabled = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self) -> str:
+        return f"Stripe Account for {self.user.email}"
 
     @property
     def is_active(self) -> bool:
@@ -142,9 +147,6 @@ class StripeAccount(models.Model):
         )
         return self.is_active
 
-    def __str__(self) -> str:
-        return f"Stripe Account for {self.user.email}"
-
 
 class ReimbursementPackage(models.Model):
     class Status(models.TextChoices):
@@ -165,7 +167,7 @@ class ReimbursementPackage(models.Model):
         blank=True,
         related_name="reimbursements_received",
     )
-    recipient_email = models.EmailField(max_length=254, null=True, blank=True, db_index=True)
+    recipient_email = models.EmailField(max_length=254, blank=True, default="", db_index=True)
     title = models.CharField(max_length=255)
     currency = models.CharField(
         max_length=3,
@@ -196,8 +198,8 @@ class ReimbursementPackage(models.Model):
     _prefetched_converted_total: Decimal | None = None
 
     class Meta:
-        ordering = ["-created_at"]
-        indexes = [
+        ordering: ClassVar[list[str]] = ["-created_at"]
+        indexes: ClassVar[list[models.Index]] = [
             models.Index(fields=["status", "expires_at"]),
             models.Index(fields=["creator", "deleted_at"]),
             models.Index(fields=["recipient", "deleted_at"]),
@@ -300,7 +302,7 @@ class ReimbursementPackage(models.Model):
                     balance=converted,
                     currency=record_currency,
                     record_type=Record.RecordTypes.EXPENSE_RECEIPT,
-                    payment_method="Papertrail reimbursement transfer",
+                    payment_method="Verity reimbursement transfer",
                     notes=notes,
                 )
         # Access expires when the workflow ends: the recipient no longer needs
@@ -663,7 +665,7 @@ class PackagePayment(models.Model):
     )
     stripe_checkout_session_id = models.CharField(max_length=255, unique=True)
     stripe_payment_intent_id = models.CharField(
-        max_length=255, blank=True, null=True, db_index=True
+        max_length=255, blank=True, default="", db_index=True
     )
     amount_paid = models.DecimalField(max_digits=12, decimal_places=2)
     payer_currency = models.CharField(max_length=3, default=DEFAULT_CURRENCY)
@@ -760,9 +762,9 @@ class PackageEmailVerification(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    def __str__(self) -> str:
+        return f"Verification for package {self.package_id} ({self.email})"
+
     @property
     def is_expired(self) -> bool:
         return timezone.now() > self.expires_at
-
-    def __str__(self) -> str:
-        return f"Verification for package {self.package_id} ({self.email})"

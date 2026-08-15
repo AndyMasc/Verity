@@ -69,11 +69,11 @@ class PlaidItemModelTest(TestCase):
             item_id="item-minimal",
             access_token="access-minimal",
         )
-        self.assertIsNone(item.next_cursor)
-        self.assertIsNone(item.last_error_code)
-        self.assertIsNone(item.last_error_message)
+        self.assertEqual(item.next_cursor, "")
+        self.assertEqual(item.last_error_code, "")
+        self.assertEqual(item.last_error_message, "")
         self.assertIsNone(item.last_error_at)
-        self.assertIsNone(item.institution_name)
+        self.assertEqual(item.institution_name, "")
         self.assertIsNone(item.accounts_data)
 
 

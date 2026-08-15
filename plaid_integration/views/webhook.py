@@ -87,7 +87,7 @@ def plaid_webhook(request: HttpRequest) -> HttpResponse:
 
     try:
         payload = json.loads(request.body)
-    except ValueError, TypeError:
+    except (ValueError, TypeError):
         return HttpResponseBadRequest("Invalid JSON")
 
     if settings.PLAID_ENV != "sandbox" and not verify_plaid_webhook(
