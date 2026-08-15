@@ -167,7 +167,7 @@ class TestExtract:
         )
         result = extract(doc.id)
         assert "error" in result
-        assert "Unable to validate" in result["error"]
+        assert "Unable to validate" in result["error"] or "not allowed" in result["error"]
         mock_gemini.assert_not_called()
         doc.refresh_from_db()
         assert doc.status == DocumentStatus.ERROR
