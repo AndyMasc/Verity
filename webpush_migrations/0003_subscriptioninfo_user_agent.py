@@ -4,16 +4,15 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('webpush', '0002_auto_20190603_0005'),
+        ("webpush", "0002_auto_20190603_0005"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='subscriptioninfo',
-            name='user_agent',
-            field=models.CharField(default='', max_length=500),
+            model_name="subscriptioninfo",
+            name="user_agent",
+            field=models.CharField(default="", max_length=500),
             preserve_default=False,
         ),
     ]

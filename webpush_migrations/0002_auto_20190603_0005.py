@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('webpush', '0001_initial'),
+        ("webpush", "0001_initial"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='subscriptioninfo',
-            name='endpoint',
+            model_name="subscriptioninfo",
+            name="endpoint",
             field=models.URLField(max_length=500),
         ),
     ]
