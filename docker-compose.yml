@@ -8,9 +8,11 @@ services:
     # Uvicorn is async, so 2 workers can lots of concurrent requests.
     command: >
       sh -c "python manage.py collectstatic --noinput &&
-              gunicorn Verity.asgi:application -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000 --workers 2 --timeout 120"
+      uvicorn Verity.asgi:application --host 0.0.0.0 --port 8000 --workers 4 --timeout-keep-alive 5 --log-level warning"
     expose:
       - "8000"
+    environment:
+      - PYTHON_JIT=1
     env_file:
       - .env
     healthcheck:
@@ -24,8 +26,7 @@ services:
   worker:
     image: main-image:latest # Reuses web image, rather than building a brand new one
     restart: always
-    # Limited to 1 process and 2 threads so that can run on low ram server
-    command: python manage.py rundramatiq --processes=1 --threads=2 --max-tasks=500
+    command: python manage.py rundramatiq --processes=1 --threads=8 --prefetch=2 --max-tasks=5000
     env_file:
       - .env
     depends_on:

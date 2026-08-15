@@ -81,9 +81,14 @@ def _locmem_cache(settings):  # type: ignore[no-untyped-def]
 
     The default cache backend is Redis (shared with the running web server and
     background workers). Tests override it with a per-process LocMemCache so
-    "cache.clear()" and cache key churn never touch the live cache.
+    "cache.clear()" and cache key churn never touch the live cache. The cache
+    is also cleared between tests: rollback reuses primary keys across tests
+    (e.g. user IDs), so cached values keyed by pk must not leak between them.
     """
     settings.CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
+    from django.core.cache import cache
+
+    cache.clear()
 
 
 @pytest.fixture

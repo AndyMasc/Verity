@@ -45,9 +45,12 @@ def adjust_storage_usage(user_id: int, delta: int) -> None:
     """
     if not delta:
         return
+    from .context_processors import invalidate_storage_usage_cache
+
     CustomUser.objects.filter(pk=user_id).update(
         storage_used_bytes=Greatest(F("storage_used_bytes") + delta, 0)
     )
+    invalidate_storage_usage_cache(user_id)
 
 
 def reconcile_storage_usage(user_id: int | None = None) -> int:

@@ -20,7 +20,7 @@ from documents.models import DocumentData, DocumentStatus
 from records.models import MergeLog, Record
 from reimbursements.models import PackagePayment, ReimbursementPackage
 
-DASHBOARD_CACHE_TTL = 10
+DASHBOARD_CACHE_TTL = 60
 
 
 def invalidate_dashboard_cache(user_id: int) -> None:

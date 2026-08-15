@@ -125,6 +125,7 @@ def get_monthly_scan_count(user) -> int:
 
 def record_scan(user) -> None:
     """Increment the user's Quick Scan counter for the current month."""
+    from .context_processors import invalidate_scan_usage_cache
     from .models import ScanUsage
 
     period = timezone.now().strftime("%Y-%m")
@@ -134,4 +135,5 @@ def record_scan(user) -> None:
         # atomic increment (e.g. by a monthly cleanup job).
         updated = ScanUsage.objects.filter(pk=usage.pk).update(count=models.F("count") + 1)
         if updated:
+            invalidate_scan_usage_cache(user.pk, period)
             return

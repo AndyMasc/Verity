@@ -42,7 +42,7 @@
             </div>
         </div>
         <div class="text-xs text-right mr-4 font-medium text-zinc-500 dark:text-zinc-400 truncate min-w-0">
-            {{ record.payment_method }}
+            {% if record.nickname %} {{ record.nickname }} {% else %} {{ record.payment_method }} {% endif %}
         </div>
         <div class="text-xs font-medium truncate min-w-0 {% if record.expiry_date %}text-zinc-700 dark:text-zinc-200{% else %}text-zinc-400 dark:text-zinc-600{% endif %}">
             {% if record.expiry_date %}{{ record.expiry_date|timeuntil }}{% else %}—{% endif %}

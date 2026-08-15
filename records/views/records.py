@@ -8,6 +8,7 @@ import posthog
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.cache import cache
 from django.db import transaction
 from django.db.models import Count, Q
 from django.http import HttpResponse
@@ -73,6 +74,48 @@ LIST_FIELDS = (
 
 DEFERRED_FIELDS = ("products",)
 
+RECORD_LIST_METRICS_TTL = 30
+
+
+def _build_record_metrics(user) -> dict[str, int]:
+    """Compute the summary counts shown on the record list page.
+
+    The metrics are user-scoped (independent of the active filters) and are
+    cached briefly so repeated page/HTMX loads skip the share-join aggregate.
+    """
+    now = timezone.now().date()
+    expiring_cutoff = now + timedelta(days=30)
+    base_qs = Record.objects.visible_to(user)
+
+    metrics = base_qs.aggregate(
+        total_count=Count("id", distinct=True),
+        active_count=Count("id", distinct=True, filter=Q(is_active=True)),
+        expiring_count=Count(
+            "id",
+            distinct=True,
+            filter=Q(expiry_date__gte=now, expiry_date__lte=expiring_cutoff) & Q(is_active=True),
+        ),
+        inactive_count=Count("id", distinct=True, filter=Q(is_active=False)),
+        shared_count=Count(
+            "id",
+            distinct=True,
+            filter=(
+                (Q(shares__user=user) | Q(shares__shared_by=user))
+                & Q(shares__revoked_at__isnull=True)
+                & (Q(shares__expires_at__isnull=True) | Q(shares__expires_at__gt=timezone.now()))
+                & Q(is_active=True)
+            ),
+        ),
+    )
+
+    merged_plaid_ids = MergeLog.objects.filter(
+        plaid_record__user=user,
+        undone_at__isnull=True,
+    ).values_list("plaid_record_id", flat=True)
+    metrics["merged_count"] = base_qs.filter(pk__in=merged_plaid_ids, is_active=True).count()
+
+    return metrics
+
 
 class RecordListView(LoginRequiredMixin, CachedPaginatorMixin, FilterView):
     """Paginated, filterable list of the current user's records.
@@ -119,40 +162,11 @@ class RecordListView(LoginRequiredMixin, CachedPaginatorMixin, FilterView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        now = timezone.now().date()
-        expiring_cutoff = now + timedelta(days=30)
-        base_qs = Record.objects.visible_to(self.request.user)
-
-        metrics = base_qs.aggregate(
-            total_count=Count("id", distinct=True),
-            active_count=Count("id", distinct=True, filter=Q(is_active=True)),
-            expiring_count=Count(
-                "id",
-                distinct=True,
-                filter=Q(expiry_date__gte=now, expiry_date__lte=expiring_cutoff)
-                & Q(is_active=True),
-            ),
-            inactive_count=Count("id", distinct=True, filter=Q(is_active=False)),
-            shared_count=Count(
-                "id",
-                distinct=True,
-                filter=(
-                    (Q(shares__user=self.request.user) | Q(shares__shared_by=self.request.user))
-                    & Q(shares__revoked_at__isnull=True)
-                    & (
-                        Q(shares__expires_at__isnull=True)
-                        | Q(shares__expires_at__gt=timezone.now())
-                    )
-                    & Q(is_active=True)
-                ),
-            ),
-        )
-
-        merged_plaid_ids = MergeLog.objects.filter(
-            plaid_record__user=self.request.user,
-            undone_at__isnull=True,
-        ).values_list("plaid_record_id", flat=True)
-        metrics["merged_count"] = base_qs.filter(pk__in=merged_plaid_ids, is_active=True).count()
+        cache_key = f"record_list_metrics:{self.request.user.id}"
+        metrics = cache.get(cache_key)
+        if metrics is None:
+            metrics = _build_record_metrics(self.request.user)
+            cache.set(cache_key, metrics, RECORD_LIST_METRICS_TTL)
 
         # Counts above are active-only (they must match the default list, which
         # hides archived records). The "All Records" card deliberately counts
