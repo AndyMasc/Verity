@@ -87,9 +87,9 @@ def _validated_price(price_id: str | None, category: str) -> str | None:
     if not price_id:
         return None
     price = Price.objects.filter(id=price_id, active=True).select_related("product").first()
-    if price is None or price.product_id is None:
+    if price is None or price.product is None:
         return None
-    meta = metadata.PRODUCTS.get(price.product_id)
+    meta = metadata.PRODUCTS.get(price.product.id)
     if meta is None or meta.category != category:
         return None
     return price_id

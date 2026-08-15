@@ -88,7 +88,7 @@ class ReimbursementPackageQuerySet(models.QuerySet):
             package = self.create(
                 creator=creator,
                 recipient=recipient,
-                recipient_email=recipient_email,
+                recipient_email=recipient_email or "",
                 title=title,
                 currency=package_currency,
                 status=status or ReimbursementPackage.Status.OPEN,

@@ -71,7 +71,7 @@ def _reconcile_session(session_id, *, bad, good):
 
 def _stripe_account(user, active=True):
     StripeAccount.objects.filter(user=user).update(
-        stripe_account_id="acct_test123" if active else None,
+        stripe_account_id="acct_test123" if active else "",
         stripe_details_submitted=active,
         charges_enabled=active,
         payouts_enabled=active,

@@ -57,7 +57,12 @@ def _detect_mime_from_bytes(header_bytes: bytes) -> str | None:
     """
     if HAS_MAGIC:
         try:
-            return python_magic.from_buffer(header_bytes, mime=True)
+            detected = python_magic.from_buffer(header_bytes, mime=True)
+            # libmagic reports unrecognized/truncated headers as
+            # "application/octet-stream"; keep the specific fallbacks below
+            # rather than treating that as a successful detection.
+            if detected and detected != "application/octet-stream":
+                return detected
         except Exception as e:
             logger.warning("python-magic detection failed: %s", e)
 

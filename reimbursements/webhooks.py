@@ -4,6 +4,7 @@ from typing import Any
 import djstripe.signals as djstripe_signals
 import stripe
 from django.db import transaction
+from django.db.models import Q
 from django.dispatch import receiver
 
 from records.models import AuditLog
@@ -179,8 +180,8 @@ def _payment_for_payment_intent(payment_intent_id: str):
         PackagePayment.objects.select_related("package", "payer")
         .filter(
             package__uuid=package_uuid,
-            stripe_payment_intent_id__isnull=True,
         )
+        .filter(Q(stripe_payment_intent_id="") | Q(stripe_payment_intent_id__isnull=True))
         .order_by("-created_at")
         .first()
     )

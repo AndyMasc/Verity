@@ -156,8 +156,8 @@ def _metas_for_subscription(subscription):
     query cache rather than issuing a query per subscription.
     """
     for item in subscription.items.all():
-        product_id = item.price.product_id if item.price is not None else None
-        meta = PRODUCTS.get(product_id)
+        product = item.price.product if item.price is not None else None
+        meta = PRODUCTS.get(product.id) if product is not None else None
         if meta is not None:
             yield meta
 

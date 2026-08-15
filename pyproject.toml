@@ -155,7 +155,10 @@ addopts = [
     "--strict-markers",
     "--tb=short",
     "-q",
-    "--numprocesses=auto",
+    # More than 3 xdist workers causes concurrent test-database creation to
+    # race inside Django's post_migrate signal (intermittent
+    # ForeignKeyViolation on auth_permission -> django_content_type).
+    "--numprocesses=2",
 ]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
