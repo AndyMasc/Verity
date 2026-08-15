@@ -58,6 +58,7 @@ class UploadService:
         self.request = request
         self.record_id = record_id
         self.user = request.user
+        self.user_id = request.user.id
 
     def handle(self) -> PresignResult:
         """Process an upload request: validate, check duplicates, and return a presigned URL.
@@ -120,7 +121,7 @@ class UploadService:
                 status=DocumentStatus.PENDING_UPLOAD,
             )
 
-        upload_url = generate_presigned_post(self.user.id, key, content_type)
+        upload_url = generate_presigned_post(self.user_id, key, content_type)
 
         return PresignResult(
             status="upload_url",
@@ -183,5 +184,5 @@ class UploadService:
         ext = os.path.splitext(filename)[1].lower() or ".bin"
         safe_title = os.path.splitext(filename)[0]
         safe_title = safe_title.replace("_", " ").replace("-", " ").title()
-        key = generate_upload_key(self.user.id, ext)
+        key = generate_upload_key(self.user_id, ext)
         return key, safe_title

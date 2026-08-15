@@ -236,6 +236,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "core.context_processors.webpush_status",  # Check user webpush status
+                "core.context_processors.posthog_settings",  # PostHog client config
                 # Billing template context_processors
                 "billing.context_processors.subscription_status",  # Subscription status for all templates
                 "billing.context_processors.scan_usage",  # Scan usage for all templates

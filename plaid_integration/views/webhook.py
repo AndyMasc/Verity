@@ -53,8 +53,7 @@ def verify_plaid_webhook(body: bytes, plaid_verification: str | None) -> bool:
         logger.warning("Missing Plaid-Verification header")
         return False
     try:
-        unverified = jwt.decode(plaid_verification, options={"verify_signature": False})
-        kid = unverified.get("kid", "")
+        kid = jwt.get_unverified_header(plaid_verification).get("kid", "")
         jwk = _get_plaid_jwk(kid)
         if not jwk:
             logger.warning("No Plaid JWK found for kid=%s", kid)

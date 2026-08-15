@@ -1,7 +1,8 @@
-"""Template context processors that inject webpush state into every request."""
+"""Template context processors that inject state into every request."""
 
 from typing import Any
 
+from django.conf import settings
 from django.core.cache import cache
 from django.http import HttpRequest
 
@@ -31,4 +32,16 @@ def webpush_status(request: HttpRequest) -> dict[str, Any]:
     return {
         "webpush_enabled": subscription_count > 0,
         "webpush_subscription_count": subscription_count,
+    }
+
+
+def posthog_settings(request: HttpRequest) -> dict[str, Any]:  # noqa: ARG001
+    """Expose PostHog client configuration so the snippet is not hardcoded.
+
+    The project token and host come from Django settings (loaded from the
+    environment) instead of being baked into the template.
+    """
+    return {
+        "posthog_project_token": getattr(settings, "POSTHOG_PROJECT_TOKEN", ""),
+        "posthog_host": getattr(settings, "POSTHOG_HOST", "https://us.i.posthog.com"),
     }

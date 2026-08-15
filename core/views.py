@@ -245,14 +245,11 @@ def notification_mark_read(request: HttpRequest, notification_id: int) -> HttpRe
     notification.is_read = not notification.is_read
     notification.save(update_fields=["is_read"])
     if request.headers.get("HX-Request"):
-        from django.template.loader import render_to_string
-
-        html = render_to_string(
+        return render(
+            request,
             "core/partials/notification_row.html",
             {"notification": notification},
-            request=request,
         )
-        return HttpResponse(html)
     return redirect("core:notifications")
 
 
