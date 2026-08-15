@@ -13,6 +13,7 @@ from documents.storage import (
     generate_presigned_post,
     gatekeeper_validate_r2_object,
     generate_read_presigned_url,
+    validate_uploaded_bytes,
     verify_r2_object_exists,
 )
 from documents.services.cleanup import bulk_delete_documents as _bulk_delete_documents
@@ -173,3 +174,14 @@ class StorageUtilsTest(TestCase):
         mock_head.return_value = {"ContentLength": 100}
         result = gatekeeper_validate_r2_object("users/1/test.pdf")
         self.assertTrue(result["valid"])
+
+    def test_validate_uploaded_bytes_valid_pdf(self):
+        self.assertIsNone(validate_uploaded_bytes(b"%PDF-1.4 hello"))
+
+    def test_validate_uploaded_bytes_rejects_unknown_type(self):
+        error = validate_uploaded_bytes(b"not a real file header at all")
+        self.assertIsNotNone(error)
+        self.assertIn("Unable to validate", error)
+
+    def test_validate_uploaded_bytes_rejects_empty(self):
+        self.assertEqual(validate_uploaded_bytes(b""), "Empty file rejected.")

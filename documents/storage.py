@@ -13,6 +13,7 @@ import boto3
 from botocore.config import Config
 from botocore.exceptions import ClientError
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from PIL import Image, ImageFile
 
 from .validators import (
@@ -104,32 +105,28 @@ def get_r2_object_head(key: str) -> dict | None:
         return None
 
 
-def gatekeeper_validate_r2_object(key: str) -> dict:
+def gatekeeper_validate_r2_object(key: str, head: dict | None = None) -> dict:
     """Validate an uploaded R2 object for size, emptiness, file type, and image dimensions.
 
     Rejects files that exceed size limits, are empty, have disallowed MIME types,
     or contain images with excessively large pixel counts. Deletes invalid objects.
 
+    *head* may be a previously fetched HEAD response to avoid an extra R2
+    round trip when the caller already has one.
+
     Returns:
         Dict with 'valid' key (bool) and optional 'error' message.
     """
     s3 = get_s3_client()
-    head = get_r2_object_head(key)
+    if head is None:
+        head = get_r2_object_head(key)
     if head is None:
         return {"valid": False, "error": "Object not found in R2."}
 
     content_length = head.get("ContentLength", 0)
-
-    if content_length > MAX_FILE_SIZE:
+    if content_length == 0 or content_length > MAX_FILE_SIZE:
         s3.delete_object(Bucket=BUCKET, Key=key)
-        return {
-            "valid": False,
-            "error": f"File exceeds {MAX_FILE_SIZE / 1024 / 1024}MB limit.",
-        }
-
-    if content_length == 0:
-        s3.delete_object(Bucket=BUCKET, Key=key)
-        return {"valid": False, "error": "Empty file rejected."}
+        return {"valid": False, "error": _size_error(content_length)}
 
     try:
         resp = s3.get_object(
@@ -139,32 +136,66 @@ def gatekeeper_validate_r2_object(key: str) -> dict:
         )
         header_bytes = resp["Body"].read()
 
-        validate_file_bytes(header_bytes, content_length)
-
-        if header_bytes[:4] in (
-            b"\xff\xd8\xff",
-            b"\x89\x50\x4e\x47\x0d\x0a\x1a\x0a",
-            b"\x52\x49\x46\x46",
-            b"\x42\x4d",
-        ) or header_bytes.startswith(b"%PDF"):
-            try:
-                img = Image.open(BytesIO(header_bytes))
-                img.verify()
-                img = Image.open(BytesIO(header_bytes))
-                width, height = img.size
-                total_pixels = width * height
-                if total_pixels > MAX_IMAGE_PIXELS:
-                    s3.delete_object(Bucket=BUCKET, Key=key)
-                    return {
-                        "valid": False,
-                        "error": f"Image dimensions too large ({width}x{height}). Maximum {MAX_IMAGE_PIXELS:,} pixels.",
-                    }
-            except Exception as e:
-                logger.warning("Image dimension check failed for %s: %s", key, e)
+        error = _validate_header(header_bytes, content_length)
+        if error:
+            s3.delete_object(Bucket=BUCKET, Key=key)
+            return {"valid": False, "error": error}
     except ClientError as e:
         logger.warning("Gatekeeper partial read failed for %s: %s", key, e)
 
     return {"valid": True}
+
+
+def validate_uploaded_bytes(content: bytes) -> str | None:
+    """Validate raw file bytes for size, emptiness, file type, and image dimensions.
+
+    Applies the same gatekeeper rules as "gatekeeper_validate_r2_object" but on
+    in-memory bytes, so the OCR worker can gate extraction without extra R2
+    round trips. Returns an error message, or None when the bytes pass.
+    """
+    content_length = len(content)
+    if content_length == 0 or content_length > MAX_FILE_SIZE:
+        return _size_error(content_length)
+    return _validate_header(content[:8192], content_length)
+
+
+def _size_error(content_length: int) -> str:
+    """Return the gatekeeper rejection message for an empty or oversized file."""
+    if content_length == 0:
+        return "Empty file rejected."
+    return f"File exceeds {MAX_FILE_SIZE / 1024 / 1024}MB limit."
+
+
+def _validate_header(header_bytes: bytes, content_length: int) -> str | None:
+    """Run MIME and image-dimension checks on a file's header bytes.
+
+    Returns an error message, or None when the header passes all checks.
+    """
+    try:
+        validate_file_bytes(header_bytes, content_length)
+    except ValidationError as e:
+        return str(e)
+
+    if header_bytes[:4] in (
+        b"\xff\xd8\xff",
+        b"\x89\x50\x4e\x47\x0d\x0a\x1a\x0a",
+        b"\x52\x49\x46\x46",
+        b"\x42\x4d",
+    ) or header_bytes.startswith(b"%PDF"):
+        try:
+            img = Image.open(BytesIO(header_bytes))
+            img.verify()
+            img = Image.open(BytesIO(header_bytes))
+            width, height = img.size
+            total_pixels = width * height
+            if total_pixels > MAX_IMAGE_PIXELS:
+                return (
+                    f"Image dimensions too large ({width}x{height}). "
+                    f"Maximum {MAX_IMAGE_PIXELS:,} pixels."
+                )
+        except Exception as e:
+            logger.warning("Image dimension check failed: %s", e)
+    return None
 
 
 def delete_r2_object(key: str) -> None:

@@ -154,9 +154,5 @@ class DeleteDocument(LoginRequiredMixin, View):
             )
             return response
         messages.success(request, result.message)
-        url = (
-            reverse("records:record_detail", kwargs={"pk": record.id})
-            if record
-            else reverse("records:view_all_records")
-        )
+        url = reverse("documents:document_list_view")
         return redirect(url)

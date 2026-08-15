@@ -9,11 +9,8 @@ from dataclasses import dataclass
 
 from billing.entitlements import can_add_storage, get_storage_limit
 from documents.models import DocumentData, DocumentStatus
-from documents.storage import (
-    gatekeeper_validate_r2_object,
-    get_r2_object_head,
-    verify_r2_object_exists,
-)
+from documents.storage import get_r2_object_head
+from documents.validators import MAX_FILE_SIZE
 
 logger = logging.getLogger(__name__)
 
@@ -81,24 +78,38 @@ class DocumentUploadService:
             )
             return UploadResult(valid=False, error="Key mismatch.", status_code=400)
 
-        if not verify_r2_object_exists(self.key):
+        head = get_r2_object_head(self.key)
+        if head is None:
             self.document.status = DocumentStatus.ERROR
             self.document.save(update_fields=["status"])
             return UploadResult(valid=False, error="File not found in storage.", status_code=404)
 
-        validation = gatekeeper_validate_r2_object(self.key)
-        if not validation["valid"]:
+        file_size = head.get("ContentLength")
+
+        if file_size == 0:
             self.document.status = DocumentStatus.ERROR
             self.document.notes = (
-                (self.document.notes or "") + f"\n[Gatekeeper] {validation['error']}"
+                (self.document.notes or "") + "\n[Gatekeeper] Empty file rejected."
             ).strip()
             self.document.save(update_fields=["status", "notes"])
-            logger.warning("Gatekeeper rejected doc %s: %s", self.document.id, validation["error"])
-            return UploadResult(valid=False, error=validation["error"], status_code=422)
+            logger.warning("Gatekeeper rejected doc %s: empty file", self.document.id)
+            return UploadResult(valid=False, error="Empty file rejected.", status_code=422)
 
-        head = get_r2_object_head(self.key)
-        file_size = head.get("ContentLength") if head else None
-        mime_type = head.get("ContentType", "").split(";")[0].strip() if head else ""
+        if file_size is not None and file_size > MAX_FILE_SIZE:
+            limit_mb = MAX_FILE_SIZE / 1024 / 1024
+            self.document.status = DocumentStatus.ERROR
+            self.document.notes = (
+                (self.document.notes or "") + f"\n[Gatekeeper] File exceeds {limit_mb}MB limit."
+            ).strip()
+            self.document.save(update_fields=["status", "notes"])
+            logger.warning("Gatekeeper rejected doc %s: file too large", self.document.id)
+            return UploadResult(
+                valid=False,
+                error=f"File exceeds {limit_mb}MB limit.",
+                status_code=422,
+            )
+
+        mime_type = (head.get("ContentType") or "").split(";")[0].strip() if head else ""
 
         if (
             transition

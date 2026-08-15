@@ -84,6 +84,7 @@ module = [
     "numpy.*",
     "cv2.*",
     "deskew.*",
+    "pypdfium2.*",
     "reimbursements.*",
     "djstripe.*",
     "stripe.*",

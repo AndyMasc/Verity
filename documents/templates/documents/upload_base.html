@@ -80,7 +80,35 @@
         const API_URL = "{{ api_url }}", REDIRECT_URL_TEMPLATE = "{{ redirect_url_template }}";
         const CONFIRM_URL = "{% url 'documents:confirm_upload' %}";
         const isSupportingFlow = {{ is_supporting_flow|yesno:"true,false" }};
+        const DOWNSCALE_MAX_DIM = 1568, DOWNSCALE_QUALITY = 0.85;
         let selectedFile = null;
+
+        // Downscale large camera photos in the browser before upload: this cuts
+        // upload time (especially on slower uplinks) and Gemini OCR input size.
+        // Returns { blob, mimeType, filename } or null to upload the original.
+        async function downscaleImage(file) {
+            const type = (file.type || "").toLowerCase();
+            if (type !== "image/jpeg" && type !== "image/png" && type !== "image/webp") return null;
+            try {
+                const bitmap = await createImageBitmap(file);
+                const scale = Math.min(1, DOWNSCALE_MAX_DIM / Math.max(bitmap.width, bitmap.height));
+                const outW = Math.max(1, Math.round(bitmap.width * scale));
+                const outH = Math.max(1, Math.round(bitmap.height * scale));
+                const canvas = document.createElement('canvas');
+                canvas.width = outW;
+                canvas.height = outH;
+                canvas.getContext('2d').drawImage(bitmap, 0, 0, outW, outH);
+                bitmap.close();
+                const mimeType = type === "image/png" ? "image/png" : "image/jpeg";
+                const blob = await new Promise(resolve => canvas.toBlob(resolve, mimeType, DOWNSCALE_QUALITY));
+                if (!blob || blob.size >= file.size) return null; // only replace when actually smaller
+                const ext = mimeType === "image/png" ? "png" : "jpg";
+                const base = file.name.replace(/\.[^.]+$/, "");
+                return { blob, mimeType, filename: `${base}.${ext}` };
+            } catch (e) {
+                return null; // fall back to the original on any failure
+            }
+        }
 
         uploadButton.dataset.forceUpload = "false";
 
@@ -159,20 +187,24 @@
             if (!selectedFile) return setStatus("Select a file first.", "error");
 
             const notesValue = document.getElementById('docNotes')?.value;
-            const resolvedMimeType = selectedFile.type || 'application/octet-stream';
             setLoading(true);
             setStatus("Computing file fingerprint...", "idle");
 
             try {
                 const fileHash = await hashFile(selectedFile);
 
+                const prepared = await downscaleImage(selectedFile);
+                const uploadFile = prepared ? prepared.blob : selectedFile;
+                const resolvedMimeType = prepared ? prepared.mimeType : (selectedFile.type || 'application/octet-stream');
+                const uploadFilename = prepared ? prepared.filename : selectedFile.name;
+
                 const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
                 const metadataBody = new URLSearchParams();
                 metadataBody.append('csrfmiddlewaretoken', csrfToken);
                 metadataBody.append('file_hash', fileHash);
-                metadataBody.append('filename', selectedFile.name);
+                metadataBody.append('filename', uploadFilename);
                 metadataBody.append('content_type', resolvedMimeType);
-                metadataBody.append('file_size', selectedFile.size);
+                metadataBody.append('file_size', uploadFile.size);
                 metadataBody.append('notes', notesValue || "");
                 metadataBody.append('force_upload', uploadButton.dataset.forceUpload);
 
@@ -220,7 +252,7 @@
                 const uploadRes = await fetch(upload_url, {
                     method: "PUT",
                     headers: { "Content-Type": resolvedMimeType },
-                    body: selectedFile,
+                    body: uploadFile,
                 });
                 if (!uploadRes.ok) throw new Error("Storage upload failed.");
 

@@ -48,8 +48,8 @@ class TestDocumentUploadServiceValidate:
         assert result.status_code == 400
         assert "Key mismatch" in result.error
 
-    @patch("documents.services.validation.verify_r2_object_exists", return_value=False)
-    def test_sets_error_when_r2_not_found(self, mock_verify, user):
+    @patch("documents.services.validation.get_r2_object_head", return_value=None)
+    def test_sets_error_when_r2_not_found(self, mock_head, user):
         doc = DocumentData.objects.create(
             user=user,
             filepath="users/1/doc.pdf",
@@ -64,12 +64,8 @@ class TestDocumentUploadServiceValidate:
         assert doc.status == DocumentStatus.ERROR
 
     @patch("documents.services.validation.get_r2_object_head")
-    @patch(
-        "documents.services.validation.gatekeeper_validate_r2_object",
-        return_value={"valid": False, "error": "Bad file"},
-    )
-    @patch("documents.services.validation.verify_r2_object_exists", return_value=True)
-    def test_rejects_gatekeeper_failure(self, mock_verify, mock_gk, mock_head, user):
+    def test_rejects_empty_file(self, mock_head, user):
+        mock_head.return_value = {"ContentLength": 0, "ContentType": "image/jpeg"}
         doc = DocumentData.objects.create(
             user=user,
             filepath="users/1/doc.pdf",
@@ -80,17 +76,12 @@ class TestDocumentUploadServiceValidate:
         result = svc.validate()
         assert result.valid is False
         assert result.status_code == 422
-        assert "Bad file" in result.error
+        assert "Empty file" in result.error
         doc.refresh_from_db()
         assert doc.status == DocumentStatus.ERROR
 
     @patch("documents.services.validation.get_r2_object_head")
-    @patch(
-        "documents.services.validation.gatekeeper_validate_r2_object",
-        return_value={"valid": True},
-    )
-    @patch("documents.services.validation.verify_r2_object_exists", return_value=True)
-    def test_validate_success_returns_metadata(self, mock_verify, mock_gk, mock_head, user):
+    def test_validate_success_returns_metadata(self, mock_head, user):
         mock_head.return_value = {
             "ContentLength": 1234,
             "ContentType": "application/pdf",
@@ -112,12 +103,7 @@ class TestDocumentUploadServiceValidate:
 @pytest.mark.django_db
 class TestDocumentUploadServiceConfirm:
     @patch("documents.services.validation.get_r2_object_head")
-    @patch(
-        "documents.services.validation.gatekeeper_validate_r2_object",
-        return_value={"valid": True},
-    )
-    @patch("documents.services.validation.verify_r2_object_exists", return_value=True)
-    def test_confirm_transitions_to_uploaded(self, mock_verify, mock_gk, mock_head, user):
+    def test_confirm_transitions_to_uploaded(self, mock_head, user):
         mock_head.return_value = {"ContentLength": 500, "ContentType": "image/jpeg"}
         doc = DocumentData.objects.create(
             user=user,
@@ -151,17 +137,7 @@ class TestDocumentUploadServiceConfirm:
                 "ContentType": "image/png; charset=utf-8",
             }
         )
-        with (
-            patch("documents.services.validation.get_r2_object_head", mock_head),
-            patch(
-                "documents.services.validation.gatekeeper_validate_r2_object",
-                return_value={"valid": True},
-            ),
-            patch(
-                "documents.services.validation.verify_r2_object_exists",
-                return_value=True,
-            ),
-        ):
+        with patch("documents.services.validation.get_r2_object_head", mock_head):
             doc = DocumentData.objects.create(
                 user=user,
                 filepath="users/1/doc.png",

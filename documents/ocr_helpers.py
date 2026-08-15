@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import logging
+from io import BytesIO
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -20,6 +21,9 @@ MAX_DIMENSION = 1200
 WEBP_QUALITY = 85
 SKEW_MAX_DIM = 500
 SKEW_THRESHOLD = 0.5
+
+PDF_RENDER_DPI = 150
+PDF_JPEG_QUALITY = 85
 
 
 def ocr_data_to_form_initial(data: dict | None) -> dict:
@@ -129,6 +133,34 @@ def _encode_webp(img: np.ndarray) -> bytes:
     if not success:
         raise ValueError("Failed to encode image to WebP")
     return encoded_img.tobytes()
+
+
+def render_pdf_pages(pdf_bytes: bytes, dpi: int = PDF_RENDER_DPI) -> list[bytes] | None:
+    """Render every page of a PDF to JPEG bytes for Gemini input.
+
+    Sending rendered images instead of the raw PDF shrinks the payload
+    5-20x and lets Gemini process the pages as images, which is markedly
+    faster than server-side PDF parsing. Returns None (so the caller falls
+    back to the raw PDF) if rendering fails for any reason.
+    """
+    try:
+        import pypdfium2 as pdfium
+
+        pdf = pdfium.PdfDocument(pdf_bytes)
+        scale = dpi / 72
+        pages: list[bytes] = []
+        for page in pdf:
+            bitmap = page.render(scale=scale)
+            img = bitmap.to_pil()
+            if img.mode != "RGB":
+                img = img.convert("RGB")
+            buffer = BytesIO()
+            img.save(buffer, format="JPEG", quality=PDF_JPEG_QUALITY)
+            pages.append(buffer.getvalue())
+        return pages or None
+    except Exception as e:
+        logger.error("Failed to render PDF pages: %s", e)
+        return None
 
 
 def prepare_image_for_gemini(image_bytes: bytes) -> bytes:

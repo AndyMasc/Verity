@@ -16,8 +16,8 @@ from django.core.cache import cache
 from dramatiq.middleware import CurrentMessage
 
 from documents.models import DocumentData, DocumentStatus
-from documents.ocr_helpers import prepare_image_for_gemini
-from documents.storage import BUCKET, get_s3_client
+from documents.ocr_helpers import prepare_image_for_gemini, render_pdf_pages
+from documents.storage import BUCKET, get_s3_client, validate_uploaded_bytes
 
 from .cleanup import normalize_s3_key
 
@@ -71,6 +71,9 @@ try:
         system_instruction="Extract data exactly as it appears from the image. Never hallucinate or invent information. No preamble.",
         temperature=0.0,
         max_output_tokens=700,
+        # Structured extraction with temperature 0 needs no reasoning budget;
+        # minimal thinking cuts time-to-first-token and total latency.
+        thinking_config=types.ThinkingConfig(thinking_level=types.ThinkingLevel.MINIMAL),
     )
 except ImportError:
     client = None
@@ -125,18 +128,28 @@ def fetch_from_r2(filepath: str) -> bytes:
     return b"".join(chunk for chunk in body.iter_chunks(chunk_size=1024 * 1024))
 
 
-def process_image(image_bytes: bytes, filepath: str) -> types.Part:
-    """Convert raw file bytes into a Gemini-compatible Part, preprocessing images."""
+def process_image(image_bytes: bytes, filepath: str) -> list[types.Part]:
+    """Convert raw file bytes into Gemini-compatible Parts, preprocessing inputs.
+
+    PDFs are rendered to JPEG pages (much smaller payload, faster Gemini
+    processing), falling back to the raw PDF when rendering fails. Raster
+    images go through the existing deskew/resize/encode pipeline.
+    """
     if filepath.lower().endswith(".pdf"):
-        return types.Part.from_bytes(data=image_bytes, mime_type="application/pdf")
+        page_images = render_pdf_pages(image_bytes)
+        if page_images:
+            return [
+                types.Part.from_bytes(data=page, mime_type="image/jpeg") for page in page_images
+            ]
+        return [types.Part.from_bytes(data=image_bytes, mime_type="application/pdf")]
 
     image_bytes = prepare_image_for_gemini(image_bytes)
-    return types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg")
+    return [types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg")]
 
 
-def call_gemini(image_part: types.Part, folder_names: list[str]) -> dict[str, Any]:
-    """Send the image to Gemini with folder context and return parsed OCR results."""
-    contents = []
+def call_gemini(image_parts: list[types.Part], folder_names: list[str]) -> dict[str, Any]:
+    """Send the images to Gemini with folder context and return parsed OCR results."""
+    contents: list[Any] = []
 
     folder_context = (
         f"User's available folders: {', '.join(folder_names) if folder_names else 'None'}. "
@@ -144,7 +157,7 @@ def call_gemini(image_part: types.Part, folder_names: list[str]) -> dict[str, An
     )
 
     contents.append(folder_context)
-    contents.append(image_part)
+    contents.extend(image_parts)
 
     result = client.models.generate_content(
         model="gemini-3.5-flash-lite",
@@ -197,9 +210,19 @@ def extract(document_id: int) -> dict[str, Any]:
         folder_names = list(document.user.folders.values_list("name", flat=True))
 
         image_content = fetch_from_r2(document.filepath)
-        part = process_image(image_content, document.filepath)
 
-        final_data = call_gemini(part, folder_names)
+        if validation_error := validate_uploaded_bytes(image_content):
+            logger.warning(
+                "Gatekeeper rejected doc %s during extraction: %s",
+                document_id,
+                validation_error,
+            )
+            mark_ocr_failed(document_id, validation_error)
+            return {"error": validation_error}
+
+        image_parts = process_image(image_content, document.filepath)
+
+        final_data = call_gemini(image_parts, folder_names)
 
         cache.set(cache_key, final_data, timeout=OCR_CACHE_TTL)
         set_document_status(

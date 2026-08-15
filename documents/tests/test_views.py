@@ -139,11 +139,9 @@ class ConfirmUploadViewTest(TestCase):
         )
         self.assertEqual(response.status_code, 302)
 
-    @patch("documents.services.validation.gatekeeper_validate_r2_object")
-    @patch("documents.services.validation.verify_r2_object_exists")
-    def test_confirm_valid(self, mock_verify, mock_gatekeeper):
-        mock_verify.return_value = True
-        mock_gatekeeper.return_value = {"valid": True}
+    @patch("documents.services.validation.get_r2_object_head")
+    def test_confirm_valid(self, mock_head):
+        mock_head.return_value = {"ContentLength": 100, "ContentType": "image/jpeg"}
         self.client.force_login(self.user)
         response = self.client.post(
             self.url,

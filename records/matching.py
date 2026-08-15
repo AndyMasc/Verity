@@ -48,7 +48,7 @@ def _similarity(a: str, b: str) -> float:
 def _balance_diff(a: Decimal | None, b: Decimal | None) -> Decimal | None:
     if a is None or b is None:
         return None
-    return abs(a - b)
+    return abs(Decimal(a) - Decimal(b))
 
 
 def calculate_match_score(record_a: Record, record_b: Record) -> int:
