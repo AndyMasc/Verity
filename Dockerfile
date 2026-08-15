@@ -47,7 +47,7 @@ RUN useradd -m -U django && chown -R django:django /app
 USER django
 
 # Copy compiled dependencies from the builder stage
-COPY --from=builder /opt/venv /opt/venv
+COPY --from=builder --chown=django:django /opt/venv /opt/venv
 
 # Copy the codebase
 COPY --chown=django:django . .
