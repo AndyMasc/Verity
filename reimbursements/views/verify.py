@@ -102,7 +102,7 @@ class PackagePayView(View):
         return render(request, self.template_name, context)
 
 
-@method_decorator(ratelimit(key="ip", rate="5/m", method="POST", block=True), name="dispatch")
+@method_decorator(ratelimit(key="ip", rate="2/m", method="POST", block=True), name="dispatch")
 class RequestVerificationCodeView(View):
     """Email the recipient a one-time code for the package."""
 
