@@ -329,7 +329,12 @@ class RecordDetailView(LoginRequiredMixin, UpdateView):
         )
         if is_htmx:
             response["HX-Trigger"] = json.dumps(
-                {"showToast": {"text": "An error was left in a record", "tags": "error"}}
+                {
+                    "showToast": {
+                        "text": "An error was left in a record",
+                        "tags": "error",
+                    }
+                }
             )
         return response
 

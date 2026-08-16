@@ -248,8 +248,12 @@ class StripeWebhookTest(TestCase):
 
         payment.refresh_from_db()
         pkg.refresh_from_db()
-        self.assertFalse(payment.is_completed)
+        self.assertTrue(payment.is_completed)
         self.assertEqual(pkg.status, ReimbursementPackage.Status.PAID)
+        partial_refund_logs = AuditLog.objects.filter(
+            details__event="charge_refunded", details__is_full_refund=False
+        )
+        self.assertTrue(partial_refund_logs.exists())
 
     @patch("reimbursements.services.retrieve_charge")
     def test_transfer_failed_resolves_via_source_charge(self, mock_retrieve):

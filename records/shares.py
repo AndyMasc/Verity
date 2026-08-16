@@ -42,9 +42,80 @@ class SelfShareError(ShareError):
     pass
 
 
+class ShareConfig:
+    """Configuration for granting record access."""
+
+    def __init__(
+        self,
+        permission: str = RecordShare.Permission.EDIT,
+        purpose: str = "",
+        include_documents: bool = True,
+        expires_at=None,
+    ):
+        self.permission = permission
+        self.purpose = purpose
+        self.include_documents = include_documents
+        self.expires_at = expires_at
+
+    def to_dict(self):
+        """Convert config to dictionary."""
+        return {
+            "permission": self.permission,
+            "purpose": self.purpose,
+            "include_documents": self.include_documents,
+            "expires_at": self.expires_at,
+        }
+
+    def audit_details(self, user_email, user_id, reactivated=False):
+        """Generate audit log details."""
+        details = {
+            "user": user_email,
+            "user_id": user_id,
+            "permission": self.permission,
+            "purpose": self.purpose,
+            "include_documents": self.include_documents,
+        }
+        if reactivated:
+            details["reactivated"] = True
+        return details
+
+
 def can_share(user, record: Record) -> bool:
     """Only the record owner may initiate sharing."""
     return record.user_id == user.pk
+
+
+def _log_share_action(
+    requester, record: Record, user, config: ShareConfig, reactivated: bool = False
+):
+    """Log a share action to the audit trail."""
+    details = config.audit_details(user.email, user.pk, reactivated)
+    create_audit_log(
+        user=requester,
+        action=AuditLog.Action.SHARE,
+        record=record,
+        details=details,
+    )
+
+
+def _reactivate_share(share: RecordShare, config: ShareConfig, requester):
+    """Reactivate a revoked/expired grant with the latest settings."""
+    share.permission = config.permission
+    share.purpose = config.purpose
+    share.include_documents = config.include_documents
+    share.expires_at = config.expires_at
+    share.revoked_at = None
+    share.shared_by = requester
+    share.save(
+        update_fields=[
+            "permission",
+            "purpose",
+            "include_documents",
+            "expires_at",
+            "revoked_at",
+            "shared_by",
+        ]
+    )
 
 
 def grant_access(
@@ -52,10 +123,7 @@ def grant_access(
     record: Record,
     user,
     requester,
-    permission: str = RecordShare.Permission.EDIT,
-    purpose: str = "",
-    include_documents: bool = True,
-    expires_at=None,
+    config: ShareConfig | None = None,
 ) -> tuple[RecordShare, bool]:
     """Grant (or reactivate) a purpose- and permission-scoped share.
 
@@ -65,16 +133,18 @@ def grant_access(
     Raises "NotOwnerError" unless "requester" owns the record and "SelfShareError"
     if "user" is the owner.
     """
+    config = config or ShareConfig()
+
     if not can_share(requester, record):
         raise NotOwnerError("Only the record owner can share it")
     if user.pk == record.user_id:
         raise SelfShareError("You cannot share a record with yourself")
 
     defaults = {
-        "permission": permission,
-        "purpose": purpose,
-        "include_documents": include_documents,
-        "expires_at": expires_at,
+        "permission": config.permission,
+        "purpose": config.purpose,
+        "include_documents": config.include_documents,
+        "expires_at": config.expires_at,
         "shared_by": requester,
     }
     with transaction.atomic():
@@ -82,53 +152,14 @@ def grant_access(
             record=record, user=user, defaults=defaults
         )
         if created:
-            create_audit_log(
-                user=requester,
-                action=AuditLog.Action.SHARE,
-                record=record,
-                details={
-                    "user": user.email,
-                    "user_id": user.pk,
-                    "permission": permission,
-                    "purpose": purpose,
-                    "include_documents": include_documents,
-                },
-            )
+            _log_share_action(requester, record, user, config)
             return share, created
 
         if share.is_active:
             return share, False
 
-        # Reactivate a revoked/expired grant with the latest settings.
-        share.permission = permission
-        share.purpose = purpose
-        share.include_documents = include_documents
-        share.expires_at = expires_at
-        share.revoked_at = None
-        share.shared_by = requester
-        share.save(
-            update_fields=[
-                "permission",
-                "purpose",
-                "include_documents",
-                "expires_at",
-                "revoked_at",
-                "shared_by",
-            ]
-        )
-        create_audit_log(
-            user=requester,
-            action=AuditLog.Action.SHARE,
-            record=record,
-            details={
-                "user": user.email,
-                "user_id": user.pk,
-                "permission": permission,
-                "purpose": purpose,
-                "include_documents": include_documents,
-                "reactivated": True,
-            },
-        )
+        _reactivate_share(share, config, requester)
+        _log_share_action(requester, record, user, config, reactivated=True)
         return share, True
 
 
@@ -166,9 +197,7 @@ def share_record_with_users(
     record: Record,
     owner,
     emails: list[str],
-    permission: str = RecordShare.Permission.EDIT,
-    purpose: str = "",
-    include_documents: bool = True,
+    config: ShareConfig | None = None,
     recipients: list[User] | None = None,
 ) -> tuple[list[RecordShare], list[str]]:
     """Share "record" with every existing account matching "emails".
@@ -180,38 +209,63 @@ def share_record_with_users(
     Emails without an account are returned (never silently dropped, never
     silently shared).
 
-    "recipients" may be passed in to reuse a batch resolution across
-    multiple records (see BulkShareView) and avoid re-querying per record.
+    "config" bundles the share settings (permission, purpose,
+    include_documents). "recipients" may be passed in to reuse a batch
+    resolution across multiple records (see BulkShareView) and avoid
+    re-querying per record.
     """
+    config = config or ShareConfig()
+
     if recipients is None:
         recipients, unknown = resolve_recipients(emails)
     else:
         unknown = []
 
-    for user in recipients:
-        if user.pk == record.user_id:
-            raise SelfShareError("You cannot share a record with yourself")
+    _validate_recipients(recipients, record)
 
     shares: list[RecordShare] = []
     if not recipients:
         return shares, unknown
 
+    shares.extend(
+        _grant_and_notify_shares(
+            recipients=recipients,
+            record=record,
+            owner=owner,
+            config=config,
+        )
+    )
+
+    return shares, unknown
+
+
+def _validate_recipients(recipients: list[User], record: Record) -> None:
+    """Validate that no recipient is the record owner."""
+    for user in recipients:
+        if user.pk == record.user_id:
+            raise SelfShareError("You cannot share a record with yourself")
+
+
+def _grant_and_notify_shares(
+    *,
+    recipients: list[User],
+    record: Record,
+    owner,
+    config: ShareConfig,
+) -> list[RecordShare]:
+    """Grant access and send notifications for each recipient."""
+    created_shares: list[RecordShare] = []
     for user in recipients:
         share, created = grant_access(
             record=record,
             user=user,
             requester=owner,
-            permission=permission,
-            purpose=purpose,
-            include_documents=include_documents,
+            config=config,
         )
         if created:
-            shares.append(share)
-
-    for share in shares:
-        _notify_share_recipient(record=record, share=share, actor=owner)
-
-    return shares, unknown
+            created_shares.append(share)
+            _notify_share_recipient(record=record, share=share, actor=owner)
+    return created_shares
 
 
 def _notify_share_recipient(*, record: Record, share: RecordShare, actor) -> None:

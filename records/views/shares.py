@@ -73,13 +73,16 @@ class ShareRecordView(LoginRequiredMixin, View):
             "true",
             "1",
         }
+        config = share_services.ShareConfig(
+            permission=permission,
+            include_documents=include_documents,
+        )
         try:
             shares, unknown = share_services.share_record_with_users(
                 record=record,
                 owner=request.user,
                 emails=emails,
-                permission=permission,
-                include_documents=include_documents,
+                config=config,
             )
         except share_services.SelfShareError as exc:
             messages.error(request, str(exc))
@@ -88,7 +91,8 @@ class ShareRecordView(LoginRequiredMixin, View):
         else:
             if shares:
                 messages.success(
-                    request, f"Shared with {len(shares)} user{'s' if len(shares) != 1 else ''}"
+                    request,
+                    f"Shared with {len(shares)} user{'s' if len(shares) != 1 else ''}",
                 )
             if unknown:
                 messages.warning(

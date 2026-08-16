@@ -16,7 +16,9 @@ from django.db.models import Q
 from django.utils import timezone
 
 from billing.services import _configure
-from billing.services import retrieve_checkout_session as _retrieve_billing_checkout_session
+from billing.services import (
+    retrieve_checkout_session as _retrieve_billing_checkout_session,
+)
 from core.exchange_rates import get_rates
 from records.models import Record
 
@@ -266,20 +268,20 @@ def _grant_package_access(package: ReimbursementPackage) -> None:
     if package.recipient is None:
         return
     from records.models import RecordShare
-    from records.shares import grant_access
+    from records.shares import ShareConfig, grant_access
 
-    grant_options = {
-        "permission": RecordShare.Permission.VIEW,
-        "purpose": RecordShare.Purpose.REIMBURSEMENT,
-        "include_documents": True,
-        "expires_at": package.expires_at,
-    }
+    config = ShareConfig(
+        permission=RecordShare.Permission.VIEW,
+        purpose=RecordShare.Purpose.REIMBURSEMENT,
+        include_documents=True,
+        expires_at=package.expires_at,
+    )
     for record in package.records.filter(is_active=True):
         grant_access(
             record=record,
             user=package.recipient,
             requester=package.creator,
-            **grant_options,
+            config=config,
         )
 
 

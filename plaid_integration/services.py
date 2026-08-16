@@ -96,7 +96,7 @@ def fetch_accounts(access_token: str, item_id: str) -> list[dict[str, str]]:
 
 
 def trigger_initial_sync(plaid_item: PlaidItem) -> None:
-    """Trigger initial sync via sandbox webhook in Sandbox, or directly via Celery in Prod."""
+    """Trigger initial sync via sandbox webhook in Sandbox, or directly via background tasks in Prod."""
     if getattr(settings, "PLAID_ENV", "") == "sandbox":
         try:
             plaid_client.sandbox_item_fire_webhook(

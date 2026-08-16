@@ -6,7 +6,18 @@ from django.contrib.auth import get_user_model
 User = get_user_model()
 from django.test import TestCase
 
-from core.tasks import send_background_email
+from core.tasks import EmailTaskPayload, send_background_email
+
+
+def _payload(**overrides) -> EmailTaskPayload:
+    defaults = dict(
+        subject="Test",
+        message="Text body",
+        from_email="from@example.com",
+        recipient_list=["to@example.com"],
+    )
+    defaults.update(overrides)
+    return EmailTaskPayload(**defaults)
 
 
 def _rejection_response(status_code: int) -> requests.Response:
@@ -19,13 +30,7 @@ def _rejection_response(status_code: int) -> requests.Response:
 class CoreTasksTest(TestCase):
     @patch("core.tasks.EmailMultiAlternatives")
     def test_send_background_email(self, mock_email_cls):
-        send_background_email(
-            subject="Test",
-            message="Text body",
-            from_email="from@example.com",
-            recipient_list=["to@example.com"],
-            html_message="<p>HTML</p>",
-        )
+        send_background_email(_payload(html_message="<p>HTML</p>"))
         mock_email_cls.assert_called_once()
         mock_email_cls.return_value.send.assert_called_once()
 
@@ -40,12 +45,7 @@ class CoreTasksTest(TestCase):
             backend=None,
         )
 
-        send_background_email(
-            subject="Test",
-            message="Text body",
-            from_email="from@example.com",
-            recipient_list=["to@example.com"],
-        )
+        send_background_email(_payload())
 
     @patch("core.tasks.EmailMultiAlternatives")
     def test_send_background_email_transient_raises_for_retry(self, mock_email_cls):
@@ -59,12 +59,7 @@ class CoreTasksTest(TestCase):
         )
 
         with self.assertRaises(AnymailRequestsAPIError):
-            send_background_email(
-                subject="Test",
-                message="Text body",
-                from_email="from@example.com",
-                recipient_list=["to@example.com"],
-            )
+            send_background_email(_payload())
 
     @patch("core.tasks.send_user_notification")
     def test_fire_single_webpush(self, mock_send):

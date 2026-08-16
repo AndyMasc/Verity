@@ -30,6 +30,7 @@ from core.services.notifications import (
     send_multi_channel_notification,
 )
 from documents.services.cleanup import COMPLIANCE_RETENTION_YEARS
+from records.matching import try_match_document_record, try_match_plaid_record
 
 from .models import Record
 
@@ -51,8 +52,6 @@ def run_auto_match(record_pk: int, has_plaid: bool) -> None:
     except Record.DoesNotExist:
         logger.warning("Auto-match skipped: record %s not found", record_pk)
         return
-
-    from records.matching import try_match_document_record, try_match_plaid_record
 
     try:
         if has_plaid:
@@ -205,11 +204,11 @@ def send_expiry_notifications() -> None:
 
     Notification.objects.bulk_create(notifications_to_create)
 
-    Record.objects.filter(id__in=[r.id for r in user_records_map.values() for r in r]).update(
-        expiry_notification_sent=True
-    )
+    all_record_ids = [r.id for records in user_records_map.values() for r in records]
+    Record.objects.filter(id__in=all_record_ids).update(expiry_notification_sent=True)
     logger.info("Created %d DB notifications.", len(notifications_to_create))
 
+    MAX_DISPLAY_RECORDS = 5
     site_context = build_site_context()
     site_url = site_context["site_url"]
 
@@ -226,7 +225,6 @@ def send_expiry_notifications() -> None:
         )
 
         action_url = f"{site_url.rstrip('/')}{reverse('core:dashboard')}"
-        MAX_DISPLAY_RECORDS = 5
         total_records_count = len(records)
 
         display_records = records[:MAX_DISPLAY_RECORDS]

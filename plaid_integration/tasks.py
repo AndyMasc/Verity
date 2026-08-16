@@ -66,28 +66,38 @@ def choose_folder(
     return folder
 
 
+def _parse_accounts_data(data: Any) -> list[dict[str, Any]]:
+    """Normalize stored Plaid account payloads into a list of account dicts."""
+    if not data:
+        return []
+
+    while isinstance(data, str):
+        try:
+            data = json.loads(data)
+        except (json.JSONDecodeError, TypeError):
+            return []
+
+    return data if isinstance(data, list) else []
+
+
+def _format_account_name(account: dict[str, Any]) -> str:
+    """Return a human-readable name for a Plaid account."""
+    name = account.get("name", "")
+    mask = account.get("mask", "")
+
+    if name and mask:
+        return f"{name} (••{mask})"
+    return name or ""
+
+
 def _get_payment_method(plaid_item: PlaidItem, account_id: str) -> str:
     """Build a display string for the payment method from stored account data."""
-    accounts = plaid_item.accounts_data
-    if not accounts or not account_id:
+    if not account_id:
         return ""
 
-    while isinstance(accounts, str):
-        try:
-            accounts = json.loads(accounts)
-        except (json.JSONDecodeError, TypeError):
-            return ""
-
-    if not isinstance(accounts, list):
-        return ""
-
-    for acct in accounts:
-        if isinstance(acct, dict) and acct.get("id") == account_id:
-            name = acct.get("name", "")
-            mask = acct.get("mask", "")
-            if name and mask:
-                return f"{name} (••{mask})"
-            return name or ""
+    for account in _parse_accounts_data(plaid_item.accounts_data):
+        if isinstance(account, dict) and account.get("id") == account_id:
+            return _format_account_name(account)
 
     return ""
 
@@ -136,6 +146,79 @@ def _txn_to_record_defaults(
     return defaults
 
 
+def _process_removed_transactions(data: dict[str, Any], stats: dict[str, int]) -> None:
+    """Process removed transactions and update stats."""
+    for txn in data.get("removed", []):
+        archived = Record.objects.filter(plaid_transaction_id=txn["transaction_id"]).update(
+            is_active=False, last_edited=timezone.now()
+        )
+        stats["removed"] += archived
+
+
+def _process_added_modified_transactions(
+    batch: list[dict[str, Any]],
+    existing_ids: set[str],
+    plaid_item: PlaidItem,
+    folder_cache: dict[str, Folder],
+) -> tuple[list[Record], list[Record]]:
+    """Separate batch into records to create and update."""
+    now = timezone.now()
+    to_create: list[Record] = []
+    to_update: list[Record] = []
+
+    for txn in batch:
+        record = Record(
+            plaid_transaction_id=txn["transaction_id"],
+            last_edited=now,
+            **_txn_to_record_defaults(txn, plaid_item, folder_cache),
+        )
+        if txn["transaction_id"] in existing_ids:
+            to_update.append(record)
+        else:
+            to_create.append(record)
+
+    return to_create, to_update
+
+
+def _bulk_create_update_records(to_create: list[Record], to_update: list[Record]) -> None:
+    """Bulk create and update records."""
+    if to_create:
+        Record.objects.bulk_create(to_create)
+    if to_update:
+        Record.objects.bulk_update(
+            to_update,
+            fields=[
+                "user",
+                "plaid_item",
+                "title",
+                "merchant",
+                "balance",
+                "currency",
+                "transaction_date",
+                "record_type",
+                "notes",
+                "folder",
+                "payment_method",
+                "last_edited",
+            ],
+        )
+
+
+def _match_records_to_documents(plaid_item: PlaidItem, plaid_item_id: int | str) -> None:
+    """Match synced records to existing uploaded documents."""
+    try:
+        from records.matching import try_match_plaid_record
+
+        for plaid_record in (
+            Record.objects.filter(plaid_item=plaid_item, is_active=True)
+            .only("pk", "user_id")
+            .iterator(chunk_size=500)
+        ):
+            try_match_plaid_record(plaid_record)
+    except Exception:
+        logger.exception("Error matching plaid records to documents for item %s", plaid_item_id)
+
+
 @dramatiq.actor(max_retries=3)
 def sync_and_convert_for_item_task(plaid_item_id: int | str) -> dict[str, Any]:
     """Sync all pending transactions for a Plaid item and create/update Records.
@@ -173,12 +256,7 @@ def sync_and_convert_for_item_task(plaid_item_id: int | str) -> dict[str, Any]:
         data: dict[str, Any] = response if isinstance(response, dict) else response.to_dict()
 
         with db_transaction.atomic():
-            txn: dict[str, Any]
-            for txn in data.get("removed", []):
-                archived = Record.objects.filter(plaid_transaction_id=txn["transaction_id"]).update(
-                    is_active=False, last_edited=timezone.now()
-                )
-                stats["removed"] += archived
+            _process_removed_transactions(data, stats)
 
             added_txns = data.get("added", [])
             modified_txns = data.get("modified", [])
@@ -191,41 +269,10 @@ def sync_and_convert_for_item_task(plaid_item_id: int | str) -> dict[str, Any]:
                         "plaid_transaction_id", flat=True
                     )
                 )
-
-                now = timezone.now()
-                to_create: list[Record] = []
-                to_update: list[Record] = []
-                for txn in batch:
-                    record = Record(
-                        plaid_transaction_id=txn["transaction_id"],
-                        last_edited=now,
-                        **_txn_to_record_defaults(txn, plaid_item, folder_cache),
-                    )
-                    if txn["transaction_id"] in existing_ids:
-                        to_update.append(record)
-                    else:
-                        to_create.append(record)
-
-                if to_create:
-                    Record.objects.bulk_create(to_create)
-                if to_update:
-                    Record.objects.bulk_update(
-                        to_update,
-                        fields=[
-                            "user",
-                            "plaid_item",
-                            "title",
-                            "merchant",
-                            "balance",
-                            "currency",
-                            "transaction_date",
-                            "record_type",
-                            "notes",
-                            "folder",
-                            "payment_method",
-                            "last_edited",
-                        ],
-                    )
+                to_create, to_update = _process_added_modified_transactions(
+                    batch, existing_ids, plaid_item, folder_cache
+                )
+                _bulk_create_update_records(to_create, to_update)
                 stats["added"] += len(added_txns)
                 stats["modified"] += len(modified_txns)
 
@@ -235,16 +282,5 @@ def sync_and_convert_for_item_task(plaid_item_id: int | str) -> dict[str, Any]:
             plaid_item.next_cursor = cursor
             plaid_item.save(update_fields=["next_cursor"])
 
-    try:
-        from records.matching import try_match_plaid_record
-
-        for plaid_record in (
-            Record.objects.filter(plaid_item=plaid_item, is_active=True)
-            .only("pk", "user_id")
-            .iterator(chunk_size=500)
-        ):
-            try_match_plaid_record(plaid_record)
-    except Exception:
-        logger.exception("Error matching plaid records to documents for item %s", plaid_item_id)
-
+    _match_records_to_documents(plaid_item, plaid_item_id)
     return {"status": "synced", **stats}

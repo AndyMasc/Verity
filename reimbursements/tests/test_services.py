@@ -29,6 +29,24 @@ class ReimbursementRecordAccessTest(TestCase):
         )
         return pkg, r1, r2
 
+    def _assert_access_revoked(self, record):
+        share = RecordShare.objects.get(record=record, user=self.recipient)
+        self.assertIsNotNone(share.revoked_at)
+        self.assertFalse(share.is_active)
+        self.assertNotIn(
+            record.pk,
+            Record.objects.visible_to(self.recipient).values_list("pk", flat=True),
+        )
+
+    def _assert_access_active(self, record):
+        share = RecordShare.objects.get(record=record, user=self.recipient)
+        self.assertIsNone(share.revoked_at)
+        self.assertTrue(share.is_active)
+        self.assertIn(
+            record.pk,
+            Record.objects.visible_to(self.recipient).values_list("pk", flat=True),
+        )
+
     def test_create_grants_temporary_view_access(self):
         pkg, r1, r2 = self._package_with_records()
         for r in (r1, r2):
@@ -52,21 +70,13 @@ class ReimbursementRecordAccessTest(TestCase):
     def test_mark_as_paid_revokes_access(self):
         pkg, r1, _ = self._package_with_records()
         pkg.mark_as_paid(self.recipient)
-        share = RecordShare.objects.get(record=r1, user=self.recipient)
-        self.assertIsNotNone(share.revoked_at)
-        self.assertFalse(share.is_active)
-        self.assertNotIn(
-            r1.pk, Record.objects.visible_to(self.recipient).values_list("pk", flat=True)
-        )
+        self._assert_access_revoked(r1)
 
     def test_refund_restores_access(self):
         pkg, r1, _ = self._package_with_records()
         pkg.mark_as_paid(self.recipient)
         pkg.mark_as_refunded()
-        share = RecordShare.objects.get(record=r1, user=self.recipient)
-        self.assertIsNone(share.revoked_at)
-        self.assertTrue(share.is_active)
-        self.assertIn(r1.pk, Record.objects.visible_to(self.recipient).values_list("pk", flat=True))
+        self._assert_access_active(r1)
 
     def test_deleted_package_revokes_access(self):
         pkg, r1, _ = self._package_with_records()

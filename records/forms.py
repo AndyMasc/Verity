@@ -142,6 +142,24 @@ class BaseRecordForm(forms.ModelForm):
             "folder",
         ]
 
+    def setup_folder_field(self, user=None):
+        """Limit folder choices to the current user and keep the current folder selected."""
+        folder_field = self.fields.get("folder")
+        if not folder_field:
+            return
+
+        queryset = Folder.objects.none()
+        if user is not None:
+            queryset = Folder.objects.filter(user=user).order_by("name")
+
+        folder_field.queryset = queryset
+
+        instance = self.instance if self.instance and self.instance.pk else None
+        if instance and getattr(instance, "folder_id", None):
+            instance_folder = Folder.objects.filter(pk=instance.folder_id)
+            if not queryset.filter(pk=instance.folder_id).exists():
+                folder_field.queryset = queryset | instance_folder
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for fname, limit in _MAXLENGTH_HELP.items():
@@ -162,29 +180,37 @@ class BaseRecordForm(forms.ModelForm):
             raise ValidationError("Balance cannot be negative.")
         return balance
 
-    def clean(self):
-        """Cross-field validation: expiry vs. transaction date and record-type requirements."""
-        cleaned_data = super().clean()
+    def _validate_expiry_date(self, cleaned_data):
+        """Ensure expiry date is not earlier than the transaction date."""
         expiry_date = cleaned_data.get("expiry_date")
         transaction_date = cleaned_data.get("transaction_date")
         if expiry_date and transaction_date and expiry_date < transaction_date:
             raise ValidationError({"expiry_date": "Expiry date cannot be before transaction date."})
+
+    def _validate_record_type_requirements(self, cleaned_data):
+        """Require notes and payment method for expense and invoice records."""
         notes = cleaned_data.get("notes", "")
         payment_method = cleaned_data.get("payment_method", "")
         record_type = cleaned_data.get("record_type")
-        if record_type in (
+        if record_type not in (
             Record.RecordTypes.EXPENSE_RECEIPT,
             Record.RecordTypes.VENDOR_INVOICE,
             Record.RecordTypes.CUSTOMER_INVOICE,
         ):
-            if not notes or not notes.strip():
-                raise ValidationError(
-                    {"notes": "Business purpose is required for this record type."}
-                )
-            if not payment_method or not payment_method.strip():
-                raise ValidationError(
-                    {"payment_method": "Payment method is required for this record type."}
-                )
+            return
+
+        if not notes or not notes.strip():
+            raise ValidationError({"notes": "Business purpose is required for this record type."})
+        if not payment_method or not payment_method.strip():
+            raise ValidationError(
+                {"payment_method": "Payment method is required for this record type."}
+            )
+
+    def clean(self):
+        """Cross-field validation: expiry vs. transaction date and record-type requirements."""
+        cleaned_data = super().clean()
+        self._validate_expiry_date(cleaned_data)
+        self._validate_record_type_requirements(cleaned_data)
         return cleaned_data
 
 
@@ -194,15 +220,13 @@ class AddRecordForm(BaseRecordForm):
     def __init__(self, *args, **kwargs):
         user = kwargs.pop("user", None)
         super().__init__(*args, **kwargs)
-        if "folder" in self.fields:
-            self.fields["folder"].queryset = Folder.objects.none()
-            self.fields["folder"].required = False
-            self.fields["folder"].empty_label = "Unfiled"
-            if user is not None:
-                self.fields["folder"].queryset = Folder.objects.filter(user=user)
-        if "currency" in self.fields and not self.initial.get("currency") and user is not None:
-            user_currency = getattr(user.settings, "default_currency", "usd")
-            self.initial["currency"] = user_currency
+
+        self.setup_folder_field(user)
+
+        if user and "currency" in self.fields:
+            user_settings = getattr(user, "settings", None)
+            default_curr = getattr(user_settings, "default_currency", "usd")
+            self.initial.setdefault("currency", default_curr)
 
 
 class RecordUpdateForm(BaseRecordForm):
@@ -210,14 +234,14 @@ class RecordUpdateForm(BaseRecordForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        user = self.instance.user if self.instance and self.instance.pk else None
-        if user:
-            self.fields["folder"].queryset = Folder.objects.filter(user=user)
-            self.fields["folder"].required = False
-            self.fields["folder"].empty_label = "Unfiled"
-        instance = getattr(self, "instance", None)
-        if instance and instance.pk and instance.is_plaid_record:
-            self.fields["payment_method"].disabled = True
+
+        instance = self.instance if self.instance and self.instance.pk else None
+        user = getattr(instance, "user", None)
+        self.setup_folder_field(user)
+
+        payment_field = self.fields.get("payment_method")
+        if instance and getattr(instance, "is_plaid_record", False) and payment_field:
+            payment_field.disabled = True
 
 
 class ManualMergeForm(forms.Form):

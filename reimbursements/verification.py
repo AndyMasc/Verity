@@ -16,7 +16,7 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 
 from core.services.notifications import build_site_context
-from core.tasks import send_background_email
+from core.tasks import EmailTaskPayload, send_background_email
 
 from .models import PackageEmailVerification, ReimbursementPackage
 
@@ -80,11 +80,13 @@ def send_verification_code(package: ReimbursementPackage, email: str) -> bool:
         context,
     )
     send_background_email.send(
-        subject=subject,
-        message=text_body,
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        recipient_list=[email.strip().lower()],
-        html_message=html_body,
+        EmailTaskPayload(
+            subject=subject,
+            message=text_body,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[email.strip().lower()],
+            html_message=html_body,
+        )
     )
     logger.info("Issued verification code for package %s", package.uuid)
     return True

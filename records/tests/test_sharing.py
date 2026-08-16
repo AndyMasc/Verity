@@ -145,7 +145,7 @@ class TestShareService(SharingTestCase):
             record=self.record,
             user=self.recipient,
             requester=self.owner,
-            permission=RecordShare.Permission.VIEW,
+            config=svc.ShareConfig(permission=RecordShare.Permission.VIEW),
         )
         response = self._detail_post(
             self.recipient,
@@ -171,8 +171,10 @@ class TestShareService(SharingTestCase):
             record=self.record,
             user=self.recipient,
             requester=self.owner,
-            permission=RecordShare.Permission.VIEW,
-            expires_at=timezone.now() - timezone.timedelta(hours=1),
+            config=share_services.ShareConfig(
+                permission=RecordShare.Permission.VIEW,
+                expires_at=timezone.now() - timezone.timedelta(hours=1),
+            ),
         )[0]
         assert not from_share.is_active
         assert self.record.pk not in Record.objects.visible_to(self.recipient).values_list(
@@ -391,7 +393,7 @@ class TestSharedDocuments(SharingTestCase):
             record=self.record,
             user=self.recipient,
             requester=self.owner,
-            include_documents=False,
+            config=share_services.ShareConfig(include_documents=False),
         )
         self.client.force_login(self.recipient)
         response = self.client.get(reverse("documents:view_document", args=[self.doc.pk]))
@@ -402,7 +404,7 @@ class TestSharedDocuments(SharingTestCase):
             record=self.record,
             user=self.recipient,
             requester=self.owner,
-            include_documents=True,
+            config=share_services.ShareConfig(include_documents=True),
         )
         self.client.force_login(self.recipient)
         response = self.client.get(reverse("documents:view_document", args=[self.doc.pk]))
@@ -415,7 +417,7 @@ class TestSharedDocuments(SharingTestCase):
             record=self.record,
             user=self.recipient,
             requester=self.owner,
-            include_documents=False,
+            config=share_services.ShareConfig(include_documents=False),
         )
         self.client.force_login(self.recipient)
         response = self.client.get(reverse("records:record_detail", args=[self.record.pk]))

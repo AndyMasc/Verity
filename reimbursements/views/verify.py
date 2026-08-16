@@ -122,7 +122,8 @@ class RequestVerificationCodeView(View):
             return redirect(pay_url)
 
         messages.success(
-            request, "A verification code was sent to your inbox. It expires in 10 minutes."
+            request,
+            "A verification code was sent to your inbox. It expires in 10 minutes.",
         )
         return redirect(_code_step_url(pay_url, email))
 

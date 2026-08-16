@@ -16,7 +16,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.sites.models import Site
 from django.templatetags.static import static
 
-from core.tasks import fire_single_webpush, send_background_email
+from core.tasks import EmailTaskPayload, fire_single_webpush, send_background_email
 
 if TYPE_CHECKING:
     from django.contrib.auth.models import AbstractUser
@@ -107,11 +107,13 @@ def send_email_notification(
     so this function returns immediately.
     """
     send_background_email.send(
-        subject=subject,
-        message=text_body,
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        recipient_list=[user.email],
-        html_message=html_body,
+        EmailTaskPayload(
+            subject=subject,
+            message=text_body,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+            html_message=html_body,
+        )
     )
     logger.info("Dispatched background email request for %s", user.email)
 

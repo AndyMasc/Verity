@@ -31,7 +31,10 @@ rate_limiter = BucketRateLimiter(
 
 
 @dramatiq.actor(
-    queue_name="ocr-tasks", max_retries=MAX_OCR_RETRIES, min_backoff=10_000, max_backoff=300_000
+    queue_name="ocr-tasks",
+    max_retries=MAX_OCR_RETRIES,
+    min_backoff=10_000,
+    max_backoff=300_000,
 )
 def extract_document(document_id: int) -> dict[str, Any]:
     """Run Gemini OCR on a document and auto-create a Record from the result.2

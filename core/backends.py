@@ -10,7 +10,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.backends import ModelBackend
 from django.core.mail.backends.base import BaseEmailBackend
 
-from .tasks import send_background_email
+from .tasks import EmailTaskPayload, send_background_email
 
 
 class DramatiqEmailBackend(BaseEmailBackend):
@@ -33,11 +33,13 @@ class DramatiqEmailBackend(BaseEmailBackend):
                         html_message = content
 
             send_background_email.send(
-                subject=message.subject,
-                message=message.body,
-                from_email=message.from_email or settings.DEFAULT_FROM_EMAIL,
-                recipient_list=message.to,
-                html_message=html_message,
+                EmailTaskPayload(
+                    subject=message.subject,
+                    message=message.body,
+                    from_email=message.from_email or settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=message.to,
+                    html_message=html_message,
+                )
             )
             sent_count += 1
 

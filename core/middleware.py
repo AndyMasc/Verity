@@ -99,32 +99,41 @@ class HtmxMessageMiddleware:
     def __call__(self, request: HttpRequest) -> HttpResponse:
         response = self.get_response(request)
 
-        if (
-            request.headers.get("HX-Request") == "true"
-            and "HX-Redirect" not in response
-            and "HX-Refresh" not in response
-        ):
-            storage = get_messages(request)
-            messages_list: list[dict[str, Any]] = [
-                {"message": str(message.message), "level": message.level} for message in storage
-            ]
+        if not self._should_attach_messages(request, response):
+            return response
 
-            if messages_list:
-                hx_trigger = response.get("HX-Trigger")
+        messages_list = self._build_messages_list(request)
+        if not messages_list:
+            return response
 
-                payload: dict[str, Any] = {"djangoMessages": messages_list}
-
-                if hx_trigger:
-                    try:
-                        trigger_data = json.loads(hx_trigger)
-                        if isinstance(trigger_data, dict):
-                            trigger_data.update(payload)
-                            response["HX-Trigger"] = json.dumps(trigger_data)
-                    except ValueError:
-                        response["HX-Trigger"] = json.dumps(
-                            {hx_trigger: {}, "djangoMessages": messages_list}
-                        )
-                else:
-                    response["HX-Trigger"] = json.dumps(payload)
-
+        response["HX-Trigger"] = self._build_hx_trigger(response.get("HX-Trigger"), messages_list)
         return response
+
+    @staticmethod
+    def _should_attach_messages(request: HttpRequest, response: HttpResponse) -> bool:
+        is_htmx_request = request.headers.get("HX-Request") == "true"
+        is_full_page_response = "HX-Redirect" in response or "HX-Refresh" in response
+        return is_htmx_request and not is_full_page_response
+
+    @staticmethod
+    def _build_messages_list(request: HttpRequest) -> list[dict[str, Any]]:
+        storage = get_messages(request)
+        return [{"message": str(message.message), "level": message.level} for message in storage]
+
+    @staticmethod
+    def _build_hx_trigger(hx_trigger: str | None, messages_list: list[dict[str, Any]]) -> str:
+        payload: dict[str, Any] = {"djangoMessages": messages_list}
+
+        if not hx_trigger:
+            return json.dumps(payload)
+
+        try:
+            trigger_data = json.loads(hx_trigger)
+        except ValueError:
+            return json.dumps({hx_trigger: {}, "djangoMessages": messages_list})
+
+        if isinstance(trigger_data, dict):
+            trigger_data.update(payload)
+            return json.dumps(trigger_data)
+
+        return json.dumps(payload)

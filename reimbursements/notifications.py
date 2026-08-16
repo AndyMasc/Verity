@@ -5,7 +5,7 @@ from django.template.loader import render_to_string
 from django.utils.html import escape
 
 from core.currencies import format_currency
-from core.tasks import send_background_email
+from core.tasks import EmailTaskPayload, send_background_email
 
 
 def build_package_url(package_uuid: str) -> str:
@@ -62,11 +62,13 @@ def send_package_created_notification(package, recipient=None) -> None:
             "reimbursements/email/package_created_message.txt", template_context
         )
         send_background_email.send(
-            subject=subject,
-            message=text_body,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[recipient_name],
-            html_message=html_body,
+            EmailTaskPayload(
+                subject=subject,
+                message=text_body,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[recipient_name],
+                html_message=html_body,
+            )
         )
         return
 

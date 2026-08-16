@@ -1,3 +1,12 @@
+"""Reimbursement domain models.
+
+Data layer for reimbursement packages, Stripe Connect accounts, payments,
+webhook idempotency markers, and external-payer email verification. Workflows
+(marking packages paid, refunds, checkout sessions, access revocation) are
+delegated to services.py and webhooks.py; models keep fields, constraints,
+and simple derived state.
+"""
+
 from __future__ import annotations
 
 import logging
@@ -31,6 +40,54 @@ logger = logging.getLogger(__name__)
 
 STRIPE_MINIMUM_FEE_CENTS = 50
 PLATFORM_FEE_PERCENT = Decimal("0.03")
+
+
+class CurrencyConverter:
+    """Handles currency conversion and batch operations."""
+
+    @staticmethod
+    def convert_batch(items: list[tuple[Decimal, str]], target_currency: str) -> Decimal:
+        """Convert a batch of (amount, currency) tuples to target currency."""
+        from core.exchange_rates import convert_batch
+
+        return convert_batch(items, target_currency)
+
+    @staticmethod
+    def get_active_record_items(cache: dict, records_queryset) -> list[tuple[Decimal, str]]:
+        """Extract active record balance and currency pairs from cache or queryset."""
+        if "records" in cache:
+            return [(r.balance, r.currency) for r in cache["records"] if r.is_active and r.balance]
+        return list(
+            records_queryset.filter(is_active=True)
+            .exclude(balance__isnull=True)
+            .values_list("balance", "currency")
+        )
+
+
+class PlatformFeeCalculator:
+    """Handles Stripe platform fee calculations."""
+
+    @staticmethod
+    def compute(total_cents: int, payer_currency: str, rates) -> int:
+        """Compute platform fee clamped to minimum and total."""
+        platform_fee_cents = int(
+            (Decimal(str(total_cents)) * PLATFORM_FEE_PERCENT).quantize(
+                Decimal("1"), rounding=ROUND_DOWN
+            )
+        )
+        min_fee_converted = convert_currency(
+            Decimal(STRIPE_MINIMUM_FEE_CENTS) / Decimal("100"),
+            "usd",
+            payer_currency,
+            rates=rates,
+        )
+        min_fee_units = to_stripe_amount(min_fee_converted, payer_currency)
+
+        if platform_fee_cents < min_fee_units:
+            platform_fee_cents = min_fee_units
+        if platform_fee_cents > total_cents:
+            platform_fee_cents = total_cents
+        return platform_fee_cents
 
 
 @dataclass
@@ -383,30 +440,15 @@ class ReimbursementPackage(models.Model):
 
     def converted_total(self, to_currency: str | None = None) -> Decimal:
         target = to_currency or self.currency
-        from core.exchange_rates import convert_batch
-
         cache = getattr(self, "_prefetched_objects_cache", {})
-        if "records" in cache:
-            items = [(r.balance, r.currency) for r in cache["records"] if r.is_active and r.balance]
-        else:
-            items = list(
-                self.records.filter(is_active=True)
-                .exclude(balance__isnull=True)
-                .values_list("balance", "currency")
-            )
+        items = CurrencyConverter.get_active_record_items(cache, self.records)
         if not items:
             return Decimal("0.00")
-        return convert_batch(items, target)
+        return CurrencyConverter.convert_batch(items, target)
 
     def converted_total_cents(self, to_currency: str | None = None) -> int:
         target = to_currency or self.currency
         return to_stripe_amount(self.converted_total(target), target)
-
-    def _active_records(self):
-        cache = getattr(self, "_prefetched_objects_cache", {})
-        if "records" in cache:
-            return [r for r in cache["records"] if r.is_active]
-        return list(self.records.filter(is_active=True))
 
     @property
     def payout_account_id(self) -> str | None:
@@ -487,30 +529,31 @@ class ReimbursementPackage(models.Model):
         actual_total_amount = Decimal("0")
 
         for record in self.records.filter(is_active=True):
-            if record.balance and record.balance > 0:
-                converted = convert_currency(
-                    record.balance, record.currency, payer_currency, rates=rates
-                )
-                converted_stripe = to_stripe_amount(converted, payer_currency)
-                if converted_stripe <= 0:
-                    continue
+            if not record.balance or record.balance <= 0:
+                continue
+            converted = convert_currency(
+                record.balance, record.currency, payer_currency, rates=rates
+            )
+            converted_stripe = to_stripe_amount(converted, payer_currency)
+            if converted_stripe <= 0:
+                continue
 
-                product_data: dict = {"name": record.title or "Expense Item"}
-                if getattr(record, "merchant", None):
-                    product_data["description"] = f"Merchant: {record.merchant}"
+            product_data: dict = {"name": record.title or "Expense Item"}
+            if getattr(record, "merchant", None):
+                product_data["description"] = f"Merchant: {record.merchant}"
 
-                line_items.append(
-                    {
-                        "price_data": {
-                            "currency": payer_currency,
-                            "product_data": product_data,
-                            "unit_amount": converted_stripe,
-                        },
-                        "quantity": 1,
-                    }
-                )
-                actual_total_cents += converted_stripe
-                actual_total_amount += converted
+            line_items.append(
+                {
+                    "price_data": {
+                        "currency": payer_currency,
+                        "product_data": product_data,
+                        "unit_amount": converted_stripe,
+                    },
+                    "quantity": 1,
+                }
+            )
+            actual_total_cents += converted_stripe
+            actual_total_amount += converted
 
         if not line_items:
             fallback_cents = self.converted_total_cents(payer_currency)
@@ -520,7 +563,7 @@ class ReimbursementPackage(models.Model):
                 {
                     "price_data": {
                         "currency": payer_currency,
-                        "product_data": {"name": self.title},
+                        "product_data": {"name": self.title or "Reimbursement"},
                         "unit_amount": fallback_cents,
                     },
                     "quantity": 1,
@@ -538,24 +581,7 @@ class ReimbursementPackage(models.Model):
     def platform_fee_cents(self, total_cents: int, payer_currency: str, rates) -> int:
         """Compute the platform fee for a Connect transfer, clamped to the
         converted Stripe minimum and the payment total."""
-        platform_fee_cents = int(
-            (Decimal(str(total_cents)) * PLATFORM_FEE_PERCENT).quantize(
-                Decimal("1"), rounding=ROUND_DOWN
-            )
-        )
-        min_fee_converted = convert_currency(
-            Decimal(STRIPE_MINIMUM_FEE_CENTS) / Decimal("100"),
-            "usd",
-            payer_currency,
-            rates=rates,
-        )
-        min_fee_units = to_stripe_amount(min_fee_converted, payer_currency)
-
-        if platform_fee_cents < min_fee_units:
-            platform_fee_cents = min_fee_units
-        if platform_fee_cents > total_cents:
-            platform_fee_cents = total_cents
-        return platform_fee_cents
+        return PlatformFeeCalculator.compute(total_cents, payer_currency, rates)
 
     def detail_items(self, user_currency: str) -> PackageDetailItems:
         """Compute per-record display values for the package detail page.
