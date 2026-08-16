@@ -153,6 +153,32 @@ class ConfirmUploadViewTest(TestCase):
         self.doc.refresh_from_db()
         self.assertEqual(self.doc.status, DocumentStatus.UPLOADED)
 
+    @patch("documents.services.validation.get_r2_object_head")
+    @patch("records.services.kickoff_ocr_scan")
+    def test_confirm_supporting_doc_skips_ocr(self, mock_kickoff, mock_head):
+        mock_head.return_value = {"ContentLength": 100, "ContentType": "image/jpeg"}
+        record = Record.objects.create(
+            user=self.user,
+            title="Supporting host record",
+            record_type=Record.RecordTypes.FINANCIAL_DOCUMENT,
+        )
+        doc = DocumentData.objects.create(
+            user=self.user,
+            filepath="users/1/supporting.pdf",
+            file_hash=_make_hash(b"supporting content"),
+            associated_record=record,
+            did_ocr=False,
+        )
+        self.client.force_login(self.user)
+        response = self.client.post(
+            self.url,
+            {"document_id": doc.id, "key": doc.filepath},
+        )
+        self.assertEqual(response.status_code, 200)
+        mock_kickoff.assert_not_called()
+        doc.refresh_from_db()
+        self.assertEqual(doc.status, DocumentStatus.UPLOADED)
+
     def test_confirm_not_owned(self):
         user2 = User.objects.create_user(username="otheruser", password="pass")
         self.client.force_login(user2)

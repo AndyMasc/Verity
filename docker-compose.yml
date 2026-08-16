@@ -1,3 +1,4 @@
+# MESSAGE BROKER AND CACHE ARE ONE CLICK DEPLOYED VIA DOKPLOY/COOLIFY. DATABASE IS HOSTED FOR COMPLIANCE
 services:
   web:
     build:
@@ -8,13 +9,15 @@ services:
     # Uvicorn is async, so 2 workers can lots of concurrent requests.
     command: >
       sh -c "python manage.py collectstatic --noinput &&
-      uvicorn Verity.asgi:application --host 0.0.0.0 --port 8000 --workers 4 --timeout-keep-alive 5 --log-level warning"
+      python -O -m uvicorn Verity.asgi:application --host 0.0.0.0 --port 8000 --workers 4 --timeout-keep-alive 5 --log-level warning"
     expose:
       - "8000"
     environment:
       - PYTHON_JIT=1
     env_file:
       - .env
+    networks:
+      - dokploy-network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/core/health/"]
       interval: 30s
@@ -26,9 +29,11 @@ services:
   worker:
     image: main-image:latest # Reuses web image, rather than building a brand new one
     restart: always
-    command: python manage.py rundramatiq --processes=1 --threads=8 --prefetch=2 --max-tasks=5000
+    command: python manage.py rundramatiq --processes=2 --threads=8 --prefetch=2 --max-tasks=5000
     env_file:
       - .env
+    networks:
+      - dokploy-network
     depends_on:
       web:
         condition: service_healthy
@@ -43,3 +48,7 @@ services:
     depends_on:
       web:
         condition: service_healthy
+
+networks: # Since using dokploy 1 click lavin mq and valkey, we need to connect to the external dokploy network so they can communicate with each other.
+  dokploy-network:
+    external: true

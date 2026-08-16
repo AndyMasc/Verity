@@ -27,6 +27,7 @@ RUN --mount=type=cache,target=/root/.cache/pip pip install -r requirements.txt
 FROM python:3.13-slim-bookworm AS runner
 
 ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
 ENV DJANGO_SETTINGS_MODULE=Verity.settings
 # Dispatcher in Verity/settings/__init__.py loads production.py when set.
 # Overridable at runtime via env_file/Coolify envs.
@@ -58,7 +59,7 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/core/health/ || exit 1
 
-# Fallback if no start command is given on the Coolify dash: runs the `web` process.
+# Fallback if no start command is given on the Coolify/dokploy/Heroku... dash: runs the `web` process.
 # In prod, run multiple instances of the app. One for web, one for each dramatiq
 # queue (each uses a different number of threads), one for periodiq — see Procfile.
 # Uses the ASGI app with uvicorn's worker, matching Procfile's `web` process.

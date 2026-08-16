@@ -166,7 +166,7 @@ python manage.py migrate
 python manage.py tailwind install           # downloads the standalone Tailwind binary
 
 # 4. Infrastructure (Postgres + Redis + RabbitMQ)
-docker compose up -d
+docker compose up -d # For dev: docker compose -f docker-compose.dev.yml up
 
 # 5. Run — four processes (or: honcho -f Procfile.dev start)
 python manage.py runserver                  # http://localhost:8000
