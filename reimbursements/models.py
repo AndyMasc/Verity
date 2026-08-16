@@ -386,7 +386,7 @@ class ReimbursementPackage(models.Model):
         return checkout.converted_total(self, to_currency)
 
     def converted_total_cents(self, to_currency: str | None = None) -> int:
-        """"converted_total" in the target currency's smallest unit."""
+        """ "converted_total" in the target currency's smallest unit."""
         return checkout.converted_total_cents(self, to_currency)
 
     @property

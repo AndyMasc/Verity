@@ -46,7 +46,7 @@ def converted_total(package, to_currency: str | None = None) -> Decimal:
 
 
 def converted_total_cents(package, to_currency: str | None = None) -> int:
-    """"converted_total" expressed in the target currency's smallest unit."""
+    """ "converted_total" expressed in the target currency's smallest unit."""
     target = to_currency or package.currency
     return to_stripe_amount(converted_total(package, target), target)
 
