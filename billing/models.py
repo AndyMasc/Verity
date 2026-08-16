@@ -56,7 +56,7 @@ class CustomUser(AbstractUser):
         return session_customer_matches or email_matches
 
     def _get_user_from_client_reference(
-        self, session: stripe.checkout.Session, customer_email: str | None
+        self, session: stripe.checkout.Session
     ) -> CustomUser | None:
         """Extract and validate user from client reference ID."""
         if not session.client_reference_id:
@@ -79,7 +79,7 @@ class CustomUser(AbstractUser):
         if self._session_matches_current_user(session, customer_email):
             return self
 
-        subscription_holder = self._get_user_from_client_reference(session, customer_email)
+        subscription_holder = self._get_user_from_client_reference(session)
         if subscription_holder is None:
             return None
 
