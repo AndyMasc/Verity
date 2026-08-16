@@ -3,7 +3,8 @@
 Data layer for reimbursement packages, Stripe Connect accounts, payments,
 webhook idempotency markers, and external-payer email verification. Workflows
 (marking packages paid, refunds, checkout sessions, access revocation) are
-delegated to services.py and webhooks.py; models keep fields, constraints,
+delegated to services.py and webhooks.py; currency/fee math lives in money.py
+and checkout presentation in checkout.py. Models keep fields, constraints,
 and simple derived state.
 """
 
@@ -11,9 +12,9 @@ from __future__ import annotations
 
 import logging
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import timedelta
-from decimal import ROUND_DOWN, Decimal
+from decimal import Decimal
 from typing import TYPE_CHECKING, ClassVar
 
 from django.conf import settings
@@ -29,83 +30,41 @@ from core.currencies import (
     from_stripe_amount,
     to_stripe_amount,
 )
-from core.exchange_rates import convert as convert_currency
-from core.exchange_rates import get_rates
 from records.models import Record
+
+from . import checkout
+from .checkout import CheckoutItems, PackageDetailItems
+from .money import PlatformFeeCalculator
 
 if TYPE_CHECKING:
     from django.contrib.auth.base_user import AbstractBaseUser as User
 
 logger = logging.getLogger(__name__)
 
-STRIPE_MINIMUM_FEE_CENTS = 50
-PLATFORM_FEE_PERCENT = Decimal("0.03")
 
+@dataclass(frozen=True)
+class PackageDraft:
+    """Validated inputs for creating a reimbursement package ("create_for").
 
-class CurrencyConverter:
-    """Handles currency conversion and batch operations."""
+    Bundles the parameters so callers pass one object instead of a long
+    argument list. The caller is responsible for validation; the queryset
+    method only builds the row and its record links.
+    """
 
-    @staticmethod
-    def convert_batch(items: list[tuple[Decimal, str]], target_currency: str) -> Decimal:
-        """Convert a batch of (amount, currency) tuples to target currency."""
-        from core.exchange_rates import convert_batch
+    creator: User
+    recipient: User | None
+    title: str
+    records: models.QuerySet
+    currency: str | None = None
+    days_valid: int = 7
+    recipient_email: str | None = None
+    status: str | None = None
 
-        return convert_batch(items, target_currency)
-
-    @staticmethod
-    def get_active_record_items(cache: dict, records_queryset) -> list[tuple[Decimal, str]]:
-        """Extract active record balance and currency pairs from cache or queryset."""
-        if "records" in cache:
-            return [(r.balance, r.currency) for r in cache["records"] if r.is_active and r.balance]
-        return list(
-            records_queryset.filter(is_active=True)
-            .exclude(balance__isnull=True)
-            .values_list("balance", "currency")
+    def resolve_currency(self) -> str:
+        """The package currency: the draft's, or the creator's default."""
+        return self.currency or getattr(
+            getattr(self.creator, "settings", None), "default_currency", "usd"
         )
-
-
-class PlatformFeeCalculator:
-    """Handles Stripe platform fee calculations."""
-
-    @staticmethod
-    def compute(total_cents: int, payer_currency: str, rates) -> int:
-        """Compute platform fee clamped to minimum and total."""
-        platform_fee_cents = int(
-            (Decimal(str(total_cents)) * PLATFORM_FEE_PERCENT).quantize(
-                Decimal("1"), rounding=ROUND_DOWN
-            )
-        )
-        min_fee_converted = convert_currency(
-            Decimal(STRIPE_MINIMUM_FEE_CENTS) / Decimal("100"),
-            "usd",
-            payer_currency,
-            rates=rates,
-        )
-        min_fee_units = to_stripe_amount(min_fee_converted, payer_currency)
-
-        if platform_fee_cents < min_fee_units:
-            platform_fee_cents = min_fee_units
-        if platform_fee_cents > total_cents:
-            platform_fee_cents = total_cents
-        return platform_fee_cents
-
-
-@dataclass
-class CheckoutItems:
-    """Line items and totals for a Stripe Checkout Session."""
-
-    line_items: list[dict] = field(default_factory=list)
-    total_cents: int = 0
-    total_amount: Decimal = Decimal("0.00")
-
-
-@dataclass
-class PackageDetailItems:
-    """Per-record display values for the package detail page."""
-
-    record_items: list[dict] = field(default_factory=list)
-    converted_total: Decimal = Decimal("0.00")
-    original_total: Decimal = Decimal("0.00")
 
 
 class ReimbursementPackageQuerySet(models.QuerySet):
@@ -119,39 +78,23 @@ class ReimbursementPackageQuerySet(models.QuerySet):
             models.Prefetch("records", queryset=Record.objects.filter(is_active=True))
         )
 
-    def create_for(
-        self,
-        *,
-        creator,
-        recipient,
-        title,
-        records,
-        currency: str | None = None,
-        days_valid: int = 7,
-        recipient_email: str | None = None,
-        status: str | None = None,
-    ):
-        """Create a package and attach the given (validated, owned, active) records.
+    def create_for(self, draft: PackageDraft):
+        """Create a package from a validated "PackageDraft", attaching its records atomically.
 
-        Returns the created package. The caller is responsible for input
-        validation; this only builds the row and its record links atomically.
-        "recipient_email" records the address the package was sent to, even
-        when it resolves to a registered user.
+        Returns the created package. "recipient_email" records the address
+        the package was sent to, even when it resolves to a registered user.
         """
-        package_currency = currency or getattr(
-            getattr(creator, "settings", None), "default_currency", "usd"
-        )
         with transaction.atomic():
             package = self.create(
-                creator=creator,
-                recipient=recipient,
-                recipient_email=recipient_email or "",
-                title=title,
-                currency=package_currency,
-                status=status or ReimbursementPackage.Status.OPEN,
-                expires_at=timezone.now() + timedelta(days=days_valid),
+                creator=draft.creator,
+                recipient=draft.recipient,
+                recipient_email=draft.recipient_email or "",
+                title=draft.title,
+                currency=draft.resolve_currency(),
+                status=draft.status or ReimbursementPackage.Status.OPEN,
+                expires_at=timezone.now() + timedelta(days=draft.days_valid),
             )
-            package.records.set(records)
+            package.records.set(draft.records)
         return package
 
 
@@ -439,16 +382,12 @@ class ReimbursementPackage(models.Model):
         return to_stripe_amount(self.total_amount, self.currency)
 
     def converted_total(self, to_currency: str | None = None) -> Decimal:
-        target = to_currency or self.currency
-        cache = getattr(self, "_prefetched_objects_cache", {})
-        items = CurrencyConverter.get_active_record_items(cache, self.records)
-        if not items:
-            return Decimal("0.00")
-        return CurrencyConverter.convert_batch(items, target)
+        """Sum of active record balances converted to the given currency."""
+        return checkout.converted_total(self, to_currency)
 
     def converted_total_cents(self, to_currency: str | None = None) -> int:
-        target = to_currency or self.currency
-        return to_stripe_amount(self.converted_total(target), target)
+        """"converted_total" in the target currency's smallest unit."""
+        return checkout.converted_total_cents(self, to_currency)
 
     @property
     def payout_account_id(self) -> str | None:
@@ -517,66 +456,8 @@ class ReimbursementPackage(models.Model):
         return None
 
     def build_line_items(self, payer_currency: str) -> CheckoutItems:
-        """Build Stripe line items and totals for the payer's currency.
-
-        Converts each active record balance into the payer's currency. Falls
-        back to a single line item for the whole package when no individual
-        record converts to a positive Stripe amount.
-        """
-        rates = get_rates("USD")
-        line_items: list[dict] = []
-        actual_total_cents = 0
-        actual_total_amount = Decimal("0")
-
-        for record in self.records.filter(is_active=True):
-            if not record.balance or record.balance <= 0:
-                continue
-            converted = convert_currency(
-                record.balance, record.currency, payer_currency, rates=rates
-            )
-            converted_stripe = to_stripe_amount(converted, payer_currency)
-            if converted_stripe <= 0:
-                continue
-
-            product_data: dict = {"name": record.title or "Expense Item"}
-            if getattr(record, "merchant", None):
-                product_data["description"] = f"Merchant: {record.merchant}"
-
-            line_items.append(
-                {
-                    "price_data": {
-                        "currency": payer_currency,
-                        "product_data": product_data,
-                        "unit_amount": converted_stripe,
-                    },
-                    "quantity": 1,
-                }
-            )
-            actual_total_cents += converted_stripe
-            actual_total_amount += converted
-
-        if not line_items:
-            fallback_cents = self.converted_total_cents(payer_currency)
-            if fallback_cents <= 0:
-                return CheckoutItems()
-            line_items.append(
-                {
-                    "price_data": {
-                        "currency": payer_currency,
-                        "product_data": {"name": self.title or "Reimbursement"},
-                        "unit_amount": fallback_cents,
-                    },
-                    "quantity": 1,
-                }
-            )
-            actual_total_cents = fallback_cents
-            actual_total_amount = self.converted_total(payer_currency)
-
-        return CheckoutItems(
-            line_items=line_items,
-            total_cents=actual_total_cents,
-            total_amount=actual_total_amount,
-        )
+        """Build Stripe line items and totals for the payer's currency."""
+        return checkout.build_line_items(self, payer_currency)
 
     def platform_fee_cents(self, total_cents: int, payer_currency: str, rates) -> int:
         """Compute the platform fee for a Connect transfer, clamped to the
@@ -584,60 +465,8 @@ class ReimbursementPackage(models.Model):
         return PlatformFeeCalculator.compute(total_cents, payer_currency, rates)
 
     def detail_items(self, user_currency: str) -> PackageDetailItems:
-        """Compute per-record display values for the package detail page.
-
-        Compares each record's originally requested amount (from its first
-        history entry) against the current balance, both converted to the
-        viewer's currency.
-        """
-        all_records = list(self.records.all())
-        user_rates = get_rates("USD")
-        record_items: list[dict] = []
-        converted_total = Decimal("0")
-        original_total = Decimal("0")
-
-        if all_records:
-            HistoricalRecord = Record.history.model
-            record_ids = [r.id for r in all_records]
-            first_histories: dict[int, object] = {}
-            for h in HistoricalRecord.objects.filter(id__in=record_ids).order_by("history_date"):
-                if h.id not in first_histories:
-                    first_histories[h.id] = h
-
-            for rec in all_records:
-                first = first_histories.get(rec.id)
-                orig_bal = first.balance if first else rec.balance
-                orig_cc = first.currency if first else rec.currency
-
-                orig_converted = convert_currency(
-                    orig_bal, orig_cc, user_currency, rates=user_rates
-                )
-                current_converted = (
-                    convert_currency(rec.balance, rec.currency, user_currency, rates=user_rates)
-                    if rec.balance
-                    else orig_converted
-                )
-
-                converted_total += current_converted
-                original_total += convert_currency(
-                    orig_bal, orig_cc, self.currency, rates=user_rates
-                )
-
-                record_items.append(
-                    {
-                        "record": rec,
-                        "original_converted": orig_converted,
-                        "requested_converted": current_converted,
-                        "converted_currency": user_currency,
-                        "is_inactive": not rec.is_active,
-                    }
-                )
-
-        return PackageDetailItems(
-            record_items=record_items,
-            converted_total=converted_total,
-            original_total=original_total,
-        )
+        """Compute per-record display values for the package detail page."""
+        return checkout.detail_items(self, user_currency)
 
     @classmethod
     def prefetch_converted_totals(
@@ -648,19 +477,7 @@ class ReimbursementPackage(models.Model):
         Mutates "_prefetched_converted_total" on the given instances so
         "display_total" avoids per-record conversion queries on the list page.
         """
-        if not packages:
-            return packages
-        rates = get_rates("USD")
-        for pkg in packages:
-            active = [r for r in pkg.records.all() if r.is_active and r.balance]
-            if not active:
-                pkg._prefetched_converted_total = Decimal("0.00")
-                continue
-            total = Decimal("0.00")
-            for r in active:
-                total += convert_currency(r.balance, r.currency, to_currency, rates=rates)
-            pkg._prefetched_converted_total = total
-        return packages
+        return checkout.prefetch_converted_totals(packages, to_currency)
 
 
 class ProcessedStripeEvent(models.Model):

@@ -10,7 +10,7 @@ from django.utils import timezone
 
 from records.models import Record
 
-from reimbursements.models import PackagePayment, ReimbursementPackage
+from reimbursements.models import PackageDraft, PackagePayment, ReimbursementPackage
 
 from ._helpers import _package, _record, _stripe_account, _user
 
@@ -201,7 +201,7 @@ class PackageBusinessLogicTest(TestCase):
         self.assertFalse(ok)
         self.assertIn("payouts", err)
 
-    @patch("reimbursements.models.get_rates", return_value={})
+    @patch("reimbursements.checkout.get_rates", return_value={})
     def test_build_line_items(self, _mock_rates):
         r1 = _record(self.creator, Decimal("25.00"))
         r2 = _record(self.creator, Decimal("5.00"))
@@ -211,7 +211,7 @@ class PackageBusinessLogicTest(TestCase):
         self.assertEqual(items.total_cents, 3000)
         self.assertEqual(items.total_amount, Decimal("30.00"))
 
-    @patch("reimbursements.models.get_rates", return_value={})
+    @patch("reimbursements.checkout.get_rates", return_value={})
     def test_build_line_items_empty_when_nothing_payable(self, _mock_rates):
         r = _record(self.creator, Decimal("0.00"))
         self.pkg.records.add(r)
@@ -277,18 +277,20 @@ class PackageBusinessLogicTest(TestCase):
         r2 = _record(self.creator, Decimal("20.00"))
         records = Record.objects.filter(id__in=[r1.id, r2.id], user=self.creator, is_active=True)
         pkg = ReimbursementPackage.objects.create_for(
-            creator=self.creator,
-            recipient=self.recipient,
-            title="From Manager",
-            records=records,
-            days_valid=14,
+            PackageDraft(
+                creator=self.creator,
+                recipient=self.recipient,
+                title="From Manager",
+                records=records,
+                days_valid=14,
+            )
         )
         self.assertEqual(pkg.title, "From Manager")
         self.assertEqual(pkg.records.count(), 2)
         self.assertEqual(pkg.currency, "usd")
         self.assertLess(pkg.expires_at, timezone.now() + timedelta(days=15))
 
-    @patch("reimbursements.models.get_rates", return_value={})
+    @patch("reimbursements.checkout.get_rates", return_value={})
     def test_detail_items(self, _mock_rates):
         r1 = _record(self.creator, Decimal("10.00"))
         r2 = _record(self.creator, Decimal("5.00"))
@@ -298,7 +300,7 @@ class PackageBusinessLogicTest(TestCase):
         self.assertEqual(detail.converted_total, Decimal("15.00"))
         self.assertEqual(detail.original_total, Decimal("15.00"))
 
-    @patch("reimbursements.models.get_rates", return_value={})
+    @patch("reimbursements.checkout.get_rates", return_value={})
     def test_prefetch_converted_totals(self, _mock_rates):
         r1 = _record(self.creator, Decimal("12.50"))
         self.pkg.records.add(r1)

@@ -22,7 +22,7 @@ from billing.services import (
 from core.exchange_rates import get_rates
 from records.models import Record
 
-from .models import PackagePayment, ReimbursementPackage
+from .models import PackageDraft, PackagePayment, ReimbursementPackage
 
 logger = logging.getLogger(__name__)
 
@@ -233,17 +233,19 @@ def create_reimbursement_package(
         return None, "No valid records found."
 
     package = ReimbursementPackage.objects.create_for(
-        creator=creator,
-        recipient=recipient,
-        recipient_email=recipient_email,
-        title=title,
-        records=records,
-        days_valid=days_valid,
-        status=(
-            ReimbursementPackage.Status.OPEN
-            if recipient is not None
-            else ReimbursementPackage.Status.QUEUED
-        ),
+        PackageDraft(
+            creator=creator,
+            recipient=recipient,
+            recipient_email=recipient_email,
+            title=title,
+            records=records,
+            days_valid=days_valid,
+            status=(
+                ReimbursementPackage.Status.OPEN
+                if recipient is not None
+                else ReimbursementPackage.Status.QUEUED
+            ),
+        )
     )
     if recipient is not None:
         _grant_package_access(package)

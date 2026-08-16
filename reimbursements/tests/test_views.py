@@ -405,7 +405,7 @@ class PublicPayFlowTest(TestCase):
 
         resp = self._post(self.verify_code_url, {"email": "external@test.com", "code": "123456"})
         self.assertEqual(resp.status_code, 302)
-        with patch("reimbursements.models.get_rates", return_value={}):
+        with patch("reimbursements.checkout.get_rates", return_value={}):
             page = self.client.get(self.pay_url)
         self.assertContains(page, "External Request")
         self.assertContains(page, "Total Due")
