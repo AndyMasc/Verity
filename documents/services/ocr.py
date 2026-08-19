@@ -184,7 +184,7 @@ def extract(document_id: int) -> dict[str, Any]:
 
     doc_lookup = DocumentData.objects.filter(id=document_id).values("status", "did_ocr").first()
     if not doc_lookup:
-        logger.error("Document %s does not exist.", document_id)
+        logger.warning("Document %s does not exist; skipping OCR.", document_id)
         return {"error": "Document not found."}
 
     if doc_lookup["did_ocr"]:

@@ -5,50 +5,16 @@ uses the Resend provider through django-anymail.
 """
 
 import logging
-from dataclasses import asdict, dataclass
 
 import dramatiq
 from anymail.exceptions import AnymailRequestsAPIError
 from django.contrib.auth import get_user_model
 from django.core.mail import EmailMultiAlternatives, get_connection
-from dramatiq.encoder import JSONEncoder
 from webpush import send_user_notification
 
+from .encoding import EmailTaskPayload
+
 logger = logging.getLogger(__name__)
-
-
-@dataclass(frozen=True)
-class EmailTaskPayload:
-    """Structured payload for asynchronous email delivery."""
-
-    subject: str
-    message: str
-    from_email: str
-    recipient_list: list[str]
-    html_message: str | None = None
-
-
-class EmailPayloadEncoder(JSONEncoder):
-    """Dramatiq JSON encoder that serializes "EmailTaskPayload" dataclasses.
-
-    Actors only carry JSON-safe arguments over the broker, so the payload is
-    converted with "asdict" at enqueue time while call sites keep the typed
-    dataclass. Selected via "DRAMATIQ_ENCODER" in settings.
-    """
-
-    def encode(self, data):
-        return super().encode(_json_safe(data))
-
-
-def _json_safe(value):
-    """Recursively replace "EmailTaskPayload" instances with plain dicts."""
-    if isinstance(value, EmailTaskPayload):
-        return asdict(value)
-    if isinstance(value, dict):
-        return {key: _json_safe(item) for key, item in value.items()}
-    if isinstance(value, (list, tuple)):
-        return [_json_safe(item) for item in value]
-    return value
 
 
 def _build_email_message(payload: EmailTaskPayload, connection):
@@ -72,7 +38,7 @@ def _is_permanent_email_error(error: AnymailRequestsAPIError) -> bool:
 
 
 @dramatiq.actor(max_retries=3)
-def send_background_email(payload: EmailTaskPayload):
+def send_background_email(payload: EmailTaskPayload | dict):
     """Send an email via the backend as a background task.
 
     Supports optional HTML content for richer email templates. Permanent
@@ -80,6 +46,8 @@ def send_background_email(payload: EmailTaskPayload):
     doesn't retry them; transient failures (network, 5xx, rate limits) raise
     so Dramatiq retries.
     """
+    if isinstance(payload, dict):
+        payload = EmailTaskPayload(**payload)
     resend_connection = get_connection(backend="anymail.backends.resend.EmailBackend")
     email = _build_email_message(payload, resend_connection)
 

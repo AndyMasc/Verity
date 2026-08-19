@@ -23,6 +23,7 @@ from plaid.model.item_public_token_exchange_request import (
     ItemPublicTokenExchangeRequest,
 )
 from plaid.model.sandbox_item_fire_webhook_request import SandboxItemFireWebhookRequest
+from plaid.model.webhook_type import WebhookType
 
 from records.models import Record
 
@@ -102,7 +103,8 @@ def trigger_initial_sync(plaid_item: PlaidItem) -> None:
             plaid_client.sandbox_item_fire_webhook(
                 SandboxItemFireWebhookRequest(
                     access_token=plaid_item.access_token,
-                    webhook_code="DEFAULT_UPDATE",
+                    webhook_code="SYNC_UPDATES_AVAILABLE",
+                    webhook_type=WebhookType("TRANSACTIONS"),
                 )
             )
         except plaid.ApiException:

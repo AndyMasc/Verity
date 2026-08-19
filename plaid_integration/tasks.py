@@ -15,6 +15,7 @@ from django.db import IntegrityError
 from django.db import transaction as db_transaction
 from django.db.models import Q
 from django.utils import timezone
+from periodiq import cron
 from plaid.model.transactions_sync_request import TransactionsSyncRequest
 
 from billing.models import CustomUser as User
@@ -22,6 +23,7 @@ from records.models import Folder, Record
 
 from .models import PlaidItem
 from .plaid_client import client
+from .services import dispatch_sync
 
 logger: logging.Logger = logging.getLogger(__name__)
 
@@ -284,3 +286,16 @@ def sync_and_convert_for_item_task(plaid_item_id: int | str) -> dict[str, Any]:
 
     _match_records_to_documents(plaid_item, plaid_item_id)
     return {"status": "synced", **stats}
+
+
+@dramatiq.actor(max_retries=3, min_backoff=2, periodic=cron("0 * * * *"))
+def periodic_plaid_sync_task() -> None:
+    """Poll Transactions Sync for every linked item hourly as a webhook fallback.
+
+    Plaid webhooks are best-effort; a missed or undelivered webhook would
+    otherwise leave transactions un-synced until a manual sync. This task
+    dispatches through the atomic per-item cooldown so it can never race
+    a webhook-triggered sync for the same item.
+    """
+    for plaid_item in PlaidItem.objects.all().only("id", "item_id"):
+        dispatch_sync(plaid_item)

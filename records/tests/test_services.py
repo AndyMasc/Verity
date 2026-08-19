@@ -8,6 +8,7 @@ boundary conditions.
 import hashlib
 from datetime import date
 from decimal import Decimal
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 
@@ -229,13 +230,17 @@ class KickoffOCRScanTest(TestCase):
         cache.clear()
 
     def test_kicks_off_extraction(self):
-        warning = kickoff_ocr_scan(self.user, self.doc)
+        with patch("documents.tasks.extract_document.send") as mock_send:
+            warning = kickoff_ocr_scan(self.user, self.doc)
         self.assertIsNone(warning)
         self.assertEqual(cache.get(f"ocr_status_{self.doc.id}"), "processing")
+        mock_send.assert_called_once_with(self.doc.id)
 
     def test_second_kickoff_is_noop(self):
-        kickoff_ocr_scan(self.user, self.doc)
-        self.assertIsNone(kickoff_ocr_scan(self.user, self.doc))
+        with patch("documents.tasks.extract_document.send") as mock_send:
+            kickoff_ocr_scan(self.user, self.doc)
+            self.assertIsNone(kickoff_ocr_scan(self.user, self.doc))
+        mock_send.assert_called_once_with(self.doc.id)
 
     def test_returns_warning_when_scan_limit_reached(self):
         from django.utils import timezone

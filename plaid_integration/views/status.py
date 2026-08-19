@@ -9,6 +9,7 @@ from django.core.cache import cache
 from django.db.models import Count
 from plaid.model.item_remove_request import ItemRemoveRequest
 from plaid.model.sandbox_item_fire_webhook_request import SandboxItemFireWebhookRequest
+from plaid.model.webhook_type import WebhookType
 from rest_framework import authentication, permissions
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -95,7 +96,8 @@ class SyncTransactionsView(APIView):
                 client.sandbox_item_fire_webhook(
                     SandboxItemFireWebhookRequest(
                         access_token=plaid_item.access_token,
-                        webhook_code="DEFAULT_UPDATE",
+                        webhook_code="SYNC_UPDATES_AVAILABLE",
+                        webhook_type=WebhookType("TRANSACTIONS"),
                     )
                 )
             except plaid.ApiException:

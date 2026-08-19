@@ -478,7 +478,7 @@ UNFOLD = {
 
 
 # Dramatiq broker
-DRAMATIQ_ENCODER = "core.tasks.EmailPayloadEncoder"
+DRAMATIQ_ENCODER = "core.encoding.EmailPayloadEncoder"
 DRAMATIQ_BROKER = {
     "BROKER": "dramatiq.brokers.rabbitmq.RabbitmqBroker",
     "OPTIONS": {
