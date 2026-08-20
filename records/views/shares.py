@@ -140,6 +140,7 @@ class BulkShareView(LoginRequiredMixin, View):
 
         recipients, unknown = share_services.resolve_recipients(emails)
         total_shares = 0
+        self_skipped = 0
         for record in owned:
             try:
                 shares, _ = share_services.share_record_with_users(
@@ -149,6 +150,7 @@ class BulkShareView(LoginRequiredMixin, View):
                     recipients=recipients,
                 )
             except share_services.SelfShareError:
+                self_skipped += 1
                 continue
             total_shares += len(shares)
 
@@ -158,6 +160,7 @@ class BulkShareView(LoginRequiredMixin, View):
                 "shared": total_shares,
                 "records": len(owned),
                 "unknown": sorted(unknown),
+                "self_skipped": self_skipped,
             }
         )
 

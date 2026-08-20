@@ -54,6 +54,11 @@ INTERNAL_IPS = [
     "127.0.0.1",  # localhost
 ]
 
+# See ci.py: cachalot's Redis cache keys collide across xdist workers' separate
+# test databases, racing Django's post_migrate contenttype inserts during test
+# database creation.
+CACHALOT_ENABLED = False
+
 CONTENT_SECURITY_POLICY = {
     "DIRECTIVES": {
         "default-src": (

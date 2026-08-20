@@ -17,7 +17,6 @@
             recipientEmail: '',
             includeDocuments: true,
             recipientStatus: '',
-            recipientName: '',
             recipientRegistered: false,
             packageError: '',
             emailCheckTimeout: null,
@@ -79,7 +78,6 @@
                 this.recipientEmail = '';
                 this.includeDocuments = true;
 this.recipientStatus = '';
-                this.recipientName = '';
                 this.recipientRegistered = false;
                 this.showPackageModal = true;
             },
@@ -118,16 +116,21 @@ this.recipientStatus = '';
                     if (response.ok) {
                         this.showShareModal = false;
                         this.selectedIds = [];
-                        this._toast(
-                            'Shared ' + data.shared + ' record' + (data.shared === 1 ? '' : 's') +
-                            ' with ' + emails.length + ' recipient' + (emails.length === 1 ? '' : 's') + '.',
-                            25
-                        );
-                        if (data.unknown?.length) {
+                        if (data.shared > 0) {
                             this._toast(
-                                'No account found for: ' + data.unknown.join(', '),
-                                40
+                                'Shared ' + data.shared + ' record' + (data.shared === 1 ? '' : 's') +
+                                ' with ' + emails.length + ' recipient' + (emails.length === 1 ? '' : 's') + '.',
+                                25
                             );
+                            if (data.unknown?.length) {
+                                this._toast('No account found for: ' + data.unknown.join(', '), 40);
+                            }
+                        } else if (data.self_skipped > 0) {
+                            this._toast('Cannot share records with yourself.', 40);
+                        } else if (data.unknown?.length) {
+                            this._toast('No account found for: ' + data.unknown.join(', '), 40);
+                        } else {
+                            this._toast('Selected records are already shared with the recipient.', 40);
                         }
                     } else {
                         this.shareError = data.error || 'Failed to share records.';
@@ -141,8 +144,7 @@ this.recipientStatus = '';
 
             onEmailInput() {
                 clearTimeout(this.emailCheckTimeout);
-                this.recipientStatus = '';
-                this.recipientName = '';
+this.recipientStatus = '';
                 this.recipientRegistered = false;
                 if (!this.recipientEmail.trim() || !this.recipientEmail.includes('@')) return;
                 this.emailCheckTimeout = setTimeout(() => this.checkEmail(), 500);
@@ -162,7 +164,6 @@ this.recipientStatus = '';
                     const data = await resp.json();
                     if (data.valid) {
                         this.recipientStatus = 'valid';
-                        this.recipientName = data.name || '';
                         this.recipientRegistered = !!data.registered;
                     } else {
                         this.recipientStatus = 'invalid';

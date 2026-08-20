@@ -28,6 +28,16 @@ PASSWORD_HASHERS = [
     "django.contrib.auth.hashers.MD5PasswordHasher",
 ]
 
+# Cachalot's query cache is keyed by DB alias + SQL only, not by the actual
+# database name. Under pytest-xdist each worker creates its own test database
+# (test_*_gw0, test_*_gw1) but they share the same Redis cache keys, so one
+# worker's cached query results (e.g. Django's post_migrate contenttype
+# lookup) can be served to another worker mid-migration, causing duplicate
+# inserts ("duplicate key value violates unique constraint
+# django_content_type_app_label_model_76bd3d3b_uniq"). Tests don't need query
+# caching, so disable it.
+CACHALOT_ENABLED = False
+
 # Disable rate limiting in CI tests (short-circuits before any cache lookup)
 RATELIMIT_ENABLE = False
 

@@ -177,13 +177,13 @@
                             </svg>
                         </div>
                     </div>
-                    <template x-if="recipientStatus === 'valid' && recipientName">
+                    <template x-if="recipientStatus === 'valid' && recipientRegistered">
                         <p class="mt-1.5 text-[12px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1.5">
                             <span class="size-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400"></span>
-                            <span x-text="'Verified: ' + recipientName"></span>
+                            <span>Registered Verity user</span>
                         </p>
                     </template>
-                    <template x-if="recipientStatus === 'valid' && !recipientName">
+                    <template x-if="recipientStatus === 'valid' && !recipientRegistered">
                         <p class="mt-1.5 text-[12px] text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1.5">
                             <span class="size-1.5 rounded-full bg-amber-500 dark:bg-amber-400"></span>
                             <span>External recipient — they'll verify their email to pay</span>

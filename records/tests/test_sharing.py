@@ -1,5 +1,6 @@
 """Tests for record sharing: access matrix, attribution, gating, audit."""
 
+import json
 from unittest import mock
 
 from django.contrib.auth import get_user_model
@@ -294,6 +295,46 @@ class TestShareViews(SharingTestCase):
         response = self.client.get(reverse("records:record_shares_panel", args=[self.record.pk]))
         assert response.status_code == 200
         assert self.recipient.email.encode() in response.content
+
+    def test_bulk_share_creates_one_share_per_record(self):
+        give_pro_subscription(self.owner)
+        second_record = Record.objects.create(
+            user=self.owner, title="Second", record_type="expense_receipt"
+        )
+        self.client.force_login(self.owner)
+        response = self.client.post(
+            reverse("records:bulk_share"),
+            data=json.dumps(
+                {
+                    "record_ids": [self.record.pk, second_record.pk],
+                    "emails": self.recipient.email,
+                }
+            ),
+            content_type="application/json",
+        )
+        assert response.status_code == 200, response.content
+        data = response.json()
+        assert data["shared"] == 2
+        assert data["unknown"] == []
+        assert data["self_skipped"] == 0
+
+    def test_bulk_share_self_email_reports_skipped(self):
+        give_pro_subscription(self.owner)
+        self.client.force_login(self.owner)
+        response = self.client.post(
+            reverse("records:bulk_share"),
+            data=json.dumps(
+                {
+                    "record_ids": [self.record.pk],
+                    "emails": self.owner.email,
+                }
+            ),
+            content_type="application/json",
+        )
+        assert response.status_code == 200, response.content
+        data = response.json()
+        assert data["shared"] == 0
+        assert data["self_skipped"] == 1
 
 
 class TestShareNotifications(SharingTestCase):
