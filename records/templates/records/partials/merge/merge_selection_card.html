@@ -1,7 +1,7 @@
 {% load form_tags %}
 <button type="button"
         @click=" {% if mode == 'plaid' %} selectedPlaid = '{{ record.pk }}'; plaidTitle = '{{ record.title|escapejs }}'; {% else %} selectedDoc = '{{ record.pk }}'; docTitle = '{{ record.title|escapejs }}'; {% endif %} showModal = false; "
-        class="w-full text-left cursor-pointer rounded-xl border border-zinc-200 dark:border-white/[0.06] bg-white dark:bg-zinc-900/40 hover:bg-zinc-50 dark:hover:bg-white/[0.04] hover:border-zinc-300 dark:hover:border-white/[0.1] hover:shadow-sm transition-all duration-200 p-4 mb-2 last:mb-0">
+        class="w-full text-left cursor-pointer rounded-xl border border-zinc-200 dark:border-white/[0.06] bg-white dark:bg-zinc-900/45 hover:bg-zinc-50 dark:hover:bg-white/[0.04] hover:border-zinc-300 dark:hover:border-white/[0.1] hover:shadow-sm transition-all duration-200 p-4 mb-2 last:mb-0">
     <div class="flex items-center justify-between gap-3">
         <div class="min-w-0 flex-1">
             <p class="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">{{ record.title }}</p>

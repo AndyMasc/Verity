@@ -36,7 +36,7 @@
                 <input type="hidden" name="document_record_id" x-bind:value="selectedDoc">
                 <button type="submit"
                         x-bind:disabled="!canMerge"
-                        x-bind:class="canMerge ? 'bg-black text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200 shadow-lg shadow-black/10 dark:shadow-white/10 cursor-pointer active:scale-[0.99]' : 'bg-zinc-100 dark:bg-zinc-900/40 text-zinc-400 dark:text-zinc-600 border border-zinc-200 dark:border-white/[0.04] cursor-not-allowed'"
+                        x-bind:class="canMerge ? 'bg-black text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200 shadow-lg shadow-black/10 dark:shadow-white/10 cursor-pointer active:scale-[0.99]' : 'bg-zinc-100 dark:bg-zinc-900/45 text-zinc-400 dark:text-zinc-600 border border-zinc-200 dark:border-white/[0.04] cursor-not-allowed'"
                         class="w-full py-3 px-4 rounded-xl text-xs font-semibold tracking-wider uppercase transition-all duration-200 flex items-center justify-center gap-2">
                     <span x-show="!canMerge">Awaiting Record Selection</span>
                     <span x-show="canMerge">Merge</span>

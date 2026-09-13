@@ -50,6 +50,11 @@ STORAGES = {
     },
 }
 
+# Serve compiled assets from the dev server instead of the R2 CDN (set by
+# S3_STATIC_CDN_DOMAIN in base.py), otherwise the browser loads a stale copy of
+# styles.css that never includes recent Tailwind class changes.
+STATIC_URL = "/static/"
+
 INTERNAL_IPS = [
     "127.0.0.1",  # localhost
 ]

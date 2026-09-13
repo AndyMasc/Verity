@@ -22,7 +22,6 @@
                 class="absolute inset-0 w-full h-full cursor-crosshair"
                 @mousemove="onHover($event)"
                 @mouseleave="tooltip.visible = false"></canvas>
-        <!-- Error State Layer -->
         <div x-show="error && !loading"
              x-cloak
              class="absolute inset-0 flex flex-col items-center justify-center text-center p-6">
@@ -32,7 +31,6 @@
                 Try again
             </button>
         </div>
-        <!-- Empty State Layer -->
         <div x-show="data.length === 0 && !loading && !error"
              x-cloak
              class="absolute inset-0 flex flex-col items-center justify-center text-center p-6">
@@ -65,7 +63,7 @@
     </div>
     {# Loading overlay #}
     <div x-show="loading"
-         class="absolute inset-0 flex items-center justify-center bg-white/40 dark:bg-zinc-900/40 backdrop-blur-xs z-10 rounded-2xl transition-opacity">
+         class="absolute inset-0 flex items-center justify-center bg-white/40 dark:bg-zinc-900/45 backdrop-blur-xs z-10 rounded-2xl transition-opacity">
         <div class="flex items-center gap-2 text-xs font-medium text-zinc-700 dark:text-zinc-300 px-3 py-1.5 bg-white dark:bg-zinc-800 rounded-full shadow-sm border border-zinc-200/60 dark:border-zinc-700/60">
             <svg class="animate-spin h-3.5 w-3.5 text-zinc-600 dark:text-zinc-300"
                  viewBox="0 0 24 24"

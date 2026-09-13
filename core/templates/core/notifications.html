@@ -18,7 +18,7 @@
                 <form method="post" action="{% url 'core:notification-mark-all-read' %}">
                     {% csrf_token %}
                     <button type="submit"
-                            class="inline-flex items-center gap-1.5 px-3.5 py-2 text-[13px] font-medium text-zinc-700 dark:text-zinc-300 bg-white/60 dark:bg-zinc-900/50 hover:bg-white dark:hover:bg-zinc-900 border border-zinc-200/30 dark:border-zinc-800/30 rounded-xl shadow-sm transition-all duration-200 active:scale-[0.98] cursor-pointer">
+                            class="inline-flex items-center gap-1.5 px-3.5 py-2 text-[13px] font-medium text-zinc-700 dark:text-zinc-300 bg-white/60 dark:bg-zinc-900/45 hover:bg-white dark:hover:bg-zinc-900 border border-zinc-200/30 dark:border-zinc-800/30 rounded-xl shadow-sm transition-all duration-200 active:scale-[0.98] cursor-pointer">
                         <svg class="w-3.5 h-3.5"
                              fill="none"
                              viewBox="0 0 24 24"
@@ -31,7 +31,7 @@
                 </form>
             {% endif %}
         </div>
-        <div class="rounded-2xl bg-white/60 dark:bg-zinc-900/50 backdrop-blur-md border border-zinc-200/20 dark:border-zinc-800/20 shadow-sm overflow-hidden">
+        <div class="rounded-2xl bg-white/60 dark:bg-zinc-900/45 backdrop-blur-md border border-zinc-200/20 dark:border-zinc-800/20 shadow-sm overflow-hidden">
             {% if notifications %}
                 <table class="w-full text-left">
                     <thead>

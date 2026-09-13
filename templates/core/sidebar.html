@@ -9,10 +9,10 @@
              x-transition:leave="transition ease-in duration-200"
              x-transition:leave-start="opacity-100"
              x-transition:leave-end="opacity-0"
-             class="fixed inset-0 bg-zinc-950/40 backdrop-blur-sm z-40 sm:hidden"
+             class="fixed inset-0 bg-zinc-950/40 backdrop-blur-sm z-40 sm:hidden rounded-2xl"
              @click="open = false"
              aria-hidden="true"></div>
-        <div class="fixed top-0 left-0 w-64 h-screen z-50 transition-transform duration-300 ease-in-out"
+        <div class="fixed top-2.5 left-1.5 w-72 h-[98%] z-50 transition-transform duration-300 ease-in-out rounded-2xl"
              :class="open ? 'translate-x-0 shadow-2xl shadow-zinc-950/15' : '-translate-x-full'"
              x-cloak
              :aria-hidden="!open">
@@ -28,10 +28,10 @@
                      viewBox="0 0 24 24"
                      stroke-width="2.5"
                      stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m18.75 4.5-7.5 7.5 7.5 7.5m-6-15L5.25 12l7.5 7.5" />
                 </svg>
             </button>
-            <aside class="rounded-r-2xl w-full h-full bg-white/95 dark:bg-zinc-800/10 backdrop-blur-xl border-r border-zinc-200/80 dark:border-zinc-800/40 flex flex-col justify-between py-4 px-3">
+            <aside class="rounded-2xl border w-full h-full bg-white/95 dark:bg-zinc-900/45 backdrop-blur-xl border-r border-zinc-300/80 dark:border-zinc-800/40 flex flex-col justify-between py-4 px-3">
                 <nav class="flex flex-col h-full justify-between"
                      aria-label="Main Application Sidebar">
                     <div class="space-y-4 overflow-y-auto no-scrollbar">
@@ -268,7 +268,7 @@
                         <div class="space-y-3 pt-2">
                             <div x-data="{ open: $persist(true).as('manage_card_open') }"
                                  :class="open ? 'p-3' : 'p-2'"
-                                 class="relative overflow-hidden rounded-xl border border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-100 dark:bg-zinc-900/60 backdrop-blur-xl shadow-xs shadow-zinc-950/[0.02] dark:shadow-black/40 transition-all duration-300 hover:border-zinc-300 dark:hover:border-zinc-700/80 group">
+                                 class="relative overflow-hidden rounded-xl border border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-100 dark:bg-zinc-900/45 backdrop-blur-xl shadow-xs shadow-zinc-950/[0.02] dark:shadow-black/40 transition-all duration-300 hover:border-zinc-300 dark:hover:border-zinc-700/80 group">
                                 <div class="absolute -top-20 -right-20 w-36 h-36 bg-[#5A67FF]/10 dark:bg-[#5A67FF]/15 rounded-full blur-2xl pointer-events-none transition-opacity duration-500 group-hover:opacity-100 opacity-60">
                                 </div>
                                 <div @click="open = !open"
@@ -444,7 +444,7 @@
                                 </div>
                                 <button @click="userMenuOpen = !userMenuOpen"
                                         type="button"
-                                        class="w-full flex items-center justify-between p-2 rounded-xl bg-zinc-50/80 dark:bg-zinc-900/50 hover:bg-zinc-100/90 dark:hover:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800/60 transition-all duration-200 cursor-pointer group text-left active:scale-[0.98]">
+                                        class="w-full flex items-center justify-between p-2 rounded-xl bg-zinc-50/80 dark:bg-zinc-900/45 hover:bg-zinc-100/90 dark:hover:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800/60 transition-all duration-200 cursor-pointer group text-left active:scale-[0.98]">
                                     <div class="flex items-center gap-2.5 min-w-0">
                                         <div class="uppercase flex size-7 items-center justify-center rounded-lg bg-gradient-to-br from-zinc-800 to-zinc-950 text-white dark:from-zinc-100 dark:to-zinc-300 dark:text-zinc-950 font-bold text-[11px] tracking-tight shadow-2xs shrink-0 ring-1 ring-black/5 dark:ring-white/10">
                                             {{ request.user.email|slice:":1" }}
@@ -472,4 +472,4 @@
                 </aside>
             </div>
         </div>
-{% endwith %}
+    {% endwith %}

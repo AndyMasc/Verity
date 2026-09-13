@@ -81,7 +81,7 @@
         {% endblock %}
         {% block extra_head %}{% endblock %}
     </head>
-    <body class="font-sans bg-zinc-50 dark:bg-[#0E0E0E] text-zinc-950 dark:text-zinc-50 min-h-screen antialiased selection:bg-zinc-900/10 dark:selection:bg-zinc-100/10"
+    <body class="font-sans bg-zinc-50 dark:bg-black text-zinc-950 dark:text-zinc-50 min-h-screen antialiased selection:bg-zinc-900/10 dark:selection:bg-zinc-100/10"
           {% if user.is_authenticated %}x-data="{ open: $persist(true) }"{% endif %}>
         {% include 'core/toast.html' %}
         <noscript>
@@ -113,7 +113,7 @@
         {% if user.is_authenticated %}
             <div class="relative z-40">{% include 'core/sidebar.html' %}</div>
         {% endif %}
-        <main {% if user.is_authenticated %} class="relative z-10 transition-all duration-300 ease-out" x-cloak :class="open ? 'sm:pl-64' : 'sm:pl-0'" {% endif %}>
+        <main {% if user.is_authenticated %} class="relative z-10 transition-all duration-300 ease-out" x-cloak :class="open ? 'sm:pl-72' : 'sm:pl-0'" {% endif %}>
             <div class="px-4 sm:px-6 lg:px-8" x-cloak>
                 {% block content %}{% endblock %}
             </div>
@@ -233,7 +233,6 @@
                         <circle cx="78" cy="50" r="2" fill="#C6893F" />
                         <circle cx="58" cy="75" r="1.5" fill="#C6893F" />
                     </svg>
-
                 </div>
                 <div class="space-y-1">
                     <h3 class="text-sm font-semibold tracking-tight text-white/90">Privacy Preferences</h3>
@@ -245,7 +244,6 @@
                                 class="text-xs underline font-medium hover:bg-white/5 rounded-xl transition-all duration-200 border border-transparent hover:border-white/10">
                             Decline Optional
                         </button>
-
                     </p>
                 </div>
             </div>

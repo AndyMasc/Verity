@@ -62,7 +62,7 @@
                                     </p>
                                 </div>
                                 {% if h.source_type == "merge" and h.history_type == '+' and h.merge %}
-                                    <div class="rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-900/40 p-4 shadow-2xs">
+                                    <div class="rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-900/45 p-4 shadow-2xs">
                                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 text-xs">
                                             <div class="space-y-2.5">
                                                 <div class="flex items-center justify-between">
@@ -90,7 +90,7 @@
                                     </div>
                                 {% endif %}
                                 {% if h.history_type == '~' and h.prev_record %}
-                                    <div class="rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-900/40 p-4 shadow-2xs">
+                                    <div class="rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-900/45 p-4 shadow-2xs">
                                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
                                             {% if h.source_type == "document" %}
                                                 {% include "records/partials/history_diff.html" with fields=doc_tracked_fields prev_record=h.prev_record entry=h %}

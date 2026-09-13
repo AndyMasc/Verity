@@ -7,50 +7,57 @@
             <div class="flex items-center gap-8">
                 <a href="{% url 'core:landing_page' %}"
                    class="font-semibold tracking-tight text-zinc-950 dark:text-zinc-100 flex items-center gap-2.5 text-base transition-opacity hover:opacity-80 group">
-                    <span class="inline-block w-2.5 h-2.5 rounded-full bg-[#5A67FF] shadow-[0_0_8px_rgba(90,103,255,0.6)] group-hover:scale-125 transition-transform duration-300"></span>
-                    <span class="font-bold tracking-tighter">Verity<span class="text-[#5A67FF]">.</span></span>
+                    <span class="font-bold tracking-tighter text-xl">Verity<span class="text-[#5A67FF]">.</span></span>
                 </a>
                 <nav class="hidden items-center md:inline-flex space-x-1 pl-6 border-l border-zinc-300 dark:border-zinc-800">
                     {% for label, anchor in nav_links %}
                         <a href="{{ anchor }}"
-                           class="rounded-full px-3.5 py-1.5 text-xs font-semibold text-zinc-700 transition-all duration-200 hover:text-zinc-950 hover:bg-zinc-200/70 dark:text-zinc-300 dark:hover:text-zinc-100 dark:hover:bg-zinc-900/80">
+                           class="rounded-full px-3.5 py-1.5 text-sm font-semibold text-zinc-700 transition-all duration-200 hover:text-zinc-950 hover:bg-zinc-200/70 dark:text-zinc-300 dark:hover:text-zinc-100 dark:hover:bg-zinc-900/80">
                             {{ label }}
                         </a>
                     {% empty %}
                         <a href="#features"
-                           class="rounded-full px-3.5 py-1.5 text-xs font-semibold text-zinc-700 transition-all duration-200 hover:text-zinc-950 hover:bg-zinc-200/70 dark:text-zinc-300 dark:hover:text-zinc-100 dark:hover:bg-zinc-900/80">Features</a>
+                           class="rounded-full px-3.5 py-1.5 text-sm font-semibold text-zinc-700 transition-all duration-200 hover:text-zinc-950 hover:bg-zinc-200/70 dark:text-zinc-300 dark:hover:text-zinc-100 dark:hover:bg-zinc-900/80">Features</a>
                         <a href="#performance"
-                           class="rounded-full px-3.5 py-1.5 text-xs font-semibold text-zinc-700 transition-all duration-200 hover:text-zinc-950 hover:bg-zinc-200/70 dark:text-zinc-300 dark:hover:text-zinc-100 dark:hover:bg-zinc-900/80">Performance</a>
+                           class="rounded-full px-3.5 py-1.5 text-sm font-semibold text-zinc-700 transition-all duration-200 hover:text-zinc-950 hover:bg-zinc-200/70 dark:text-zinc-300 dark:hover:text-zinc-100 dark:hover:bg-zinc-900/80">Performance</a>
                         <a href="#reimbursements"
-                           class="rounded-full px-3.5 py-1.5 text-xs font-semibold text-zinc-700 transition-all duration-200 hover:text-zinc-950 hover:bg-zinc-200/70 dark:text-zinc-300 dark:hover:text-zinc-100 dark:hover:bg-zinc-900/80">Reimbursements</a>
+                           class="rounded-full px-3.5 py-1.5 text-sm font-semibold text-zinc-700 transition-all duration-200 hover:text-zinc-950 hover:bg-zinc-200/70 dark:text-zinc-300 dark:hover:text-zinc-100 dark:hover:bg-zinc-900/80">Reimbursements</a>
                         <a href="#pricing"
-                           class="rounded-full px-3.5 py-1.5 text-xs font-semibold text-zinc-700 transition-all duration-200 hover:text-zinc-950 hover:bg-zinc-200/70 dark:text-zinc-300 dark:hover:text-zinc-100 dark:hover:bg-zinc-900/80">Pricing</a>
+                           class="rounded-full px-3.5 py-1.5 text-sm font-semibold text-zinc-700 transition-all duration-200 hover:text-zinc-950 hover:bg-zinc-200/70 dark:text-zinc-300 dark:hover:text-zinc-100 dark:hover:bg-zinc-900/80">Pricing</a>
                         <a href="#faq"
-                           class="rounded-full px-3.5 py-1.5 text-xs font-semibold text-zinc-700 transition-all duration-200 hover:text-zinc-950 hover:bg-zinc-200/70 dark:text-zinc-300 dark:hover:text-zinc-100 dark:hover:bg-zinc-900/80">FAQ</a>
+                           class="rounded-full px-3.5 py-1.5 text-sm font-semibold text-zinc-700 transition-all duration-200 hover:text-zinc-950 hover:bg-zinc-200/70 dark:text-zinc-300 dark:hover:text-zinc-100 dark:hover:bg-zinc-900/80">FAQ</a>
                     {% endfor %}
                 </nav>
             </div>
             <div class="inline-flex items-center space-x-3">
                 <a href="{% url 'account_login' %}"
-                   class="rounded-full border border-zinc-300 dark:border-zinc-700 px-4 py-1.5 text-xs font-semibold text-zinc-800 hover:text-zinc-950 hover:border-zinc-400 dark:text-zinc-200 dark:hover:text-white dark:hover:border-zinc-600 transition-all duration-200 active:scale-[0.98] hover:scale-105">Sign in</a>
+                   class="rounded-full border border-zinc-300 dark:border-zinc-700 px-4 py-1.5 text-sm font-semibold text-zinc-800 hover:text-zinc-950 hover:border-zinc-400 dark:text-zinc-200 dark:hover:text-white dark:hover:border-zinc-600 transition-all duration-200 active:scale-[0.98] hover:scale-105">Sign in</a>
                 <a href="{% url 'account_signup' %}"
-                   class="rounded-full bg-zinc-950 px-4 py-1.5 text-xs font-medium text-white transition-all duration-200 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white active:scale-[0.98] shadow-sm hover:shadow-md hover:scale-105">Join now</a>
+                   class="rounded-full bg-zinc-950 px-4 py-1.5 text-sm font-medium text-white transition-all duration-200 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white active:scale-[0.98] shadow-sm hover:shadow-md hover:scale-105">Join now</a>
             </div>
         </div>
     </nav>
-    <section class="relative w-full overflow-hidden bg-white bg-gradient-to-b from-white to-zinc-100 dark:from-zinc-950 from-30% rounded-xl dark:to-zinc-800 dark:bg-zinc-950 pt-24 md:pt-36 pb-24">
+    <section class="relative w-full overflow-hidden bg-white bg-gradient-to-b from-white to-zinc-100 dark:from-black from-30% rounded-xl dark:to-zinc-800 dark:bg-zinc-950 pt-24 md:pt-36 pb-24">
         <div class="absolute inset-0 bg-[radial-gradient(#e4e4e7_1px,transparent_1px)] dark:bg-[radial-gradient(#18181b_1px,transparent_1px)] [background-size:24px_24px] [mask-image:radial-gradient(ellipse_50%_50%_at_50%_35%,#000_60%,transparent_100%)] pointer-events-none opacity-20 dark:opacity-40">
         </div>
         <div class="relative container mx-auto flex flex-col items-center justify-center gap-8 px-6 max-w-7xl text-center">
+            <div class="flex justify-center items-center p-[2px] rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 shadow-sm">
+                <div class="px-3.5 py-2 rounded-full bg-white dark:bg-zinc-900 transition-colors flex items-center h-full">
+                    <span class="text-xs font-semibold tracking-wide bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 dark:from-indigo-400 dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent leading-none -mt-[1px]">
+                        Use Verity free <span class="text-zinc-300 dark:text-zinc-700 font-normal">|</span> No credit card required
+                    </span>
+                </div>
+            </div>
             <header class="max-w-4xl space-y-6">
-                <h1 class="text-4xl sm:text-6xl lg:text-7xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50 leading-[1.05]">
+                <h1 class="text-4xl sm:text-6xl lg:text-[80px] font-semibold tracking-tight text-zinc-950 dark:text-zinc-50 leading-[1.05]">
                     Verity is the home
                     <br class="hidden sm:inline" />
                     <span class="bg-gradient-to-b from-zinc-950 from-40% to-zinc-600 dark:from-zinc-100 dark:to-zinc-600 bg-clip-text text-transparent">for every expense.</span>
                 </h1>
                 <p class="mx-auto max-w-2xl text-sm sm:text-base text-zinc-700 dark:text-zinc-300 leading-relaxed font-normal">
-                    Capture purchases, sync transactions, manage documents, and get reimbursed without rebuilding the same expense twice.
-                    <span class="text-zinc-950 dark:text-zinc-100 font-semibold">One record. Every detail. Nothing lost along the way.</span>
+                    Capture purchases, sync transactions, manage documents, and get reimbursed with reciepts generated for you automatically.
+                    <br>
+                    <span class="font-bold">One record. Every detail. Nothing lost along the way.</span>
                 </p>
             </header>
             <div class="inline-flex flex-wrap items-center justify-center gap-2.5 pt-2 text-xs text-zinc-600 dark:text-zinc-400 tracking-tight font-medium">
@@ -66,18 +73,18 @@
             </div>
             <div class="flex items-center gap-3.5 pt-4">
                 <a href="{% url 'account_signup' %}"
-                   class="rounded-full bg-zinc-950 px-7 py-3 text-xs sm:text-sm font-semibold text-white transition-all duration-300 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white shadow-md hover:shadow-[0_0_20px_rgba(90,103,255,0.25)] hover:scale-[1.03] active:scale-[0.97]">
+                   class="rounded-full bg-zinc-950 px-7 py-3 text-xs sm:text-sm font-semibold text-white transition-all duration-300 hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:hover:bg-white shadow-md hover:shadow-[0_0_20px_rgba(90,103,255,0.25)] hover:scale-[1.03] active:scale-[0.97]">
                     Get Started Free
                 </a>
                 <a href="#features"
-                   class="group border border-zinc-300 dark:border-zinc-700 flex items-center justify-center gap-2 rounded-full px-7 py-3 text-xs sm:text-sm font-semibold text-zinc-800 hover:text-zinc-950 dark:text-zinc-200 dark:hover:text-white hover:border-zinc-400 dark:hover:border-zinc-600 transition-all duration-300 hover:scale-[1.03] active:scale-[0.97] bg-white dark:bg-transparent shadow-sm">
+                   class="group bg-[#5B66FF] flex items-center justify-center gap-2 rounded-full px-7 py-3 text-xs sm:text-sm font-semibold text-white transition-all duration-300 hover:scale-[1.03] active:scale-[0.97] shadow-sm">
                     <span>Discover Platform</span>
                     <svg xmlns="http://www.w3.org/2000/svg"
                          fill="none"
                          viewBox="0 0 24 24"
                          stroke-width="2"
                          stroke="currentColor"
-                         class="size-4 text-zinc-600 dark:text-zinc-400 transition-transform duration-300 group-hover:translate-x-1 group-hover:text-zinc-950 dark:group-hover:text-white">
+                         class="size-4 transition-transform duration-300 group-hover:translate-x-1">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
                     </svg>
                 </a>
@@ -89,10 +96,10 @@
                     <div class="absolute -inset-px rounded-2xl md:rounded-3xl pointer-events-none transition-opacity duration-500 opacity-0 group-hover:opacity-100 shadow-[0_0_50px_rgba(90,103,255,0.15)]">
                     </div>
                     <div class="rounded-xl sm:rounded-2xl border border-zinc-300 dark:border-zinc-800 overflow-hidden bg-white dark:bg-zinc-950 transition-colors duration-500">
-                        <img src="{% static 'core/images/interface-demo-light.png' %}"
+                        <img src="{% static 'core/images/interface-demo-light.webp' %}"
                              alt="Verity expense management interface"
                              class="w-full object-cover object-left dark:hidden rounded-xl sm:rounded-2xl transition-transform duration-700">
-                        <img src="{% static 'core/images/interface-demo-dark.png' %}"
+                        <img src="{% static 'core/images/interface-demo-dark.webp' %}"
                              alt="Verity expense management interface in dark mode"
                              class="hidden w-full object-cover object-left dark:block rounded-xl sm:rounded-2xl transition-transform duration-700">
                     </div>
@@ -113,7 +120,7 @@
                 </p>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-                <div class="group rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/40 p-8 flex flex-col justify-between hover:border-zinc-400 dark:hover:border-zinc-700 transition-all duration-300 shadow-sm hover:shadow-lg hover:-translate-y-1 relative overflow-hidden">
+                <div class="group rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/45 p-8 flex flex-col justify-between hover:border-zinc-400 dark:hover:border-zinc-700 transition-all duration-300 shadow-sm hover:shadow-lg hover:-translate-y-1 relative overflow-hidden">
                     <div class="absolute top-0 left-0 right-0 h-[2px] bg-[#5A67FF] scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left">
                     </div>
                     <div>
@@ -124,7 +131,7 @@
                         </p>
                     </div>
                 </div>
-                <div class="group rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/40 p-8 flex flex-col justify-between hover:border-zinc-400 dark:hover:border-zinc-700 transition-all duration-300 shadow-sm hover:shadow-lg hover:-translate-y-1 relative overflow-hidden">
+                <div class="group rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/45 p-8 flex flex-col justify-between hover:border-zinc-400 dark:hover:border-zinc-700 transition-all duration-300 shadow-sm hover:shadow-lg hover:-translate-y-1 relative overflow-hidden">
                     <div class="absolute top-0 left-0 right-0 h-[2px] bg-[#5A67FF] scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left">
                     </div>
                     <div>
@@ -135,7 +142,7 @@
                         </p>
                     </div>
                 </div>
-                <div class="group rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/40 p-8 flex flex-col justify-between hover:border-zinc-400 dark:hover:border-zinc-700 transition-all duration-300 shadow-sm hover:shadow-lg hover:-translate-y-1 relative overflow-hidden">
+                <div class="group rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/45 p-8 flex flex-col justify-between hover:border-zinc-400 dark:hover:border-zinc-700 transition-all duration-300 shadow-sm hover:shadow-lg hover:-translate-y-1 relative overflow-hidden">
                     <div class="absolute top-0 left-0 right-0 h-[2px] bg-[#5A67FF] scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left">
                     </div>
                     <div>

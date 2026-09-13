@@ -14,7 +14,7 @@
            name="search"
            type="search"
            placeholder="{{ search_placeholder|default:'Search...' }}"
-           class="w-full bg-white dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800/60 py-2.5 pl-10 pr-4 text-xs font-normal rounded-xl text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 shadow-2xs focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-zinc-400 focus:border-zinc-900 dark:focus:border-zinc-400 transition-all"
+           class="w-full bg-white dark:bg-zinc-900/45 border border-zinc-200 dark:border-zinc-800/60 py-2.5 pl-10 pr-4 text-xs font-normal rounded-xl text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 shadow-2xs focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-zinc-400 focus:border-zinc-900 dark:focus:border-zinc-400 transition-all"
            hx-get="{{ search_url }}"
            hx-trigger="input changed delay:300ms, keyup[key=='Enter'], search"
            hx-target="#query-results-container"
