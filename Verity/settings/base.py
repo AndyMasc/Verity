@@ -307,7 +307,7 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 # Email
 EMAIL_BACKEND = "core.backends.DramatiqEmailBackend"  # Queue email sends as background tasks
 ANYMAIL = {"RESEND_API_KEY": env("RESEND_API_KEY")}
-DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="Verity <onboarding@resend.dev>")
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="Verity <hello@veritypay.app>")
 
 # Storage (S3/R2) - Uploads use signed urls in Cloudflare R2
 R2_ACCESS_KEY_ID = env("R2_ACCESS_KEY_ID")
