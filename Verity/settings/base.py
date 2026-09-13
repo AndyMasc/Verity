@@ -93,7 +93,7 @@ INSTALLED_APPS = [
     "reimbursements.apps.ReimbursementsConfig",
     "plaid_integration.apps.PlaidIntegrationConfig",
     "billing.apps.BillingConfig",
-    # Webpush
+# Webpush
     "webpush",
     # Stripe
     "djstripe",
@@ -124,7 +124,12 @@ MIDDLEWARE = [
     "csp.middleware.CSPMiddleware",
     "core.middleware.TimezoneMiddleware",  # Get user timezone via cookie
     "allauth.account.middleware.AccountMiddleware",
-    "django_minify_html.middleware.MinifyHtmlMiddleware",
+    # django-minify-html is DISABLED: the bundled minify-html Rust binding
+    # strips required closing tags (</div>, </ul>, </nav>, </aside>) even with
+    # default options, which nests the page <main> inside the sidebar's fixed
+    # div and collapses the content to width 0. Re-enable only after pinning a
+    # known-good minify-html version and verifying tag balance.
+    # "django_minify_html.middleware.MinifyHtmlMiddleware",
 ]
 
 if not DEBUG:

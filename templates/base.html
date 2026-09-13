@@ -110,8 +110,8 @@
         {% if user.is_authenticated %}
             <div class="relative z-40">{% include 'core/sidebar.html' %}</div>
         {% endif %}
-        <main {% if user.is_authenticated %} class="relative z-10 transition-all duration-300 ease-out" x-cloak :class="open ? 'sm:pl-72' : 'sm:pl-0'" {% endif %}>
-            <div class="px-4 sm:px-6 lg:px-8" {% if user.is_authenticated %}x-cloak{% endif %}>
+        <main {% if user.is_authenticated %} class="relative z-10 transition-all duration-300 ease-out" :class="open ? 'sm:pl-72' : 'sm:pl-0'" {% endif %}>
+            <div class="px-4 sm:px-6 lg:px-8">
                 {% block content %}{% endblock %}
             </div>
         </main>
@@ -161,47 +161,7 @@
             }
         });
     </script>
-    <script type="speculationrules">
-        {
-            "prefetch": [{
-                "source": "document",
-                "where": {
-                    "and": [
-                        { "href_matches": "/*" },
-                        { "not": { "href_matches": ["*.json", "*.xml", "*.rss"] } }
-                    ]
-                },
-                "eagerness": "moderate"
-            }],
-            "prerender": [{
-                "source": "document",
-                "where": {
-                    "and": [
-                        { "href_matches": "/*" },
-                        { "not": { "href_matches": ["*.json", "*.xml", "*.rss"] } }
-                    ]
-                },
-                "eagerness": "conservative"
-            }]
-        }
-    </script>
-    <script>
-        if (!HTMLScriptElement.supports || !HTMLScriptElement.supports('speculationrules')) {
-            let prefetchTimer;
-            document.addEventListener('pointerenter', function(e) {
-                const link = e.target.closest('a[href^="/"]');
-                if (!link || link.dataset.pf) return;
-                clearTimeout(prefetchTimer);
-                prefetchTimer = setTimeout(() => {
-                    link.dataset.pf = '1';
-                    const el = document.createElement('link');
-                    el.rel = 'prefetch';
-                    el.href = link.href;
-                    document.head.appendChild(el);
-                }, 80);
-            }, { passive: true });
-        }
-    </script>
+   
   <div x-data="{ showNotice: false, init() { const consent = localStorage.getItem('cookie_consent'); if (!consent) { setTimeout(() => this.showNotice = true, 800); } else if (consent === 'accepted') { posthog?.opt_in_capturing?.(); } }, acceptCookies() { localStorage.setItem('cookie_consent', 'accepted'); this.showNotice = false; posthog?.opt_in_capturing?.(); }, declineCookies() { localStorage.setItem('cookie_consent', 'declined'); this.showNotice = false; posthog?.opt_out_capturing?.(); } }"
      x-show="showNotice"
      x-transition:enter="transition cubic-bezier(0.16, 1, 0.3, 1)"
@@ -211,7 +171,7 @@
      x-transition:leave-start="opacity-100 translate-y-0 scale-100"
      x-transition:leave-end="opacity-0 translate-y-6 scale-95"
      class="fixed bottom-0 inset-x-0 z-50 p-4 sm:p-5 pointer-events-none right-0 sm:right-6 sm:bottom-6 sm:left-auto sm:w-full sm:max-w-xl"
-     x-cloak>
+>
     <div class="max-w-7xl pointer-events-auto backdrop-blur-2xl bg-white dark:bg-zinc-900/50 text-slate-100 rounded-3xl p-5 border border-zinc-200/50 dark:border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
         <div class="flex items-start gap-4">
             <div class="hidden sm:flex items-center justify-center">

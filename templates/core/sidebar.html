@@ -378,9 +378,6 @@
                                     {% endif %}
                                 </div>
                             </div>
-                            {% if webpush_enabled %}
-                                {% webpush_button with_class="w-full mt-2 cursor-pointer justify-center inline-flex items-center gap-2 px-2 py-1 rounded-lg text-[11px] font-medium text-[#5A67FF] dark:text-[#8B90FF] border border-[#5A67FF]/25 dark:border-[#8B90FF]/25 hover:bg-[#5A67FF]/10 transition-colors" %}
-                            {% endif %}
                             <div class="border-t border-zinc-100 dark:border-zinc-900/80 pt-3 relative"
                                  x-data="{ userMenuOpen: false }"
                                  @click.outside="userMenuOpen = false">
