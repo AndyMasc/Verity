@@ -151,12 +151,16 @@ CONTENT_SECURITY_POLICY = {
             "https://cdn.plaid.com",
             "https://*.plaid.com",
             "https://js.stripe.com",
+            "https://cdn.jsdelivr.net",
+            "https://js.sentry-cdn.com",
+            "https://*.posthog.com",
         ),
         "worker-src": ("'self'", "blob:"),
         "style-src": (
             "'self'",
             "'unsafe-inline'",
             "https://fonts.googleapis.com",
+            "https://cdn.tailwindcss.com",
         ),
         "font-src": ("'self'", "https://fonts.gstatic.com"),
         "img-src": ("'self'", "data:", "blob:", "https:"),
@@ -166,6 +170,7 @@ CONTENT_SECURITY_POLICY = {
             "https://*.plaid.com",
             "https://cdn.plaid.com",
             "https://api.stripe.com",
+            "https://*.posthog.com",
         ),
         "frame-src": (
             "'self'",
@@ -310,6 +315,15 @@ S3_STATIC_ACCESS_KEY_ID = env("S3_STATIC_ACCESS_KEY_ID", default="")
 S3_STATIC_SECRET_ACCESS_KEY = env("S3_STATIC_SECRET_ACCESS_KEY", default="")
 S3_STATIC_DEFAULT_ACL = None
 S3_STATIC_CDN_DOMAIN = env("S3_STATIC_CDN_DOMAIN", default="")
+
+# Assets live on the R2 custom domain (see STATIC_URL below), so the browser
+# must be allowed to load them: styles, scripts (web-push/sw use static too),
+# and fonts all come from there.
+if S3_STATIC_CDN_DOMAIN:
+    _csp_static = f"https://{S3_STATIC_CDN_DOMAIN}/"
+    CONTENT_SECURITY_POLICY["DIRECTIVES"]["script-src"] += (_csp_static,)
+    CONTENT_SECURITY_POLICY["DIRECTIVES"]["style-src"] += (_csp_static,)
+    CONTENT_SECURITY_POLICY["DIRECTIVES"]["font-src"] += (_csp_static,)
 
 STORAGES = {
     "default": {
