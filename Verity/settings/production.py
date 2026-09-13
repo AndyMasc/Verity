@@ -10,11 +10,11 @@ if env.bool("DEBUG", default=False):
 
 CORS_ALLOW_ALL_ORIGINS = False
 
-# djstripe's W004 check queries WebhookEndpoint through cachalot, so a Redis
-# blip at boot time crashes EVERY manage.py command (migrate, collectstatic,
-# even uvicorn startup). Stripe webhook signature verification still runs at
-# request time; this only drops the pre-flight system check that needs the cache.
-SILENCED_SYSTEM_CHECKS = ["djstripe.W004"]
+# The cache host is used for sessions, cachalot, and dramatiq. base provides a
+# localhost default that is never correct inside a container (127.0.0.1 is the
+# container itself), so require it explicitly and fail loudly instead of
+# silently pointing at an unreachable cache.
+REDIS_URL = env("REDIS_URL")
 
 # Hosts the app will accept requests for. Required — no default.
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS")

@@ -7,14 +7,16 @@ services:
     image: main-image:latest # Specific name of built image so others can reuse it
     restart: always
     # Uvicorn is async, so 2 workers can lots of concurrent requests.
-    # Run migrations and static collection non-fatally so a transient R2
+    # Run migrations and static collection with --skip-checks so a cache or
+    # Stripe hiccup can never take down manage.py (djstripe's system checks
+    # query cachalot -> Redis). Both steps are non-fatal so a transient R2
     # upload or DB hiccup never crash-loops the web container (which kills
     # worker/scheduler dependencies too). `exec` keeps uvicorn as PID 1 so
     # signals (stop/restart) are handled cleanly.
     command: >
       sh -c "
-      python manage.py migrate --noinput || echo 'WARN: migrate failed - continuing';
-      python manage.py collectstatic --noinput || echo 'WARN: collectstatic failed - continuing';
+      python manage.py migrate --noinput --skip-checks || echo 'WARN: migrate failed - continuing';
+      python manage.py collectstatic --noinput --skip-checks || echo 'WARN: collectstatic failed - continuing';
       exec python -O -m uvicorn Verity.asgi:application --host 0.0.0.0 --port 8000 --workers 4 --timeout-keep-alive 5 --log-level warning
       "
     expose:

@@ -327,7 +327,13 @@ STORAGES = {
         },
     },
     "staticfiles": {
-        "BACKEND": "storages.backends.s3boto3.S3ManifestStaticStorage",
+        # Plain upload with no manifest post-processing. The manifest backend
+        # (S3ManifestStaticStorage) raises ValueError at collectstatic time when
+        # a referenced file is missing (e.g. django_daisy vendors
+        # tom-select.complete.min.js plus a sourceMappingURL comment but ships
+        # no .map file), which takes down every deploy. Assets are served at
+        # stable URLs and cache-busted with ?v= instead of hashed filenames.
+        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
         "OPTIONS": {
             "bucket_name": S3_STATIC_BUCKET_NAME,
             "endpoint_url": S3_STATIC_ENDPOINT_URL,
