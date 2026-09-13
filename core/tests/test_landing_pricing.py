@@ -14,7 +14,10 @@ class LandingPagePricingTests(TestCase):
     def test_landing_page_renders_pricing_section(self):
         response = self.client.get("/")
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'id="pricing"')
+        # MinifyHtmlMiddleware strips quote characters from attributes, so the
+        # id is emitted as `id=pricing` in production-like settings. Match it
+        # with or without quotes to stay robust to minifier output.
+        self.assertRegex(response.content.decode(), r'id=["\']?pricing')
         self.assertContains(response, "Plans & Pricing")
         # The free plan card renders even with no synced Stripe products.
         self.assertContains(response, "Free")

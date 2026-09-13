@@ -23,7 +23,9 @@ from reimbursements.models import PackagePayment
 
 from ._helpers import _package, _record, _stripe_account, _user
 
-_FAKE_SESSION = SimpleNamespace(id="cs_race_1", url="https://checkout.stripe.com/pay/race-1")
+_FAKE_SESSION = SimpleNamespace(
+    id="cs_race_1", url="https://checkout.stripe.com/pay/race-1", status="open"
+)
 
 
 @unittest.skipUnless(connection.vendor == "postgresql", "requires PostgreSQL (select_for_update)")
@@ -64,6 +66,13 @@ class CheckoutClaimConcurrencyTest(TransactionTestCase):
             patch(
                 "reimbursements.services.get_rates",
                 return_value={"USD": Decimal("1")},
+            ),
+            # Locked out thread must find the existing open session reusable
+            # instead of hitting the real Stripe API (fake key -> 401) and
+            # racing a second session with the same mocked id.
+            patch(
+                "reimbursements.services.retrieve_checkout_session",
+                return_value=_FAKE_SESSION,
             ),
         ):
             threads = [
