@@ -79,6 +79,7 @@ INSTALLED_APPS = [
     "django_filters",
     "simple_history",
     "django.contrib.humanize",
+    "django_minify_html",
     # Storage
     "storages",
     # Local apps
@@ -106,6 +107,8 @@ MIGRATION_MODULES = {
 MIDDLEWARE = [
     "core.middleware.RequestIDMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
+    "django.middleware.gzip.GZipMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -119,6 +122,7 @@ MIDDLEWARE = [
     "csp.middleware.CSPMiddleware",
     "core.middleware.TimezoneMiddleware",  # Get user timezone via cookie
     "allauth.account.middleware.AccountMiddleware",
+    "django_minify_html.middleware.MinifyHtmlMiddleware",
 ]
 
 if not DEBUG:
