@@ -7,6 +7,8 @@ verity_service_account.json
 venv/
 build/
 dist/
+!theme/static/css/dist/
+!theme/static/css/dist/**/*
 *.egg-info/
 
 # Python build artifacts
