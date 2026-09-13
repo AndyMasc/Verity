@@ -32,7 +32,7 @@ services:
   worker:
     image: main-image:latest # Reuses web image, rather than building a brand new one
     restart: always
-    command: dramatiq Verity --processes=2 --threads=8 --prefetch=2 --max-tasks=5000
+    command: python manage.py rundramatiq --skip-checks --processes 1 --threads 4 -Q default ocr-tasks maintenance
     env_file:
       - .env
     networks:
@@ -45,7 +45,7 @@ services:
   scheduler:
     image: main-image:latest # Reuses web image, rather than building a brand new one
     restart: always
-    command: python manage.py runperiodiq
+    command: python manage.py runperiodiq --skip-checks
     env_file:
       - .env
     depends_on:

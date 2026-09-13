@@ -62,10 +62,17 @@
         {% if webpush_enabled %}
             {% webpush_header %}
         {% endif %}
-        <link rel="icon" type="image/png" sizes="32x32" href="{% static 'favicon_io/favicon-32x32.png' %}">
-        <link rel="icon" type="image/png" sizes="192x192" href="{% static 'favicon_io/android-chrome-192x192.png' %}">
+        <link rel="icon"
+              type="image/png"
+              sizes="32x32"
+              href="{% static 'favicon_io/favicon-32x32.png' %}">
+        <link rel="icon"
+              type="image/png"
+              sizes="192x192"
+              href="{% static 'favicon_io/android-chrome-192x192.png' %}">
         <link rel="icon" href="{% static 'favicon_io/favicon.ico' %}">
-        <link rel="apple-touch-icon" href="{% static 'favicon_io/apple-touch-icon.png' %}">
+        <link rel="apple-touch-icon"
+              href="{% static 'favicon_io/apple-touch-icon.png' %}">
         <link rel="manifest" href="{% static 'favicon_io/site.webmanifest' %}">
         <meta name="theme-color"
               content="#ffffff"
@@ -161,56 +168,53 @@
             }
         });
     </script>
-   
-  <div x-data="{ showNotice: false, init() { const consent = localStorage.getItem('cookie_consent'); if (!consent) { setTimeout(() => this.showNotice = true, 800); } else if (consent === 'accepted') { posthog?.opt_in_capturing?.(); } }, acceptCookies() { localStorage.setItem('cookie_consent', 'accepted'); this.showNotice = false; posthog?.opt_in_capturing?.(); }, declineCookies() { localStorage.setItem('cookie_consent', 'declined'); this.showNotice = false; posthog?.opt_out_capturing?.(); } }"
-     x-show="showNotice"
-     x-transition:enter="transition cubic-bezier(0.16, 1, 0.3, 1)"
-     x-transition:enter-start="opacity-0 translate-y-8 scale-95"
-     x-transition:enter-end="opacity-100 translate-y-0 scale-100"
-     x-transition:leave="transition ease-in"
-     x-transition:leave-start="opacity-100 translate-y-0 scale-100"
-     x-transition:leave-end="opacity-0 translate-y-6 scale-95"
-     class="fixed bottom-0 inset-x-0 z-50 p-4 sm:p-5 pointer-events-none right-0 sm:right-6 sm:bottom-6 sm:left-auto sm:w-full sm:max-w-xl"
->
-    <div class="max-w-7xl pointer-events-auto backdrop-blur-2xl bg-white dark:bg-zinc-900/50 text-slate-100 rounded-3xl p-5 border border-zinc-200/50 dark:border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-        <div class="flex items-start gap-4">
-            <div class="hidden sm:flex items-center justify-center">
-                <svg xmlns="http://w3.org" viewBox="0 0 100 100" width="50" height="50">
-                    <circle cx="52" cy="52" r="40" fill="#C6893F" />
-                    <circle cx="50" cy="50" r="40" fill="#E2A765" />
-                    <path d="M 35 30 C 30 32, 28 38, 33 42 C 38 40, 40 34, 35 30 Z" fill="#5C3A21" />
-                    <path d="M 65 35 C 60 33, 58 40, 62 45 C 68 43, 68 38, 65 35 Z" fill="#4A2E1B" />
-                    <path d="M 45 65 C 40 62, 42 72, 48 70 C 52 65, 50 62, 45 65 Z" fill="#5C3A21" />
-                    <path d="M 25 55 C 20 58, 24 66, 28 62 C 30 56, 28 52, 25 55 Z" fill="#4A2E1B" />
-                    <path d="M 55 50 C 52 46, 46 48, 48 54 C 52 56, 56 54, 55 50 Z" fill="#3D2516" />
-                    <path d="M 70 58 C 66 56, 64 62, 68 66 C 72 64, 72 60, 70 58 Z" fill="#5C3A21" />
-                    <circle cx="32" cy="22" r="1.5" fill="#C6893F" />
-                    <circle cx="68" cy="25" r="2" fill="#C6893F" />
-                    <circle cx="22" cy="42" r="1.5" fill="#C6893F" />
-                    <circle cx="78" cy="50" r="2" fill="#C6893F" />
-                    <circle cx="58" cy="75" r="1.5" fill="#C6893F" />
-                </svg>
+    <div x-data="{ showNotice: false, init() { const consent = localStorage.getItem('cookie_consent'); if (!consent) { setTimeout(() => this.showNotice = true, 800); } else if (consent === 'accepted') { posthog?.opt_in_capturing?.(); } }, acceptCookies() { localStorage.setItem('cookie_consent', 'accepted'); this.showNotice = false; posthog?.opt_in_capturing?.(); }, declineCookies() { localStorage.setItem('cookie_consent', 'declined'); this.showNotice = false; posthog?.opt_out_capturing?.(); } }"
+         x-show="showNotice"
+         x-transition:enter="transition cubic-bezier(0.16, 1, 0.3, 1)"
+         x-transition:enter-start="opacity-0 translate-y-8 scale-95"
+         x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+         x-transition:leave="transition ease-in"
+         x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+         x-transition:leave-end="opacity-0 translate-y-6 scale-95"
+         class="fixed bottom-0 inset-x-0 z-50 p-4 sm:p-5 pointer-events-none right-0 sm:right-6 sm:bottom-6 sm:left-auto sm:w-full sm:max-w-xl">
+        <div class="max-w-7xl pointer-events-auto backdrop-blur-2xl bg-white dark:bg-zinc-900/50 text-slate-100 rounded-3xl p-5 border border-zinc-200/50 dark:border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+            <div class="flex items-start gap-4">
+                <div class="hidden sm:flex items-center justify-center">
+                    <svg xmlns="http://w3.org" viewBox="0 0 100 100" width="50" height="50">
+                        <circle cx="52" cy="52" r="40" fill="#C6893F" />
+                        <circle cx="50" cy="50" r="40" fill="#E2A765" />
+                        <path d="M 35 30 C 30 32, 28 38, 33 42 C 38 40, 40 34, 35 30 Z" fill="#5C3A21" />
+                        <path d="M 65 35 C 60 33, 58 40, 62 45 C 68 43, 68 38, 65 35 Z" fill="#4A2E1B" />
+                        <path d="M 45 65 C 40 62, 42 72, 48 70 C 52 65, 50 62, 45 65 Z" fill="#5C3A21" />
+                        <path d="M 25 55 C 20 58, 24 66, 28 62 C 30 56, 28 52, 25 55 Z" fill="#4A2E1B" />
+                        <path d="M 55 50 C 52 46, 46 48, 48 54 C 52 56, 56 54, 55 50 Z" fill="#3D2516" />
+                        <path d="M 70 58 C 66 56, 64 62, 68 66 C 72 64, 72 60, 70 58 Z" fill="#5C3A21" />
+                        <circle cx="32" cy="22" r="1.5" fill="#C6893F" />
+                        <circle cx="68" cy="25" r="2" fill="#C6893F" />
+                        <circle cx="22" cy="42" r="1.5" fill="#C6893F" />
+                        <circle cx="78" cy="50" r="2" fill="#C6893F" />
+                        <circle cx="58" cy="75" r="1.5" fill="#C6893F" />
+                    </svg>
+                </div>
+                <div class="space-y-1">
+                    <h3 class="text-sm font-semibold tracking-tight text-black dark:text-white/90">Privacy Preferences</h3>
+                    <p class="text-xs text-slate-700 dark:text-slate-400 leading-relaxed max-w-md">
+                        We use essential cookies and analytics to refine your experience. Learn more in our
+                        <a href="{% url 'docs:privacy_policy' %}"
+                           class="text-blue-500 underline transition-colors">Privacy Policy.</a>
+                        <button @click="declineCookies()"
+                                class="text-xs underline font-medium hover:bg-white/5 rounded-xl transition-all duration-200 border border-transparent hover:border-white/10">
+                            Decline Optional
+                        </button>
+                    </p>
+                </div>
             </div>
-            <div class="space-y-1">
-                <h3 class="text-sm font-semibold tracking-tight text-black dark:text-white/90">Privacy Preferences</h3>
-                <p class="text-xs text-slate-700 dark:text-slate-400 leading-relaxed max-w-md">
-                    We use essential cookies and analytics to refine your experience. Learn more in our
-                    <a href="{% url 'docs:privacy_policy' %}"
-                       class="text-blue-500 underline transition-colors">Privacy Policy.</a>
-                    <button @click="declineCookies()"
-                            class="text-xs underline font-medium hover:bg-white/5 rounded-xl transition-all duration-200 border border-transparent hover:border-white/10">
-                        Decline Optional
-                    </button>
-                </p>
+            <div class="flex items-center gap-2.5 w-full sm:w-auto shrink-0 sm:pt-0">
+                <button @click="acceptCookies()"
+                        class="flex-1 sm:flex-initial px-5 py-2.5 text-xs font-medium dark:text-black text-white bg-black dark:bg-white hover:bg-slate-200 active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.15)] rounded-xl transition-all duration-200">
+                    Accept All
+                </button>
             </div>
         </div>
-        <div class="flex items-center gap-2.5 w-full sm:w-auto shrink-0 sm:pt-0">
-            <button @click="acceptCookies()"
-                    class="flex-1 sm:flex-initial px-5 py-2.5 text-xs font-medium dark:text-black text-white bg-black dark:bg-white hover:bg-slate-200 active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.15)] rounded-xl transition-all duration-200">
-                Accept All
-            </button>
-        </div>
-    </div>
-</div>
     </div>
 </html>

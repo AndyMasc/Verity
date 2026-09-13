@@ -1,4 +1,5 @@
 from pathlib import Path
+from urllib.parse import urlsplit, urlunsplit
 
 import environ
 import sentry_sdk
@@ -93,7 +94,7 @@ INSTALLED_APPS = [
     "reimbursements.apps.ReimbursementsConfig",
     "plaid_integration.apps.PlaidIntegrationConfig",
     "billing.apps.BillingConfig",
-# Webpush
+    # Webpush
     "webpush",
     # Stripe
     "djstripe",
@@ -500,11 +501,21 @@ if _sentry_dsn:
         sentry_sdk.init(dsn="")
 
 # Dramatiq broker
+def _normalized_broker_url(raw: str) -> str:
+    # amqp URLs like "…:5672//" parse to an *empty* vhost, which brokers
+    # refuse with 403 ACCESS_REFUSED.  Normalize a blank vhost to "/".
+    parts = urlsplit(raw)
+    vhost = parts.path
+    if vhost.replace("/", "") == "":
+        vhost = "/%2F"
+    return urlunsplit(parts._replace(path=vhost))
+
+
 DRAMATIQ_ENCODER = "core.encoding.EmailPayloadEncoder"
 DRAMATIQ_BROKER = {
     "BROKER": "dramatiq.brokers.rabbitmq.RabbitmqBroker",
     "OPTIONS": {
-        "url": env("RABBIT_MQ_URL"),
+        "url": _normalized_broker_url(env("RABBIT_MQ_URL")),
     },
     "MIDDLEWARE": [
         "dramatiq.middleware.prometheus.Prometheus",
