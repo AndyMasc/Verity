@@ -7,12 +7,6 @@ services:
     image: main-image:latest # Specific name of built image so others can reuse it
     restart: always
     # Uvicorn is async, so 2 workers can lots of concurrent requests.
-    # Run migrations and static collection with --skip-checks so a cache or
-    # Stripe hiccup can never take down manage.py (djstripe's system checks
-    # query cachalot -> Redis). Both steps are non-fatal so a transient R2
-    # upload or DB hiccup never crash-loops the web container (which kills
-    # worker/scheduler dependencies too). `exec` keeps uvicorn as PID 1 so
-    # signals (stop/restart) are handled cleanly.
     command: >
       sh -c "
       python manage.py migrate --noinput --skip-checks || echo 'WARN: migrate failed - continuing';
@@ -38,7 +32,7 @@ services:
   worker:
     image: main-image:latest # Reuses web image, rather than building a brand new one
     restart: always
-    command: python manage.py rundramatiq --processes=2 --threads=8 --prefetch=2 --max-tasks=5000
+    command: dramatiq Verity --processes=2 --threads=8 --prefetch=2 --max-tasks=5000
     env_file:
       - .env
     networks:

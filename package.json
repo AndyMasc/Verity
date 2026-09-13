@@ -1,0 +1,12 @@
+{
+  "name": "verity",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build:css": "tailwindcss -i theme/static_src/src/styles.css -o theme/static/css/dist/styles.css --minify"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.3.0",
+    "tailwindcss": "^4.3.0"
+  }
+}

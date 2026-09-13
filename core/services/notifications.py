@@ -29,7 +29,7 @@ User = get_user_model()
 def _base_payload() -> dict:
     """Return the base webpush payload with icon and URL, lazily evaluated."""
     return {
-        "icon": static("favicon-package/icon-512.png"),
+        "icon": static("favicon_io/icon-512.png"),
         "url": getattr(settings, "SITE_URL", "http://localhost:8000"),
     }
 

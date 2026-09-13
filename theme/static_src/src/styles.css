@@ -8,3 +8,9 @@
   * the scope of this path.
   */
 @source "../../../**/*.{html,py,js}";
+
+/* Alpine.js: hide [x-cloak] elements until Alpine mounts them. Without this,
+   drawers/menus/main-content render visibly in their unbound state. */
+[x-cloak] {
+    display: none !important;
+}

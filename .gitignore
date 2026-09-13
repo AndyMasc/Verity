@@ -39,3 +39,6 @@ staticfiles/
 .coverage
 .coverage.xml
 htmlcov/
+
+# Node
+node_modules/

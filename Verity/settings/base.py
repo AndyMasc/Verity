@@ -308,22 +308,14 @@ AWS_QUERYSTRING_AUTH = True
 AWS_S3_VERIFY = True
 AWS_S3_MAX_MEMORY_SIZE = 5 * 1024 * 1024
 
-# Static file storage
+# Static files are served same-origin via Whitenoise (see MIDDLEWARE) and
+# cached at the CDN/proxy layer, so no R2/CSP additions are needed here.
 S3_STATIC_BUCKET_NAME = env("S3_STATIC_BUCKET_NAME", default="")
 S3_STATIC_ENDPOINT_URL = env("S3_STATIC_ENDPOINT_URL", default="")
 S3_STATIC_ACCESS_KEY_ID = env("S3_STATIC_ACCESS_KEY_ID", default="")
 S3_STATIC_SECRET_ACCESS_KEY = env("S3_STATIC_SECRET_ACCESS_KEY", default="")
 S3_STATIC_DEFAULT_ACL = None
 S3_STATIC_CDN_DOMAIN = env("S3_STATIC_CDN_DOMAIN", default="")
-
-# Assets live on the R2 custom domain (see STATIC_URL below), so the browser
-# must be allowed to load them: styles, scripts (web-push/sw use static too),
-# and fonts all come from there.
-if S3_STATIC_CDN_DOMAIN:
-    _csp_static = f"https://{S3_STATIC_CDN_DOMAIN}/"
-    CONTENT_SECURITY_POLICY["DIRECTIVES"]["script-src"] += (_csp_static,)
-    CONTENT_SECURITY_POLICY["DIRECTIVES"]["style-src"] += (_csp_static,)
-    CONTENT_SECURITY_POLICY["DIRECTIVES"]["font-src"] += (_csp_static,)
 
 STORAGES = {
     "default": {
@@ -341,7 +333,12 @@ STORAGES = {
         },
     },
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        # Compression without hashing. The manifest backends
+        # (S3ManifestStaticStorage / CompressedManifestStaticFilesStorage) chase
+        # sourceMappingURL comments and raise when e.g. django_daisy's vendored
+        # tom-select has no .map file, silently failing every collectstatic.
+        # Stable plain paths are fine: Cloudflare caches /static/* for us.
+        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
     },
 }
 DATA_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
@@ -355,9 +352,7 @@ TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
 STATIC_ROOT = BASE_DIR / "staticfiles"
-STATIC_URL = "static/"
-if S3_STATIC_CDN_DOMAIN:
-    STATIC_URL = f"https://{S3_STATIC_CDN_DOMAIN}/static/"
+STATIC_URL = "/static/"
 
 
 TAILWIND_APP_NAME = "theme"
