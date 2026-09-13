@@ -148,11 +148,18 @@ CONTENT_SECURITY_POLICY = {
         "script-src": (
             "'self'",
             "'unsafe-inline'",
+            # Alpine.js compiles x-data/x-show/x-text/... expressions at runtime
+            # by evaluating strings, so it REQUIRES 'unsafe-eval' to function.
+            # Without it every Alpine expression throws (toasts, sidebar,
+            # pricing selector, bulk bar all silently die).
+            "'unsafe-eval'",
             "https://cdn.plaid.com",
             "https://*.plaid.com",
             "https://js.stripe.com",
             "https://cdn.jsdelivr.net",
             "https://js.sentry-cdn.com",
+            # Sentry's loader pulls the tracing/replay bundle from here at runtime.
+            "https://*.sentry-cdn.com",
             "https://*.posthog.com",
         ),
         "worker-src": ("'self'", "blob:"),
@@ -171,6 +178,9 @@ CONTENT_SECURITY_POLICY = {
             "https://cdn.plaid.com",
             "https://api.stripe.com",
             "https://*.posthog.com",
+            # Sentry ingestion endpoint (per-project host like o123.ingest.*).
+            "https://*.ingest.sentry.io",
+            "https://*.ingest.us.sentry.io",
         ),
         "frame-src": (
             "'self'",

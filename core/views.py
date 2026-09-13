@@ -141,8 +141,9 @@ class DashboardView(LoginRequiredMixin, TemplateView):
 
         user = await get_user_model().objects.select_related("settings").aget(pk=request.user.pk)
         context = await get_dashboard_context(user)
-        if context.get("webpush_warning"):
+        if context.get("webpush_warning") and not request.session.get("_webpush_warning_shown"):
             messages.warning(self.request, context["webpush_warning"])
+            request.session["_webpush_warning_shown"] = True
         posthog.capture("dashboard_viewed", distinct_id=str(request.user.pk))
         return self.render_to_response(context)
 
