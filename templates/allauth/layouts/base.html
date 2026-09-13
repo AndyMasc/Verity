@@ -118,7 +118,7 @@
                 .split('; ')
                 .find(row => row.startsWith(cookieName + '='));
 
-            const currentTz = currentCookie ? currentCookie.split('=')[1] : null;
+            const currentTz = currentCookie ? decodeURIComponent(currentCookie.split('=')[1] || '') : null;
             if (userTz !== currentTz) {
                 document.cookie = `${cookieName}=${userTz}; path=/; max-age=31536000; SameSite=Lax`;
                 window.location.reload();
