@@ -28,7 +28,7 @@ services:
     networks:
       - dokploy-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/core/health/"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
       interval: 30s
       timeout: 10s
       start_period: 30s
