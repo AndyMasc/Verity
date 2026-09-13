@@ -22,17 +22,17 @@
     {% csrf_token %}
     <input type="hidden" name="base_price_id" :value="selectedBasePrice">
     <input type="hidden" name="storage_price_id" :value="selectedStoragePrice">
-    <div class="relative w-full max-w-6xl mx-auto max-h-[600px]">
+    <div class="relative w-full max-w-6xl mx-auto h-max">
         <!-- BASE PLANS -->
         <div x-show="selectedCategory === 'base_plan'"
              x-cloak
              x-transition:enter="transition ease-out duration-300 transform"
              x-transition:enter-start="opacity-0 -translate-x-12"
              x-transition:enter-end="opacity-100 translate-x-0"
-             x-transition:leave="transition ease-in duration-200 transform absolute top-0 left-0 w-full"
-             x-transition:leave-start="opacity-100 translate-x-0"
-             x-transition:leave-end="opacity-0 -translate-x-12"
-             class="flex flex-wrap justify-center items-stretch gap-6 w-full max-h-[600px]">
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             class="flex flex-wrap justify-center items-stretch gap-6 w-full h-auto">
             {% for product in base_plans %}
                 {% with price_id=product.prices.first.id %}
                     <div {% if price_id %} @click="selectedBasePrice = selectedBasePrice === '{{ price_id }}' ? null : '{{ price_id }}'" {% endif %}
@@ -97,10 +97,10 @@
              x-transition:enter="transition ease-out duration-300 transform"
              x-transition:enter-start="opacity-0 translate-x-12"
              x-transition:enter-end="opacity-100 translate-x-0"
-             x-transition:leave="transition ease-in duration-200 transform absolute top-0 left-0 w-full"
-             x-transition:leave-start="opacity-100 translate-x-0"
-             x-transition:leave-end="opacity-0 translate-x-12"
-             class="flex flex-wrap justify-center items-stretch gap-6 w-full max-h-[600px]">
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             class="flex flex-wrap justify-center items-stretch gap-6 w-full h-auto">
             {% for product in storage_plans %}
                 {% with price_id=product.prices.first.id %}
                     <div {% if price_id %} data-pro-only="{% if product.pro_only %}true{% else %}false{% endif %}
@@ -173,27 +173,27 @@
             {% endfor %}
         </div>
     </div>
-    <div class="flex flex-col items-center mt-8">
-        {% if request.user.is_authenticated %}
-            <button type="submit"
-                    :disabled="!selectedBasePrice && !selectedStoragePrice"
-                    :class="(!selectedBasePrice && !selectedStoragePrice) ? 'opacity-40 cursor-not-allowed bg-zinc-200 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-500' : 'bg-zinc-950 text-white dark:bg-zinc-50 dark:text-zinc-950 hover:opacity-90 cursor-pointer active:scale-[0.99] shadow-2xl shadow-zinc-950/20 dark:shadow-none font-semibold'"
-                    class="w-full max-w-xs py-3 px-5 rounded-4xl text-sm tracking-wider transition-all duration-200">
-                Continue to checkout
-            </button>
-        {% else %}
-            <a href="{% url 'account_signup' %}"
-               class="w-full max-w-xs py-3 px-5 rounded-4xl text-sm tracking-wider transition-all duration-200 text-center bg-zinc-950 text-white dark:bg-zinc-50 dark:text-zinc-950 hover:opacity-90 cursor-pointer active:scale-[0.99] shadow-2xl shadow-zinc-950/20 dark:shadow-none font-semibold">
-                Sign up to subscribe
-            </a>
-        {% endif %}
-        <p class="text-center text-[11px] mt-4 text-zinc-600 dark:text-zinc-400 font-medium leading-relaxed">
-            You can select one plan from each category at a time.
-            <br>
-            Plans do not stack. Purchasing a plan replaces any active plan in the same category.
-        </p>
-    </div>
 </form>
+<div class="flex flex-col items-center mt-8">
+    {% if request.user.is_authenticated %}
+        <button type="submit"
+                :disabled="!selectedBasePrice && !selectedStoragePrice"
+                :class="(!selectedBasePrice && !selectedStoragePrice) ? 'opacity-40 cursor-not-allowed bg-zinc-200 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-500' : 'bg-zinc-950 text-white dark:bg-zinc-50 dark:text-zinc-950 hover:opacity-90 cursor-pointer active:scale-[0.99] shadow-2xl shadow-zinc-950/20 dark:shadow-none font-semibold'"
+                class="w-full max-w-xs py-3 px-5 rounded-4xl text-sm tracking-wider transition-all duration-200">
+            Continue to checkout
+        </button>
+    {% else %}
+        <a href="{% url 'account_signup' %}"
+           class="w-full max-w-xs py-3 px-5 rounded-4xl text-sm tracking-wider transition-all duration-200 text-center bg-zinc-950 text-white dark:bg-zinc-50 dark:text-zinc-950 hover:opacity-90 cursor-pointer active:scale-[0.99] shadow-2xl shadow-zinc-950/20 dark:shadow-none font-semibold">
+            Sign up to subscribe
+        </a>
+    {% endif %}
+    <p class="text-center text-[11px] mt-4 text-zinc-600 dark:text-zinc-400 font-medium leading-relaxed">
+        You can select one plan from each category at a time.
+        <br>
+        Plans do not stack. Purchasing a plan replaces any active plan in the same category.
+    </p>
+</div>
 {% if has_active_subscription %}
     <div class="flex justify-center mt-6">
         <form method="post" action="{% url 'portal_session' %}">

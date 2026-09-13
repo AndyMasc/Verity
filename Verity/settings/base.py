@@ -13,8 +13,10 @@ if env_file.exists():
     env.read_env(str(env_file))
 
 # PostHog
-POSTHOG_PROJECT_TOKEN = env("POSTHOG_PROJECT_TOKEN", default="")
+POSTHOG_PROJECT_TOKEN = env("POSTHOG_PROJECT_TOKEN")
 POSTHOG_HOST = env("POSTHOG_HOST", default="https://us.i.posthog.com")
+# Disable when explicitly set, or when a dev/dummy token leaked into the env:
+# a fake token makes the client hammer posthog.com with 401s on every page.
 POSTHOG_DISABLED = env.bool("POSTHOG_DISABLED", default=False)
 
 # Core
@@ -181,6 +183,7 @@ CONTENT_SECURITY_POLICY = {
             # Sentry ingestion endpoint (per-project host like o123.ingest.*).
             "https://*.ingest.sentry.io",
             "https://*.ingest.us.sentry.io",
+            "https://*.sentry-cdn.com",
         ),
         "frame-src": (
             "'self'",
