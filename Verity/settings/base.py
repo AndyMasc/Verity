@@ -221,6 +221,7 @@ ACCOUNT_SESSION_REMEMBER = True
 ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
 ACCOUNT_LOGOUT_ON_GET = False
 ACCOUNT_EMAIL_NOTIFICATIONS = True
+ACCOUNT_DEFAULT_HTTP_PROTOCOL = "https"
 ACCOUNT_FORMS = {
     "signup": "core.forms.PasswordlessSignupForm",
     "login": "core.forms.PasswordlessLoginForm",
