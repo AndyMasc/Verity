@@ -23,6 +23,11 @@ ALLOWED_HOSTS = env.list("ALLOWED_HOSTS")
 # ["https://app.verity.example", "https://www.verity.example"].
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
 
+# Public base URL of the site, used to build absolute links in emails
+# (reimbursement pay/view links) and webpush "open" URLs. base falls back to
+# localhost, which is wrong in production.
+SITE_URL = env("SITE_URL", default="https://veritypay.app")
+
 # Transport security is enabled by base when DEBUG is off; reinforce it here
 # so it cannot be disabled by a stray DEBUG override in the environment.
 SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=True)
