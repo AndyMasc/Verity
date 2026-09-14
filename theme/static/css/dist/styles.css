@@ -539,6 +539,9 @@
   .my-1\.5 {
     margin-block: calc(var(--spacing) * 1.5);
   }
+  .my-2 {
+    margin-block: calc(var(--spacing) * 2);
+  }
   .my-3 {
     margin-block: calc(var(--spacing) * 3);
   }
@@ -6043,6 +6046,14 @@
       border-color: color-mix(in srgb, oklch(27.4% 0.006 286.033) 60%, transparent);
       @supports (color: color-mix(in lab, red, red)) {
         border-color: color-mix(in oklab, var(--color-zinc-800) 60%, transparent);
+      }
+    }
+  }
+  .dark\:border-zinc-800\/70 {
+    @media (prefers-color-scheme: dark) {
+      border-color: color-mix(in srgb, oklch(27.4% 0.006 286.033) 70%, transparent);
+      @supports (color: color-mix(in lab, red, red)) {
+        border-color: color-mix(in oklab, var(--color-zinc-800) 70%, transparent);
       }
     }
   }
