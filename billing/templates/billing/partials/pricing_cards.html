@@ -173,27 +173,27 @@
             {% endfor %}
         </div>
     </div>
+    <div class="flex flex-col items-center mt-8">
+        {% if request.user.is_authenticated %}
+            <button type="submit"
+                    :disabled="!selectedBasePrice && !selectedStoragePrice"
+                    :class="(!selectedBasePrice && !selectedStoragePrice) ? 'opacity-40 cursor-not-allowed bg-zinc-200 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-500' : 'bg-zinc-950 text-white dark:bg-zinc-50 dark:text-zinc-950 hover:opacity-90 cursor-pointer active:scale-[0.99] shadow-2xl shadow-zinc-950/20 dark:shadow-none font-semibold'"
+                    class="w-full max-w-xs py-3 px-5 rounded-4xl text-sm tracking-wider transition-all duration-200">
+                Continue to checkout
+            </button>
+        {% else %}
+            <a href="{% url 'account_signup' %}"
+            class="w-full max-w-xs py-3 px-5 rounded-4xl text-sm tracking-wider transition-all duration-200 text-center bg-zinc-950 text-white dark:bg-zinc-50 dark:text-zinc-950 hover:opacity-90 cursor-pointer active:scale-[0.99] shadow-2xl shadow-zinc-950/20 dark:shadow-none font-semibold">
+                Sign up to subscribe
+            </a>
+        {% endif %}
+        <p class="text-center text-[11px] mt-4 text-zinc-600 dark:text-zinc-400 font-medium leading-relaxed">
+            You can select one plan from each category at a time.
+            <br>
+            Plans do not stack. Purchasing a plan replaces any active plan in the same category.
+        </p>
+    </div>
 </form>
-<div class="flex flex-col items-center mt-8">
-    {% if request.user.is_authenticated %}
-        <button type="submit"
-                :disabled="!selectedBasePrice && !selectedStoragePrice"
-                :class="(!selectedBasePrice && !selectedStoragePrice) ? 'opacity-40 cursor-not-allowed bg-zinc-200 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-500' : 'bg-zinc-950 text-white dark:bg-zinc-50 dark:text-zinc-950 hover:opacity-90 cursor-pointer active:scale-[0.99] shadow-2xl shadow-zinc-950/20 dark:shadow-none font-semibold'"
-                class="w-full max-w-xs py-3 px-5 rounded-4xl text-sm tracking-wider transition-all duration-200">
-            Continue to checkout
-        </button>
-    {% else %}
-        <a href="{% url 'account_signup' %}"
-           class="w-full max-w-xs py-3 px-5 rounded-4xl text-sm tracking-wider transition-all duration-200 text-center bg-zinc-950 text-white dark:bg-zinc-50 dark:text-zinc-950 hover:opacity-90 cursor-pointer active:scale-[0.99] shadow-2xl shadow-zinc-950/20 dark:shadow-none font-semibold">
-            Sign up to subscribe
-        </a>
-    {% endif %}
-    <p class="text-center text-[11px] mt-4 text-zinc-600 dark:text-zinc-400 font-medium leading-relaxed">
-        You can select one plan from each category at a time.
-        <br>
-        Plans do not stack. Purchasing a plan replaces any active plan in the same category.
-    </p>
-</div>
 {% if has_active_subscription %}
     <div class="flex justify-center mt-6">
         <form method="post" action="{% url 'portal_session' %}">
