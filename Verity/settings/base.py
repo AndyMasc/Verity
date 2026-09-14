@@ -16,8 +16,6 @@ if env_file.exists():
 # PostHog
 POSTHOG_PROJECT_TOKEN = env("POSTHOG_PROJECT_TOKEN")
 POSTHOG_HOST = env("POSTHOG_HOST", default="https://us.i.posthog.com")
-# Disable when explicitly set, or when a dev/dummy token leaked into the env:
-# a fake token makes the client hammer posthog.com with 401s on every page.
 POSTHOG_DISABLED = env.bool("POSTHOG_DISABLED", default=False)
 
 # Core
@@ -35,16 +33,9 @@ if "sqlite" in database_config["ENGINE"]:
     database_config.setdefault("OPTIONS", {})["timeout"] = 30
 else:
     database_config.setdefault("OPTIONS", {})["sslmode"] = env("DB_SSLMODE", default="require")
-    # Neon's pooled endpoint (transaction-mode pooling) can't keep PostgreSQL
-    # named cursors alive between transactions, so server-side cursors used by
-    # QuerySet.iterator() fail with "portal does not exist". Force client-side.
     database_config["DISABLE_SERVER_SIDE_CURSORS"] = True
 DATABASES = {"default": database_config}
 DATABASES["default"].setdefault("CONN_MAX_AGE", env.int("DB_CONN_MAX_AGE", default=600))
-# Neon (serverless Postgres) suspends idle connections, which makes reused
-# persistent connections raise "server closed the connection unexpectedly".
-# CONN_HEALTH_CHECKS makes Django run a lightweight query before reusing a
-# pooled connection and reconnect if it has gone stale.
 DATABASES["default"]["CONN_HEALTH_CHECKS"] = env.bool("DB_CONN_HEALTH_CHECKS", default=True)
 
 # Apps
@@ -100,9 +91,6 @@ INSTALLED_APPS = [
     "djstripe",
 ]
 
-# django-webpush 0.3.6 (latest on PyPI) ships model code without its final
-# migration (0006_alter_subscriptioninfo_user_agent), so `makemigrations`
-# reports a phantom pending change. Provide the migrations from this project.
 MIGRATION_MODULES = {
     "webpush": "webpush_migrations",
 }
@@ -125,12 +113,6 @@ MIDDLEWARE = [
     "csp.middleware.CSPMiddleware",
     "core.middleware.TimezoneMiddleware",  # Get user timezone via cookie
     "allauth.account.middleware.AccountMiddleware",
-    # django-minify-html is DISABLED: the bundled minify-html Rust binding
-    # strips required closing tags (</div>, </ul>, </nav>, </aside>) even with
-    # default options, which nests the page <main> inside the sidebar's fixed
-    # div and collapses the content to width 0. Re-enable only after pinning a
-    # known-good minify-html version and verifying tag balance.
-    # "django_minify_html.middleware.MinifyHtmlMiddleware",
 ]
 
 if not DEBUG:
@@ -156,17 +138,12 @@ CONTENT_SECURITY_POLICY = {
         "script-src": (
             "'self'",
             "'unsafe-inline'",
-            # Alpine.js compiles x-data/x-show/x-text/... expressions at runtime
-            # by evaluating strings, so it REQUIRES 'unsafe-eval' to function.
-            # Without it every Alpine expression throws (toasts, sidebar,
-            # pricing selector, bulk bar all silently die).
             "'unsafe-eval'",
             "https://cdn.plaid.com",
             "https://*.plaid.com",
             "https://js.stripe.com",
             "https://cdn.jsdelivr.net",
             "https://js.sentry-cdn.com",
-            # Sentry's loader pulls the tracing/replay bundle from here at runtime.
             "https://*.sentry-cdn.com",
             "https://*.posthog.com",
         ),
@@ -221,6 +198,7 @@ ACCOUNT_SESSION_REMEMBER = True
 ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
 ACCOUNT_LOGOUT_ON_GET = False
 ACCOUNT_EMAIL_NOTIFICATIONS = True
+ACCOUNT_LOGIN_BY_CODE_ENABLED = True
 ACCOUNT_DEFAULT_HTTP_PROTOCOL = "https"
 ACCOUNT_FORMS = {
     "signup": "core.forms.PasswordlessSignupForm",
@@ -286,11 +264,6 @@ TEMPLATES = [
 ]
 
 # Cache & Session
-# A shared Redis cache is used in every environment so that background
-# workers (dramatiq/periodiq) and the web server see the same cached data.
-# Per-process backends like LocMemCache would otherwise leave the web server
-# with stale cached values (e.g. paginator counts) after a background task
-# creates or mutates records.
 REDIS_URL = env("REDIS_URL", default="redis://localhost:6379/1")
 CACHES = {
     "default": {
@@ -328,8 +301,6 @@ AWS_QUERYSTRING_AUTH = True
 AWS_S3_VERIFY = True
 AWS_S3_MAX_MEMORY_SIZE = 5 * 1024 * 1024
 
-# Static files are served same-origin via Whitenoise (see MIDDLEWARE) and
-# cached at the CDN/proxy layer, so no R2/CSP additions are needed here.
 S3_STATIC_BUCKET_NAME = env("S3_STATIC_BUCKET_NAME", default="")
 S3_STATIC_ENDPOINT_URL = env("S3_STATIC_ENDPOINT_URL", default="")
 S3_STATIC_ACCESS_KEY_ID = env("S3_STATIC_ACCESS_KEY_ID", default="")
@@ -353,11 +324,6 @@ STORAGES = {
         },
     },
     "staticfiles": {
-        # Compression without hashing. The manifest backends
-        # (S3ManifestStaticStorage / CompressedManifestStaticFilesStorage) chase
-        # sourceMappingURL comments and raise when e.g. django_daisy's vendored
-        # tom-select has no .map file, silently failing every collectstatic.
-        # Stable plain paths are fine: Cloudflare caches /static/* for us.
         "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
     },
 }
@@ -377,8 +343,6 @@ STATIC_URL = "/static/"
 
 TAILWIND_APP_NAME = "theme"
 TAILWIND_USE_STANDALONE_BINARY = True
-# Tailwind v4's `--watch` stops when stdin is closed (e.g. under honcho/forego);
-# `--watch=always` keeps the watcher alive so the dev server doesn't get killed.
 TAILWIND_STANDALONE_START_COMMAND_ARGS = (
     "-i static_src/src/styles.css -o static/css/dist/styles.css --watch=always"
 )
@@ -449,9 +413,6 @@ PLAID_CLIENT_ID = env("PLAID_CLIENT_ID")
 PLAID_SECRET = env("PLAID_SECRET")
 PLAID_ENV = env("PLAID_ENV")
 PLAID_WEBHOOK_URL = env("PLAID_WEBHOOK_URL")
-# Minimum seconds between transaction syncs per item. Plaid may fire multiple
-# SYNC_UPDATES_AVAILABLE webhooks in quick succession for the same item; the
-# webhook debounces dispatches within this window to avoid redundant syncs.
 PLAID_SYNC_COOLDOWN_SECONDS = env.int("PLAID_SYNC_COOLDOWN_SECONDS", default=60)
 
 # Accounting
@@ -468,8 +429,6 @@ FERNET_KEYS = [
 STRIPE_SECRET_KEY = env("STRIPE_SECRET_KEY")
 STRIPE_PUBLISHABLE_KEY = env("STRIPE_PUBLISHABLE_KEY")
 DJSTRIPE_FOREIGN_KEY_TO_FIELD = env("DJSTRIPE_FOREIGN_KEY_TO_FIELD")
-# dj-stripe verifies incoming webhook signatures against this secret. Without
-# it, webhook events are accepted based only on a DB-synced endpoint row.
 DJSTRIPE_WEBHOOK_SECRET = env("STRIPE_WEBHOOK_SECRET", default="")
 
 
@@ -481,31 +440,18 @@ if _sentry_dsn:
         sentry_sdk.init(
             dsn=_sentry_dsn,
             environment=env("SENTRY_ENVIRONMENT", default="development"),
-            # Add data like request headers and IP for users,
-            # see https://docs.sentry.io/platforms/python/data-management/data-collected/ for more info
             send_default_pii=False,
-            # Enable sending logs to Sentry
             enable_logs=True,
-            # Set traces_sample_rate to 1.0 to capture 100%
-            # of transactions for tracing.
             traces_sample_rate=1.0 if not _is_prod else 0.1,
-            # Set profile_session_sample_rate to 1.0 to profile 100%
-            # of profile sessions.
             profile_session_sample_rate=1.0 if not _is_prod else 0.1,
-            # Set profile_lifecycle to "trace" to automatically
-            # run the profiler on when there is an active transaction
             profile_lifecycle="trace",
         )
     except BadDsn:
-        # CI/dev placeholders (e.g. "https://example.com") are not valid DSNs;
-        # skip Sentry rather than crash the process.
         sentry_sdk.init(dsn="")
 
 
 # Dramatiq broker
 def _normalized_broker_url(raw: str) -> str:
-    # amqp URLs like "…:5672//" parse to an *empty* vhost, which brokers
-    # refuse with 403 ACCESS_REFUSED.  Normalize a blank vhost to "/".
     parts = urlsplit(raw)
     vhost = parts.path
     if vhost.replace("/", "") == "":
@@ -531,6 +477,4 @@ DRAMATIQ_BROKER = {
         "periodiq.PeriodiqMiddleware",
     ],
 }
-# Defines which database should be used to persist Task objects when the
-# AdminMiddleware is enabled.  The default value is "default".
 DRAMATIQ_TASKS_DATABASE = "default"
