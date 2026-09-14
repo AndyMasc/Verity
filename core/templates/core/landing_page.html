@@ -12,20 +12,20 @@
                 <nav class="hidden items-center md:inline-flex space-x-1 pl-6 border-l border-zinc-300 dark:border-zinc-800">
                     {% for label, anchor in nav_links %}
                         <a href="{{ anchor }}"
-                           class="rounded-full px-3.5 py-1.5 text-sm font-semibold text-zinc-700 transition-all duration-200 hover:text-zinc-950 hover:bg-zinc-200/70 dark:text-zinc-300 dark:hover:text-zinc-100 dark:hover:bg-zinc-900/80">
+                           class="rounded-full px-3.5 py-1.5 text-sm text-zinc-800 transition-all duration-200 hover:text-zinc-950 hover:bg-zinc-200/70 dark:text-zinc-300 dark:hover:text-zinc-100 dark:hover:bg-zinc-900/80">
                             {{ label }}
                         </a>
                     {% empty %}
                         <a href="#features"
-                           class="rounded-full px-3.5 py-1.5 text-sm font-semibold text-zinc-700 transition-all duration-200 hover:text-zinc-950 hover:bg-zinc-200/70 dark:text-zinc-300 dark:hover:text-zinc-100 dark:hover:bg-zinc-900/80">Features</a>
+                           class="rounded-full px-3.5 py-1.5 text-sm font-medium text-zinc-800 transition-all duration-200 hover:text-zinc-950 hover:bg-zinc-200/70 dark:text-zinc-300 dark:hover:text-zinc-100 dark:hover:bg-zinc-900/80">Features</a>
                         <a href="#performance"
-                           class="rounded-full px-3.5 py-1.5 text-sm font-semibold text-zinc-700 transition-all duration-200 hover:text-zinc-950 hover:bg-zinc-200/70 dark:text-zinc-300 dark:hover:text-zinc-100 dark:hover:bg-zinc-900/80">Performance</a>
+                           class="rounded-full px-3.5 py-1.5 text-sm font-medium text-zinc-800 transition-all duration-200 hover:text-zinc-950 hover:bg-zinc-200/70 dark:text-zinc-300 dark:hover:text-zinc-100 dark:hover:bg-zinc-900/80">Performance</a>
                         <a href="#reimbursements"
-                           class="rounded-full px-3.5 py-1.5 text-sm font-semibold text-zinc-700 transition-all duration-200 hover:text-zinc-950 hover:bg-zinc-200/70 dark:text-zinc-300 dark:hover:text-zinc-100 dark:hover:bg-zinc-900/80">Reimbursements</a>
+                           class="rounded-full px-3.5 py-1.5 text-sm font-medium text-zinc-800 transition-all duration-200 hover:text-zinc-950 hover:bg-zinc-200/70 dark:text-zinc-300 dark:hover:text-zinc-100 dark:hover:bg-zinc-900/80">Reimbursements</a>
                         <a href="#pricing"
-                           class="rounded-full px-3.5 py-1.5 text-sm font-semibold text-zinc-700 transition-all duration-200 hover:text-zinc-950 hover:bg-zinc-200/70 dark:text-zinc-300 dark:hover:text-zinc-100 dark:hover:bg-zinc-900/80">Pricing</a>
+                           class="rounded-full px-3.5 py-1.5 text-sm font-medium text-zinc-800  transition-all duration-200 hover:text-zinc-950 hover:bg-zinc-200/70 dark:text-zinc-300 dark:hover:text-zinc-100 dark:hover:bg-zinc-900/80">Pricing</a>
                         <a href="#faq"
-                           class="rounded-full px-3.5 py-1.5 text-sm font-semibold text-zinc-700 transition-all duration-200 hover:text-zinc-950 hover:bg-zinc-200/70 dark:text-zinc-300 dark:hover:text-zinc-100 dark:hover:bg-zinc-900/80">FAQ</a>
+                           class="rounded-full px-3.5 py-1.5 text-sm font-medium text-zinc-800 transition-all duration-200 hover:text-zinc-950 hover:bg-zinc-200/70 dark:text-zinc-300 dark:hover:text-zinc-100 dark:hover:bg-zinc-900/80">FAQ</a>
                     {% endfor %}
                 </nav>
             </div>
@@ -39,8 +39,6 @@
     </nav>
     <section class="relative w-full overflow-hidden bg-white bg-gradient-to-b from-white to-zinc-100 dark:from-black rounded-xl dark:to-zinc-800 dark:bg-zinc-950 pt-24 md:pt-36 pb-24">
         <div class="absolute inset-0 bg-[linear-gradient(to_right,rgba(212,212,216,0.45)_1px,transparent_1px),linear-gradient(to_bottom,rgba(212,212,216,0.45)_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,rgba(39,39,42,0.6)_1px,transparent_1px),linear-gradient(to_bottom,rgba(39,39,42,0.6)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_60%,transparent_100%)]">
-        </div>
-        <div class="absolute inset-0 bg-[radial-gradient(#e4e4e7_1px,transparent_1px)] dark:bg-[radial-gradient(#18181b_1px,transparent_1px)] [background-size:24px_24px] [mask-image:radial-gradient(ellipse_50%_50%_at_50%_35%,#000_60%,transparent_100%)] pointer-events-none opacity-20 dark:opacity-40">
         </div>
         <div class="relative container mx-auto flex flex-col items-center justify-center gap-8 px-6 max-w-7xl text-center">
             <header class="max-w-4xl space-y-6">
@@ -66,11 +64,11 @@
         </div>
         <div class="flex items-center gap-3.5 pt-4">
             <a href="{% url 'account_signup' %}"
-               class="rounded-full bg-zinc-950 px-3 md:px-6 py-3.5 text-xs sm:text-sm font-semibold text-white transition-all duration-300 hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:hover:bg-white shadow-md hover:shadow-[0_0_20px_rgba(90,103,255,0.25)] hover:scale-[1.03] active:scale-[0.97]">
+               class="rounded-full bg-zinc-950 px-3 md:px-5 py-3 text-xs sm:text-sm font-semibold text-white transition-all duration-300 hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:hover:bg-white shadow-md hover:shadow-[0_0_20px_rgba(90,103,255,0.25)] hover:scale-[1.03] active:scale-[0.97]">
                 Get Started
             </a>
             <a href="#features"
-               class="group backdrop-blur-xl border dark:bg-black border-[#61636C] bg-zinc-200/70 flex items-center justify-center gap-2 rounded-full px-3 md:px-6 py-3.5 text-xs sm:text-sm font-semibold text-white transition-all duration-300 hover:scale-[1.03] active:scale-[0.97] shadow-sm">
+               class="group backdrop-blur-xl border dark:bg-black border-zinc-700 bg-zinc-200/70 flex items-center justify-center gap-2 rounded-full px-3 md:px-5 py-3 text-xs sm:text-sm font-semibold text-white transition-all duration-300 hover:scale-[1.03] active:scale-[0.97] shadow-sm">
                 <span class="text-black dark:text-white">Discover Platform</span>
                 <svg xmlns="http://www.w3.org/2000/svg"
                      fill="none"
