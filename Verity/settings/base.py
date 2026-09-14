@@ -144,6 +144,7 @@ CONTENT_SECURITY_POLICY = {
             "https://js.stripe.com",
             "https://cdn.jsdelivr.net",
             "https://cdnjs.cloudflare.com",
+            "https://static.cloudflareinsights.com",
             "https://js.sentry-cdn.com",
             "https://*.sentry-cdn.com",
             "https://*.posthog.com",
@@ -159,6 +160,8 @@ CONTENT_SECURITY_POLICY = {
         "img-src": ("'self'", "data:", "blob:", "https:"),
         "connect-src": (
             "'self'",
+            "https://*.r2.cloudflarestorage.com",
+            "https://*.cloudflarestorage.com",
             "https://*.resend.com",
             "https://*.plaid.com",
             "https://cdn.plaid.com",
