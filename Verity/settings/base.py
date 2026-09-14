@@ -132,52 +132,18 @@ if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # CSP - Content Security Policy
+# Allows any https: resource (same strategy as local dev) while still blocking
+# http: (mixed content), data:/blob: scripts, and cross-origin framing.
 CONTENT_SECURITY_POLICY = {
     "DIRECTIVES": {
-        "default-src": ("'self'",),
-        "script-src": (
-            "'self'",
-            "'unsafe-inline'",
-            "'unsafe-eval'",
-            "https://cdn.plaid.com",
-            "https://*.plaid.com",
-            "https://js.stripe.com",
-            "https://cdn.jsdelivr.net",
-            "https://cdnjs.cloudflare.com",
-            "https://static.cloudflareinsights.com",
-            "https://js.sentry-cdn.com",
-            "https://*.sentry-cdn.com",
-            "https://*.posthog.com",
-        ),
+        "default-src": ("'self'", "'unsafe-inline'", "'unsafe-eval'", "data:", "blob:", "https:"),
+        "script-src": ("'self'", "'unsafe-inline'", "'unsafe-eval'", "https:"),
         "worker-src": ("'self'", "blob:"),
-        "style-src": (
-            "'self'",
-            "'unsafe-inline'",
-            "https://fonts.googleapis.com",
-            "https://cdn.tailwindcss.com",
-        ),
-        "font-src": ("'self'", "https://fonts.gstatic.com"),
+        "style-src": ("'self'", "'unsafe-inline'", "https:"),
+        "font-src": ("'self'", "https:", "data:"),
         "img-src": ("'self'", "data:", "blob:", "https:"),
-        "connect-src": (
-            "'self'",
-            "https://*.r2.cloudflarestorage.com",
-            "https://*.cloudflarestorage.com",
-            "https://*.resend.com",
-            "https://*.plaid.com",
-            "https://cdn.plaid.com",
-            "https://api.stripe.com",
-            "https://*.posthog.com",
-            # Sentry ingestion endpoint (per-project host like o123.ingest.*).
-            "https://*.ingest.sentry.io",
-            "https://*.ingest.us.sentry.io",
-            "https://*.sentry-cdn.com",
-        ),
-        "frame-src": (
-            "'self'",
-            "https://cdn.plaid.com",
-            "https://*.plaid.com",
-            "https://js.stripe.com",
-        ),
+        "connect-src": ("'self'", "https:"),
+        "frame-src": ("'self'", "https:"),
         "frame-ancestors": ("'none'",),
         "base-uri": ("'self'",),
         "object-src": ("'none'",),
