@@ -39,7 +39,7 @@
               content="#0f172a"
               media="(prefers-color-scheme: dark)">
     </head>
-    <body class="font-sans min-h-screen bg-zinc-50 dark:bg-[#0E0E0E] text-zinc-900 dark:text-zinc-50 flex flex-col items-center antialiased">
+    <body class="font-sans min-h-screen bg-zinc-50 dark:bg-black text-zinc-900 dark:text-zinc-50 flex flex-col items-center antialiased">
         {% if user.is_authenticated %}
             <div x-data="{ isOpen: false, openedWithKeyboard: false }"
                  class="absolute top-4 left-4 w-fit z-40"
