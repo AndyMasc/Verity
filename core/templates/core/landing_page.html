@@ -43,13 +43,6 @@
         <div class="absolute inset-0 bg-[radial-gradient(#e4e4e7_1px,transparent_1px)] dark:bg-[radial-gradient(#18181b_1px,transparent_1px)] [background-size:24px_24px] [mask-image:radial-gradient(ellipse_50%_50%_at_50%_35%,#000_60%,transparent_100%)] pointer-events-none opacity-20 dark:opacity-40">
         </div>
         <div class="relative container mx-auto flex flex-col items-center justify-center gap-8 px-6 max-w-7xl text-center">
-            <div class="flex justify-center items-center p-[2px] rounded-full dark:bg-zinc-400 bg-zinc-500 shadow-sm">
-                <div class="px-3.5 py-2 rounded-full bg-white dark:bg-zinc-900 transition-colors flex items-center h-full">
-                    <span class="text-xs font-semibold tracking-wide bg-clip-text dark:text-zinc-200 leading-none -mt-[1px]">
-                        Use Verity free <span class="text-zinc-300 dark:text-white font-normal">|</span> No credit card required
-                    </span>
-                </div>
-            </div>
             <header class="max-w-4xl space-y-6">
                 <h1 class="text-4xl sm:text-6xl lg:text-[80px] font-medium tracking-tight text-zinc-950 dark:text-zinc-50 leading-[1.05]">
                     Verity <span>is the home
@@ -74,11 +67,11 @@
         </div>
         <div class="flex items-center gap-3.5 pt-4">
             <a href="{% url 'account_signup' %}"
-               class="rounded-full bg-zinc-950 px-7 py-3 text-xs sm:text-sm font-semibold text-white transition-all duration-300 hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:hover:bg-white shadow-md hover:shadow-[0_0_20px_rgba(90,103,255,0.25)] hover:scale-[1.03] active:scale-[0.97]">
+               class="rounded-full bg-zinc-950 px-3 md:px-5 py-3 text-xs sm:text-sm font-semibold text-white transition-all duration-300 hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:hover:bg-white shadow-md hover:shadow-[0_0_20px_rgba(90,103,255,0.25)] hover:scale-[1.03] active:scale-[0.97]">
                 Get Started Free
             </a>
             <a href="#features"
-               class="group bg-[#5B66FF] flex items-center justify-center gap-2 rounded-full px-7 py-3 text-xs sm:text-sm font-semibold text-white transition-all duration-300 hover:scale-[1.03] active:scale-[0.97] shadow-sm">
+               class="group bg-[#5B66FF] flex items-center justify-center gap-2 rounded-full px-3 md:px-5 py-3 text-xs sm:text-sm font-semibold text-white transition-all duration-300 hover:scale-[1.03] active:scale-[0.97] shadow-sm">
                 <span>Discover Platform</span>
                 <svg xmlns="http://www.w3.org/2000/svg"
                      fill="none"
@@ -91,18 +84,18 @@
             </a>
         </div>
     </div>
-    <div class="relative mt-10 w-full p-6 md:p-10">
-        <div class="flex justify-start md:justify-center">
-            <div class="relative w-[92vw] sm:w-[85vw] md:w-full max-w-7xl shrink-0 group">
-                <div class="absolute -inset-2 rounded-2xl md:rounded-3xl pointer-events-none transition-opacity duration-500 bg-black opacity-10 blur-2xl dark:bg-white dark:opacity-15 dark:blur-2xl">
+    <div class="relative mt-15 w-full overflow-visible">
+        <div class="mx-auto max-w-7xl px-6 lg:px-8 overflow-visible">
+            <div class="relative w-[185vw] sm:w-[180vw] lg:w-7xl max-w-none">
+                <div class="absolute -inset-6 sm:-inset-8 bg-zinc-400/25 dark:bg-white/10 rounded-3xl blur-2xl sm:blur-3xl pointer-events-none transition-all duration-500">
                 </div>
-                <div class="relative rounded-xl sm:rounded-2xl border border-zinc-300 dark:border-zinc-800 overflow-hidden bg-white dark:bg-zinc-950 dark:shadow-[0_32px_96px_-16px_rgba(0,0,0,0.8)] transition-colors duration-500">
+                <div class="relative overflow-hidden rounded-xl [mask-image:linear-gradient(to_bottom,rgba(0,0,0,1)_65%,rgba(0,0,0,0)_100%)]">
                     <img src="{% static 'core/images/interface-demo-light.webp' %}"
                          alt="Verity expense management interface"
-                         class="w-full object-cover object-left dark:hidden rounded-xl sm:rounded-2xl transition-transform duration-700">
+                         class="w-full h-auto object-cover object-left dark:hidden rounded-xl transition-transform duration-700">
                     <img src="{% static 'core/images/interface-demo-dark.webp' %}"
                          alt="Verity expense management interface in dark mode"
-                         class="hidden w-full object-cover object-left dark:block rounded-xl sm:rounded-2xl transition-transform duration-700">
+                         class="hidden w-full h-auto object-cover object-left dark:block rounded-xl transition-transform duration-700">
                 </div>
             </div>
         </div>
