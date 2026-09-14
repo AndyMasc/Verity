@@ -143,6 +143,7 @@ CONTENT_SECURITY_POLICY = {
             "https://*.plaid.com",
             "https://js.stripe.com",
             "https://cdn.jsdelivr.net",
+            "https://cdnjs.cloudflare.com",
             "https://js.sentry-cdn.com",
             "https://*.sentry-cdn.com",
             "https://*.posthog.com",
