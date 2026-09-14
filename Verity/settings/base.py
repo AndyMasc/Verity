@@ -500,6 +500,7 @@ if _sentry_dsn:
         # skip Sentry rather than crash the process.
         sentry_sdk.init(dsn="")
 
+
 # Dramatiq broker
 def _normalized_broker_url(raw: str) -> str:
     # amqp URLs like "…:5672//" parse to an *empty* vhost, which brokers
