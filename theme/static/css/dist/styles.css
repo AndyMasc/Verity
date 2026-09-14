@@ -137,6 +137,8 @@
     --text-5xl--line-height: 1;
     --text-6xl: 3.75rem;
     --text-6xl--line-height: 1;
+    --text-7xl: 4.5rem;
+    --text-7xl--line-height: 1;
     --font-weight-light: 300;
     --font-weight-normal: 400;
     --font-weight-medium: 500;
@@ -1669,6 +1671,9 @@
   }
   .border-\[\#5A67FF\]\/25 {
     border-color: color-mix(in oklab, #5A67FF 25%, transparent);
+  }
+  .border-\[\#61636C\] {
+    border-color: #61636C;
   }
   .border-amber-400\/25 {
     border-color: color-mix(in srgb, oklch(82.8% 0.189 84.429) 25%, transparent);
@@ -5346,6 +5351,12 @@
       line-height: var(--tw-leading, var(--text-6xl--line-height));
     }
   }
+  .sm\:text-7xl {
+    @media (width >= 40rem) {
+      font-size: var(--text-7xl);
+      line-height: var(--tw-leading, var(--text-7xl--line-height));
+    }
+  }
   .sm\:text-base {
     @media (width >= 40rem) {
       font-size: var(--text-base);
@@ -5536,6 +5547,11 @@
   .md\:px-5 {
     @media (width >= 48rem) {
       padding-inline: calc(var(--spacing) * 5);
+    }
+  }
+  .md\:px-6 {
+    @media (width >= 48rem) {
+      padding-inline: calc(var(--spacing) * 6);
     }
   }
   .md\:pt-0 {
@@ -5755,6 +5771,11 @@
   .dark\:border-\[\#8B90FF\]\/25 {
     @media (prefers-color-scheme: dark) {
       border-color: color-mix(in oklab, #8B90FF 25%, transparent);
+    }
+  }
+  .dark\:border-\[\#61636C\] {
+    @media (prefers-color-scheme: dark) {
+      border-color: #61636C;
     }
   }
   .dark\:border-amber-500\/30 {
