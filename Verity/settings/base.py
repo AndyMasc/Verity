@@ -176,7 +176,7 @@ CONTENT_SECURITY_POLICY = {
         ),
         "frame-ancestors": ("'none'",),
         "base-uri": ("'self'",),
-        "form-action": ("'self'",),
+        "form-action": ("'self'", "https://veritypay.app"),
         "object-src": ("'none'",),
     }
 }
