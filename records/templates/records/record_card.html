@@ -5,11 +5,11 @@
        class="hidden sm:grid grid-cols-[32px_minmax(0,1fr)_160px_110px_90px_100px] items-center gap-4 px-4 py-3">
         <div class="relative w-5 h-5" @click.stop>
             <span class="absolute inset-0 flex items-center justify-center transition-opacity duration-150"
-                  :class="selectedIds.includes('{{ record.pk }}') ? 'opacity-0' : 'opacity-100 group-hover:opacity-0'">
+                  :class="selectedIds.includes('{{ record.pk }}') ? 'opacity-100' : ''">
                 <span class="w-2 h-2 rounded-full {% if not record.is_active %}bg-zinc-400 dark:bg-zinc-600{% elif record.expiry_date %}bg-amber-500 dark:bg-amber-600{% else %}bg-zinc-900 dark:bg-zinc-100{% endif %}"></span>
             </span>
             <label class="absolute inset-0 flex items-center justify-center cursor-pointer transition-opacity duration-150"
-                   :class="selectedIds.includes('{{ record.pk }}') ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'">
+                   :class="selectedIds.includes('{{ record.pk }}') ? 'opacity-100' : 'opacity-100'">
                 <input type="checkbox"
                        value="{{ record.pk }}"
                        :checked="selectedIds.includes('{{ record.pk }}')"
