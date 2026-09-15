@@ -2,7 +2,7 @@
 {% load form_tags %}
 {% block title %}{{ package.title }} | Verity{% endblock %}
 {% block content %}
-    <main class="min-h-screen w-full max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-10 selection:bg-zinc-900 selection:text-white dark:selection:bg-white dark:selection:text-zinc-900 font-sans"
+    <main class="min-h-screen w-full max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10 selection:bg-zinc-900 selection:text-white dark:selection:bg-white dark:selection:text-zinc-900 font-sans"
           x-data="packagePage()">
         <nav class="flex items-center justify-between mb-6 sm:mb-10 pb-4 sm:pb-6 border-b border-black/[0.06] dark:border-white/[0.06]">
             <a href="{% url 'reimbursements:package-list' %}"
