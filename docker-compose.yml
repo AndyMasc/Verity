@@ -10,6 +10,7 @@ services:
     command: >
       sh -c "
       python manage.py migrate --noinput --skip-checks || echo 'WARN: migrate failed - continuing';
+      python manage.py tailwind build || echo 'WARN: tailwind build failed - continuing';
       python manage.py collectstatic --noinput --skip-checks || echo 'WARN: collectstatic failed - continuing';
       exec python -O -m uvicorn Verity.asgi:application --host 0.0.0.0 --port 8000 --workers 4 --timeout-keep-alive 5 --log-level warning
       "
@@ -32,7 +33,7 @@ services:
   worker:
     image: main-image:latest # Reuses web image, rather than building a brand new one
     restart: always
-    command: python manage.py rundramatiq --skip-checks --processes 1 --threads 4 -Q default ocr-tasks maintenance
+    command: python manage.py rundramatiq --skip-checks --processes 2 --threads 8 -Q default ocr-tasks maintenance
     env_file:
       - .env
     networks:
