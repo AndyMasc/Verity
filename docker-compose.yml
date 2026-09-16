@@ -1,4 +1,9 @@
 # MESSAGE BROKER AND CACHE ARE ONE CLICK DEPLOYED VIA DOKPLOY/COOLIFY. DATABASE IS HOSTED FOR COMPLIANCE
+#
+# Network topology:
+#   dokploy-network  : external; shared Dokploy net. web exposes ingress to Traefik;
+#                      web/worker/scheduler all reach lavinmq + valkey here (they are
+#                      also on Dokploy's default + dokploy-network stacks).
 services:
   web:
     build:
@@ -6,12 +11,16 @@ services:
       dockerfile: Dockerfile
     image: main-image:latest # Specific name of built image so others can reuse it
     restart: always
-    # Uvicorn is async, so 2 workers can lots of concurrent requests.
+    # Uvicorn is async, so 2-4 workers can handle lots of concurrent requests.
+    # set -e: a failed migrate/collectstatic must crash the container so Dokploy
+    # halts the rollout and keeps the last healthy container alive. tailwind is
+    # best-effort only because compiled dist CSS is committed to the image.
     command: >
       sh -c "
-      python manage.py migrate --noinput --skip-checks || echo 'WARN: migrate failed - continuing';
-      python manage.py tailwind build || echo 'WARN: tailwind build failed - continuing';
-      python manage.py collectstatic --noinput --skip-checks || echo 'WARN: collectstatic failed - continuing';
+      set -e;
+      python manage.py migrate --noinput --skip-checks;
+      python manage.py collectstatic --noinput --skip-checks;
+      python manage.py tailwind build || echo 'WARN: tailwind build failed - continuing (committed dist used)';
       exec python -O -m uvicorn Verity.asgi:application --host 0.0.0.0 --port 8000 --workers 4 --timeout-keep-alive 5 --log-level warning
       "
     expose:
@@ -28,6 +37,14 @@ services:
       timeout: 10s
       start_period: 30s
       retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 1536M
+        reservations:
+          cpus: '1.0'
+          memory: 768M
 
   # Background worker for handling Dramatiq actors/tasks
   worker:
@@ -41,6 +58,14 @@ services:
     depends_on:
       web:
         condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 1536M
+        reservations:
+          cpus: '1.0'
+          memory: 1024M
 
   # Scheduler for running periodic/cron tasks via Periodiq
   scheduler:
@@ -49,10 +74,20 @@ services:
     command: python manage.py runperiodiq --skip-checks
     env_file:
       - .env
+    networks:
+      - dokploy-network
     depends_on:
       web:
         condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
 
-networks: # Since using dokploy 1 click lavin mq and valkey, we need to connect to the external dokploy network so they can communicate with each other.
+networks: # Since using dokploy 1 click lamq mq and valkey, connect via shared external networks.
   dokploy-network:
     external: true
