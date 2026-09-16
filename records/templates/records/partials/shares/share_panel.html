@@ -1,8 +1,8 @@
 <section class="space-y-4">
     <div class="flex items-center justify-between gap-3">
-        <h3 class="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Shared with</h3>
+        <h3 class="text-[11px] font-semibold tracking-wider text-zinc-400 uppercase dark:text-zinc-500">Shared with</h3>
         {% if is_recipient %}
-            <span class="text-[11px] font-medium text-amber-400 bg-amber-500/10 ring-1 ring-inset ring-amber-500/20 rounded-full px-2.5 py-0.5">
+            <span class="rounded-full bg-amber-500/10 px-2.5 py-0.5 text-[11px] font-medium text-amber-400 ring-1 ring-amber-500/20 ring-inset">
                 Shared with you
             </span>
         {% endif %}
@@ -11,16 +11,16 @@
         <ul class="space-y-2.5">
             {% for share in shares %}
                 <li class="group flex items-center justify-between gap-3 py-2.5 px-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.04] hover:border-white/[0.08] transition-all duration-200 {% if not share.is_active %}opacity-60{% endif %}">
-                    <div class="flex items-center gap-3 min-w-0">
-                        <div class="uppercase flex size-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-700 text-white text-[11px] font-bold shadow-sm shadow-indigo-500/20">
+                    <div class="flex min-w-0 items-center gap-3">
+                        <div class="flex size-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-700 text-[11px] font-bold text-white uppercase shadow-sm shadow-indigo-500/20">
                             {{ share.user.email|slice:":1" }}
                         </div>
                         <div class="min-w-0">
-                            <p class="text-xs font-medium text-zinc-200 group-hover:text-white transition-colors truncate">
+                            <p class="truncate text-xs font-medium text-zinc-200 transition-colors group-hover:text-white">
                                 {{ share.user.get_full_name|default:share.user.email }}
                             </p>
-                            <p class="text-[10px] text-zinc-500 truncate">{{ share.user.email }}</p>
-                            <p class="text-[10px] text-zinc-500 truncate">
+                            <p class="truncate text-[10px] text-zinc-500">{{ share.user.email }}</p>
+                            <p class="truncate text-[10px] text-zinc-500">
                                 {{ share.get_permission_display }}
                                 {% if share.include_documents %}&middot; documents{% endif %}
                                 {% if share.purpose %}&middot; {{ share.get_purpose_display|lower }}{% endif %}
@@ -28,15 +28,15 @@
                             </p>
                         </div>
                     </div>
-                    <div class="flex items-center gap-2.5 shrink-0">
-                        <span class="text-[10px] text-zinc-500 hidden sm:block tabular-nums">{{ share.created_at|date:"M d, Y" }}</span>
+                    <div class="flex shrink-0 items-center gap-2.5">
+                        <span class="hidden text-[10px] text-zinc-500 tabular-nums sm:block">{{ share.created_at|date:"M d, Y" }}</span>
                         {% if can_grant and share.is_active %}
                             <form method="POST"
                                   action="{% url 'records:record_share_revoke' record.pk share.pk %}"
                                   onsubmit="return confirm('Revoke access for {{ share.user.email }}? This cannot be undone.');">
                                 {% csrf_token %}
                                 <button type="submit"
-                                        class="text-[11px] font-medium text-rose-400/80 hover:text-rose-300 px-2.5 py-1 rounded-lg bg-rose-500/0 hover:bg-rose-500/10 transition-all duration-200">
+                                        class="rounded-lg bg-rose-500/0 px-2.5 py-1 text-[11px] font-medium text-rose-400/80 transition-all duration-200 hover:bg-rose-500/10 hover:text-rose-300">
                                     Revoke
                                 </button>
                             </form>
@@ -46,18 +46,18 @@
             {% endfor %}
         </ul>
     {% else %}
-        <div class="py-3 px-4 rounded-xl bg-white/[0.01] border border-dashed border-white/[0.06] text-center">
+        <div class="rounded-xl border border-dashed border-white/[0.06] bg-white/[0.01] px-4 py-3 text-center">
             <p class="text-xs text-zinc-500">Not shared with anyone yet.</p>
         </div>
     {% endif %}
     {% if can_grant %}
         <form method="POST"
               action="{% url 'records:record_share' record.pk %}"
-              class="pt-4 border-t border-white/[0.06] space-y-3"
+              class="space-y-3 border-t border-white/[0.06] pt-4"
               onsubmit="var b = this.querySelector('button[type=submit]'); b.disabled = true; b.innerHTML = '&#8230;';">
             {% csrf_token %}
             <label for="share-emails"
-                   class="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 block">
+                   class="block text-[11px] font-semibold tracking-wider text-zinc-400 uppercase dark:text-zinc-500">
                 Share with a user
             </label>
             <div class="flex gap-2">
@@ -66,9 +66,9 @@
                        name="emails"
                        multiple
                        placeholder="test@example.com"
-                       class="flex-1 min-w-0 rounded-xl border border-white/[0.06] bg-white/[0.03] px-3.5 py-2 text-sm text-zinc-100 focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/40 outline-none placeholder-zinc-600 transition-all duration-200">
+                       class="min-w-0 flex-1 rounded-xl border border-white/[0.06] bg-white/[0.03] px-3.5 py-2 text-sm text-zinc-100 placeholder-zinc-600 transition-all duration-200 outline-none focus:border-indigo-500/40 focus:ring-2 focus:ring-indigo-500/40">
                 <button type="submit"
-                        class="shrink-0 inline-flex items-center justify-center gap-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium px-4 py-2 shadow-lg shadow-indigo-600/20 transition-all duration-200 active:scale-[0.97] disabled:opacity-50 disabled:pointer-events-none">
+                        class="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-indigo-600/20 transition-all duration-200 hover:bg-indigo-500 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50">
                     Share
                 </button>
             </div>
@@ -93,12 +93,12 @@
                     Include documents
                 </label>
             </div>
-            <p class="text-[10px] text-zinc-500 leading-relaxed">
+            <p class="text-[10px] leading-relaxed text-zinc-500">
                 Recipients see only this record. View-only recipients cannot edit; edits by editors are attributed in record history.
             </p>
         </form>
     {% elif can_share_feature is False %}
-        <div class="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20">
+        <div class="rounded-xl border border-rose-500/20 bg-rose-500/10 p-3">
             <p class="text-[11px] font-medium text-rose-400">Record sharing is a Pro feature.</p>
         </div>
     {% endif %}

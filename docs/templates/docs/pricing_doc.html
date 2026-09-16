@@ -1,31 +1,31 @@
 {% extends 'base.html' %}
 {% block content %}
-    <main class="w-full py-16 px-6">
+    <main class="w-full px-6 py-16">
         <section class="container mx-auto max-w-3xl">
             <header class="mb-12">
-                <h1 class="text-4xl md:text-5xl font-semibold mb-4">Pricing</h1>
+                <h1 class="mb-4 text-4xl font-semibold md:text-5xl">Pricing</h1>
                 <p class="text-zinc-500 dark:text-zinc-400">Pricing information for Verity</p>
             </header>
-            <div class="prose prose-zinc dark:prose-invert max-w-none">
-                <p class="text-lg text-zinc-600 dark:text-zinc-300 mb-8">
+            <div class="prose-zinc max-w-none prose dark:prose-invert">
+                <p class="mb-8 text-lg text-zinc-600 dark:text-zinc-300">
                     Verity is designed to keep the core experience generous while charging for resource-intensive or optional capabilities where applicable.
                 </p>
-                <h2 class="text-2xl font-semibold mt-8 mb-4">Payment Philosophy</h2>
-                <p class="text-zinc-600 dark:text-zinc-300 mb-4">
+                <h2 class="mt-8 mb-4 text-2xl font-semibold">Payment Philosophy</h2>
+                <p class="mb-4 text-zinc-600 dark:text-zinc-300">
                     "Pay for what you use." The core document and record management experience is free to use, while resource-processing capabilities and high-capacity storage tiers are subject to straightforward, predictable pricing.
                 </p>
-                <div class="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-4 mb-8">
-                    <p class="text-sm text-zinc-600 dark:text-zinc-400 m-0">
+                <div class="mb-8 rounded-lg border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-900">
+                    <p class="m-0 text-sm text-zinc-600 dark:text-zinc-400">
                         <strong>Important Note:</strong> Verity is a dedicated receipt and expense management platform, not a generic cloud storage provider. Storage capacity is strictly allocated and paid for within our tiers to prevent system resource abuse and ensure high performance for all users.
                     </p>
                 </div>
-                <h2 class="text-2xl font-semibold mt-8 mb-2">Base Plans</h2>
-                <h3 class="text-base font-normal text-zinc-500 dark:text-zinc-400 mt-0 mb-6 italic">Each plan provides plenty of storage space tailored to its target audience. In the unlikely scenario where you need more, contact us for solutions.</h3>
+                <h2 class="mt-8 mb-2 text-2xl font-semibold">Base Plans</h2>
+                <h3 class="mt-0 mb-6 text-base font-normal text-zinc-500 italic dark:text-zinc-400">Each plan provides plenty of storage space tailored to its target audience. In the unlikely scenario where you need more, contact us for solutions.</h3>
                 <div class="space-y-6 text-zinc-600 dark:text-zinc-300">
                     <div>
-                        <h3 class="text-xl font-medium text-zinc-900 dark:text-zinc-100 mb-1">Free Plan</h3>
-                        <p class="text-sm text-zinc-500 dark:text-zinc-400 mb-2">Designed for personal use and basic tracking.</p>
-                        <ul class="list-disc pl-5 space-y-1 text-sm text-zinc-600 dark:text-zinc-400">
+                        <h3 class="mb-1 text-xl font-medium text-zinc-900 dark:text-zinc-100">Free Plan</h3>
+                        <p class="mb-2 text-sm text-zinc-500 dark:text-zinc-400">Designed for personal use and basic tracking.</p>
+                        <ul class="list-disc space-y-1 pl-5 text-sm text-zinc-600 dark:text-zinc-400">
                             <li><strong>500.0 MB</strong> secure cloud storage</li>
                             <li><strong>15 quick scans</strong> per month</li>
                             <li>Supporting file uploads (Up to 5 MB per file)</li>
@@ -33,9 +33,9 @@
                         </ul>
                     </div>
                     <div>
-                        <h3 class="text-xl font-medium text-zinc-900 dark:text-zinc-100 mb-1">Verity Pro</h3>
-                        <p class="text-sm text-zinc-500 dark:text-zinc-400 mb-2">Manage purchases, receipts, supporting documents, warranties, and reimbursements all in one place.</p>
-                        <ul class="list-disc pl-5 space-y-1 text-sm text-zinc-600 dark:text-zinc-400">
+                        <h3 class="mb-1 text-xl font-medium text-zinc-900 dark:text-zinc-100">Verity Pro</h3>
+                        <p class="mb-2 text-sm text-zinc-500 dark:text-zinc-400">Manage purchases, receipts, supporting documents, warranties, and reimbursements all in one place.</p>
+                        <ul class="list-disc space-y-1 pl-5 text-sm text-zinc-600 dark:text-zinc-400">
                             <li>All free plan features included</li>
                             <li><strong>5.0 GB</strong> baseline cloud storage</li>
                             <li><strong>500 quick scans</strong> per month</li>
@@ -46,11 +46,11 @@
                         </ul>
                     </div>
                 </div>
-                <h2 class="text-2xl font-semibold mt-8 mb-6">Storage Packs</h2>
-                <p class="text-zinc-600 dark:text-zinc-300 mb-4 text-sm">
+                <h2 class="mt-8 mb-6 text-2xl font-semibold">Storage Packs</h2>
+                <p class="mb-4 text-sm text-zinc-600 dark:text-zinc-300">
                     Need extra room for high-resolution camera roll images? Paid storage expansions can be purchased to scale your account capacity. These packs stack directly alongside your baseline allowance. They do not stack with other storage packs (purchasing a new tier replaces your active storage pack).
                 </p>
-                <ul class="list-disc pl-5 space-y-3 text-sm text-zinc-600 dark:text-zinc-400">
+                <ul class="list-disc space-y-3 pl-5 text-sm text-zinc-600 dark:text-zinc-400">
                     <li>
                         <strong>1 GB Storage Pack:</strong><span class="text-zinc-400 dark:text-zinc-500">(Available to all plans)</span>
                         <br />
@@ -67,22 +67,22 @@
                         <span class="text-xs text-zinc-500">Adds space for ~2,500 uncompressed raw smartphone photos.</span>
                     </li>
                 </ul>
-                <h2 class="text-2xl font-semibold mt-8 mb-6">Platform Fee on Reimbursements</h2>
-                <p class="text-zinc-600 dark:text-zinc-300 mb-4">
+                <h2 class="mt-8 mb-6 text-2xl font-semibold">Platform Fee on Reimbursements</h2>
+                <p class="mb-4 text-zinc-600 dark:text-zinc-300">
                     When a reimbursement package is paid, Verity processes the payment through Stripe using destination charges. Stripe deducts its standard processing fees (2.9% + $0.30 for US cards) from the application fee, and Verity's platform net margin is guaranteed at 1% of the transaction total (floored at $0.25-equivalent). The connected account (recipient) keeps everything above this net margin.
                 </p>
-                <p class="text-zinc-500 dark:text-zinc-400 text-sm mb-6">
+                <p class="mb-6 text-sm text-zinc-500 dark:text-zinc-400">
                     <strong>How fees work:</strong> The platform fee is calculated as Stripe's estimated processing costs (2.9% + $0.30) plus Verity's 1% net margin, floored at $0.25-equivalent. This ensures the platform receives a minimum net revenue after Stripe takes its cut. The exact fee is calculated per-transaction and displayed in the checkout flow before payment confirmation. Verity does not take a percentage cut of transactions beyond this structured fee.
                 </p>
-                <h3 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-3">Fee Breakdown</h3>
-                <ul class="list-disc pl-5 space-y-2 text-sm text-zinc-600 dark:text-zinc-400">
+                <h3 class="mb-3 text-lg font-semibold text-zinc-900 dark:text-zinc-100">Fee Breakdown</h3>
+                <ul class="list-disc space-y-2 pl-5 text-sm text-zinc-600 dark:text-zinc-400">
                     <li>Stripe processing fee: 2.9% + $0.30 per successful transaction (for US cards)</li>
                     <li>Verity platform net margin: 1% of transaction total (floored at $0.25)</li>
                     <li>Connected account take-home: Everything above the platform net margin</li>
                     <li>Fees are calculated per-reimbursement-package and shown before payment</li>
                 </ul>
-                <h2 class="text-2xl font-semibold mt-8 mb-6">Billing FAQ</h2>
-                <ul class="list-disc pl-5 space-y-2 text-sm text-zinc-600 dark:text-zinc-400">
+                <h2 class="mt-8 mb-6 text-2xl font-semibold">Billing FAQ</h2>
+                <ul class="list-disc space-y-2 pl-5 text-sm text-zinc-600 dark:text-zinc-400">
                     <li><strong>How billing works:</strong> Base plan subscriptions and optional Storage Packs are processed as recurring monthly charges. Upgrades take effect immediately.</li>
                     <li><strong>What is the maximum upload limit?</strong> Across all plans, the maximum size limit for an individual receipt image or supporting document file is exactly <strong>5 MB</strong>. Files that do not match standard document image or PDF types will be rejected.</li>
                     <li><strong>What happens if I hit my 500-scan monthly limit?</strong> Your monthly scan allowance refreshes at the start of each billing cycle. If you hit your limit early, native AI processing will pause, but you will still be able to manually upload records and access your dashboard.</li>
@@ -91,7 +91,7 @@
                     <li><strong>What happens if I downgrade my storage?</strong> If you downgrade your account or drop a storage pack and your active file volume exceeds your new threshold, you will still be able to read and view all your data, but new file uploads will be locked until space is cleared or expanded.</li>
                     <li><strong>Changes to pricing:</strong> Any future adjustments to structural baseline limits or monthly subscription fees will be communicated transparently prior to implementation.</li>
                 </ul>
-                <p class="text-zinc-500 dark:text-zinc-300 text-sm mt-6">
+                <p class="mt-6 text-sm text-zinc-500 dark:text-zinc-300">
                     Still have questions? <a href="mailto:support@veritypay.app" class="underline">Contact support</a> for clarification on pricing and billing.
                 </p>
             </div>

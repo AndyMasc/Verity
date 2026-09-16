@@ -3,7 +3,7 @@
      x-data="{ selectedRecord: null }">
     {% for record in records %}
         <label data-record-id="{{ record.pk }}"
-               class="relative block transition-all duration-200 rounded-xl cursor-pointer"
+               class="relative block cursor-pointer rounded-xl transition-all duration-200"
                :class="selectedRecord == '{{ record.pk }}' ? 'ring-2 ring-zinc-900 dark:ring-zinc-100' : 'hover:opacity-80'">
             <input type="radio"
                    name="associated_record"
@@ -13,7 +13,7 @@
             {% include 'documents/partials/record_card_simple.html' %}
         </label>
     {% empty %}
-        <div class="text-center py-12 px-4 text-xs font-medium text-zinc-400 dark:text-zinc-500">
+        <div class="px-4 py-12 text-center text-xs font-medium text-zinc-400 dark:text-zinc-500">
             No matching records found for this query.
         </div>
     {% endfor %}

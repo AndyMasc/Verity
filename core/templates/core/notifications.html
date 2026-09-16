@@ -2,11 +2,11 @@
 {% load humanize %}
 {% block title %}Notifications | Verity{% endblock %}
 {% block content %}
-    <main class="flex flex-col min-h-screen w-full max-w-9xl mx-auto py-10">
-        <div class="flex items-center justify-between mb-8">
+    <main class="mx-auto flex min-h-screen w-full max-w-9xl flex-col py-10">
+        <div class="mb-8 flex items-center justify-between">
             <div>
                 <h1 class="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Notifications</h1>
-                <p class="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+                <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
                     {% if unread_count %}
                         {{ unread_count }} unread notification{{ unread_count|pluralize }}
                     {% else %}
@@ -18,8 +18,8 @@
                 <form method="post" action="{% url 'core:notification-mark-all-read' %}">
                     {% csrf_token %}
                     <button type="submit"
-                            class="inline-flex items-center gap-1.5 px-3.5 py-2 text-[13px] font-medium text-zinc-700 dark:text-zinc-300 bg-white/60 dark:bg-zinc-900/45 hover:bg-white dark:hover:bg-zinc-900 border border-zinc-200/30 dark:border-zinc-800/30 rounded-xl shadow-sm transition-all duration-200 active:scale-[0.98] cursor-pointer">
-                        <svg class="w-3.5 h-3.5"
+                            class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-zinc-200/30 bg-white/60 px-3.5 py-2 text-[13px] font-medium text-zinc-700 shadow-sm transition-all duration-200 hover:bg-white active:scale-[0.98] dark:border-zinc-800/30 dark:bg-zinc-900/45 dark:text-zinc-300 dark:hover:bg-zinc-900">
+                        <svg class="h-3.5 w-3.5"
                              fill="none"
                              viewBox="0 0 24 24"
                              stroke-width="1.75"
@@ -31,15 +31,15 @@
                 </form>
             {% endif %}
         </div>
-        <div class="rounded-2xl bg-white/60 dark:bg-zinc-900/45 backdrop-blur-md border border-zinc-200/20 dark:border-zinc-800/20 shadow-sm overflow-hidden">
+        <div class="overflow-hidden rounded-2xl border border-zinc-200/20 bg-white/60 shadow-sm backdrop-blur-md dark:border-zinc-800/20 dark:bg-zinc-900/45">
             {% if notifications %}
                 <table class="w-full text-left">
                     <thead>
                         <tr class="border-b border-zinc-200/20 dark:border-zinc-800/20">
-                            <th class="px-5 py-3 w-8"></th>
-                            <th class="px-5 py-3 text-[11px] font-medium uppercase tracking-[0.15em] text-zinc-500 dark:text-zinc-400">Notification</th>
-                            <th class="px-5 py-3 text-[11px] font-medium uppercase tracking-[0.15em] text-zinc-500 dark:text-zinc-400 text-right">When</th>
-                            <th class="px-5 py-3 w-20"></th>
+                            <th class="w-8 px-5 py-3"></th>
+                            <th class="px-5 py-3 text-[11px] font-medium tracking-[0.15em] text-zinc-500 uppercase dark:text-zinc-400">Notification</th>
+                            <th class="px-5 py-3 text-right text-[11px] font-medium tracking-[0.15em] text-zinc-500 uppercase dark:text-zinc-400">When</th>
+                            <th class="w-20 px-5 py-3"></th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-zinc-100 dark:divide-zinc-800/50">
@@ -49,20 +49,20 @@
                     </tbody>
                 </table>
                 {% if is_paginated %}
-                    <div class="px-5 py-4 border-t border-zinc-200/20 dark:border-zinc-800/20 flex items-center justify-between">
-                        <p class="text-[11px] text-zinc-400 dark:text-zinc-500 tabular-nums">
+                    <div class="flex items-center justify-between border-t border-zinc-200/20 px-5 py-4 dark:border-zinc-800/20">
+                        <p class="text-[11px] text-zinc-400 tabular-nums dark:text-zinc-500">
                             Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
                         </p>
                         <div class="flex items-center gap-2">
                             {% if page_obj.has_previous %}
                                 <a href="?page={{ page_obj.previous_page_number }}"
-                                   class="px-3 py-1.5 text-[12px] font-medium text-zinc-600 dark:text-zinc-400 bg-white/60 dark:bg-zinc-800/40 hover:bg-white dark:hover:bg-zinc-800/60 border border-zinc-200/30 dark:border-zinc-700/30 rounded-xl transition-all duration-200">
+                                   class="rounded-xl border border-zinc-200/30 bg-white/60 px-3 py-1.5 text-[12px] font-medium text-zinc-600 transition-all duration-200 hover:bg-white dark:border-zinc-700/30 dark:bg-zinc-800/40 dark:text-zinc-400 dark:hover:bg-zinc-800/60">
                                     Prev
                                 </a>
                             {% endif %}
                             {% if page_obj.has_next %}
                                 <a href="?page={{ page_obj.next_page_number }}"
-                                   class="px-3 py-1.5 text-[12px] font-medium text-zinc-600 dark:text-zinc-400 bg-white/60 dark:bg-zinc-800/40 hover:bg-white dark:hover:bg-zinc-800/60 border border-zinc-200/30 dark:border-zinc-700/30 rounded-xl transition-all duration-200">
+                                   class="rounded-xl border border-zinc-200/30 bg-white/60 px-3 py-1.5 text-[12px] font-medium text-zinc-600 transition-all duration-200 hover:bg-white dark:border-zinc-700/30 dark:bg-zinc-800/40 dark:text-zinc-400 dark:hover:bg-zinc-800/60">
                                     Next
                                 </a>
                             {% endif %}
@@ -71,8 +71,8 @@
                 {% endif %}
             {% else %}
                 <div class="py-20 text-center">
-                    <div class="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-zinc-100 dark:bg-zinc-800 mb-4">
-                        <svg class="w-5 h-5 text-zinc-400 dark:text-zinc-500"
+                    <div class="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-100 dark:bg-zinc-800">
+                        <svg class="h-5 w-5 text-zinc-400 dark:text-zinc-500"
                              fill="none"
                              viewBox="0 0 24 24"
                              stroke-width="1.5"
@@ -81,7 +81,7 @@
                         </svg>
                     </div>
                     <p class="text-sm font-medium text-zinc-500 dark:text-zinc-400">No notifications yet</p>
-                    <p class="text-xs text-zinc-400 dark:text-zinc-500 mt-1">You'll see alerts and updates here.</p>
+                    <p class="mt-1 text-xs text-zinc-400 dark:text-zinc-500">You'll see alerts and updates here.</p>
                 </div>
             {% endif %}
         </div>

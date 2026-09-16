@@ -4,9 +4,9 @@
          hx-trigger="every 2s"
          hx-target="#form-wrapper"
          hx-swap="innerHTML"
-         class="p-6 space-y-6 animate-pulse">
+         class="animate-pulse space-y-6 p-6">
         <div class="flex items-center gap-3 text-sm text-zinc-500 dark:text-zinc-400">
-            <svg class="animate-spin h-4 w-4 text-zinc-500"
+            <svg class="h-4 w-4 animate-spin text-zinc-500"
                  fill="none"
                  viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -16,22 +16,22 @@
             Intelligently extracting data...
         </div>
         <div class="space-y-2">
-            <div class="h-3 bg-zinc-100 dark:bg-zinc-800 rounded w-1/4"></div>
-            <div class="h-5 bg-zinc-50 dark:bg-zinc-800/50 rounded w-1/2"></div>
+            <div class="h-3 w-1/4 rounded bg-zinc-100 dark:bg-zinc-800"></div>
+            <div class="h-5 w-1/2 rounded bg-zinc-50 dark:bg-zinc-800/50"></div>
         </div>
         <div class="space-y-2">
-            <div class="h-3 bg-zinc-100 dark:bg-zinc-800 rounded w-1/3"></div>
-            <div class="h-5 bg-zinc-50 dark:bg-zinc-800/50 rounded w-3/4"></div>
+            <div class="h-3 w-1/3 rounded bg-zinc-100 dark:bg-zinc-800"></div>
+            <div class="h-5 w-3/4 rounded bg-zinc-50 dark:bg-zinc-800/50"></div>
         </div>
         <div class="space-y-2">
-            <div class="h-3 bg-zinc-100 dark:bg-zinc-800 rounded w-1/5"></div>
-            <div class="h-5 bg-zinc-50 dark:bg-zinc-800/50 rounded w-1/3"></div>
+            <div class="h-3 w-1/5 rounded bg-zinc-100 dark:bg-zinc-800"></div>
+            <div class="h-5 w-1/3 rounded bg-zinc-50 dark:bg-zinc-800/50"></div>
         </div>
     </div>
 {% elif error_message %}
-    <div class="p-8 flex flex-col items-center text-center">
-        <div class="p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200/60 dark:border-rose-900/50 rounded-2xl mb-4 text-rose-500">
-            <svg class="w-6 h-6"
+    <div class="flex flex-col items-center p-8 text-center">
+        <div class="mb-4 rounded-2xl border border-rose-200/60 bg-rose-50 p-3 text-rose-500 dark:border-rose-900/50 dark:bg-rose-950/40">
+            <svg class="h-6 w-6"
                  fill="none"
                  viewBox="0 0 24 24"
                  stroke-width="1.8"
@@ -40,14 +40,14 @@
             </svg>
         </div>
         <h2 class="text-base font-semibold text-zinc-900 dark:text-zinc-100">Couldn't extract automatically</h2>
-        <p class="mt-1.5 text-sm text-zinc-500 dark:text-zinc-400 max-w-sm">{{ error_message }}</p>
+        <p class="mt-1.5 max-w-sm text-sm text-zinc-500 dark:text-zinc-400">{{ error_message }}</p>
         <div class="mt-6 flex items-center gap-3">
             <a href="{% url 'records:add_record_manual' %}"
-               class="inline-flex items-center justify-center px-4 py-2 text-xs font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800/80 hover:bg-zinc-200/70 dark:hover:bg-zinc-800/60 rounded-2xl transition-all duration-200 shadow-xs">
+               class="inline-flex items-center justify-center rounded-2xl bg-zinc-100 px-4 py-2 text-xs font-medium text-zinc-700 shadow-xs transition-all duration-200 hover:bg-zinc-200/70 dark:bg-zinc-800/80 dark:text-zinc-300 dark:hover:bg-zinc-800/60">
                 Enter details manually
             </a>
             <a href="{% url 'core:dashboard' %}"
-               class="inline-flex items-center justify-center px-4 py-2 text-xs font-medium text-white dark:text-zinc-950 bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-zinc-200 rounded-2xl transition-all duration-200 shadow-xs">
+               class="inline-flex items-center justify-center rounded-2xl bg-zinc-900 px-4 py-2 text-xs font-medium text-white shadow-xs transition-all duration-200 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200">
                 Back to Dashboard
             </a>
         </div>
@@ -57,16 +57,16 @@
         {% csrf_token %}
         {% for field in form %}
             {% if field.name != 'payment_method' %}
-                <div class="group border-b border-zinc-100 dark:border-zinc-800/60 px-6 py-4 transition-all duration-200 focus-within:bg-zinc-50 dark:focus-within:bg-zinc-800/40">
+                <div class="group border-b border-zinc-100 px-6 py-4 transition-all duration-200 focus-within:bg-zinc-50 dark:border-zinc-800/60 dark:focus-within:bg-zinc-800/40">
                     <label for="{{ field.id_for_label }}"
-                           class="tracking-wider uppercase flex items-center w-full whitespace-nowrap mb-1.5 text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">
+                           class="mb-1.5 flex w-full items-center text-[11px] font-semibold tracking-wider whitespace-nowrap text-zinc-500 uppercase dark:text-zinc-400">
                         {% if field.label == 'Title' %}
                             Descriptive title
                         {% else %}
                             {{ field.label }}
                         {% endif %}
                         {% if field.field.required or field.name == 'notes' or field.name == 'payment_method' %}
-                            <span class="ml-1 text-rose-400 font-bold">*</span>
+                            <span class="ml-1 font-bold text-rose-400">*</span>
                         {% endif %}
                     </label>
                     {% render_field field class="mt-0.5 text-sm resize-none max-h-20 w-full border-none bg-transparent p-0 text-zinc-900 outline-none ring-0 focus:outline-none focus:ring-0 dark:text-zinc-100 placeholder:text-zinc-400" %}
@@ -79,11 +79,11 @@
         {% if form.payment_method %}
             <div class="group border-b border-zinc-100 px-6 py-4 transition-all duration-200 focus-within:bg-zinc-50 dark:border-zinc-800 dark:focus-within:bg-zinc-800/40">
                 <label for="{{ form.payment_method.id_for_label }}"
-                       class="tracking-wider uppercase flex items-center w-full whitespace-nowrap mb-1.5 text-xs text-zinc-500 dark:text-zinc-400">
-                    Payment Method / Account <span class="ml-1 text-rose-400 font-bold">*</span>
+                       class="mb-1.5 flex w-full items-center text-xs tracking-wider whitespace-nowrap text-zinc-500 uppercase dark:text-zinc-400">
+                    Payment Method / Account <span class="ml-1 font-bold text-rose-400">*</span>
                 </label>
                 {% if form.payment_method.field.disabled %}
-                    <p class="mt-0.5 text-sm text-zinc-700 dark:text-zinc-300 font-medium">{{ form.payment_method.value|default:"—" }}</p>
+                    <p class="mt-0.5 text-sm font-medium text-zinc-700 dark:text-zinc-300">{{ form.payment_method.value|default:"—" }}</p>
                 {% else %}
                     {% render_field form.payment_method class="mt-0.5 text-sm resize-none max-h-20 w-full border-none bg-transparent p-0 text-zinc-900 outline-none ring-0 focus:outline-none focus:ring-0 dark:text-zinc-100 placeholder:text-zinc-400" %}
                 {% endif %}
@@ -96,7 +96,7 @@
             <div class="flex-1 text-[10px] text-zinc-400 dark:text-zinc-500"
                  id="char-hint"></div>
             <button type="submit"
-                    class="cursor-pointer rounded-2xl bg-zinc-900 px-6 py-2.5 text-sm font-medium text-white transition-all duration-200 hover:bg-zinc-800 active:scale-[0.98] shadow-xs dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200">
+                    class="cursor-pointer rounded-2xl bg-zinc-900 px-6 py-2.5 text-sm font-medium text-white shadow-xs transition-all duration-200 hover:bg-zinc-800 active:scale-[0.98] dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200">
                 Save Record
             </button>
         </div>

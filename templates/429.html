@@ -43,10 +43,10 @@
             }
         </script>
     </head>
-    <body class="font-sans bg-[#fcfcfc] dark:bg-[#0c0c0e] text-[#111827] dark:text-[#f4f4f5] min-h-screen flex items-center justify-center antialiased selection:bg-zinc-200 dark:selection:bg-zinc-800">
-        <div class="relative w-full max-w-[24rem] mx-4 p-10 bg-white dark:bg-[#141416] border border-zinc-200 dark:border-white/[0.08] rounded-lg shadow-[0_4px_6px_-1px_rgba(0,0,0,0.02),0_2px_4px_-2px_rgba(0,0,0,0.02)] dark:shadow-[0_20px_25px_-5px_rgba(0,0,0,0.5),0_8px_10px_-6px_rgba(0,0,0,0.5)] text-left">
-            <div class="inline-flex items-center justify-center w-10 h-10 mb-6 bg-[#f9fafb] dark:bg-white/[0.04] border border-zinc-200 dark:border-white/[0.08] rounded-md text-zinc-600 dark:text-[#a1a1aa]">
-                <svg class="w-[1.125rem] h-[1.125rem]"
+    <body class="flex min-h-screen items-center justify-center bg-[#fcfcfc] font-sans text-[#111827] antialiased selection:bg-zinc-200 dark:bg-[#0c0c0e] dark:text-[#f4f4f5] dark:selection:bg-zinc-800">
+        <div class="relative mx-4 w-full max-w-[24rem] rounded-lg border border-zinc-200 bg-white p-10 text-left shadow-[0_4px_6px_-1px_rgba(0,0,0,0.02),0_2px_4px_-2px_rgba(0,0,0,0.02)] dark:border-white/[0.08] dark:bg-[#141416] dark:shadow-[0_20px_25px_-5px_rgba(0,0,0,0.5),0_8px_10px_-6px_rgba(0,0,0,0.5)]">
+            <div class="mb-6 inline-flex h-10 w-10 items-center justify-center rounded-md border border-zinc-200 bg-[#f9fafb] text-zinc-600 dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-[#a1a1aa]">
+                <svg class="h-[1.125rem] w-[1.125rem]"
                      fill="none"
                      viewBox="0 0 24 24"
                      stroke="currentColor"
@@ -54,12 +54,12 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
             </div>
-            <h1 class="text-[1.125rem] font-medium tracking-tight mb-1.5">Too many requests</h1>
-            <p class="text-sm text-zinc-500 dark:text-[#9b9ba1] leading-relaxed mb-8">
+            <h1 class="mb-1.5 text-[1.125rem] font-medium tracking-tight">Too many requests</h1>
+            <p class="mb-8 text-sm leading-relaxed text-zinc-500 dark:text-[#9b9ba1]">
                 You have exceeded the rate limit. Please wait a moment before attempting your request again.
             </p>
             <button onclick="window.location.reload();"
-                    class="inline-flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-white dark:text-[#0c0c0e] bg-[#111827] dark:bg-[#f4f4f5] hover:bg-[#1f2937] dark:hover:bg-white rounded-md transition-colors duration-150 active:opacity-95 cursor-pointer border-0">
+                    class="inline-flex w-full cursor-pointer items-center justify-center rounded-md border-0 bg-[#111827] px-4 py-2 text-sm font-medium text-white transition-colors duration-150 hover:bg-[#1f2937] active:opacity-95 dark:bg-[#f4f4f5] dark:text-[#0c0c0e] dark:hover:bg-white">
                 Try again
             </button>
         </div>

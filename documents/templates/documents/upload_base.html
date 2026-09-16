@@ -3,38 +3,38 @@
     {% csrf_token %}
     {% block onboarding_modal %}
     {% endblock onboarding_modal %}
-    <main class="dark:text-white w-full min-h-screen flex flex-col items-center justify-center py-5">
+    <main class="flex min-h-screen w-full flex-col items-center justify-center py-5 dark:text-white">
         <section id="uploadContainer"
-                 class="container mx-auto w-11/12 md:w-3/5 max-w-11/12 lg:w-lg flex flex-col items-center">
+                 class="container mx-auto flex w-11/12 max-w-11/12 flex-col items-center md:w-3/5 lg:w-lg">
             <p id="status"
-               class="mb-4 text-sm text-center text-zinc-500 dark:text-zinc-400 min-h-5"></p>
-            <h1 class="dark:text-white text-3xl md:text-4xl font-semibold mb-2 text-center">
+               class="mb-4 min-h-5 text-center text-sm text-zinc-500 dark:text-zinc-400"></p>
+            <h1 class="mb-2 text-center text-3xl font-semibold md:text-4xl dark:text-white">
                 {% block page_title %}{{ page_title|default:"Upload a file" }}{% endblock %}
             </h1>
-            <p class="text-sm text-zinc-400 text-center truncate max-w-xl">
+            <p class="max-w-xl truncate text-center text-sm text-zinc-400">
                 {% block page_subtitle %}{{ page_subtitle|default:"We'll extract and organize the details automatically." }}{% endblock %}
             </p>
-            <div class="w-full mt-8 mb-2 flex flex-col space-y-4">
+            <div class="mt-8 mb-2 flex w-full flex-col space-y-4">
                 <div id="dropzone"
-                     class="max-h-70 transition-all duration-200 hover:bg-zinc-200 dark:hover:bg-zinc-800/70 cursor-pointer flex flex-col items-center justify-center p-10 rounded-2xl border w-full border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-800/40">
-                    <div class="flex flex-col items-center justify-center w-full h-64 bg-neutral-secondary-medium">
-                        <div class="flex flex-col items-center justify-center text-body pt-5 pb-6">
-                            <svg class="size-12 mb-4 text-zinc-500 dark:text-zinc-300"
+                     class="flex max-h-70 w-full cursor-pointer flex-col items-center justify-center rounded-2xl border border-zinc-200 bg-zinc-100 p-10 transition-all duration-200 hover:bg-zinc-200 dark:border-zinc-800 dark:bg-zinc-800/40 dark:hover:bg-zinc-800/70">
+                    <div class="bg-neutral-secondary-medium flex h-64 w-full flex-col items-center justify-center">
+                        <div class="text-body flex flex-col items-center justify-center pt-5 pb-6">
+                            <svg class="mb-4 size-12 text-zinc-500 dark:text-zinc-300"
                                  aria-hidden="true"
                                  xmlns="http://www.w3.org/2000/svg"
                                  fill="none"
                                  viewBox="0 0 24 24">
                                 <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v9m-5 0H5a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4a1 1 0 0 0-1-1h-2M8 9l4-5 4 5m1 8h.01" />
                             </svg>
-                            <p class="text-sm text-zinc-600 dark:text-zinc-300 text-center">Drop your file here or click to browse</p>
-                            <p class="mt-2 text-xs text-zinc-400 text-center">PNG, JPG, PDF, WEBP, HEIC · up to 5MB</p>
+                            <p class="text-center text-sm text-zinc-600 dark:text-zinc-300">Drop your file here or click to browse</p>
+                            <p class="mt-2 text-center text-xs text-zinc-400">PNG, JPG, PDF, WEBP, HEIC · up to 5MB</p>
                         </div>
                     </div>
                 </div>
                 {% block extra_fields %}
                     <textarea id="docNotes"
                               rows="2"
-                              class="focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-600 text-sm w-full p-4 resize-none rounded-xl bg-zinc-100 dark:bg-zinc-800/40 border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 placeholder-zinc-400 dark:placeholder-zinc-500 transition-all duration-200"
+                              class="w-full resize-none rounded-xl border border-zinc-200 bg-zinc-100 p-4 text-sm text-zinc-800 placeholder-zinc-400 transition-all duration-200 focus:border-zinc-400 focus:outline-none dark:border-zinc-800 dark:bg-zinc-800/40 dark:text-zinc-200 dark:placeholder-zinc-500 dark:focus:border-zinc-600"
                               placeholder="Add a note..."></textarea>
                 {% endblock extra_fields %}
             </div>
@@ -45,9 +45,9 @@
                    accept=".jpg, .png, .jpeg, .webp, .pdf, .heic" />
             <button id="uploadButton"
                     onclick="uploadFile();"
-                    class="mt-2 bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-zinc-200 text-white dark:text-zinc-950 py-2.5 px-4 rounded-2xl text-sm w-full cursor-pointer transition-all duration-200 flex items-center justify-center space-x-2 shadow-xs disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98]">
+                    class="mt-2 flex w-full cursor-pointer items-center justify-center space-x-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm text-white shadow-xs transition-all duration-200 hover:bg-zinc-800 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200">
                 <span id="buttonSpinner" class="hidden">
-                    <svg class="animate-spin h-4 w-4 text-white dark:text-black"
+                    <svg class="h-4 w-4 animate-spin text-white dark:text-black"
                          xmlns="http://www.w3.org/2000/svg"
                          fill="none"
                          viewBox="0 0 24 24">
@@ -59,9 +59,9 @@
                 <span id="buttonText">Upload and continue</span>
             </button>
             {% block upload_footer %}
-                <hr class="w-xs my-7 text-zinc-200 dark:text-zinc-800 mb-5">
+                <hr class="my-7 mb-5 w-xs text-zinc-200 dark:text-zinc-800">
                 <a href="{% url 'records:add_record_manual' %}"
-                   class="text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-all duration-200 mt-0">
+                   class="mt-0 text-sm text-zinc-500 transition-all duration-200 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100">
                     Or enter record details manually.
                 </a>
                 {% block custom_footer_js %}

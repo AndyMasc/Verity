@@ -4,8 +4,8 @@
         <h2 class="text-base font-semibold text-zinc-900 dark:text-zinc-100">Select {{ label }}</h2>
         <button type="button"
                 @click="showModal = false"
-                class="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer">
-            <svg class="w-4 h-4"
+                class="cursor-pointer rounded-lg p-1.5 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-300">
+            <svg class="h-4 w-4"
                  fill="none"
                  viewBox="0 0 24 24"
                  stroke-width="2"
@@ -15,8 +15,8 @@
         </button>
     </div>
     <div class="relative">
-        <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none text-zinc-400 dark:text-zinc-500">
-            <svg class="w-4 h-4"
+        <div class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-zinc-400 dark:text-zinc-500">
+            <svg class="h-4 w-4"
                  fill="none"
                  viewBox="0 0 24 24"
                  stroke-width="2.2"
@@ -24,7 +24,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.604 10.604z" />
             </svg>
         </div>
-        <input class="w-full bg-zinc-100 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700 py-2.5 pl-9 pr-3.5 text-xs rounded-xl dark:text-zinc-100 text-zinc-900 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-600 transition-all duration-200"
+        <input class="w-full rounded-xl border border-zinc-200 bg-zinc-100 py-2.5 pr-3.5 pl-9 text-xs text-zinc-900 placeholder-zinc-400 transition-all duration-200 focus:border-zinc-400 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:border-zinc-600"
                placeholder="Search {{ label|lower }}..."
                id="modal-{{ mode }}-search"
                type="search"
@@ -40,10 +40,10 @@
           hx-trigger="change"
           hx-target="#modal-{{ mode }}-results"
           hx-include="#modal-{{ mode }}-search"
-          class="flex items-center gap-2 overflow-x-auto scrollbar-none">
+          class="scrollbar-none flex items-center gap-2 overflow-x-auto">
         {% for field in filter.form %}
             {% if field.name == 'record_type' or field.name == 'folder' or field.name == 'this_month' %}
-                <div class="bg-zinc-100 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700 rounded-xl px-2.5 py-1.5 text-xs font-medium text-zinc-600 dark:text-zinc-300 hover:border-zinc-300 dark:hover:border-zinc-600 transition-all duration-200 flex items-center shrink-0">
+                <div class="flex shrink-0 items-center rounded-xl border border-zinc-200 bg-zinc-100 px-2.5 py-1.5 text-xs font-medium text-zinc-600 transition-all duration-200 hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-300 dark:hover:border-zinc-600">
                     {% render_field field class="appearance-none outline-none bg-transparent cursor-pointer text-zinc-700 dark:text-zinc-200 pr-3 text-xs font-medium border-none p-0 focus:ring-0" %}
                 </div>
             {% endif %}
@@ -51,15 +51,15 @@
         <button type="button"
                 hx-get="{% url 'records:manual_merge_search' mode %}"
                 hx-target="#modal-{{ mode }}-results"
-                class="text-xs font-medium text-zinc-500 hover:text-zinc-700 dark:text-zinc-300 dark:hover:text-zinc-100 transition-colors cursor-pointer shrink-0">
+                class="shrink-0 cursor-pointer text-xs font-medium text-zinc-500 transition-colors hover:text-zinc-700 dark:text-zinc-300 dark:hover:text-zinc-100">
             Clear
         </button>
     </form>
     <div id="modal-{{ mode }}-results"
-         class="relative min-h-0 max-h-[45vh] overflow-y-auto">
+         class="relative max-h-[45vh] min-h-0 overflow-y-auto">
         <div id="modal-{{ mode }}-indicator"
-             class="htmx-indicator absolute inset-0 bg-white/40 dark:bg-zinc-950/40 backdrop-blur-[1px] z-10 hidden items-center justify-center rounded-xl">
-            <div class="animate-pulse text-xs font-medium text-zinc-500 dark:text-zinc-400 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 px-3 py-1.5 rounded-xl shadow-xs">
+             class="htmx-indicator absolute inset-0 z-10 hidden items-center justify-center rounded-xl bg-white/40 backdrop-blur-[1px] dark:bg-zinc-950/40">
+            <div class="animate-pulse rounded-xl border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-500 shadow-xs dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
                 Updating...
             </div>
         </div>

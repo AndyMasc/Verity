@@ -39,16 +39,16 @@
               content="#0f172a"
               media="(prefers-color-scheme: dark)">
     </head>
-    <body class="font-sans min-h-screen bg-zinc-50 dark:bg-black text-zinc-900 dark:text-zinc-50 flex flex-col items-center antialiased">
+    <body class="flex min-h-screen flex-col items-center bg-zinc-50 font-sans text-zinc-900 antialiased dark:bg-black dark:text-zinc-50">
         {% if user.is_authenticated %}
             <div x-data="{ isOpen: false, openedWithKeyboard: false }"
-                 class="absolute top-4 left-4 w-fit z-40"
+                 class="absolute top-4 left-4 z-40 w-fit"
                  x-on:keydown.esc.window="isOpen = false, openedWithKeyboard = false">
                 <button type="button"
                         x-on:click="isOpen = ! isOpen"
-                        class="inline-flex items-center gap-2 rounded-xl font-semibold tracking-tight text-zinc-800 dark:text-zinc-200 bg-white/90 dark:bg-zinc-950/80 backdrop-blur-md px-4 py-2 text-xs border border-zinc-200/50 dark:border-zinc-800/50 hover:bg-white dark:hover:bg-zinc-800 shadow-xs transition-all duration-200 focus:outline-none select-none active:scale-[0.98]">
+                        class="inline-flex items-center gap-2 rounded-xl border border-zinc-200/50 bg-white/90 px-4 py-2 text-xs font-semibold tracking-tight text-zinc-800 shadow-xs backdrop-blur-md transition-all duration-200 select-none hover:bg-white focus:outline-none active:scale-[0.98] dark:border-zinc-800/50 dark:bg-zinc-950/80 dark:text-zinc-200 dark:hover:bg-zinc-800">
                     <span>Profile options</span>
-                    <svg class="size-3 text-zinc-400 dark:text-zinc-500 transition-transform duration-200"
+                    <svg class="size-3 text-zinc-400 transition-transform duration-200 dark:text-zinc-500"
                          :class="isOpen ? 'rotate-180' : 'rotate-0'"
                          fill="none"
                          viewBox="0 0 24 24"
@@ -66,12 +66,12 @@
                      x-transition:leave-start="transform opacity-100 scale-100"
                      x-transition:leave-end="transform opacity-0 scale-98"
                      x-on:click.outside="isOpen = false, openedWithKeyboard = false"
-                     class="absolute top-11 left-0 w-56 p-1.5 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-xl border border-zinc-200/50 dark:border-zinc-800/50 rounded-xl shadow-lg overflow-hidden"
+                     class="absolute top-11 left-0 w-56 overflow-hidden rounded-xl border border-zinc-200/50 bg-white/95 p-1.5 shadow-lg backdrop-blur-xl dark:border-zinc-800/50 dark:bg-zinc-950/95"
                      role="menu">
                     {% url 'account_email' as email_url %}
                     {% if email_url %}
                         <a href="{{ email_url }}"
-                           class="block px-3 py-2 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-800/20 rounded-lg transition-all duration-200">
+                           class="block rounded-lg px-3 py-2 text-xs font-medium text-zinc-600 transition-all duration-200 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800/20 dark:hover:text-zinc-100">
                             {% trans "Change Email" %}
                         </a>
                     {% endif %}
@@ -79,24 +79,24 @@
                         {% url 'account_change_password' as pwd_url %}
                         {% if pwd_url %}
                             <a href="{{ pwd_url }}"
-                               class="block px-3 py-2 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-800/20 rounded-lg transition-all duration-200">
+                               class="block rounded-lg px-3 py-2 text-xs font-medium text-zinc-600 transition-all duration-200 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800/20 dark:hover:text-zinc-100">
                                 {% trans "Change Password" %}
                             </a>
                         {% endif %}
                     {% endif %}
                     <a href="{% url 'socialaccount_connections' %}"
-                       class="block px-3 py-2 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-800/20 rounded-lg transition-all duration-200">
+                       class="block rounded-lg px-3 py-2 text-xs font-medium text-zinc-600 transition-all duration-200 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800/20 dark:hover:text-zinc-100">
                         Connections
                     </a>
-                    <div class="h-px bg-zinc-100 dark:bg-zinc-800/60 my-1.5 mx-1"></div>
+                    <div class="mx-1 my-1.5 h-px bg-zinc-100 dark:bg-zinc-800/60"></div>
                     <a href="{% url 'core:dashboard' %}"
-                       class="block px-3 py-2 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-800/20 rounded-lg transition-all duration-200">
+                       class="block rounded-lg px-3 py-2 text-xs font-medium text-zinc-600 transition-all duration-200 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800/20 dark:hover:text-zinc-100">
                         Dashboard
                     </a>
                     {% url 'account_logout' as logout_url %}
                     {% if logout_url %}
                         <a href="{{ logout_url }}"
-                           class="block px-3 py-2 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-all duration-200">
+                           class="block rounded-lg px-3 py-2 text-xs font-semibold text-rose-600 transition-all duration-200 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-500/10">
                             {% trans "Sign Out" %}
                         </a>
                     {% endif %}
@@ -104,7 +104,7 @@
             </div>
         {% endif %}
         {% include 'core/toast.html' %}
-        <main class="grow flex flex-col justify-center w-full py-8">
+        <main class="flex w-full grow flex-col justify-center py-8">
             {% block content %}
             {% endblock content %}
         </main>

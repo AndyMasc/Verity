@@ -1,17 +1,17 @@
 <div class="divide-y divide-zinc-200/60 dark:divide-zinc-800/50">
     {% for document in documents %}
-        <div class="group flex sm:grid sm:grid-cols-[minmax(0,1fr)_150px_130px_90px_44px] sm:items-center sm:gap-4 sm:px-4 sm:py-2.5 pl-3 pr-2 py-4 hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40 transition-colors duration-150">
+        <div class="group flex py-4 pr-2 pl-3 transition-colors duration-150 hover:bg-zinc-50/80 sm:grid sm:grid-cols-[minmax(0,1fr)_150px_130px_90px_44px] sm:items-center sm:gap-4 sm:px-4 sm:py-2.5 dark:hover:bg-zinc-800/40">
             <!-- Desktop: title / source / date / type / delete -->
             <a href="{% url 'documents:view_document' document.pk %}"
-               class="hidden sm:flex min-w-0 items-center gap-3 pr-3">
+               class="hidden min-w-0 items-center gap-3 pr-3 sm:flex">
                 <span class="shrink-0 px-2 py-1 rounded-lg w-full truncate max-w-35 flex items-center justify-center text-[10px] font-bold {% if document.did_ocr %} bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 border border-zinc-900 dark:border-zinc-100 {% else %} bg-zinc-100 text-zinc-600 dark:bg-zinc-800/80 dark:text-zinc-300 border border-zinc-200/80 dark:border-zinc-700/50 {% endif %}">
                     {% if document.did_ocr %}OCR{% else %}File{% endif %}
                 </span>
                 <div class="min-w-0 flex-1">
-                    <p class="font-medium text-zinc-950 dark:text-zinc-50 text-sm truncate group-hover:text-black dark:group-hover:text-white transition-colors">
+                    <p class="truncate text-sm font-medium text-zinc-950 transition-colors group-hover:text-black dark:text-zinc-50 dark:group-hover:text-white">
                         {{ document.title }}
                     </p>
-                    <p class="text-[11px] text-zinc-400 dark:text-zinc-500 truncate mt-0.5">
+                    <p class="mt-0.5 truncate text-[11px] text-zinc-400 dark:text-zinc-500">
                         {% if document.notes %}
                             <span class="italic">{{ document.notes }}</span>
                         {% elif document.did_ocr %}
@@ -22,25 +22,25 @@
                     </p>
                 </div>
             </a>
-            <div class="hidden sm:block text-xs text-right mr-4 font-medium text-zinc-500 dark:text-zinc-400 truncate min-w-0">
+            <div class="mr-4 hidden min-w-0 truncate text-right text-xs font-medium text-zinc-500 sm:block dark:text-zinc-400">
                 {% if document.associated_record %}{{ document.associated_record.title }}{% else %}—{% endif %}
             </div>
-            <div class="hidden sm:block text-xs font-medium truncate min-w-0 text-zinc-700 dark:text-zinc-200">
+            <div class="hidden min-w-0 truncate text-xs font-medium text-zinc-700 sm:block dark:text-zinc-200">
                 {{ document.date_added|date:"M d, Y" }}
             </div>
-            <div class="hidden sm:block text-xs font-semibold text-zinc-500 dark:text-zinc-400 truncate">
+            <div class="hidden truncate text-xs font-semibold text-zinc-500 sm:block dark:text-zinc-400">
                 {% if document.file_extension %}{{ document.file_extension|upper }}{% else %}—{% endif %}
             </div>
-            <div class="hidden sm:flex justify-center relative z-20 sm:opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-150">
+            <div class="relative z-20 hidden justify-center transition-opacity duration-150 group-hover:opacity-100 focus-within:opacity-100 sm:flex sm:opacity-0">
                 <form action="{% url 'documents:delete_document' document.pk %}"
                       method="POST"
                       onsubmit="return confirm('Delete this document permanently?');"
                       class="inline">
                     {% csrf_token %}
                     <button type="submit"
-                            class="p-1.5 rounded-lg text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-all cursor-pointer"
+                            class="cursor-pointer rounded-lg p-1.5 text-zinc-400 transition-all hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 dark:hover:text-rose-400"
                             title="Delete document">
-                        <svg class="w-4 h-4"
+                        <svg class="h-4 w-4"
                              fill="none"
                              viewBox="0 0 24 24"
                              stroke-width="2"
@@ -52,31 +52,31 @@
             </div>
             <!-- Mobile: stacked layout -->
             <a href="{% url 'documents:view_document' document.pk %}"
-               class="sm:hidden flex items-center gap-3 min-w-0 flex-1">
+               class="flex min-w-0 flex-1 items-center gap-3 sm:hidden">
                 <span class="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold max-w-8 truncate {% if document.did_ocr %} bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 border border-zinc-900 dark:border-zinc-100 {% else %} bg-zinc-100 text-zinc-600 dark:bg-zinc-800/80 dark:text-zinc-300 border border-zinc-200/80 dark:border-zinc-700/50 {% endif %}">
                     {% if document.did_ocr %}OCR{% else %}{{ document.file_extension|upper|default:"File" }}{% endif %}
                 </span>
                 <div class="min-w-0 flex-1">
                     <div class="flex items-center justify-between gap-2">
-                        <span class="font-medium text-zinc-950 dark:text-zinc-50 text-sm truncate">{{ document.title }}</span>
-                        <span class="text-xs font-medium text-zinc-500 dark:text-zinc-400 shrink-0">{{ document.date_added|date:"M d, y" }}</span>
+                        <span class="truncate text-sm font-medium text-zinc-950 dark:text-zinc-50">{{ document.title }}</span>
+                        <span class="shrink-0 text-xs font-medium text-zinc-500 dark:text-zinc-400">{{ document.date_added|date:"M d, y" }}</span>
                     </div>
-                    <div class="flex items-center justify-between gap-2 text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                    <div class="mt-0.5 flex items-center justify-between gap-2 text-xs text-zinc-500 dark:text-zinc-400">
                         <span class="truncate">{% if document.associated_record %}{{ document.associated_record.title }}{% else %}Unlinked{% endif %}</span>
                         <span class="shrink-0">{% if document.file_extension %}{{ document.file_extension|upper }}{% else %}—{% endif %}</span>
                     </div>
                 </div>
             </a>
-            <div class="sm:hidden flex items-center pr-1 relative z-20">
+            <div class="relative z-20 flex items-center pr-1 sm:hidden">
                 <form action="{% url 'documents:delete_document' document.pk %}"
                       method="POST"
                       onsubmit="return confirm('Delete this document permanently?');"
                       class="inline">
                     {% csrf_token %}
                     <button type="submit"
-                            class="p-1.5 rounded-lg text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-all cursor-pointer"
+                            class="cursor-pointer rounded-lg p-1.5 text-zinc-400 transition-all hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 dark:hover:text-rose-400"
                             title="Delete document">
-                        <svg class="w-4 h-4"
+                        <svg class="h-4 w-4"
                              fill="none"
                              viewBox="0 0 24 24"
                              stroke-width="2"

@@ -10,16 +10,16 @@
              x-transition:leave="transition ease-in duration-200"
              x-transition:leave-start="opacity-100"
              x-transition:leave-end="opacity-0"
-             class="fixed inset-0 bg-zinc-950/40 backdrop-blur-sm z-40 sm:hidden rounded-2xl"
+             class="fixed inset-0 z-40 rounded-2xl bg-zinc-950/40 backdrop-blur-sm sm:hidden"
              @click="open = false"
              aria-hidden="true"></div>
-        <div class="fixed top-2.5 left-1.5 w-72 h-[98%] z-50 transition-transform duration-300 ease-in-out rounded-2xl"
+        <div class="fixed top-2.5 left-1.5 z-50 h-[98%] w-72 rounded-2xl transition-transform duration-300 ease-in-out"
              :class="open ? 'translate-x-0 shadow-2xl shadow-zinc-950/15' : '-translate-x-full'"
              x-cloak
              :aria-hidden="!open">
             <button id="sidebar-toggle"
                     type="button"
-                    class="absolute top-5 right-0 translate-x-full flex size-7 items-center justify-center rounded-r-lg border border-l-0 border-zinc-200/80 dark:border-zinc-800/80 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-100 transition-all duration-200 shadow-2xs cursor-pointer focus:outline-none active:scale-95 group"
+                    class="shadow-2xs group absolute top-5 right-0 flex size-7 translate-x-full cursor-pointer items-center justify-center rounded-r-lg border border-l-0 border-zinc-200/80 bg-white/90 text-zinc-400 backdrop-blur-md transition-all duration-200 hover:text-zinc-800 focus:outline-none active:scale-95 dark:border-zinc-800/80 dark:bg-zinc-950/90 dark:hover:text-zinc-100"
                     @click="open = !open"
                     :aria-expanded="open"
                     aria-label="Toggle Navigation Sidebar">
@@ -32,15 +32,15 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="m18.75 4.5-7.5 7.5 7.5 7.5m-6-15L5.25 12l7.5 7.5" />
                 </svg>
             </button>
-            <aside class="rounded-2xl border w-full h-full bg-white/95 dark:bg-zinc-900/45 backdrop-blur-xl border-r border-zinc-300/80 dark:border-zinc-800/40 flex flex-col justify-between py-4 px-3">
-                <nav class="flex flex-col h-full justify-between"
+            <aside class="flex h-full w-full flex-col justify-between rounded-2xl border border-r border-zinc-300/80 bg-white/95 px-3 py-4 backdrop-blur-xl dark:border-zinc-800/40 dark:bg-zinc-900/45">
+                <nav class="flex h-full flex-col justify-between"
                      aria-label="Main Application Sidebar">
-                    <div class="space-y-4 overflow-y-auto no-scrollbar">
+                    <div class="no-scrollbar space-y-4 overflow-y-auto">
                         <div class="space-y-3">
                             <div x-data="{ actionsOpen: $persist(true) }"
                                  class="flex flex-col gap-y-0.5">
                                 <button @click="actionsOpen = !actionsOpen"
-                                        class="flex items-center justify-between w-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors duration-200 cursor-pointer">
+                                        class="flex w-full cursor-pointer items-center justify-between px-2.5 py-1 text-[10px] font-bold tracking-widest text-zinc-400 uppercase transition-colors duration-200 hover:text-zinc-700 dark:text-zinc-500 dark:hover:text-zinc-300">
                                     <span>Actions</span>
                                     <svg class="size-3 transition-transform duration-200"
                                          :class="actionsOpen ? 'rotate-90' : ''"
@@ -55,22 +55,22 @@
                                     <li>
                                         <a href="{% url 'documents:upload_document' %}"
                                            class="flex justify-between items-center w-full {% active_link 'documents:upload_document' base_css active_css %}">
-                                            <span class="flex items-center gap-2.5 w-full">
-                                                <svg class="size-4 opacity-70 group-hover:opacity-100 transition-opacity shrink-0"
+                                            <span class="flex w-full items-center gap-2.5">
+                                                <svg class="size-4 shrink-0 opacity-70 transition-opacity group-hover:opacity-100"
                                                      fill="none"
                                                      viewBox="0 0 24 24"
                                                      stroke-width="2.5"
                                                      stroke="currentColor">
                                                     <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z" />
                                                 </svg>
-                                                <span class="flex justify-between w-full">Quick scan</span>
+                                                <span class="flex w-full justify-between">Quick scan</span>
                                             </span>
                                         </a>
                                     </li>
                                     <li>
                                         <a href="{% url 'records:add_record_manual' %}"
                                            class="{% active_link 'records:add_record_manual' base_css active_css %}">
-                                            <svg class="size-4 opacity-70 group-hover:opacity-100 transition-opacity shrink-0"
+                                            <svg class="size-4 shrink-0 opacity-70 transition-opacity group-hover:opacity-100"
                                                  fill="none"
                                                  viewBox="0 0 24 24"
                                                  stroke-width="2.5"
@@ -83,7 +83,7 @@
                                     <li>
                                         <a href="{% url 'records:manual_merge' %}"
                                            class="{% active_link 'records:manual_merge' base_css active_css %}">
-                                            <svg class="size-4 opacity-70 group-hover:opacity-100 transition-opacity shrink-0"
+                                            <svg class="size-4 shrink-0 opacity-70 transition-opacity group-hover:opacity-100"
                                                  fill="none"
                                                  viewBox="0 0 24 24"
                                                  stroke-width="2.5"
@@ -98,7 +98,7 @@
                             <div x-data="{ workspaceOpen: $persist(true) }"
                                  class="flex flex-col gap-y-0.5">
                                 <button @click="workspaceOpen = !workspaceOpen"
-                                        class="flex items-center justify-between w-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors duration-200 cursor-pointer">
+                                        class="flex w-full cursor-pointer items-center justify-between px-2.5 py-1 text-[10px] font-bold tracking-widest text-zinc-400 uppercase transition-colors duration-200 hover:text-zinc-700 dark:text-zinc-500 dark:hover:text-zinc-300">
                                     <span>Workspace</span>
                                     <svg class="size-3 transition-transform duration-200"
                                          :class="workspaceOpen ? 'rotate-90' : ''"
@@ -113,7 +113,7 @@
                                     <li>
                                         <a href="{% url 'core:dashboard' %}"
                                            class="{% active_link 'core:dashboard' base_css active_css %} w-full">
-                                            <svg class="size-4 opacity-70 group-hover:opacity-100 transition-opacity shrink-0"
+                                            <svg class="size-4 shrink-0 opacity-70 transition-opacity group-hover:opacity-100"
                                                  fill="none"
                                                  viewBox="0 0 24 24"
                                                  stroke-width="2.5"
@@ -126,7 +126,7 @@
                                     <li>
                                         <a href="{% filter_url 'records:view_all_records' is_active='True' %}"
                                            class="{% active_link 'records:view_all_records' base_css active_css %}">
-                                            <svg class="size-4 opacity-70 group-hover:opacity-100 transition-opacity shrink-0"
+                                            <svg class="size-4 shrink-0 opacity-70 transition-opacity group-hover:opacity-100"
                                                  fill="none"
                                                  viewBox="0 0 24 24"
                                                  stroke-width="2.5"
@@ -139,7 +139,7 @@
                                     <li>
                                         <a href="{% filter_url 'records:view_folders' is_active='True' %}"
                                            class="{% active_link 'records:view_folders' base_css active_css %}">
-                                            <svg class="size-4 opacity-70 group-hover:opacity-100 transition-opacity shrink-0"
+                                            <svg class="size-4 shrink-0 opacity-70 transition-opacity group-hover:opacity-100"
                                                  fill="none"
                                                  viewBox="0 0 24 24"
                                                  stroke-width="2.5"
@@ -152,15 +152,15 @@
                                     <li>
                                         <a href="{% url 'documents:document_list_view' %}"
                                            class="flex justify-between items-center w-full {% active_link 'documents:document_list_view' base_css active_css %}">
-                                            <div class="flex items-center gap-2 w-full">
-                                                <svg class="size-4 opacity-70 group-hover:opacity-100 transition-opacity shrink-0"
+                                            <div class="flex w-full items-center gap-2">
+                                                <svg class="size-4 shrink-0 opacity-70 transition-opacity group-hover:opacity-100"
                                                      fill="none"
                                                      viewBox="0 0 24 24"
                                                      stroke-width="2.5"
                                                      stroke="currentColor">
                                                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0 3 3m-3-3-3 3M6.75 19.5a4.5 4.5 0 0 1-1.41-8.775 5.25 5.25 0 0 1 10.233-2.33 3 3 0 0 1 3.758 3.848A3.752 3.752 0 0 1 18 19.5H6.75Z" />
                                                 </svg>
-                                                <span class="flex flex-row justify-between w-full">Uploads</span>
+                                                <span class="flex w-full flex-row justify-between">Uploads</span>
                                             </div>
                                         </a>
                                     </li>
@@ -183,7 +183,7 @@
                             <div x-data="{ systemOpen: $persist(true) }"
                                  class="flex flex-col gap-y-0.5">
                                 <button @click="systemOpen = !systemOpen"
-                                        class="flex items-center justify-between w-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors duration-200 cursor-pointer">
+                                        class="flex w-full cursor-pointer items-center justify-between px-2.5 py-1 text-[10px] font-bold tracking-widest text-zinc-400 uppercase transition-colors duration-200 hover:text-zinc-700 dark:text-zinc-500 dark:hover:text-zinc-300">
                                     <span>Storage</span>
                                     <svg class="size-3 transition-transform duration-200"
                                          :class="systemOpen ? 'rotate-90' : ''"
@@ -198,7 +198,7 @@
                                     <li>
                                         <a href="{% filter_url 'records:view_all_records' is_active='False' %}"
                                            class="{% active_link 'records:view_all_records' base_css active_css %}">
-                                            <svg class="size-4 opacity-70 group-hover:opacity-100 transition-opacity shrink-0"
+                                            <svg class="size-4 shrink-0 opacity-70 transition-opacity group-hover:opacity-100"
                                                  fill="none"
                                                  viewBox="0 0 24 24"
                                                  stroke-width="2.5"
@@ -212,7 +212,7 @@
                             </div>
                             <div x-data="{ docsOpen: $persist(true) }" class="">
                                 <button @click="docsOpen = !docsOpen"
-                                        class="flex items-center space-y-1 justify-between w-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors duration-200 cursor-pointer">
+                                        class="flex w-full cursor-pointer items-center justify-between space-y-1 px-2.5 py-1 text-[10px] font-bold tracking-widest text-zinc-400 uppercase transition-colors duration-200 hover:text-zinc-700 dark:text-zinc-500 dark:hover:text-zinc-300">
                                     <span>Docs</span>
                                     <svg class="size-3 transition-transform duration-200"
                                          :class="docsOpen ? 'rotate-90' : ''"
@@ -227,7 +227,7 @@
                                     <li>
                                         <a href="{% url 'docs:how_to_use' %}"
                                            class="{% active_link 'docs:how_to_use' base_css active_css %} w-full">
-                                            <svg class="size-4 opacity-70 group-hover:opacity-100 transition-opacity shrink-0"
+                                            <svg class="size-4 shrink-0 opacity-70 transition-opacity group-hover:opacity-100"
                                                  fill="none"
                                                  viewBox="0 0 24 24"
                                                  stroke-width="2.5"
@@ -239,7 +239,7 @@
                                         <li>
                                             <a href="{% url 'docs:pricing_doc' %}"
                                                class="{% active_link 'docs:pricing_doc' base_css active_css %} w-full">
-                                                <svg class="size-4 opacity-70 group-hover:opacity-100 transition-opacity shrink-0"
+                                                <svg class="size-4 shrink-0 opacity-70 transition-opacity group-hover:opacity-100"
                                                      fill="none"
                                                      viewBox="0 0 24 24"
                                                      stroke-width="2.5"
@@ -252,7 +252,7 @@
                                         <li>
                                             <a href="{% url 'docs:privacy_policy' %}"
                                                class="{% active_link 'docs:privacy_policy' base_css active_css %} w-full">
-                                                <svg class="size-4 opacity-70 group-hover:opacity-100 transition-opacity shrink-0"
+                                                <svg class="size-4 shrink-0 opacity-70 transition-opacity group-hover:opacity-100"
                                                      fill="none"
                                                      viewBox="0 0 24 24"
                                                      stroke-width="2.5"
@@ -269,13 +269,13 @@
                         <div class="space-y-3 pt-2">
                             <div x-data="{ open: $persist(true).as('manage_card_open') }"
                                  :class="open ? 'p-3' : 'p-2'"
-                                 class="relative overflow-hidden rounded-xl border border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-100 dark:bg-zinc-900/45 backdrop-blur-xl shadow-xs shadow-zinc-950/[0.02] dark:shadow-black/40 transition-all duration-300 hover:border-zinc-300 dark:hover:border-zinc-700/80 group">
-                                <div class="absolute -top-20 -right-20 w-36 h-36 bg-[#5A67FF]/10 dark:bg-[#5A67FF]/15 rounded-full blur-2xl pointer-events-none transition-opacity duration-500 group-hover:opacity-100 opacity-60">
+                                 class="group relative overflow-hidden rounded-xl border border-zinc-200/80 bg-zinc-100 shadow-xs shadow-zinc-950/[0.02] backdrop-blur-xl transition-all duration-300 hover:border-zinc-300 dark:border-zinc-800/80 dark:bg-zinc-900/45 dark:shadow-black/40 dark:hover:border-zinc-700/80">
+                                <div class="pointer-events-none absolute -top-20 -right-20 h-36 w-36 rounded-full bg-[#5A67FF]/10 opacity-60 blur-2xl transition-opacity duration-500 group-hover:opacity-100 dark:bg-[#5A67FF]/15">
                                 </div>
                                 <div @click="open = !open"
-                                     class="flex items-center justify-between cursor-pointer select-none relative z-10">
+                                     class="relative z-10 flex cursor-pointer items-center justify-between select-none">
                                     <div class="flex items-center gap-2">
-                                        <div class="p-1 rounded-lg bg-[#5A67FF]/10 dark:bg-[#5A67FF]/20 flex items-center justify-center text-[#5A67FF]">
+                                        <div class="flex items-center justify-center rounded-lg bg-[#5A67FF]/10 p-1 text-[#5A67FF] dark:bg-[#5A67FF]/20">
                                             <svg class="size-4"
                                                  xmlns="http://www.w3.org/2000/svg"
                                                  fill="none"
@@ -285,10 +285,10 @@
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 0 1-1.043 3.296 3.745 3.745 0 0 1-3.296 1.043A3.745 3.745 0 0 1 12 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 0 1-3.296-1.043 3.745 3.745 0 0 1-1.043-3.296A3.745 3.745 0 0 1 3 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 0 1 1.043-3.296 3.746 3.746 0 0 1 3.296-1.043A3.746 3.746 0 0 1 12 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 0 1 3.296 1.043 3.746 3.746 0 0 1 1.043 3.296A3.745 3.745 0 0 1 21 12Z" />
                                             </svg>
                                         </div>
-                                        <p class="truncate max-w-[120px] text-xs font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">{{ plan_name }} {% if not user.has_active_subscription %}| Upgrade Plan{% endif %}</p>
+                                        <p class="max-w-[120px] truncate text-xs font-bold tracking-tight text-zinc-900 dark:text-zinc-100">{{ plan_name }} {% if not user.has_active_subscription %}| Upgrade Plan{% endif %}</p>
                                     </div>
                                     <button type="button"
-                                            class="size-5 rounded-md flex items-center justify-center text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50 transition-all duration-200"
+                                            class="flex size-5 items-center justify-center rounded-md text-zinc-400 transition-all duration-200 hover:bg-zinc-200/50 hover:text-zinc-600 dark:hover:bg-zinc-800/50 dark:hover:text-zinc-200"
                                             :class="{ 'rotate-180': open }">
                                         <svg class="size-3"
                                              fill="none"
@@ -302,58 +302,58 @@
                                 <div x-show="open" x-collapse class="relative z-10">
                                     <div class="mt-3 space-y-3">
                                         <div>
-                                            <div class="flex items-center justify-between text-[10px] mb-1">
-                                                <span class="text-zinc-500 dark:text-zinc-400 font-medium">Monthly Scans</span>
+                                            <div class="mb-1 flex items-center justify-between text-[10px]">
+                                                <span class="font-medium text-zinc-500 dark:text-zinc-400">Monthly Scans</span>
                                                 {% if monthly_scan_limit %}
-                                                    <span class="text-zinc-800 dark:text-zinc-200 font-semibold">{{ scan_usage_count|default:0 }}/{{ monthly_scan_limit }}</span>
+                                                    <span class="font-semibold text-zinc-800 dark:text-zinc-200">{{ scan_usage_count|default:0 }}/{{ monthly_scan_limit }}</span>
                                                     {% if is_fair_use_approaching %}
-                                                        <span class="text-xs text-zinc-500 dark:text-zinc-400 ml-2">⚠️ approaching fair use limit</span>
+                                                        <span class="ml-2 text-xs text-zinc-500 dark:text-zinc-400">⚠️ approaching fair use limit</span>
                                                     {% elif is_fair_use_exceeded %}
-                                                        <span class="text-xs text-rose-500 dark:text-rose-400 ml-2">⚠️ fair use limit exceeded</span>
+                                                        <span class="ml-2 text-xs text-rose-500 dark:text-rose-400">⚠️ fair use limit exceeded</span>
                                                     {% endif %}
                                                 {% else %}
-                                                    <span class="font-semibold inline-flex items-center gap-1">
-                                                        <span class="size-1 rounded-full animate-pulse"></span>
+                                                    <span class="inline-flex items-center gap-1 font-semibold">
+                                                        <span class="size-1 animate-pulse rounded-full"></span>
                                                         Unlimited
                                                     </span>
                                                 {% endif %}
                                             </div>
-                                            <div class="h-1 w-full bg-zinc-200/80 dark:bg-zinc-800/80 rounded-full overflow-hidden">
+                                            <div class="h-1 w-full overflow-hidden rounded-full bg-zinc-200/80 dark:bg-zinc-800/80">
                                                 {% if monthly_scan_limit %}
                                                     <div class="h-full {% if is_fair_use_exceeded %}bg-rose-500{% elif is_fair_use_approaching %}bg-orange-500{% else %}bg-[#5A67FF]{% endif %} rounded-full transition-all duration-500"
                                                          style="width: {% widthratio scan_usage_count|default:0 monthly_scan_limit 100 %}%">
                                                     </div>
                                                 {% else %}
-                                                    <div class="h-full bg-[#5A67FF] rounded-full w-full"></div>
+                                                    <div class="h-full w-full rounded-full bg-[#5A67FF]"></div>
                                                 {% endif %}
                                             </div>
                                         </div>
                                         <div>
-                                            <div class="flex items-center justify-between text-[10px] mb-1">
-                                                <span class="text-zinc-500 dark:text-zinc-400 font-medium">Cloud Storage</span>
-                                                <span class="text-zinc-800 dark:text-zinc-200 font-semibold">{{ storage_usage_gb|floatformat:2 }}/{{ storage_limit_gb }} GB</span>
+                                            <div class="mb-1 flex items-center justify-between text-[10px]">
+                                                <span class="font-medium text-zinc-500 dark:text-zinc-400">Cloud Storage</span>
+                                                <span class="font-semibold text-zinc-800 dark:text-zinc-200">{{ storage_usage_gb|floatformat:2 }}/{{ storage_limit_gb }} GB</span>
                                             </div>
-                                            <div class="h-1 w-full bg-zinc-200 dark:bg-zinc-800/80 rounded-full overflow-hidden mb-3">
+                                            <div class="mb-3 h-1 w-full overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800/80">
                                                 {% if storage_limit_gb %}
-                                                    <div class="h-full bg-[#5A67FF] rounded-full transition-all duration-500"
+                                                    <div class="h-full rounded-full bg-[#5A67FF] transition-all duration-500"
                                                          style="width: {% widthratio storage_usage_gb|default:0 storage_limit_gb 100 %}%">
                                                     </div>
                                                 {% else %}
-                                                    <div class="h-full bg-[#5A67FF] rounded-full w-full"></div>
+                                                    <div class="h-full w-full rounded-full bg-[#5A67FF]"></div>
                                                 {% endif %}
                                             </div>
                                         </div>
                                     </div>
                                     {% if not user.has_active_subscription %}
                                         <a href="{% url 'pricing_page' %}"
-                                           class="group/upgrade cursor-pointer bg-black dark:bg-white justify-center gap-2 inline-flex items-center w-full px-2 py-1 rounded-lg text-[11px] text-white dark:text-black transition-all duration-200">
+                                           class="group/upgrade inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-black px-2 py-1 text-[11px] text-white transition-all duration-200 dark:bg-white dark:text-black">
                                             <span>Upgrade Plan</span>
                                             <svg xmlns="http://www.w3.org/2000/svg"
                                                  fill="none"
                                                  viewBox="0 0 24 24"
                                                  stroke-width="2"
                                                  stroke="currentColor"
-                                                 class="size-4 group-hover/upgrade:translate-x-0.5 transition-transform">
+                                                 class="size-4 transition-transform group-hover/upgrade:translate-x-0.5">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3" />
                                             </svg>
                                         </a>
@@ -363,14 +363,14 @@
                                               class="mt-2.5 pt-0.5">
                                             {% csrf_token %}
                                             <button type="submit"
-                                                    class="group/manage cursor-pointer bg-black dark:bg-white justify-center gap-2 inline-flex items-center w-full px-2 py-1 rounded-lg text-[11px] transition-all duration-200">
-                                                <span class="dark:text-black text-white">Manage billing</span>
+                                                    class="group/manage inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-black px-2 py-1 text-[11px] transition-all duration-200 dark:bg-white">
+                                                <span class="text-white dark:text-black">Manage billing</span>
                                                 <svg xmlns="http://www.w3.org/2000/svg"
                                                      fill="none"
                                                      viewBox="0 0 24 24"
                                                      stroke-width="2"
                                                      stroke="currentColor"
-                                                     class="size-4 dark:text-black text-white group-hover/manage:translate-x-0.5 transition-transform">
+                                                     class="size-4 text-white transition-transform group-hover/manage:translate-x-0.5 dark:text-black">
                                                     <path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3" />
                                                 </svg>
                                             </button>
@@ -378,7 +378,7 @@
                                     {% endif %}
                                 </div>
                             </div>
-                            <div class="border-t border-zinc-100 dark:border-zinc-900/80 pt-3 relative"
+                            <div class="relative border-t border-zinc-100 pt-3 dark:border-zinc-900/80"
                                  x-data="{ userMenuOpen: false }"
                                  @click.outside="userMenuOpen = false">
                                 <div x-show="userMenuOpen"
@@ -389,7 +389,7 @@
                                      x-transition:leave-start="opacity-100 scale-100 translate-y-0"
                                      x-transition:leave-end="opacity-0 scale-95 -translate-y-2"
                                      x-cloak
-                                     class="absolute bottom-full left-0 w-full mb-2 p-1.5 bg-zinc-100 dark:bg-zinc-900 rounded-xl shadow-xl border border-zinc-200/80 dark:border-zinc-800 z-50 space-y-0.5">
+                                     class="absolute bottom-full left-0 z-50 mb-2 w-full space-y-0.5 rounded-xl border border-zinc-200/80 bg-zinc-100 p-1.5 shadow-xl dark:border-zinc-800 dark:bg-zinc-900">
                                     {% if user.is_staff %}
                                         <a href="{% url 'admin:index' %}"
                                            class="{% active_link 'admin:index' base_css active_css %} w-full">
@@ -398,7 +398,7 @@
                                                  viewBox="0 0 24 24"
                                                  stroke-width="1.5"
                                                  stroke="currentColor"
-                                                 class="size-4 opacity-70 group-hover:opacity-100 transition-opacity shrink-0">
+                                                 class="size-4 shrink-0 opacity-70 transition-opacity group-hover:opacity-100">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125" />
                                             </svg>
                                             <span>Admin</span>
@@ -406,7 +406,7 @@
                                     {% endif %}
                                     <a href="{% url 'core:profile_page' %}"
                                        class="{% active_link 'core:profile_page' base_css active_css %} w-full">
-                                        <svg class="size-4 opacity-70 group-hover:opacity-100 transition-opacity shrink-0"
+                                        <svg class="size-4 shrink-0 opacity-70 transition-opacity group-hover:opacity-100"
                                              fill="none"
                                              viewBox="0 0 24 24"
                                              stroke-width="2.5"
@@ -418,7 +418,7 @@
                                     </a>
                                     <a href="{% url 'plaid:connect' %}"
                                        class="{% active_link 'plaid:connect' base_css active_css %} w-full">
-                                        <svg class="size-4 opacity-70 group-hover:opacity-100 transition-opacity shrink-0"
+                                        <svg class="size-4 shrink-0 opacity-70 transition-opacity group-hover:opacity-100"
                                              fill="none"
                                              viewBox="0 0 24 24"
                                              stroke-width="2.5"
@@ -427,12 +427,12 @@
                                         </svg>
                                         <span>Banking</span>
                                     </a>
-                                    <div class="border-t border-zinc-100 dark:border-zinc-800 my-1"></div>
+                                    <div class="my-1 border-t border-zinc-100 dark:border-zinc-800"></div>
                                     <form method="post" action="{% url 'account_logout' %}">
                                         {% csrf_token %}
                                         <button type="submit"
-                                                class="w-full group flex items-center gap-2.5 px-2.5 py-1.75 text-xs font-medium text-rose-600/90 dark:text-rose-400/90 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/30 hover:text-rose-700 dark:hover:text-rose-300 transition-all duration-200 cursor-pointer">
-                                            <svg class="size-4 opacity-80 group-hover:opacity-100 transition-opacity shrink-0"
+                                                class="group flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-1.75 text-xs font-medium text-rose-600/90 transition-all duration-200 hover:bg-rose-50 hover:text-rose-700 dark:text-rose-400/90 dark:hover:bg-rose-950/30 dark:hover:text-rose-300">
+                                            <svg class="size-4 shrink-0 opacity-80 transition-opacity group-hover:opacity-100"
                                                  fill="none"
                                                  viewBox="0 0 24 24"
                                                  stroke-width="2.5"
@@ -445,17 +445,17 @@
                                 </div>
                                 <button @click="userMenuOpen = !userMenuOpen"
                                         type="button"
-                                        class="w-full flex items-center justify-between p-2 rounded-xl bg-zinc-50/80 dark:bg-zinc-900/45 hover:bg-zinc-100/90 dark:hover:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800/60 transition-all duration-200 cursor-pointer group text-left active:scale-[0.98]">
-                                    <div class="flex items-center gap-2.5 min-w-0">
-                                        <div class="uppercase flex size-7 items-center justify-center rounded-lg bg-gradient-to-br from-zinc-800 to-zinc-950 text-white dark:from-zinc-100 dark:to-zinc-300 dark:text-zinc-950 font-bold text-[11px] tracking-tight shadow-2xs shrink-0 ring-1 ring-black/5 dark:ring-white/10">
+                                        class="group flex w-full cursor-pointer items-center justify-between rounded-xl border border-zinc-200/60 bg-zinc-50/80 p-2 text-left transition-all duration-200 hover:bg-zinc-100/90 active:scale-[0.98] dark:border-zinc-800/60 dark:bg-zinc-900/45 dark:hover:bg-zinc-900">
+                                    <div class="flex min-w-0 items-center gap-2.5">
+                                        <div class="shadow-2xs flex size-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-zinc-800 to-zinc-950 text-[11px] font-bold tracking-tight text-white uppercase ring-1 ring-black/5 dark:from-zinc-100 dark:to-zinc-300 dark:text-zinc-950 dark:ring-white/10">
                                             {{ request.user.email|slice:":1" }}
                                         </div>
-                                        <div class="flex flex-col min-w-0">
-                                            <span class="font-semibold text-xs tracking-tight text-zinc-900 dark:text-zinc-100 truncate leading-tight">Verity</span>
-                                            <span class="text-[10px] font-medium text-zinc-400 dark:text-zinc-500 truncate leading-tight mt-0.5">{{ request.user.email }}</span>
+                                        <div class="flex min-w-0 flex-col">
+                                            <span class="truncate text-xs leading-tight font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">Verity</span>
+                                            <span class="mt-0.5 truncate text-[10px] leading-tight font-medium text-zinc-400 dark:text-zinc-500">{{ request.user.email }}</span>
                                         </div>
                                     </div>
-                                    <div class="flex items-center text-zinc-400 group-hover:text-zinc-700 dark:group-hover:text-zinc-200 transition-colors shrink-0 ml-1">
+                                    <div class="ml-1 flex shrink-0 items-center text-zinc-400 transition-colors group-hover:text-zinc-700 dark:group-hover:text-zinc-200">
                                         <svg xmlns="http://www.w3.org/2000/svg"
                                              fill="none"
                                              viewBox="0 0 24 24"

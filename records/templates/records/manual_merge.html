@@ -2,24 +2,24 @@
 {% load form_tags %}
 {% block content %}
     <div x-data="mergeForm"
-         class="w-full min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center py-16 px-4 sm:px-6 lg:px-8 bg-zinc-50/50 dark:bg-zinc-950/40 selection:bg-zinc-900 selection:text-white dark:selection:bg-white dark:selection:text-black">
-        <div class="w-full max-w-2xl mx-auto flex flex-col items-center relative">
+         class="flex min-h-[calc(100vh-4rem)] w-full flex-col items-center justify-center bg-zinc-50/50 px-4 py-16 selection:bg-zinc-900 selection:text-white sm:px-6 lg:px-8 dark:bg-zinc-950/40 dark:selection:bg-white dark:selection:text-black">
+        <div class="relative mx-auto flex w-full max-w-2xl flex-col items-center">
             <!-- Ambient Glow Accent -->
-            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-500/5 dark:bg-indigo-500/10 rounded-full blur-3xl pointer-events-none -z-10">
+            <div class="pointer-events-none absolute top-1/2 left-1/2 -z-10 h-96 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-500/5 blur-3xl dark:bg-indigo-500/10">
             </div>
             <!-- Header Section -->
-            <div class="text-center space-y-2 mb-10">
-                <h1 class="text-2xl sm:text-3xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">Manual Record Merge</h1>
-                <p class="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 max-w-md mx-auto">
+            <div class="mb-10 space-y-2 text-center">
+                <h1 class="text-2xl font-semibold tracking-tight text-zinc-950 sm:text-3xl dark:text-zinc-50">Manual Record Merge</h1>
+                <p class="mx-auto max-w-md text-xs text-zinc-500 sm:text-sm dark:text-zinc-400">
                     Pair a verified bank transaction with an uploaded document record to reconcile your ledger.
                 </p>
             </div>
             <!-- Merge Slots Grid with Central Connector -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full relative">
+            <div class="relative grid w-full grid-cols-1 gap-4 sm:grid-cols-2">
                 {% include 'records/partials/merge/merge_slot.html' with mode="plaid" label="Bank Transaction" icon="bank" selectedState="selectedPlaid" selectedTitle="plaidTitle" %}
                 <!-- Center Visual Node Indicator (Desktop) -->
-                <div class="hidden sm:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-white/[0.08] shadow-sm items-center justify-center text-zinc-400">
-                    <svg class="w-3.5 h-3.5"
+                <div class="absolute top-1/2 left-1/2 z-10 hidden h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-400 shadow-sm sm:flex dark:border-white/[0.08] dark:bg-zinc-900">
+                    <svg class="h-3.5 w-3.5"
                          fill="none"
                          viewBox="0 0 24 24"
                          stroke-width="2"
@@ -30,22 +30,22 @@
                 {% include 'records/partials/merge/merge_slot.html' with mode="doc" label="Uploaded Receipt" icon="receipt" selectedState="selectedDoc" selectedTitle="docTitle" %}
             </div>
             <!-- Submit Form Section -->
-            <form method="POST" class="w-full mt-6">
+            <form method="POST" class="mt-6 w-full">
                 {% csrf_token %}
                 <input type="hidden" name="plaid_record_id" x-bind:value="selectedPlaid">
                 <input type="hidden" name="document_record_id" x-bind:value="selectedDoc">
                 <button type="submit"
                         x-bind:disabled="!canMerge"
                         x-bind:class="canMerge ? 'bg-black text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200 shadow-lg shadow-black/10 dark:shadow-white/10 cursor-pointer active:scale-[0.99]' : 'bg-zinc-100 dark:bg-zinc-900/45 text-zinc-400 dark:text-zinc-600 border border-zinc-200 dark:border-white/[0.04] cursor-not-allowed'"
-                        class="w-full py-3 px-4 rounded-xl text-xs font-semibold tracking-wider uppercase transition-all duration-200 flex items-center justify-center gap-2">
+                        class="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-wider uppercase transition-all duration-200">
                     <span x-show="!canMerge">Awaiting Record Selection</span>
                     <span x-show="canMerge">Merge</span>
                 </button>
             </form>
             <!-- Footer Meta Links -->
-            <div class="flex items-center gap-3 mt-8 text-xs font-medium text-zinc-400 dark:text-zinc-500">
+            <div class="mt-8 flex items-center gap-3 text-xs font-medium text-zinc-400 dark:text-zinc-500">
                 <a href="{% filter_url 'records:view_all_records' merged='True' %}"
-                   class="hover:text-zinc-950 dark:hover:text-zinc-100 transition-colors py-1">View merged history</a>
+                   class="py-1 transition-colors hover:text-zinc-950 dark:hover:text-zinc-100">View merged history</a>
                 <span class="text-zinc-300 dark:text-zinc-800">·</span>
                 <span>Manual Override Protocol</span>
             </div>
@@ -62,7 +62,7 @@
              x-cloak
              class="fixed inset-0 z-50 flex items-center justify-center p-4"
              @keyup.escape.window="showModal = false">
-            <div class="fixed inset-0 bg-zinc-900/40 dark:bg-black/70 backdrop-blur-md transition-opacity"
+            <div class="fixed inset-0 bg-zinc-900/40 backdrop-blur-md transition-opacity dark:bg-black/70"
                  @click="showModal = false"></div>
             <div x-transition:enter="transition ease-out duration-300"
                  x-transition:enter-start="opacity-0 scale-[0.98] translate-y-2"
@@ -70,8 +70,8 @@
                  x-transition:leave="transition ease-in duration-200"
                  x-transition:leave-start="opacity-100 scale-100 translate-y-0"
                  x-transition:leave-end="opacity-0 scale-[0.98] translate-y-2"
-                 class="relative bg-white dark:bg-[#0c0c0e] backdrop-blur-2xl rounded-2xl shadow-[0_24px_64px_rgba(0,0,0,0.15)] dark:shadow-[0_24px_64px_rgba(0,0,0,0.8)] border border-zinc-200 dark:border-white/[0.08] ring-1 ring-zinc-900/[0.04] dark:ring-white/[0.04] w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
-                <div class="p-6 overflow-y-auto min-h-0 flex-1 scrollbar-none"
+                 class="relative flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-[0_24px_64px_rgba(0,0,0,0.15)] ring-1 ring-zinc-900/[0.04] backdrop-blur-2xl dark:border-white/[0.08] dark:bg-[#0c0c0e] dark:shadow-[0_24px_64px_rgba(0,0,0,0.8)] dark:ring-white/[0.04]">
+                <div class="scrollbar-none min-h-0 flex-1 overflow-y-auto p-6"
                      id="modal-inner"></div>
             </div>
         </div>

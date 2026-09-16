@@ -1,15 +1,15 @@
-<div class="flex items-center justify-between pb-3 border-b border-zinc-200/30 dark:border-white/[0.03] shrink-0">
-    <h2 class="text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+<div class="flex shrink-0 items-center justify-between border-b border-zinc-200/30 pb-3 dark:border-white/[0.03]">
+    <h2 class="text-[10px] font-semibold tracking-wider text-zinc-500 uppercase dark:text-zinc-400">
         {{ title }}
         {% if badge_text %}
-            <span class="ml-2 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium tracking-normal normal-case text-zinc-800 dark:text-zinc-200 bg-zinc-100 dark:bg-white/[0.06] border border-zinc-200/40 dark:border-white/10">
+            <span class="ml-2 inline-flex items-center gap-1.5 rounded-full border border-zinc-200/40 bg-zinc-100 px-2 py-0.5 text-[10px] font-medium tracking-normal text-zinc-800 normal-case dark:border-white/10 dark:bg-white/[0.06] dark:text-zinc-200">
                 <span>{{ badge_text }}</span>
             </span>
         {% endif %}
     </h2>
     {% if view_all_url %}
         <a href="{{ view_all_url }}"
-           class="text-xs font-medium text-zinc-400 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors">
+           class="text-xs font-medium text-zinc-400 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200">
             {{ view_all_text|default:"View All →" }}
         </a>
     {% endif %}

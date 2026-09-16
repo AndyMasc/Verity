@@ -2,12 +2,12 @@
 {# Expects FilterView context: "filter" (bound filterset) + "request". #}
 {% load form_tags %}
 <div class="flex flex-wrap items-center gap-1.5">
-    <span class="text-[10px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500 mr-0.5">Filter:</span>
+    <span class="mr-0.5 text-[10px] font-bold tracking-widest text-zinc-400 uppercase dark:text-zinc-500">Filter:</span>
     <label data-filter-url="{% url 'documents:document_list_view' %}"
-           class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium text-zinc-600 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/60 rounded-full">
+           class="inline-flex items-center gap-1 rounded-full border border-zinc-200 bg-zinc-100 px-2.5 py-1 text-[11px] font-medium text-zinc-600 dark:border-zinc-700/60 dark:bg-zinc-800/60 dark:text-zinc-300">
         <span>Status</span>
         <select data-filter-select="status"
-                class="appearance-none bg-transparent outline-none text-[11px] font-medium cursor-pointer">
+                class="cursor-pointer appearance-none bg-transparent text-[11px] font-medium outline-none">
             <option value="">All</option>
             {% for value, label in filter.form.status.field.choices %}
                 {% if value %}
@@ -18,10 +18,10 @@
         </select>
     </label>
     <label data-filter-url="{% url 'documents:document_list_view' %}"
-           class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium text-zinc-600 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/60 rounded-full">
+           class="inline-flex items-center gap-1 rounded-full border border-zinc-200 bg-zinc-100 px-2.5 py-1 text-[11px] font-medium text-zinc-600 dark:border-zinc-700/60 dark:bg-zinc-800/60 dark:text-zinc-300">
         <span>Type</span>
         <select data-filter-select="file_type"
-                class="appearance-none bg-transparent outline-none text-[11px] font-medium cursor-pointer">
+                class="cursor-pointer appearance-none bg-transparent text-[11px] font-medium outline-none">
             <option value="">All</option>
             {% for value, label in filter.form.file_type.field.choices %}
                 {% if value %}

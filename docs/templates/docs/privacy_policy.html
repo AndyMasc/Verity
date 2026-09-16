@@ -1,57 +1,57 @@
 {% extends 'base.html' %}
 {% block content %}
-    <main class="w-full py-16 px-6">
+    <main class="w-full px-6 py-16">
         <section class="container mx-auto max-w-3xl">
             <header class="mb-12">
-                <h1 class="text-4xl md:text-5xl font-semibold mb-4">Privacy Policy</h1>
+                <h1 class="mb-4 text-4xl font-semibold md:text-5xl">Privacy Policy</h1>
                 <p class="text-zinc-500 dark:text-zinc-400">Last Updated: July 5, 2026</p>
             </header>
-            <div class="prose prose-zinc dark:prose-invert max-w-none">
-                <p class="text-lg text-zinc-600 dark:text-zinc-300 mb-8">
+            <div class="prose-zinc max-w-none prose dark:prose-invert">
+                <p class="mb-8 text-lg text-zinc-600 dark:text-zinc-300">
                     At Verity, we believe your financial records are your private property. We have built this platform with a "privacy-first" architecture, meaning we minimize what we know about your files and maximize your control over them.
                 </p>
-                <h2 class="text-2xl font-semibold mt-10 mb-4">1. Data We Collect</h2>
+                <h2 class="mt-10 mb-4 text-2xl font-semibold">1. Data We Collect</h2>
                 <p>We collect only the information necessary to provide our service:</p>
-                <ul class="list-none pl-0 space-y-4">
+                <ul class="list-none space-y-4 pl-0">
                     <li><strong>Account Information:</strong> We exclusively support secure, passwordless authentication and social logins via <strong>Google</strong> and <strong>GitHub</strong>. We only collect basic profile details (email and name) to manage your account. This itself removes the most common point of vulnerability and phishing.</li>
                     <li><strong>Usage Data:</strong> We use a minimal essential cookie to manage your local timezone setting so your records display correctly, and pseudonymous analytics only when you opt in. See <a href="#cookies"
-    class="text-black dark:text-white underline underline-offset-4 decoration-zinc-400">Section 2</a> for details.</li>
+    class="text-black underline decoration-zinc-400 underline-offset-4 dark:text-white">Section 2</a> for details.</li>
                     <li><strong>Technical Logs:</strong> Basic server logs to maintain the security and integrity of our systems.</li>
                     <li><strong>Document Metadata:</strong> We store metadata (filename, timestamp) to help you organize and retrieve your records.</li>
                 </ul>
-                <h2 class="text-2xl font-semibold mt-10 mb-4">2. Cookies and Analytics</h2>
+                <h2 class="mt-10 mb-4 text-2xl font-semibold">2. Cookies and Analytics</h2>
                 <p>We use a small number of cookies. We never sell data, and analytics run only if you accept them.</p>
-                <ul class="list-none pl-0 space-y-4">
+                <ul class="list-none space-y-4 pl-0">
                     <li><strong>Essential cookie — timezone (<code>user_timezone</code>):</strong> Stored in your browser to remember your local timezone so dates and records are accurate. This cookie is strictly necessary, does not identify you, is not shared with anyone, and expires after one year.</li>
                     <li><strong>Analytics (PostHog):</strong> Analytics are <em>off by default</em>. If you click "Accept All," we enable PostHog to understand aggregate usage (page views, feature usage, performance) so we can improve Verity. PostHog runs on our own infrastructure and sets first-party cookies such as <code>__posthog_&lt;project_token&gt;</code> and <code>ph_&lt;project_token&gt;_posthog</code>. It does not use your document contents, and we do not use it to build advertising profiles or share data with advertisers.</li>
                     <li><strong>Optional (declined):</strong> If you click "Decline" or take no action, analytics remain disabled and no analytics cookies are set. Essential cookies only are used.</li>
                     <li><strong>Managing your choice:</strong> Your consent choice is stored locally in your browser's storage. You can change it at any time by clearing this site's cookies and site data in your browser settings.</li>
                 </ul>
-                <h2 class="text-2xl font-semibold mt-10 mb-4">3. How We Handle Your Files & AI Processing</h2>
+                <h2 class="mt-10 mb-4 text-2xl font-semibold">3. How We Handle Your Files & AI Processing</h2>
                 <p>We use Cloudflare R2 for secure storage and the Gemini API for intelligent organization. Our security standards include:</p>
-                <ul class="list-none pl-0 space-y-4">
+                <ul class="list-none space-y-4 pl-0">
                     <li><strong>Direct, Secure Uploads:</strong> Files are uploaded directly from your device to storage using time-limited, signed URLs (30-minute lifespan).</li>
                     <li><strong>AI-Powered Insights:</strong> We transmit specific document content to the <strong>Gemini API</strong> solely to extract information (dates, amounts, categories) to populate your records.</li>
                     <li><strong>Data Retention:</strong> Our Gemini API processing is configured to retain document data only for the duration necessary to complete the extraction. Verity does not use Gemini's service to train Google's machine learning models.</li>
                     <li><strong>Private Ownership:</strong> Your files and extracted data are linked exclusively to your unique user ID.</li>
                 </ul>
-                <h2 class="text-2xl font-semibold mt-10 mb-4">4. Sharing and Disclosure</h2>
+                <h2 class="mt-10 mb-4 text-2xl font-semibold">4. Sharing and Disclosure</h2>
                 <p>We do not sell, rent, or trade your information. Data is shared only if required by law or with our core infrastructure providers (Cloudflare, Google/Gemini, and our hosting provider) to deliver our services.</p>
-                <h2 class="text-2xl font-semibold mt-10 mb-4">5. Data Retention and Deletion</h2>
-                <ul class="list-none pl-0 space-y-4">
+                <h2 class="mt-10 mb-4 text-2xl font-semibold">5. Data Retention and Deletion</h2>
+                <ul class="list-none space-y-4 pl-0">
                     <li><strong>Retention:</strong> We retain your account information and document metadata as long as your account remains active.</li>
                     <li><strong>Permanent Deletion:</strong> You have the right to delete your records at any time. When triggered, your files are permanently scrubbed from our Cloudflare R2 storage and our primary database.</li>
                     <li><strong>Archives:</strong> Archives serve as a "soft delete" feature, allowing you to restore records while helping us maintain accurate, clean statistics for your dashboard.</li>
                 </ul>
-                <h2 class="text-2xl font-semibold mt-10 mb-4">6. Your Rights</h2>
-                <ul class="list-none pl-0 space-y-4">
+                <h2 class="mt-10 mb-4 text-2xl font-semibold">6. Your Rights</h2>
+                <ul class="list-none space-y-4 pl-0">
                     <li><strong>Right to be Forgotten:</strong> Upon closing your account, all associated personal data, metadata, and uploaded files are permanently and securely deleted from our systems.</li>
                 </ul>
-                <h2 class="text-2xl font-semibold mt-10 mb-4">7. Contact Us</h2>
+                <h2 class="mt-10 mb-4 text-2xl font-semibold">7. Contact Us</h2>
                 <p>
                     If you have questions about how we handle your data, reach out to our privacy team at:
                     <a href="mailto:support@veritypay.app"
-                       class="text-black dark:text-white underline underline-offset-4 decoration-zinc-400">support@veritypay.app</a>
+                       class="text-black underline decoration-zinc-400 underline-offset-4 dark:text-white">support@veritypay.app</a>
                 </p>
             </div>
         </section>

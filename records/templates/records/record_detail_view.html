@@ -2,19 +2,19 @@
 {% block content %}
     {% include "records/partials/record_form_partial.html" %}
     <div id="share-modal" class="relative z-50 hidden" aria-modal="true">
-        <div class="fixed inset-0 bg-zinc-900/40 dark:bg-black/60 backdrop-blur-sm transition-opacity duration-200"
+        <div class="fixed inset-0 bg-zinc-900/40 backdrop-blur-sm transition-opacity duration-200 dark:bg-black/60"
              onclick="toggleShareModal(false)"></div>
-        <div class="fixed inset-0 z-10 w-screen overflow-y-auto p-4 sm:p-6 md:p-20 flex items-center justify-center">
-            <div class="bg-white/90 dark:bg-zinc-900/90 backdrop-blur-2xl rounded-2xl border border-black/5 dark:border-white/10 w-full max-w-md space-y-4 p-5 sm:p-6 shadow-[0_16px_64px_rgba(0,0,0,0.2)]">
+        <div class="fixed inset-0 z-10 flex w-screen items-center justify-center overflow-y-auto p-4 sm:p-6 md:p-20">
+            <div class="w-full max-w-md space-y-4 rounded-2xl border border-black/5 bg-white/90 p-5 shadow-[0_16px_64px_rgba(0,0,0,0.2)] backdrop-blur-2xl sm:p-6 dark:border-white/10 dark:bg-zinc-900/90">
                 <div class="flex items-start justify-between gap-3">
                     <div class="space-y-1">
                         <h3 class="text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">Share this record</h3>
-                        <p class="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">Recipients can view and edit this record. Edits are attributed to them in the record history.</p>
+                        <p class="text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">Recipients can view and edit this record. Edits are attributed to them in the record history.</p>
                     </div>
                     <button type="button"
                             onclick="toggleShareModal(false)"
-                            class="shrink-0 p-2 rounded-xl text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
-                        <svg class="w-4 h-4"
+                            class="shrink-0 rounded-xl p-2 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200">
+                        <svg class="h-4 w-4"
                              fill="none"
                              viewBox="0 0 24 24"
                              stroke-width="2"
@@ -25,8 +25,8 @@
                 </div>
                 <div class="relative">
                     <div id="share-panel-body" class="min-h-[90px]"></div>
-                    <div class="htmx-indicator hidden absolute inset-0 flex items-center justify-center bg-white/60 dark:bg-zinc-900/45 backdrop-blur-[2px] rounded-2xl">
-                        <svg class="animate-spin w-5 h-5 text-emerald-600 dark:text-emerald-400"
+                    <div class="htmx-indicator absolute inset-0 flex hidden items-center justify-center rounded-2xl bg-white/60 backdrop-blur-[2px] dark:bg-zinc-900/45">
+                        <svg class="h-5 w-5 animate-spin text-emerald-600 dark:text-emerald-400"
                              fill="none"
                              viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -36,7 +36,7 @@
                 </div>
                 <div class="flex items-center justify-end gap-2.5 pt-1">
                     <button onclick="toggleShareModal(false)"
-                            class="px-4 py-2 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800">
+                            class="rounded-xl px-4 py-2 text-xs font-medium text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100">
                         Close
                     </button>
                 </div>
@@ -49,21 +49,21 @@
             if (modal) modal.classList.toggle('hidden', !open);
         }
     </script>
-    <div class="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6 sm:space-y-8 pb-16">
+    <div class="mx-auto w-full max-w-6xl space-y-6 px-4 pb-16 sm:space-y-8 sm:px-6 lg:px-8">
         {% if active_merge %}
-            <section class="group relative overflow-hidden rounded-3xl bg-white/70 dark:bg-zinc-900/45 backdrop-blur-2xl ring-1 ring-inset ring-black/[0.08] dark:ring-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.04)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.2)] p-6 sm:p-10 transition-all duration-300">
-                <div class="pointer-events-none absolute -top-32 -right-32 h-64 w-64 rounded-full bg-emerald-500/10 blur-3xl transition-opacity duration-500 group-hover:opacity-100 opacity-60">
+            <section class="group relative overflow-hidden rounded-3xl bg-white/70 p-6 shadow-[0_8px_32px_rgba(0,0,0,0.04)] ring-1 ring-black/[0.08] backdrop-blur-2xl transition-all duration-300 ring-inset sm:p-10 dark:bg-zinc-900/45 dark:shadow-[0_8px_32px_rgba(0,0,0,0.2)] dark:ring-white/[0.08]">
+                <div class="pointer-events-none absolute -top-32 -right-32 h-64 w-64 rounded-full bg-emerald-500/10 opacity-60 blur-3xl transition-opacity duration-500 group-hover:opacity-100">
                 </div>
                 <div class="relative space-y-8">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-black/[0.05] dark:border-white/[0.06]">
+                    <div class="flex flex-col justify-between gap-4 border-b border-black/[0.05] pb-6 sm:flex-row sm:items-center dark:border-white/[0.06]">
                         <div class="space-y-1.5">
                             <div class="flex items-center gap-3">
-                                <span class="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 ring-1 ring-inset ring-emerald-500/20 shadow-2xs">
+                                <span class="shadow-2xs inline-flex items-center rounded-full bg-emerald-500/10 px-3 py-1 text-[10px] font-bold tracking-wider text-emerald-600 uppercase ring-1 ring-emerald-500/20 ring-inset dark:text-emerald-400">
                                     Verified Link
                                 </span>
                                 <h2 class="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">Merged Evidence</h2>
                             </div>
-                            <p class="text-xs text-zinc-500 dark:text-zinc-400 max-w-xl">Reconciled data matching bank statement import with physical scanned document seamlessly.</p>
+                            <p class="max-w-xl text-xs text-zinc-500 dark:text-zinc-400">Reconciled data matching bank statement import with physical scanned document seamlessly.</p>
                         </div>
                         <form method="POST"
                               action="{% url 'records:undo_merge' active_merge.pk %}"
@@ -71,8 +71,8 @@
                               class="shrink-0">
                             {% csrf_token %}
                             <button type="submit"
-                                    class="inline-flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300 bg-zinc-100/80 dark:bg-zinc-800/80 hover:bg-zinc-200 dark:hover:bg-zinc-700 ring-1 ring-inset ring-black/[0.06] dark:ring-white/[0.08] rounded-xl transition-all duration-200 active:scale-[0.97] shadow-xs hover:shadow-sm">
-                                <svg class="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400"
+                                    class="inline-flex items-center justify-center gap-2 rounded-xl bg-zinc-100/80 px-4 py-2 text-xs font-semibold text-zinc-700 shadow-xs ring-1 ring-black/[0.06] transition-all duration-200 ring-inset hover:bg-zinc-200 hover:shadow-sm active:scale-[0.97] dark:bg-zinc-800/80 dark:text-zinc-300 dark:ring-white/[0.08] dark:hover:bg-zinc-700">
+                                <svg class="h-3.5 w-3.5 text-zinc-500 dark:text-zinc-400"
                                      fill="none"
                                      viewBox="0 0 24 24"
                                      stroke-width="2"
@@ -83,7 +83,7 @@
                             </button>
                         </form>
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
                         {% with snapshot=plaid_snapshot label="Bank Import" icon_path="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" %}
                             {% include "records/partials/snapshot_card.html" %}
                         {% endwith %}
@@ -91,10 +91,10 @@
                             {% include "records/partials/snapshot_card.html" %}
                         {% endwith %}
                     </div>
-                    <div class="flex items-center gap-2.5 text-xs text-zinc-400 dark:text-zinc-500 pt-2">
+                    <div class="flex items-center gap-2.5 pt-2 text-xs text-zinc-400 dark:text-zinc-500">
                         <span class="relative flex h-2 w-2">
-                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                            <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
+                            <span class="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
                         </span>
                         Merged on {{ active_merge.created_at|date:"M j, Y \a\t g:i A" }}
                     </div>
@@ -102,16 +102,16 @@
             </section>
         {% endif %}
         {% if record.date_added|date:"U" < seven_years_ago_unix and request.user == record.user %}
-            <section class="relative overflow-hidden rounded-3xl bg-gradient-to-b from-rose-500/[0.05] to-rose-500/[0.01] dark:from-rose-500/[0.1] dark:to-rose-500/[0.02] p-6 sm:p-10 backdrop-blur-2xl ring-1 ring-inset ring-rose-500/20 dark:ring-rose-500/30 shadow-[0_8px_32px_rgba(244,63,94,0.04)]">
-                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+            <section class="relative overflow-hidden rounded-3xl bg-gradient-to-b from-rose-500/[0.05] to-rose-500/[0.01] p-6 shadow-[0_8px_32px_rgba(244,63,94,0.04)] ring-1 ring-rose-500/20 backdrop-blur-2xl ring-inset sm:p-10 dark:from-rose-500/[0.1] dark:to-rose-500/[0.02] dark:ring-rose-500/30">
+                <div class="flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-center">
                     <div class="space-y-1.5">
                         <div class="flex items-center gap-3">
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-500/10 text-rose-600 dark:text-rose-400 ring-1 ring-inset ring-rose-500/20 shadow-2xs">
+                            <span class="shadow-2xs inline-flex items-center rounded-full bg-rose-500/10 px-3 py-1 text-[10px] font-bold tracking-wider text-rose-600 uppercase ring-1 ring-rose-500/20 ring-inset dark:text-rose-400">
                                 Retention Passed
                             </span>
                             <h2 class="text-lg font-semibold tracking-tight text-rose-950 dark:text-rose-100">Permanent Deletion</h2>
                         </div>
-                        <p class="text-xs text-rose-700/80 dark:text-rose-300/80 max-w-xl">
+                        <p class="max-w-xl text-xs text-rose-700/80 dark:text-rose-300/80">
                             This record is over 7 years old and has fully satisfied retention requirements.
                         </p>
                     </div>
@@ -122,8 +122,8 @@
                           class="shrink-0">
                         {% csrf_token %}
                         <button type="submit"
-                                class="inline-flex items-center justify-center gap-2 px-4.5 py-2.5 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-500 rounded-xl transition-all duration-200 shadow-md hover:shadow-rose-600/30 active:scale-[0.97] whitespace-nowrap">
-                            <svg class="w-3.5 h-3.5"
+                                class="inline-flex items-center justify-center gap-2 rounded-xl bg-rose-600 px-4.5 py-2.5 text-xs font-semibold whitespace-nowrap text-white shadow-md transition-all duration-200 hover:bg-rose-500 hover:shadow-rose-600/30 active:scale-[0.97]">
+                            <svg class="h-3.5 w-3.5"
                                  fill="none"
                                  viewBox="0 0 24 24"
                                  stroke-width="2"

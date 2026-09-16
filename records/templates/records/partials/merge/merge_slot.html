@@ -1,13 +1,13 @@
 <div id="{{ mode }}-slot"
      :class="{{ selectedState }} ? 'border-zinc-900 dark:border-zinc-100 bg-zinc-900/[0.02] dark:bg-white/[0.02]' : 'border-zinc-200/50 dark:border-zinc-700/50 bg-white dark:bg-zinc-900/45'"
-     class="relative group rounded-2xl border border-dashed p-6 text-center transition-all duration-300 hover:border-zinc-400 dark:hover:border-zinc-500 shadow-xs flex flex-col items-center justify-between min-h-[160px]">
+     class="group relative flex min-h-[160px] flex-col items-center justify-between rounded-2xl border border-dashed p-6 text-center shadow-xs transition-all duration-300 hover:border-zinc-400 dark:hover:border-zinc-500">
     <button type="button"
-            class="flex flex-col items-center justify-center gap-3 mx-auto text-zinc-500 dark:text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors cursor-pointer w-full h-full flex-1"
+            class="mx-auto flex h-full w-full flex-1 cursor-pointer flex-col items-center justify-center gap-3 text-zinc-500 transition-colors group-hover:text-zinc-900 dark:text-zinc-400 dark:group-hover:text-zinc-100"
             hx-get="{% url 'records:manual_merge_modal' mode %}"
             hx-target="#modal-inner"
             @click="showModal = true; $nextTick(() => document.getElementById('modal-inner').innerHTML = '')">
         <div :class="{{ selectedState }} ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 scale-105' : 'bg-zinc-50 dark:bg-zinc-950 border border-zinc-200/60 dark:border-zinc-800'"
-             class="p-3 rounded-xl transition-all duration-300 shadow-2xs">
+             class="shadow-2xs rounded-xl p-3 transition-all duration-300">
             {% if icon == "bank" %}
                 <svg class="size-5 shrink-0"
                      fill="none"
@@ -27,17 +27,17 @@
             {% endif %}
         </div>
         <div class="space-y-0.5">
-            <span class="block text-[10px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">{{ label }}</span>
+            <span class="block text-[10px] font-semibold tracking-wider text-zinc-500 uppercase dark:text-zinc-400">{{ label }}</span>
             <span x-text="{{ selectedState }} ? {{ selectedTitle }} : 'Click to bind record'"
                   :class="{{ selectedState }} ? 'text-zinc-950 dark:text-zinc-50 font-medium' : 'text-zinc-500 dark:text-zinc-400 font-normal'"
-                  class="text-xs block truncate max-w-[200px]"></span>
+                  class="block max-w-[200px] truncate text-xs"></span>
         </div>
     </button>
     <button x-show="{{ selectedState }}"
             x-cloak
             @click="{{ selectedState }} = null; {{ selectedTitle }} = ''"
             type="button"
-            class="absolute top-2 right-2 p-1 rounded-md text-zinc-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-all cursor-pointer">
+            class="absolute top-2 right-2 cursor-pointer rounded-md p-1 text-zinc-400 transition-all hover:bg-rose-50 hover:text-rose-500 dark:hover:bg-rose-950/30">
         <svg xmlns="http://www.w3.org/2000/svg"
              fill="none"
              viewBox="0 0 24 24"

@@ -6,9 +6,9 @@
     <div class="flex items-center gap-2">
         {{ form.name }}
         <button type="submit"
-                class="p-1.5 rounded-lg text-zinc-400 hover:text-green-600 dark:hover:text-green-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                class="cursor-pointer rounded-lg p-1.5 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-green-600 dark:hover:bg-zinc-800 dark:hover:text-green-400"
                 title="Save">
-            <svg class="w-4 h-4"
+            <svg class="h-4 w-4"
                  fill="none"
                  viewBox="0 0 24 24"
                  stroke-width="2"
@@ -20,9 +20,9 @@
                 hx-get="{% url 'records:view_folders' %}"
                 hx-target="#directory-results-container"
                 hx-swap="innerHTML"
-                class="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                class="cursor-pointer rounded-lg p-1.5 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
                 title="Cancel">
-            <svg class="w-4 h-4"
+            <svg class="h-4 w-4"
                  fill="none"
                  viewBox="0 0 24 24"
                  stroke-width="2"
@@ -32,6 +32,6 @@
         </button>
     </div>
     {% if form.name.errors %}
-        <p class="text-xs font-medium text-red-500 mt-1">{{ form.name.errors.0 }}</p>
+        <p class="mt-1 text-xs font-medium text-red-500">{{ form.name.errors.0 }}</p>
     {% endif %}
 </form>

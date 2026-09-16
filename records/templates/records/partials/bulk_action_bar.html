@@ -8,48 +8,48 @@
      x-transition:leave="transition ease-in duration-200"
      x-transition:leave-start="translate-y-0 opacity-100"
      x-transition:leave-end="translate-y-3 opacity-0"
-     class="fixed bottom-0 inset-x-0 z-50 sm:bottom-8 sm:left-1/2 sm:inset-x-auto sm:-translate-x-1/2"
+     class="fixed inset-x-0 bottom-0 z-50 sm:inset-x-auto sm:bottom-8 sm:left-1/2 sm:-translate-x-1/2"
      @keydown.escape.window="clearSelection()">
-    <div class="sm:flex sm:items-center sm:gap-3 sm:px-4 sm:py-2 sm:bg-white/90 dark:sm:bg-[#0c0c0e]/95 sm:backdrop-blur-2xl sm:text-zinc-600 dark:sm:text-zinc-400 sm:rounded-2xl sm:shadow-[0_8px_30px_rgb(0,0,0,0.12)] dark:sm:shadow-[0_8px_30px_rgb(0,0,0,0.5)] sm:border sm:border-zinc-200 dark:sm:border-white/[0.08] sm:ring-1 sm:ring-zinc-900/[0.04] dark:sm:ring-white/[0.02]">
+    <div class="sm:flex sm:items-center sm:gap-3 sm:rounded-2xl sm:border sm:border-zinc-200 sm:bg-white/90 sm:px-4 sm:py-2 sm:text-zinc-600 sm:shadow-[0_8px_30px_rgb(0,0,0,0.12)] sm:ring-1 sm:ring-zinc-900/[0.04] sm:backdrop-blur-2xl dark:sm:border-white/[0.08] dark:sm:bg-[#0c0c0e]/95 dark:sm:text-zinc-400 dark:sm:shadow-[0_8px_30px_rgb(0,0,0,0.5)] dark:sm:ring-white/[0.02]">
         {# Mobile #}
-        <div class="flex items-center justify-between gap-2 px-4 py-3 bg-white/95 dark:bg-[#0c0c0e]/95 backdrop-blur-2xl text-zinc-600 dark:text-zinc-400 border-t border-zinc-200 dark:border-white/[0.08] sm:hidden safe-area-pb shadow-lg">
-            <div class="flex items-center gap-2.5 min-w-0">
-                <span class="flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-md bg-zinc-100 dark:bg-white/[0.06] border border-zinc-200 dark:border-white/[0.08] text-[11px] font-semibold text-zinc-900 dark:text-zinc-200 tabular-nums"
+        <div class="safe-area-pb flex items-center justify-between gap-2 border-t border-zinc-200 bg-white/95 px-4 py-3 text-zinc-600 shadow-lg backdrop-blur-2xl sm:hidden dark:border-white/[0.08] dark:bg-[#0c0c0e]/95 dark:text-zinc-400">
+            <div class="flex min-w-0 items-center gap-2.5">
+                <span class="flex h-5 min-w-[20px] items-center justify-center rounded-md border border-zinc-200 bg-zinc-100 px-1.5 text-[11px] font-semibold text-zinc-900 tabular-nums dark:border-white/[0.08] dark:bg-white/[0.06] dark:text-zinc-200"
                       x-text="selectedIds.length"></span>
                 <span class="text-[13px] font-medium whitespace-nowrap text-zinc-600 dark:text-zinc-400">selected</span>
             </div>
-            <div class="flex items-center gap-1 overflow-x-auto scrollbar-none">
+            <div class="scrollbar-none flex items-center gap-1 overflow-x-auto">
                 <button type="button"
                         @click="toggleSelectAll()"
-                        class="px-2.5 py-1 text-[13px] font-medium rounded-lg hover:bg-zinc-100 dark:hover:bg-white/[0.06] hover:text-zinc-900 dark:hover:text-zinc-200 transition-all duration-200 whitespace-nowrap"
+                        class="rounded-lg px-2.5 py-1 text-[13px] font-medium whitespace-nowrap transition-all duration-200 hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-white/[0.06] dark:hover:text-zinc-200"
                         x-text="allVisibleSelected ? 'Deselect' : 'Select All'"></button>
                 <button type="button"
                         @click="bulkArchive()"
                         :disabled="archiving"
-                        class="px-2.5 py-1 text-[13px] font-medium rounded-lg hover:bg-zinc-100 dark:hover:bg-white/[0.06] hover:text-zinc-900 dark:hover:text-zinc-200 transition-all duration-200 whitespace-nowrap disabled:opacity-40">
+                        class="rounded-lg px-2.5 py-1 text-[13px] font-medium whitespace-nowrap transition-all duration-200 hover:bg-zinc-100 hover:text-zinc-900 disabled:opacity-40 dark:hover:bg-white/[0.06] dark:hover:text-zinc-200">
                     <span x-text="archiving ? 'Archiving...' : 'Archive'"></span>
                 </button>
                 <button type="button"
                         @click="bulkUnarchive()"
                         :disabled="unarchiving"
-                        class="px-2.5 py-1 text-[13px] font-medium rounded-lg hover:bg-zinc-100 dark:hover:bg-white/[0.06] hover:text-zinc-900 dark:hover:text-zinc-200 transition-all duration-200 whitespace-nowrap disabled:opacity-40">
+                        class="rounded-lg px-2.5 py-1 text-[13px] font-medium whitespace-nowrap transition-all duration-200 hover:bg-zinc-100 hover:text-zinc-900 disabled:opacity-40 dark:hover:bg-white/[0.06] dark:hover:text-zinc-200">
                     <span x-text="unarchiving ? 'Restoring...' : 'Restore'"></span>
                 </button>
                 <button type="button"
                         @click="exportSelected()"
                         :disabled="exporting"
-                        class="px-2.5 py-1 text-[13px] font-medium rounded-lg hover:bg-zinc-100 dark:hover:bg-white/[0.06] hover:text-zinc-900 dark:hover:text-zinc-200 transition-all duration-200 whitespace-nowrap disabled:opacity-40">
+                        class="rounded-lg px-2.5 py-1 text-[13px] font-medium whitespace-nowrap transition-all duration-200 hover:bg-zinc-100 hover:text-zinc-900 disabled:opacity-40 dark:hover:bg-white/[0.06] dark:hover:text-zinc-200">
                     <span x-text="exporting ? 'Exporting...' : 'Export'"></span>
                 </button>
                 <button type="button"
                         @click="openShareModal()"
-                        class="px-2.5 py-1 text-[13px] font-medium rounded-lg hover:bg-zinc-100 dark:hover:bg-white/[0.06] hover:text-zinc-900 dark:hover:text-zinc-200 transition-all duration-200 whitespace-nowrap">
+                        class="rounded-lg px-2.5 py-1 text-[13px] font-medium whitespace-nowrap transition-all duration-200 hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-white/[0.06] dark:hover:text-zinc-200">
                     Share
                 </button>
                 <button type="button"
                         @click="openPackageModal()"
                         :disabled="creatingPackage"
-                        class="px-3 py-1 text-[13px] font-medium text-white bg-black dark:text-black dark:bg-white rounded-lg transition-all duration-200 whitespace-nowrap disabled:opacity-40">
+                        class="rounded-lg bg-black px-3 py-1 text-[13px] font-medium whitespace-nowrap text-white transition-all duration-200 disabled:opacity-40 dark:bg-white dark:text-black">
                     <span x-text="creatingPackage ? 'Creating...' : 'Reimburse'"></span>
                 </button>
             </div>
@@ -57,45 +57,45 @@
         {# Desktop #}
         <div class="hidden sm:flex sm:items-center sm:gap-3">
             <div class="flex items-center gap-2">
-                <span class="flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-md bg-zinc-100 dark:bg-white/[0.06] border border-zinc-200 dark:border-white/[0.08] text-[11px] font-semibold text-zinc-900 dark:text-zinc-200 tabular-nums"
+                <span class="flex h-5 min-w-[20px] items-center justify-center rounded-md border border-zinc-200 bg-zinc-100 px-1.5 text-[11px] font-semibold text-zinc-900 tabular-nums dark:border-white/[0.08] dark:bg-white/[0.06] dark:text-zinc-200"
                       x-text="selectedIds.length"></span>
-                <span class="text-[13px] font-medium whitespace-nowrap pr-2 text-zinc-600 dark:text-zinc-400">selected</span>
+                <span class="pr-2 text-[13px] font-medium whitespace-nowrap text-zinc-600 dark:text-zinc-400">selected</span>
             </div>
-            <div class="w-px h-4 bg-zinc-200 dark:bg-white/[0.08]"></div>
+            <div class="h-4 w-px bg-zinc-200 dark:bg-white/[0.08]"></div>
             <div class="flex items-center gap-1">
                 <button type="button"
                         @click="toggleSelectAll()"
-                        class="px-2.5 py-1 text-[13px] font-medium rounded-lg hover:bg-zinc-100 dark:hover:bg-white/[0.06] hover:text-zinc-900 dark:hover:text-zinc-200 transition-all duration-200 whitespace-nowrap"
+                        class="rounded-lg px-2.5 py-1 text-[13px] font-medium whitespace-nowrap transition-all duration-200 hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-white/[0.06] dark:hover:text-zinc-200"
                         x-text="allVisibleSelected ? 'Deselect' : 'Select All'"></button>
                 <button type="button"
                         @click="bulkArchive()"
                         :disabled="archiving"
-                        class="px-2.5 py-1 text-[13px] font-medium rounded-lg hover:bg-zinc-100 dark:hover:bg-white/[0.06] hover:text-zinc-900 dark:hover:text-zinc-200 transition-all duration-200 whitespace-nowrap disabled:opacity-40">
+                        class="rounded-lg px-2.5 py-1 text-[13px] font-medium whitespace-nowrap transition-all duration-200 hover:bg-zinc-100 hover:text-zinc-900 disabled:opacity-40 dark:hover:bg-white/[0.06] dark:hover:text-zinc-200">
                     <span x-text="archiving ? 'Archiving...' : 'Archive'"></span>
                 </button>
                 <button type="button"
                         @click="bulkUnarchive()"
                         :disabled="unarchiving"
-                        class="px-2.5 py-1 text-[13px] font-medium rounded-lg hover:bg-zinc-100 dark:hover:bg-white/[0.06] hover:text-zinc-900 dark:hover:text-zinc-200 transition-all duration-200 whitespace-nowrap disabled:opacity-40">
+                        class="rounded-lg px-2.5 py-1 text-[13px] font-medium whitespace-nowrap transition-all duration-200 hover:bg-zinc-100 hover:text-zinc-900 disabled:opacity-40 dark:hover:bg-white/[0.06] dark:hover:text-zinc-200">
                     <span x-text="unarchiving ? 'Restoring...' : 'Restore'"></span>
                 </button>
                 <button type="button"
                         @click="exportSelected()"
                         :disabled="exporting"
-                        class="px-2.5 py-1 text-[13px] font-medium rounded-lg hover:bg-zinc-100 dark:hover:bg-white/[0.06] hover:text-zinc-900 dark:hover:text-zinc-200 transition-all duration-200 whitespace-nowrap disabled:opacity-40">
+                        class="rounded-lg px-2.5 py-1 text-[13px] font-medium whitespace-nowrap transition-all duration-200 hover:bg-zinc-100 hover:text-zinc-900 disabled:opacity-40 dark:hover:bg-white/[0.06] dark:hover:text-zinc-200">
                     <span x-text="exporting ? 'Exporting...' : 'Export'"></span>
                 </button>
-                <div class="w-px h-4 bg-zinc-200 dark:bg-white/[0.08] mx-0.5"></div>
+                <div class="mx-0.5 h-4 w-px bg-zinc-200 dark:bg-white/[0.08]"></div>
                 <button type="button"
                         @click="openShareModal()"
-                        class="px-2.5 py-1 text-[13px] font-medium rounded-lg hover:bg-zinc-100 dark:hover:bg-white/[0.06] hover:text-zinc-900 dark:hover:text-zinc-200 transition-all duration-200 whitespace-nowrap">
+                        class="rounded-lg px-2.5 py-1 text-[13px] font-medium whitespace-nowrap transition-all duration-200 hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-white/[0.06] dark:hover:text-zinc-200">
                     Share
                 </button>
-                <div class="w-px h-4 bg-zinc-200 dark:bg-white/[0.08] mx-0.5"></div>
+                <div class="mx-0.5 h-4 w-px bg-zinc-200 dark:bg-white/[0.08]"></div>
                 <button type="button"
                         @click="openPackageModal()"
                         :disabled="creatingPackage"
-                        class="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-[13px] font-medium text-white bg-black dark:text-black dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-200 rounded-lg shadow-sm transition-all duration-200 whitespace-nowrap disabled:opacity-40">
+                        class="inline-flex items-center gap-1.5 rounded-lg bg-black px-3.5 py-1.5 text-[13px] font-medium whitespace-nowrap text-white shadow-sm transition-all duration-200 hover:bg-zinc-800 disabled:opacity-40 dark:bg-white dark:text-black dark:hover:bg-zinc-200">
                     <span x-text="creatingPackage ? 'Creating...' : 'Request Reimbursement'"></span>
                 </button>
             </div>
@@ -114,9 +114,9 @@
          x-transition:leave-end="opacity-0"
          class="fixed inset-0 z-[200] flex items-center justify-center p-4"
          @keydown.escape.window="showPackageModal = false">
-        <div class="absolute inset-0 bg-zinc-900/40 dark:bg-black/70 backdrop-blur-md"
+        <div class="absolute inset-0 bg-zinc-900/40 backdrop-blur-md dark:bg-black/70"
              @click="showPackageModal = false"></div>
-        <div class="relative w-full max-w-md bg-white dark:bg-[#0c0c0e] rounded-2xl border border-zinc-200 dark:border-white/[0.08] shadow-[0_24px_64px_rgba(0,0,0,0.12)] dark:shadow-[0_24px_64px_rgba(0,0,0,0.8)] overflow-hidden ring-1 ring-zinc-900/[0.04] dark:ring-white/[0.04]"
+        <div class="relative w-full max-w-md overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-[0_24px_64px_rgba(0,0,0,0.12)] ring-1 ring-zinc-900/[0.04] dark:border-white/[0.08] dark:bg-[#0c0c0e] dark:shadow-[0_24px_64px_rgba(0,0,0,0.8)] dark:ring-white/[0.04]"
              x-show="showPackageModal"
              x-transition:enter="transition ease-out duration-300 delay-75"
              x-transition:enter-start="opacity-0 scale-[0.97] translate-y-2"
@@ -125,49 +125,49 @@
              x-transition:leave-start="opacity-100 scale-100"
              x-transition:leave-end="opacity-0 scale-[0.97]"
              @click.stop>
-            <div class="px-6 pt-6 pb-4 border-b border-zinc-100 dark:border-white/[0.04]">
-                <h3 class="text-base font-semibold text-zinc-950 dark:text-zinc-100 tracking-tight flex items-center gap-2">
+            <div class="border-b border-zinc-100 px-6 pt-6 pb-4 dark:border-white/[0.04]">
+                <h3 class="flex items-center gap-2 text-base font-semibold tracking-tight text-zinc-950 dark:text-zinc-100">
                     New Reimbursement
                 </h3>
-                <p class="text-[13px] text-zinc-500 dark:text-zinc-400 mt-1">Send a secure payment request to anyone with an email.</p>
+                <p class="mt-1 text-[13px] text-zinc-500 dark:text-zinc-400">Send a secure payment request to anyone with an email.</p>
             </div>
             <template x-if="packageError">
-                <div class="mx-6 mt-4 px-3.5 py-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-[13px] text-red-600 dark:text-red-400 flex items-center gap-2"
+                <div class="mx-6 mt-4 flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-3.5 py-2.5 text-[13px] text-red-600 dark:text-red-400"
                      x-text="packageError"></div>
             </template>
-            <div class="px-6 py-5 space-y-4">
+            <div class="space-y-4 px-6 py-5">
                 <div>
                     <label for="package-title"
-                           class="block text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 mb-1.5 tracking-wider uppercase">Title</label>
+                           class="mb-1.5 block text-[11px] font-semibold tracking-wider text-zinc-500 uppercase dark:text-zinc-400">Title</label>
                     <input id="package-title"
                            type="text"
                            x-model="packageTitle"
-                           class="w-full px-3.5 py-2.5 text-[14px] rounded-xl bg-zinc-50 dark:bg-white/[0.03] border border-zinc-200 dark:border-white/[0.08] text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-white/40 focus:border-zinc-900 dark:focus:border-white transition-all duration-200"
+                           class="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3.5 py-2.5 text-[14px] text-zinc-900 placeholder-zinc-400 transition-all duration-200 focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900 focus:outline-none dark:border-white/[0.08] dark:bg-white/[0.03] dark:text-zinc-100 dark:placeholder-zinc-600 dark:focus:border-white dark:focus:ring-white/40"
                            placeholder="Expense Reimbursement">
                 </div>
                 <div>
                     <label for="recipient-email"
-                           class="block text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 mb-1.5 tracking-wider uppercase">Recipient</label>
+                           class="mb-1.5 block text-[11px] font-semibold tracking-wider text-zinc-500 uppercase dark:text-zinc-400">Recipient</label>
                     <div class="relative">
                         <input id="recipient-email"
                                type="email"
                                x-model="recipientEmail"
                                @input="onEmailInput()"
-                               class="w-full px-3.5 py-2.5 pr-10 text-[14px] rounded-xl bg-zinc-50 dark:bg-white/[0.03] border text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:ring-2 transition-all duration-200"
+                               class="w-full rounded-xl border bg-zinc-50 px-3.5 py-2.5 pr-10 text-[14px] text-zinc-900 placeholder-zinc-400 transition-all duration-200 focus:ring-2 focus:outline-none dark:bg-white/[0.03] dark:text-zinc-100 dark:placeholder-zinc-600"
                                :class="recipientStatus === 'valid' ? 'border-emerald-500/40 focus:ring-emerald-500/40' : recipientStatus === 'invalid' ? 'border-red-500/40 focus:ring-red-500/40' : 'border-zinc-200 dark:border-white/[0.08] focus:ring-zinc-900 dark:focus:ring-white/40 focus:border-zinc-900 dark:focus:border-white'"
                                placeholder="colleague@example.com">
-                        <div class="absolute right-3 top-1/2 -translate-y-1/2"
+                        <div class="absolute top-1/2 right-3 -translate-y-1/2"
                              x-show="recipientStatus === 'checking'">
-                            <svg class="w-4 h-4 text-zinc-500 dark:text-zinc-400 animate-spin"
+                            <svg class="h-4 w-4 animate-spin text-zinc-500 dark:text-zinc-400"
                                  fill="none"
                                  viewBox="0 0 24 24">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" />
                                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                             </svg>
                         </div>
-                        <div class="absolute right-3 top-1/2 -translate-y-1/2"
+                        <div class="absolute top-1/2 right-3 -translate-y-1/2"
                              x-show="recipientStatus === 'valid'">
-                            <svg class="w-4 h-4 text-emerald-500 dark:text-emerald-400"
+                            <svg class="h-4 w-4 text-emerald-500 dark:text-emerald-400"
                                  fill="none"
                                  viewBox="0 0 24 24"
                                  stroke="currentColor"
@@ -177,13 +177,13 @@
                         </div>
                     </div>
                     <template x-if="recipientStatus === 'valid' && recipientRegistered">
-                        <p class="mt-1.5 text-[12px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1.5">
+                        <p class="mt-1.5 flex items-center gap-1.5 text-[12px] font-medium text-emerald-600 dark:text-emerald-400">
                             <span class="size-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400"></span>
                             <span>Registered Verity user</span>
                         </p>
                     </template>
                     <template x-if="recipientStatus === 'valid' && !recipientRegistered">
-                        <p class="mt-1.5 text-[12px] text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1.5">
+                        <p class="mt-1.5 flex items-center gap-1.5 text-[12px] font-medium text-amber-600 dark:text-amber-400">
                             <span class="size-1.5 rounded-full bg-amber-500 dark:bg-amber-400"></span>
                             <span>External recipient — they'll verify their email to pay</span>
                         </p>
@@ -193,18 +193,18 @@
                     </template>
                 </div>
             </div>
-            <div class="px-6 py-4 bg-zinc-50/50 dark:bg-white/[0.01] border-t border-zinc-100 dark:border-white/[0.04] flex items-center justify-end gap-2.5">
+            <div class="flex items-center justify-end gap-2.5 border-t border-zinc-100 bg-zinc-50/50 px-6 py-4 dark:border-white/[0.04] dark:bg-white/[0.01]">
                 <button type="button"
                         @click="showPackageModal = false"
-                        class="px-4 py-2 text-[13px] font-medium text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 rounded-xl hover:bg-zinc-100 dark:hover:bg-white/[0.04] transition-all duration-200">
+                        class="rounded-xl px-4 py-2 text-[13px] font-medium text-zinc-500 transition-all duration-200 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-white/[0.04] dark:hover:text-zinc-200">
                     Cancel
                 </button>
                 <button type="button"
                         @click="createReimbursementPackage()"
                         :disabled="creatingPackage || recipientStatus !== 'valid'"
-                        class="inline-flex items-center gap-2 px-5 py-2 text-[13px] font-medium text-white bg-black dark:text-black dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-200 rounded-xl shadow-lg shadow-black/10 dark:shadow-white/10 transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed active:scale-[0.98]">
+                        class="inline-flex items-center gap-2 rounded-xl bg-black px-5 py-2 text-[13px] font-medium text-white shadow-lg shadow-black/10 transition-all duration-200 hover:bg-zinc-800 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-30 dark:bg-white dark:text-black dark:shadow-white/10 dark:hover:bg-zinc-200">
                     <template x-if="creatingPackage">
-                        <svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <svg class="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" />
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                         </svg>
@@ -227,9 +227,9 @@
          x-transition:leave-end="opacity-0"
          class="fixed inset-0 z-[200] flex items-center justify-center p-4"
          @keydown.escape.window="showShareModal = false">
-        <div class="absolute inset-0 bg-zinc-900/40 dark:bg-black/70 backdrop-blur-md"
+        <div class="absolute inset-0 bg-zinc-900/40 backdrop-blur-md dark:bg-black/70"
              @click="showShareModal = false"></div>
-        <div class="relative w-full max-w-md bg-white dark:bg-[#0c0c0e] rounded-2xl border border-zinc-200 dark:border-white/[0.08] shadow-[0_24px_64px_rgba(0,0,0,0.12)] dark:shadow-[0_24px_64px_rgba(0,0,0,0.8)] overflow-hidden ring-1 ring-zinc-900/[0.04] dark:ring-white/[0.04]"
+        <div class="relative w-full max-w-md overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-[0_24px_64px_rgba(0,0,0,0.12)] ring-1 ring-zinc-900/[0.04] dark:border-white/[0.08] dark:bg-[#0c0c0e] dark:shadow-[0_24px_64px_rgba(0,0,0,0.8)] dark:ring-white/[0.04]"
              x-show="showShareModal"
              x-transition:enter="transition ease-out duration-300 delay-75"
              x-transition:enter-start="opacity-0 scale-[0.97] translate-y-2"
@@ -238,42 +238,42 @@
              x-transition:leave-start="opacity-100 scale-100"
              x-transition:leave-end="opacity-0 scale-[0.97]"
              @click.stop>
-            <div class="px-6 pt-6 pb-4 border-b border-zinc-100 dark:border-white/[0.04]">
-                <h3 class="text-base font-semibold text-zinc-950 dark:text-zinc-100 tracking-tight flex items-center gap-2">
+            <div class="border-b border-zinc-100 px-6 pt-6 pb-4 dark:border-white/[0.04]">
+                <h3 class="flex items-center gap-2 text-base font-semibold tracking-tight text-zinc-950 dark:text-zinc-100">
                     Share Records
                 </h3>
-                <p class="text-[13px] text-zinc-500 dark:text-zinc-400 mt-1">
+                <p class="mt-1 text-[13px] text-zinc-500 dark:text-zinc-400">
                     <span x-text="selectedIds.length"></span> record(s) will be shared with the recipients below.
                 </p>
             </div>
             <template x-if="shareError">
-                <div class="mx-6 mt-4 px-3.5 py-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-[13px] text-red-600 dark:text-red-400 flex items-center gap-2"
+                <div class="mx-6 mt-4 flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-3.5 py-2.5 text-[13px] text-red-600 dark:text-red-400"
                      x-text="shareError"></div>
             </template>
-            <div class="px-6 py-5 space-y-4">
+            <div class="space-y-4 px-6 py-5">
                 <div>
                     <label for="share-emails"
-                           class="block text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 mb-1.5 tracking-wider uppercase">Recipients</label>
+                           class="mb-1.5 block text-[11px] font-semibold tracking-wider text-zinc-500 uppercase dark:text-zinc-400">Recipients</label>
                     <textarea id="share-emails"
                               x-model="shareEmails"
                               rows="3"
                               placeholder="colleague@example.com, team@example.com"
-                              class="w-full px-3.5 py-2.5 text-[14px] rounded-xl bg-zinc-50 dark:bg-white/[0.03] border border-zinc-200 dark:border-white/[0.08] text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-white/40 focus:border-zinc-900 dark:focus:border-white transition-all duration-200"></textarea>
+                              class="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3.5 py-2.5 text-[14px] text-zinc-900 placeholder-zinc-400 transition-all duration-200 focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900 focus:outline-none dark:border-white/[0.08] dark:bg-white/[0.03] dark:text-zinc-100 dark:placeholder-zinc-600 dark:focus:border-white dark:focus:ring-white/40"></textarea>
                     <p class="mt-1.5 text-[12px] text-zinc-400 dark:text-zinc-500">Comma-separated emails of registered Verity users. Requires the Pro plan.</p>
                 </div>
             </div>
-            <div class="px-6 py-4 bg-zinc-50/50 dark:bg-white/[0.01] border-t border-zinc-100 dark:border-white/[0.04] flex items-center justify-end gap-2.5">
+            <div class="flex items-center justify-end gap-2.5 border-t border-zinc-100 bg-zinc-50/50 px-6 py-4 dark:border-white/[0.04] dark:bg-white/[0.01]">
                 <button type="button"
                         @click="showShareModal = false"
-                        class="px-4 py-2 text-[13px] font-medium text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 rounded-xl hover:bg-zinc-100 dark:hover:bg-white/[0.04] transition-all duration-200">
+                        class="rounded-xl px-4 py-2 text-[13px] font-medium text-zinc-500 transition-all duration-200 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-white/[0.04] dark:hover:text-zinc-200">
                     Cancel
                 </button>
                 <button type="button"
                         @click="bulkShare()"
                         :disabled="sharing"
-                        class="inline-flex items-center gap-2 px-5 py-2 text-[13px] font-medium text-white bg-black dark:text-black dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-200 rounded-xl shadow-lg shadow-black/10 dark:shadow-white/10 transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed active:scale-[0.98]">
+                        class="inline-flex items-center gap-2 rounded-xl bg-black px-5 py-2 text-[13px] font-medium text-white shadow-lg shadow-black/10 transition-all duration-200 hover:bg-zinc-800 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-30 dark:bg-white dark:text-black dark:shadow-white/10 dark:hover:bg-zinc-200">
                     <template x-if="sharing">
-                        <svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <svg class="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" />
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                         </svg>
