@@ -14,14 +14,16 @@ services:
 # Uvicorn is async, so 2-4 workers can handle lots of concurrent requests.
     # set -e: a failed migrate/collectstatic must crash the container so Dokploy
     # halts the rollout and keeps the last healthy container alive.
+    # cd /app: don't rely on image WORKDIR — the deployed image boots at "/".
     # Static: the Dockerfile minifies the Tailwind dist at image build; runtime
     # only collects static -> staticfiles/ so WhiteNoise serves it. No runtime
     # tailwind build (committed dist + build-time minify is deterministic).
     command: >
       sh -c "
-      set -e;
-      python manage.py migrate --noinput --skip-checks;
-      python manage.py collectstatic --noinput --skip-checks;
+      cd /app
+      set -e
+      python manage.py migrate --noinput --skip-checks
+      python manage.py collectstatic --noinput --skip-checks
       exec python -O -m uvicorn Verity.asgi:application --host 0.0.0.0 --port 8000 --workers 4 --timeout-keep-alive 5 --log-level warning
       "
     expose:
@@ -51,7 +53,7 @@ services:
   worker:
     image: main-image:latest # Reuses web image, rather than building a brand new one
     restart: always
-    command: python manage.py rundramatiq --skip-checks --processes 2 --threads 8 -Q default ocr-tasks maintenance
+    command: sh -c "cd /app && python manage.py rundramatiq --skip-checks --processes 2 --threads 8 -Q default ocr-tasks maintenance"
     env_file:
       - .env
     networks:
@@ -72,7 +74,7 @@ services:
   scheduler:
     image: main-image:latest # Reuses web image, rather than building a brand new one
     restart: always
-    command: python manage.py runperiodiq --skip-checks
+    command: sh -c "cd /app && python manage.py runperiodiq --skip-checks"
     env_file:
       - .env
     networks:
