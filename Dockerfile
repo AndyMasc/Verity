@@ -60,9 +60,10 @@ RUN tailwindcss -i theme/static_src/src/styles.css -o theme/static/css/dist/styl
 
 # Collect static files into the image so WhiteNoise serves them under ANY
 # runtime command, without a runtime collectstatic step. Uses the standalone
-# staticbuild settings: no secrets, DB, or cache required at build time.
+# docker.settings_build settings (placeholders injected before the app settings
+# are imported): no secrets, DB, or cache required at build time.
 RUN python -O -m django collectstatic --noinput --skip-checks \
-    --settings=Verity.settings.staticbuild
+    --settings=docker.settings_build
 
 EXPOSE 8000
 
