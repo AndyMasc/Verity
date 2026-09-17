@@ -58,6 +58,12 @@ COPY --chown=django:django . .
 # pytailwindcss (PATH=/opt/venv/bin) — no Django settings or env needed.
 RUN tailwindcss -i theme/static_src/src/styles.css -o theme/static/css/dist/styles.css --minify
 
+# Collect static files into the image so WhiteNoise serves them under ANY
+# runtime command, without a runtime collectstatic step. Uses the standalone
+# staticbuild settings: no secrets, DB, or cache required at build time.
+RUN python -O -m django collectstatic --noinput --skip-checks \
+    --settings=Verity.settings.staticbuild
+
 EXPOSE 8000
 
 # Health check (uses previously installed curl to check if the application is responding)

@@ -1,9 +1,4 @@
 # MESSAGE BROKER AND CACHE ARE ONE CLICK DEPLOYED VIA DOKPLOY/COOLIFY. DATABASE IS HOSTED FOR COMPLIANCE
-#
-# Network topology:
-#   dokploy-network  : external; shared Dokploy net. web exposes ingress to Traefik;
-#                      web/worker/scheduler all reach lavinmq + valkey here (they are
-#                      also on Dokploy's default + dokploy-network stacks).
 services:
   web:
     build:
@@ -12,12 +7,6 @@ services:
     image: main-image:latest # Specific name of built image so others can reuse it
     restart: always
 # Uvicorn is async, so 2-4 workers can handle lots of concurrent requests.
-    # set -e: a failed migrate/collectstatic must crash the container so Dokploy
-    # halts the rollout and keeps the last healthy container alive.
-    # cd /app: don't rely on image WORKDIR — the deployed image boots at "/".
-    # Static: the Dockerfile minifies the Tailwind dist at image build; runtime
-    # only collects static -> staticfiles/ so WhiteNoise serves it. No runtime
-    # tailwind build (committed dist + build-time minify is deterministic).
     command: >
       sh -c "
       cd /app
