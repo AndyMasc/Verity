@@ -11,16 +11,17 @@ services:
       dockerfile: Dockerfile
     image: main-image:latest # Specific name of built image so others can reuse it
     restart: always
-    # Uvicorn is async, so 2-4 workers can handle lots of concurrent requests.
+# Uvicorn is async, so 2-4 workers can handle lots of concurrent requests.
     # set -e: a failed migrate/collectstatic must crash the container so Dokploy
-    # halts the rollout and keeps the last healthy container alive. tailwind is
-    # best-effort only because compiled dist CSS is committed to the image.
+    # halts the rollout and keeps the last healthy container alive.
+    # Static: the Dockerfile minifies the Tailwind dist at image build; runtime
+    # only collects static -> staticfiles/ so WhiteNoise serves it. No runtime
+    # tailwind build (committed dist + build-time minify is deterministic).
     command: >
       sh -c "
       set -e;
       python manage.py migrate --noinput --skip-checks;
       python manage.py collectstatic --noinput --skip-checks;
-      python manage.py tailwind build;
       exec python -O -m uvicorn Verity.asgi:application --host 0.0.0.0 --port 8000 --workers 4 --timeout-keep-alive 5 --log-level warning
       "
     expose:

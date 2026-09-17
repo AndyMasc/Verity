@@ -53,6 +53,11 @@ COPY --from=builder --chown=django:django /opt/venv /opt/venv
 # Copy the codebase
 COPY --chown=django:django . .
 
+# Minify the committed Tailwind dist at build time so production serves
+# deterministic, minified CSS. Uses the standalone v4 binary shipped by
+# pytailwindcss (PATH=/opt/venv/bin) — no Django settings or env needed.
+RUN tailwindcss -i theme/static_src/src/styles.css -o theme/static/css/dist/styles.css --minify
+
 EXPOSE 8000
 
 # Health check (uses previously installed curl to check if the application is responding)
