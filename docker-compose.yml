@@ -20,7 +20,7 @@ services:
       set -e;
       python manage.py migrate --noinput --skip-checks;
       python manage.py collectstatic --noinput --skip-checks;
-      python manage.py tailwind build || echo 'WARN: tailwind build failed - continuing (committed dist used)';
+      python manage.py tailwind build;
       exec python -O -m uvicorn Verity.asgi:application --host 0.0.0.0 --port 8000 --workers 4 --timeout-keep-alive 5 --log-level warning
       "
     expose:
