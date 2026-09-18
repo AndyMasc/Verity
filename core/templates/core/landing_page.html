@@ -37,17 +37,19 @@
             </div>
         </div>
     </nav>
-    <section class="relative w-full overflow-hidden rounded-xl bg-white bg-gradient-to-b from-white to-zinc-100 pt-24 pb-24 md:pt-36 dark:bg-zinc-950 dark:from-black dark:to-zinc-800">
+    <section class="relative w-full overflow-visible rounded-xl bg-gradient-to-b from-white to-zinc-100 pt-24 pb-24 md:pt-36 dark:bg-zinc-950 dark:from-black dark:to-zinc-800">
+        <div class="pointer-events-none absolute -top-24 left-1/2 z-10 hidden h-[300px] w-full max-w-6xl -translate-x-1/2 rounded-full bg-[#515CD5]/30 blur-[140px] dark:block">
+        </div>
         <div class="absolute inset-0 bg-[linear-gradient(to_right,rgba(212,212,216,0.3)_1px,transparent_1px),linear-gradient(to_bottom,rgba(212,212,216,0.3)_1px,transparent_1px)] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_60%,transparent_100%)] bg-[size:4rem_4rem] dark:bg-[linear-gradient(to_right,rgba(39,39,42,0.25)_1px,transparent_1px),linear-gradient(to_bottom,rgba(39,39,42,0.25)_1px,transparent_1px)]">
         </div>
-        <div class="relative container mx-auto flex max-w-7xl flex-col items-center justify-center gap-5 px-6 text-center">
+        <div class="relative z-20 container mx-auto flex max-w-7xl flex-col items-center justify-center gap-5 px-6 text-center">
             <div class="pointer-events-none absolute -inset-6 rounded-3xl bg-zinc-400/25 blur-2xl transition-all duration-500 sm:-inset-8 sm:blur-3xl dark:bg-black/10">
             </div>
             <header class="max-w-3xl space-y-6">
                 <h1 class="text-5xl font-medium tracking-tight text-zinc-950 sm:text-6xl md:text-[80px] dark:text-zinc-50">
                     Expense management without the busywork.
                 </h1>
-                <p class="mx-auto max-w-2xl rounded-4xl rounded-2xl bg-white text-sm leading-relaxed text-zinc-700 sm:text-md md:text-[16px] dark:bg-black dark:text-zinc-400">
+                <p class="mx-auto max-w-2xl rounded-2xl p-2 text-sm leading-relaxed text-zinc-700 backdrop-blur-sm sm:text-md md:text-[16px] dark:bg-black/60 dark:text-zinc-400">
                     Capture purchases, sync transactions, manage documents, and get reimbursed, with receipts generated for you on the fly.
                 </p>
             </header>
@@ -68,7 +70,7 @@
                     Get Started Free
                 </a>
                 <a href="#features"
-                   class="group mt-[1px] flex items-center justify-center gap-2 rounded-full border border-zinc-300 bg-zinc-100 px-3 py-3 text-xs font-semibold text-white shadow-sm backdrop-blur-xl transition-all duration-300 hover:scale-[1.03] active:scale-[0.97] sm:text-sm md:px-5 dark:border-zinc-800/80 dark:bg-black">
+                   class="group mt-[1px] flex items-center justify-center gap-2 rounded-full border border-zinc-300 bg-zinc-100 px-3 py-3 text-xs font-semibold text-white shadow-sm backdrop-blur-xl transition-all duration-300 hover:scale-[1.03] active:scale-[0.97] sm:text-sm md:px-5 dark:border-zinc-800 dark:bg-black">
                     <span class="text-black dark:text-white">Discover Platform</span>
                     <svg xmlns="http://www.w3.org/2000/svg"
                          fill="none"
