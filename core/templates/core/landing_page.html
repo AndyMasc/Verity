@@ -37,15 +37,15 @@
             </div>
         </div>
     </nav>
-    <section class="relative w-full overflow-visible overflow-x-hidden rounded-xl bg-gradient-to-b from-white to-zinc-100 pt-24 pb-24 md:pt-36 dark:bg-zinc-950 dark:from-black dark:to-zinc-800">
-        <div class="pointer-events-none absolute -top-24 left-1/2 z-10 hidden h-[300px] w-full max-w-6xl -translate-x-1/2 rounded-full bg-[#515CD5]/30 blur-[140px] dark:block">
+    <section class="relative w-full overflow-visible overflow-x-hidden rounded-xl bg-white bg-gradient-to-b pt-24 pb-24 md:pt-36 dark:bg-zinc-950 dark:from-black dark:to-zinc-800">
+        <div class="pointer-events-none absolute -top-24 left-1/2 z-10 hidden h-[300px] w-full max-w-6xl -translate-x-1/2 rounded-full bg-[#515CD5]/20 blur-[140px] dark:block">
         </div>
         <div class="absolute inset-0 bg-[linear-gradient(to_right,rgba(212,212,216,0.3)_1px,transparent_1px),linear-gradient(to_bottom,rgba(212,212,216,0.3)_1px,transparent_1px)] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_60%,transparent_100%)] bg-[size:4rem_4rem] dark:bg-[linear-gradient(to_right,rgba(39,39,42,0.25)_1px,transparent_1px),linear-gradient(to_bottom,rgba(39,39,42,0.25)_1px,transparent_1px)]">
         </div>
         <div class="relative z-20 container mx-auto flex max-w-7xl flex-col items-center justify-center gap-5 px-6 text-center">
             <div class="pointer-events-none absolute -inset-6 rounded-3xl bg-zinc-400/25 blur-2xl transition-all duration-500 sm:-inset-8 sm:blur-3xl dark:bg-black/10">
             </div>
-            <header class="max-w-7xl md:max-w-3xl space-y-6">
+            <header class="max-w-7xl space-y-6 md:max-w-3xl">
                 <h1 class="text-5xl font-medium tracking-tight text-zinc-950 sm:text-6xl md:text-[80px] dark:text-zinc-50">
                     Expense management without the busywork.
                 </h1>
@@ -66,7 +66,7 @@
             </div>
             <div class="flex items-center gap-3.5 pt-4">
                 <a href="{% url 'account_signup' %}"
-                   class="rounded-full bg-[#535EE6] px-3 py-3 text-xs font-semibold text-white shadow-md transition-all duration-300 hover:scale-[1.03] hover:shadow-[0_0_20px_rgba(90,103,255,0.25)] active:scale-[0.97] sm:text-sm md:px-5">
+                   class="rounded-full bg-black px-3 py-3 text-xs font-semibold text-white shadow-md transition-all duration-300 hover:scale-[1.03] hover:shadow-[0_0_20px_rgba(90,103,255,0.25)] active:scale-[0.97] sm:text-sm md:px-5 dark:bg-white dark:text-black">
                     Get Started Free
                 </a>
                 <a href="#features"
@@ -85,7 +85,7 @@
         </div>
         <div class="relative mt-15 w-full overflow-visible">
             <div class="mx-auto max-w-7xl overflow-visible px-6 lg:px-8">
-                <div class="relative max-w-none w-[180vw] md:w-7xl">
+                <div class="relative w-[180vw] max-w-none md:w-7xl">
                     <div class="pointer-events-none absolute -inset-6 rounded-3xl bg-zinc-400/25 blur-2xl transition-all duration-500 sm:-inset-8 sm:blur-3xl dark:bg-white/10">
                     </div>
                     <div class="relative overflow-hidden rounded-xl [mask-image:linear-gradient(to_bottom,rgba(0,0,0,1)_65%,rgba(0,0,0,0)_100%)]">
