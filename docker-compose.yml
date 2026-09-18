@@ -4,7 +4,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: main-image:latest # Specific name of built image so others can reuse it
+    image: verity-workers-wck7vb:latest # Specific name of built image so others can reuse it
     restart: always
 # Uvicorn is async, so 2-4 workers can handle lots of concurrent requests.
     command: >
@@ -30,6 +30,8 @@ services:
       start_period: 30s
       retries: 3
     deploy:
+      replicas: 1 # Scale web for traffic. Before raising this, move `migrate` out of the
+                  # command into a pre-deploy one-shot (concurrent migrates race).
       resources:
         limits:
           cpus: '2.0'
@@ -37,10 +39,19 @@ services:
         reservations:
           cpus: '1.0'
           memory: 768M
+      update_config:
+        order: start-first # Rolling zero-downtime deploy: new task starts before old dies
+        failure_action: rollback
+      restart_policy:
+        condition: any
 
-  # Background worker for handling Dramatiq actors/tasks
+  # Background worker for handling Dramatiq actors/tasks.
+  # Builds its own image from the Dockerfile (no dependency on web's image name),
+  # so this compose stays valid if the Dokploy app is ever recreated under a new name.
   worker:
-    image: main-image:latest # Reuses web image, rather than building a brand new one
+    build:
+      context: .
+      dockerfile: Dockerfile
     restart: always
     command: sh -c "cd /app && python manage.py rundramatiq --skip-checks --processes 2 --threads 8 -Q default ocr-tasks maintenance"
     env_file:
@@ -51,6 +62,7 @@ services:
       web:
         condition: service_started
     deploy:
+      replicas: 2 # Scale workers for queue throughput
       resources:
         limits:
           cpus: '2.0'
@@ -58,10 +70,18 @@ services:
         reservations:
           cpus: '1.0'
           memory: 1024M
+      update_config:
+        order: start-first
+        failure_action: rollback
+      restart_policy:
+        condition: any
 
-  # Scheduler for running periodic/cron tasks via Periodiq
+  # Scheduler for running periodic/cron tasks via Periodiq.
+  # Builds its own image too (name-independent, portable across app renames).
   scheduler:
-    image: main-image:latest # Reuses web image, rather than building a brand new one
+    build:
+      context: .
+      dockerfile: Dockerfile
     restart: always
     command: sh -c "cd /app && python manage.py runperiodiq --skip-checks"
     env_file:
@@ -72,6 +92,7 @@ services:
       web:
         condition: service_started
     deploy:
+      replicas: 1 # Periodiq: MUST stay a singleton (running it twice duplicates cron jobs)
       resources:
         limits:
           cpus: '0.5'
@@ -79,6 +100,11 @@ services:
         reservations:
           cpus: '0.1'
           memory: 128M
+      update_config:
+        order: start-first
+        failure_action: rollback
+      restart_policy:
+        condition: any
 
 networks: # Since using dokploy 1 click lamq mq and valkey, connect via shared external networks.
   dokploy-network:
