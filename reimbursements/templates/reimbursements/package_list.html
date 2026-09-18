@@ -126,7 +126,7 @@
             {% endfor %}
         </div>
         {% if is_paginated %}
-            <nav class="mt-12 flex items-center justify-between border-t border-zinc-200/40 pt-6 dark:border-zinc-800/40">
+            <nav class="mt-12 flex items-center justify-between border-t border-zinc-200/40 pt-6 dark:border-zinc-800/30">
                 {% if page_obj.has_previous %}
                     <a href="?page={{ page_obj.previous_page_number }}"
                        class="rounded-lg px-3 py-1.5 text-xs font-medium text-zinc-500 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200">
