@@ -13,7 +13,7 @@
              class="fixed inset-0 z-40 rounded-2xl bg-zinc-950/40 backdrop-blur-sm sm:hidden"
              @click="open = false"
              aria-hidden="true"></div>
-        <div class="fixed top-2.5 left-1.5 z-50 h-[98%] w-72 rounded-2xl transition-transform duration-300 ease-in-out"
+        <div class="fixed z-50 h-screen w-72 transition-transform duration-300 ease-in-out"
              :class="open ? 'translate-x-0 shadow-2xl shadow-zinc-950/15' : '-translate-x-full'"
              x-cloak
              :aria-hidden="!open">
@@ -32,7 +32,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="m18.75 4.5-7.5 7.5 7.5 7.5m-6-15L5.25 12l7.5 7.5" />
                 </svg>
             </button>
-            <aside class="flex h-full w-full flex-col justify-between rounded-2xl border border-r border-zinc-300/80 bg-white/95 px-3 py-4 backdrop-blur-xl dark:border-zinc-800/40 dark:bg-zinc-900/45">
+            <aside class="flex h-full w-full flex-col justify-between border border-r border-zinc-300/80 bg-white/95 px-3 py-4 backdrop-blur-xl dark:border-zinc-800/40 dark:bg-zinc-900/45">
                 <nav class="flex h-full flex-col justify-between"
                      aria-label="Main Application Sidebar">
                     <div class="no-scrollbar space-y-4 overflow-y-auto">
