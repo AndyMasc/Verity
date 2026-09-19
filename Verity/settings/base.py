@@ -441,8 +441,6 @@ if _sentry_dsn:
             environment=env("SENTRY_ENVIRONMENT", default="production"),
             send_default_pii=False,
             traces_sample_rate=1.0 if not _is_prod else 0.1,
-            profile_session_sample_rate=1.0 if not _is_prod else 0.1,
-            profile_lifecycle="trace",
             auto_session_tracking=False,
         )
     except BadDsn:
