@@ -39,5 +39,5 @@ urlpatterns = [
     path("privacy_policy/", views.privacy_policy, name="privacy_policy"),
     path("profile_page/", views.ProfilePageView.as_view(), name="profile_page"),
     path("health/", views.health_check, name="health_check"),
-    path("sentry-debug/", trigger_error),
+    path("glitchtip-debug/", trigger_error),
 ]
