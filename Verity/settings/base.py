@@ -38,11 +38,9 @@ DATABASES = {"default": database_config}
 DATABASES["default"].setdefault("CONN_MAX_AGE", env.int("DB_CONN_MAX_AGE", default=600))
 DATABASES["default"]["CONN_HEALTH_CHECKS"] = env.bool("DB_CONN_HEALTH_CHECKS", default=True)
 
-if (
-    "postgres" in database_config["ENGINE"]
-    and env.bool("DB_PREFER_IPV4", default=False)
-):
+if "postgres" in database_config["ENGINE"] and env.bool("DB_PREFER_IPV4", default=False):
     import socket
+
     host = database_config.get("HOST")
     try:
         socket.inet_aton(host or "")
@@ -440,12 +438,13 @@ if _sentry_dsn:
     try:
         sentry_sdk.init(
             dsn=_sentry_dsn,
-            environment=env("SENTRY_ENVIRONMENT", default="development"),
+            environment=env("SENTRY_ENVIRONMENT", default="production"),
             send_default_pii=False,
             enable_logs=True,
             traces_sample_rate=1.0 if not _is_prod else 0.1,
             profile_session_sample_rate=1.0 if not _is_prod else 0.1,
             profile_lifecycle="trace",
+            auto_session_tracking=False,
         )
     except BadDsn:
         sentry_sdk.init(dsn="")
