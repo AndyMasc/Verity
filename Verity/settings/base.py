@@ -38,6 +38,23 @@ DATABASES = {"default": database_config}
 DATABASES["default"].setdefault("CONN_MAX_AGE", env.int("DB_CONN_MAX_AGE", default=600))
 DATABASES["default"]["CONN_HEALTH_CHECKS"] = env.bool("DB_CONN_HEALTH_CHECKS", default=True)
 
+if (
+    "postgres" in database_config["ENGINE"]
+    and env.bool("DB_PREFER_IPV4", default=False)
+):
+    import socket
+    host = database_config.get("HOST")
+    try:
+        socket.inet_aton(host or "")
+    except OSError:
+        if host and ":" not in host:
+            try:
+                infos = socket.getaddrinfo(host, None, socket.AF_INET, socket.SOCK_STREAM)
+            except socket.gaierror:
+                infos = []
+            if infos:
+                database_config.setdefault("OPTIONS", {})["hostaddr"] = infos[0][4][0]
+
 # Apps
 INSTALLED_APPS = [
     # Dramatiq
