@@ -46,7 +46,16 @@ INSTALLED_APPS = [
     # Cachalot
     "cachalot",
     # Django admin panel customization
-    "django_daisy",
+    "unfold",
+    "unfold.contrib.filters",
+    "unfold.contrib.forms",
+    "unfold.contrib.inlines",
+    "unfold.contrib.import_export",
+    "unfold.contrib.guardian",
+    "unfold.contrib.simple_history",
+    "unfold.contrib.location_field",
+    "unfold.contrib.constance",
+    "unfold.contrib.hijack",
     # Admin apps
     "django.contrib.admin",
     "django.contrib.auth",
@@ -136,7 +145,14 @@ if not DEBUG:
 # http: (mixed content), data:/blob: scripts, and cross-origin framing.
 CONTENT_SECURITY_POLICY = {
     "DIRECTIVES": {
-        "default-src": ("'self'", "'unsafe-inline'", "'unsafe-eval'", "data:", "blob:", "https:"),
+        "default-src": (
+            "'self'",
+            "'unsafe-inline'",
+            "'unsafe-eval'",
+            "data:",
+            "blob:",
+            "https:",
+        ),
         "script-src": ("'self'", "'unsafe-inline'", "'unsafe-eval'", "https:"),
         "worker-src": ("'self'", "blob:"),
         "style-src": ("'self'", "'unsafe-inline'", "https:"),
@@ -446,3 +462,45 @@ DRAMATIQ_BROKER = {
     ],
 }
 DRAMATIQ_TASKS_DATABASE = "default"
+
+# Unfold
+UNFOLD = {
+    "SITE_TITLE": "Verity",
+    "SITE_HEADER": "Verity Administration",
+    "COLORS": {
+        "base": {
+            "50": "oklch(98.5% 0.002 247.8)",
+            "100": "oklch(96.7% 0.003 264.5)",
+            "200": "oklch(90.0% 0.005 264.5)",
+            "300": "oklch(80.0% 0.010 258.3)",
+            "400": "oklch(65.0% 0.015 261.3)",
+            "500": "oklch(50.0% 0.020 264.3)",
+            "600": "oklch(35.0% 0.025 256.8)",
+            "700": "oklch(22.0% 0.022 259.7)",
+            "800": "oklch(16.0% 0.018 256.8)",
+            "900": "oklch(12.0% 0.015 264.6)",
+            "950": "oklch(9.0% 0.012 261.7)",
+        },
+        "primary": {
+            "50": "oklch(97.0% 0.015 265.0)",
+            "100": "oklch(93.0% 0.035 265.0)",
+            "200": "oklch(86.0% 0.070 265.0)",
+            "300": "oklch(76.0% 0.120 265.0)",
+            "400": "oklch(66.0% 0.180 265.0)",
+            "500": "oklch(58.0% 0.210 265.0)",
+            "600": "oklch(50.0% 0.200 265.0)",
+            "700": "oklch(42.0% 0.170 265.0)",
+            "800": "oklch(33.0% 0.130 265.0)",
+            "900": "oklch(24.0% 0.090 265.0)",
+            "950": "oklch(17.0% 0.060 265.0)",
+        },
+        "font": {
+            "subtle-light": "var(--color-base-500)",
+            "subtle-dark": "var(--color-base-400)",
+            "default-light": "var(--color-base-600)",
+            "default-dark": "var(--color-base-300)",
+            "important-light": "var(--color-base-900)",
+            "important-dark": "var(--color-base-100)",
+        },
+    },
+}

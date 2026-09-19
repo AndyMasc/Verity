@@ -505,7 +505,8 @@ class PackageDeleteViewTest(TestCase):
     def test_ajax_delete_failure_returns_502_and_keeps_package(self, _mock_rl):
         self.client.force_login(self.creator)
         with patch(
-            "reimbursements.services.revoke_package_access", side_effect=RuntimeError("boom")
+            "reimbursements.services.revoke_package_access",
+            side_effect=RuntimeError("boom"),
         ):
             response = self.client.post(self.url, HTTP_X_REQUESTED_WITH="XMLHttpRequest")
         self.assertEqual(response.status_code, 502)

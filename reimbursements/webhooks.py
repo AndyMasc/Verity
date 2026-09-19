@@ -327,7 +327,9 @@ def _refund_captured_payment(payment, *, event: str) -> bool:
         return False
     except stripe.error.StripeError:
         logger.exception(
-            "Auto-refund failed for payment intent %s after %s", payment_intent_id, event
+            "Auto-refund failed for payment intent %s after %s",
+            payment_intent_id,
+            event,
         )
         return False
     logger.warning(

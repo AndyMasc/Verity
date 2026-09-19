@@ -162,7 +162,11 @@ def detail_items(package, user_currency: str) -> PackageDetailItems:
 
     for record in records:
         item, converted, original = _detail_item_for(
-            record, first_histories.get(record.id), package.currency, user_currency, rates
+            record,
+            first_histories.get(record.id),
+            package.currency,
+            user_currency,
+            rates,
         )
         record_items.append(item)
         converted_total += converted

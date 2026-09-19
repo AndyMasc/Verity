@@ -118,7 +118,9 @@ class PlatformFeeCalculator:
         net_margin_units = max(
             int((total * net_percent).quantize(Decimal("1"), rounding=ROUND_CEILING)),
             _converted_units(
-                _cfg("PLATFORM_NET_MIN_USD", PLATFORM_NET_MIN_USD), payer_currency, rates
+                _cfg("PLATFORM_NET_MIN_USD", PLATFORM_NET_MIN_USD),
+                payer_currency,
+                rates,
             ),
         )
 

@@ -89,7 +89,8 @@ class ReimbursementRecordAccessTest(TestCase):
 
         pkg, r1, _ = self._package_with_records()
         with mock.patch(
-            "reimbursements.services.revoke_package_access", side_effect=RuntimeError("boom")
+            "reimbursements.services.revoke_package_access",
+            side_effect=RuntimeError("boom"),
         ):
             result = pkg.delete_package(self.creator)
         self.assertFalse(result)

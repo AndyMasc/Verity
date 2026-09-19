@@ -94,9 +94,9 @@ def scan_usage(request: HttpRequest) -> dict[str, Any]:
     value = {
         "scan_usage_count": count,
         "scan_usage_period": period,
-        "free_monthly_scan_limit": monthly_scan_limit
-        if monthly_scan_limit is not None
-        else features.PRO_SCAN_LIMIT,
+        "free_monthly_scan_limit": (
+            monthly_scan_limit if monthly_scan_limit is not None else features.PRO_SCAN_LIMIT
+        ),
         "scan_usage_percentage": min(round(percentage), 100),
         "is_fair_use_approaching": percentage >= 80 and percentage < 100,
         "is_fair_use_exceeded": percentage >= 100,

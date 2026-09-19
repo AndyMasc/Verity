@@ -261,7 +261,8 @@ class ReimbursementPackage(models.Model):
             revoke_package_access(self)
         except Exception:
             logger.exception(
-                "Failed to revoke access for package %s; leaving it undeleted", self.uuid
+                "Failed to revoke access for package %s; leaving it undeleted",
+                self.uuid,
             )
             return False
         self.deleted_at = timezone.now()
@@ -360,7 +361,10 @@ class ReimbursementPackage(models.Model):
                     record_type=Record.RecordTypes.EXPENSE_RECEIPT,
                 ).filter(
                     Q(notes__icontains=str(self.uuid))
-                    | Q(title=f"Reimbursement: {self.title}", merchant=self.creator.email)
+                    | Q(
+                        title=f"Reimbursement: {self.title}",
+                        merchant=self.creator.email,
+                    )
                 ).update(notes=Concat("notes", models.Value(" [REFUNDED]")))
         # Refunds reopen the workflow, so restore the recipient's access.
         try:
