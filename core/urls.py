@@ -11,9 +11,8 @@ from django.urls import path
 from . import views
 
 
-def trigger_error(request: HttpRequest) -> HttpResponse:
+def trigger_error(request):
     division_by_zero = 1 / 0
-    return HttpResponse("Sentry debug endpoint")
 
 
 app_name = "core"
