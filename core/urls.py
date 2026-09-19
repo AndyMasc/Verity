@@ -5,7 +5,6 @@ page for unauthenticated visitors and redirects to the dashboard for logged-in
 users.
 """
 
-from django.http import HttpRequest, HttpResponse
 from django.urls import path
 
 from . import views

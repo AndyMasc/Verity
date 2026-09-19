@@ -4,5 +4,7 @@ Enter this code on the payment page to view and pay the reimbursement request se
 
 If you weren't expecting this email, you can safely ignore it.
 
+Abuse of this feature — such as accessing a reimbursement meant for someone else or sharing this code — can result in a permanent suspension of your Verity account.
+
 ---
 Sent via Verity

@@ -8,8 +8,10 @@
         <div class="pointer-events-none absolute top-0 left-1/2 h-[350px] w-[1000px] -translate-x-1/2 bg-gradient-to-b from-[#5A67FF]/10 via-transparent to-transparent blur-3xl">
         </div>
         <div class="relative mx-auto w-full max-w-6xl px-4 py-12 sm:px-6 sm:py-20">
-            <div class="grid grid-cols-1 items-center gap-12 lg:grid-cols-[1fr_1.15fr] lg:gap-24">
-                <div>
+            <div id="reimburse-grid"
+                 class="grid grid-cols-1 items-center gap-12 lg:grid-cols-[1fr_1.15fr] lg:gap-24">
+                <div id="reimburse-advertising"
+                     class="lg:max-h-[calc(100vh-10rem)] lg:overflow-y-auto">
                     <a href="{% url 'core:landing_page' %}"
                        target="_blank"
                        rel="noopener"
@@ -20,7 +22,7 @@
                         This reimbursement request is backed by Verity.
                     </h1>
                     <p class="mt-4 text-base leading-relaxed text-zinc-600 dark:text-zinc-400">
-                        This request is evidence backed by a purchase record in Verity. Not just an unverified message asking for money.
+                        This request is evidence backed by a purchase record in Verity. Not just an unverified message asking for money. <span class="font-semibold text-zinc-950 dark:text-zinc-100">Sign up  to view them.</span>
                     </p>
                     <div class="mt-10 space-y-6">
                         <div class="group flex items-start gap-4">
@@ -67,7 +69,7 @@
                                 </svg>
                             </div>
                             <div>
-                                <p class="text-sm font-semibold text-zinc-950 dark:text-zinc-100">Automated ledger tracking</p>
+                                <p class="text-sm font-semibold text-zinc-950 dark:text-zinc-100">Automated tracking</p>
                                 <p class="mt-0.5 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">Uploaded files are instantly matched and organized with imported transactions.</p>
                             </div>
                         </div>
@@ -80,9 +82,20 @@
                         </p>
                     </div>
                 </div>
-                <div>
+                <div id="reimburse-receipt"
+                     class="lg:max-h-[calc(100vh-10rem)] lg:overflow-y-auto">
+                    <div class="mb-5 flex w-full items-center gap-2.5 rounded-2xl border border-amber-500/25 bg-amber-500/10 px-4 py-2.5 shadow-xs">
+                        <p class="text-xs leading-snug text-amber-800 dark:text-amber-500">
+                            Wasn't expecting this? If you believe this was sent erroneously, contact
+                            <a href="mailto:{{ package.creator.email }}"
+                               class="font-bold underline underline-offset-2">the sender</a>
+                            or <a href="mailto:support@veritypay.app"
+    class="font-bold underline underline-offset-2">Verity support</a>
+                            before paying.
+                        </p>
+                    </div>
                     {% if state == "verify" %}
-                        <div class="mx-auto max-w-md rounded-3xl border border-zinc-200/80 bg-white/80 p-8 shadow-xl shadow-zinc-950/5 backdrop-blur-2xl sm:p-10 dark:border-zinc-800 dark:bg-zinc-900/45">
+                        <div class="rounded-3xl border border-zinc-200/80 bg-white/80 p-8 shadow-xl shadow-zinc-950/5 backdrop-blur-2xl sm:p-10 dark:border-zinc-800 dark:bg-zinc-900/45">
                             <div class="mb-6 flex items-center justify-between">
                                 <h1 class="text-xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">Verify identity</h1>
                             </div>
@@ -150,7 +163,7 @@
                             {% endif %}
                         </div>
                     {% elif state == "paid" %}
-                        <div class="mx-auto max-w-md rounded-3xl border border-zinc-200/80 bg-white/80 p-8 text-center shadow-xl shadow-zinc-950/5 backdrop-blur-2xl sm:p-12 dark:border-zinc-800 dark:bg-zinc-900/45">
+                        <div class="rounded-3xl border border-zinc-200/80 bg-white/80 p-8 text-center shadow-xl shadow-zinc-950/5 backdrop-blur-2xl sm:p-12 dark:border-zinc-800 dark:bg-zinc-900/45">
                             <div class="mx-auto mb-6 flex h-12 w-12 items-center justify-center rounded-2xl border border-emerald-500/20 bg-emerald-500/10 shadow-xs">
                                 <svg class="h-6 w-6 text-emerald-600 dark:text-emerald-400"
                                      fill="none"
@@ -164,7 +177,7 @@
                             <p class="text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">This reimbursement package has already been settled and closed.</p>
                         </div>
                     {% elif state == "expired" %}
-                        <div class="mx-auto max-w-md rounded-3xl border border-zinc-200/80 bg-white/80 p-8 text-center shadow-xl shadow-zinc-950/5 backdrop-blur-2xl sm:p-12 dark:border-zinc-800 dark:bg-zinc-900/45">
+                        <div class="rounded-3xl border border-zinc-200/80 bg-white/80 p-8 text-center shadow-xl shadow-zinc-950/5 backdrop-blur-2xl sm:p-12 dark:border-zinc-800 dark:bg-zinc-900/45">
                             <div class="mx-auto mb-6 flex h-12 w-12 items-center justify-center rounded-2xl border border-zinc-200 bg-zinc-100 shadow-xs dark:border-zinc-700 dark:bg-zinc-800">
                                 <svg class="h-6 w-6 text-zinc-600 dark:text-zinc-300"
                                      fill="none"
@@ -255,4 +268,28 @@
             </div>
         </div>
     </main>
+    <script>
+        (function () {
+            const grid = document.getElementById('reimburse-grid');
+            const advert = document.getElementById('reimburse-advertising');
+            const receipt = document.getElementById('reimburse-receipt');
+            if (!grid || !advert || !receipt) return;
+            const lg = window.matchMedia('(min-width: 64rem)');
+            const align = function () {
+                if (!lg.matches) {
+                    grid.style.alignItems = '';
+                    return;
+                }
+                const receiptOverflows = receipt.scrollHeight > receipt.clientHeight;
+                const receiptTaller = receipt.scrollHeight > advert.scrollHeight;
+                grid.style.alignItems = receiptOverflows || receiptTaller ? 'flex-start' : 'center';
+            };
+            align();
+            window.addEventListener('resize', align);
+            if (typeof ResizeObserver !== 'undefined') {
+                new ResizeObserver(align).observe(advert);
+                new ResizeObserver(align).observe(receipt);
+            }
+        })();
+    </script>
 {% endblock content %}

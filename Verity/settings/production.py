@@ -28,6 +28,10 @@ CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
 # localhost, which is wrong in production.
 SITE_URL = env("SITE_URL", default="https://veritypay.app")
 
+# Static files are immutable build artifacts (hashed names via WhiteNoise).
+# Cache them for a year so returning visitors never re-fetch them.
+WHITENOISE_MAX_AGE = 60 * 60 * 24 * 365
+
 # Transport security is enabled by base when DEBUG is off; reinforce it here
 # so it cannot be disabled by a stray DEBUG override in the environment.
 SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=True)

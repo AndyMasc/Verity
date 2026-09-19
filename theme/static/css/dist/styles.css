@@ -23,6 +23,7 @@
     --color-amber-500: oklch(76.9% 0.188 70.08);
     --color-amber-600: oklch(66.6% 0.179 58.318);
     --color-amber-700: oklch(55.5% 0.163 48.998);
+    --color-amber-800: oklch(47.3% 0.137 46.201);
     --color-yellow-400: oklch(85.2% 0.199 91.936);
     --color-lime-400: oklch(84.1% 0.238 128.85);
     --color-lime-500: oklch(76.8% 0.233 130.85);
@@ -1822,6 +1823,12 @@
       border-color: color-mix(in oklab, var(--color-amber-500) 20%, transparent);
     }
   }
+  .border-amber-500\/25 {
+    border-color: color-mix(in srgb, oklch(76.9% 0.188 70.08) 25%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      border-color: color-mix(in oklab, var(--color-amber-500) 25%, transparent);
+    }
+  }
   .border-black {
     border-color: var(--color-black);
   }
@@ -3480,6 +3487,9 @@
   }
   .text-amber-700 {
     color: var(--color-amber-700);
+  }
+  .text-amber-800 {
+    color: var(--color-amber-800);
   }
   .text-black {
     color: var(--color-black);
@@ -6174,6 +6184,11 @@
       grid-column: span 7 / span 7;
     }
   }
+  .lg\:max-h-\[calc\(100vh-10rem\)\] {
+    @media (width >= 64rem) {
+      max-height: calc(100vh - 10rem);
+    }
+  }
   .lg\:w-2\/3 {
     @media (width >= 64rem) {
       width: calc(2 / 3 * 100%);
@@ -6240,9 +6255,19 @@
       flex-direction: row;
     }
   }
+  .lg\:items-start {
+    @media (width >= 64rem) {
+      align-items: flex-start;
+    }
+  }
   .lg\:gap-24 {
     @media (width >= 64rem) {
       gap: calc(var(--spacing) * 24);
+    }
+  }
+  .lg\:overflow-y-auto {
+    @media (width >= 64rem) {
+      overflow-y: auto;
     }
   }
   .lg\:px-0 {
@@ -7793,9 +7818,24 @@
       color: #f4f4f5;
     }
   }
+  .dark\:text-amber-300 {
+    @media (prefers-color-scheme: dark) {
+      color: var(--color-amber-300);
+    }
+  }
   .dark\:text-amber-400 {
     @media (prefers-color-scheme: dark) {
       color: var(--color-amber-400);
+    }
+  }
+  .dark\:text-amber-500 {
+    @media (prefers-color-scheme: dark) {
+      color: var(--color-amber-500);
+    }
+  }
+  .dark\:text-amber-600 {
+    @media (prefers-color-scheme: dark) {
+      color: var(--color-amber-600);
     }
   }
   .dark\:text-black {
