@@ -5,9 +5,16 @@ page for unauthenticated visitors and redirects to the dashboard for logged-in
 users.
 """
 
+from django.http import HttpRequest, HttpResponse
 from django.urls import path
 
 from . import views
+
+
+def trigger_error(request: HttpRequest) -> HttpResponse:
+    division_by_zero = 1 / 0
+    return HttpResponse("Sentry debug endpoint")
+
 
 app_name = "core"
 urlpatterns = [
@@ -33,4 +40,5 @@ urlpatterns = [
     path("privacy_policy/", views.privacy_policy, name="privacy_policy"),
     path("profile_page/", views.ProfilePageView.as_view(), name="profile_page"),
     path("health/", views.health_check, name="health_check"),
+    path("sentry-debug/", trigger_error),
 ]
