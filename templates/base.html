@@ -117,7 +117,7 @@
         {% if user.is_authenticated %}
             <div class="relative z-40">{% include 'core/sidebar.html' %}</div>
         {% endif %}
-        <main {% if user.is_authenticated %} class="relative z-10 transition-all duration-300 ease-out" :class="open ? 'sm:pl-72' : 'sm:pl-0'" {% endif %}>
+        <main {% if user.is_authenticated %} x-cloak class="relative z-10 transition-all duration-300 ease-out" :class="open ? 'sm:pl-72' : 'sm:pl-0'" {% endif %}>
             <div class="px-4 sm:px-6 lg:px-8">
                 {% block content %}{% endblock %}
             </div>
