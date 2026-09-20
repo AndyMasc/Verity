@@ -123,7 +123,7 @@ async def get_dashboard_context(user) -> dict:
                 "notes",
                 "nickname",
                 "payment_method",
-            )[:4]
+            )[:5]
         ),
         _fetch_records(
             active_records_qs.filter(
