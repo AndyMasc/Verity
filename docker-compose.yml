@@ -19,7 +19,7 @@ services:
     expose:
       - "8000"
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     environment:
       - PYTHON_JIT=1
       - MALLOC_ARENA_MAX=2
