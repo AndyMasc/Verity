@@ -4,20 +4,16 @@
     <div x-data="mergeForm"
          class="flex min-h-[calc(100vh-4rem)] w-full flex-col items-center justify-center bg-zinc-50/50 px-4 py-16 selection:bg-zinc-900 selection:text-white sm:px-6 lg:px-8 dark:bg-zinc-950/40 dark:selection:bg-white dark:selection:text-black">
         <div class="relative mx-auto flex w-full max-w-2xl flex-col items-center">
-            <!-- Ambient Glow Accent -->
             <div class="pointer-events-none absolute top-1/2 left-1/2 -z-10 h-96 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-500/5 blur-3xl dark:bg-indigo-500/10">
             </div>
-            <!-- Header Section -->
             <div class="mb-10 space-y-2 text-center">
                 <h1 class="text-2xl font-semibold tracking-tight text-zinc-950 sm:text-3xl dark:text-zinc-50">Manual Record Merge</h1>
                 <p class="mx-auto max-w-md text-xs text-zinc-500 sm:text-sm dark:text-zinc-400">
                     Pair a verified bank transaction with an uploaded document record to reconcile your ledger.
                 </p>
             </div>
-            <!-- Merge Slots Grid with Central Connector -->
             <div class="relative grid w-full grid-cols-1 gap-4 sm:grid-cols-2">
                 {% include 'records/partials/merge/merge_slot.html' with mode="plaid" label="Bank Transaction" icon="bank" selectedState="selectedPlaid" selectedTitle="plaidTitle" %}
-                <!-- Center Visual Node Indicator (Desktop) -->
                 <div class="absolute top-1/2 left-1/2 z-10 hidden h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-400 shadow-sm sm:flex dark:border-white/[0.08] dark:bg-zinc-900">
                     <svg class="h-3.5 w-3.5"
                          fill="none"
@@ -29,7 +25,6 @@
                 </div>
                 {% include 'records/partials/merge/merge_slot.html' with mode="doc" label="Uploaded Receipt" icon="receipt" selectedState="selectedDoc" selectedTitle="docTitle" %}
             </div>
-            <!-- Submit Form Section -->
             <form method="POST" class="mt-6 w-full">
                 {% csrf_token %}
                 <input type="hidden" name="plaid_record_id" x-bind:value="selectedPlaid">
@@ -42,15 +37,7 @@
                     <span x-show="canMerge">Merge</span>
                 </button>
             </form>
-            <!-- Footer Meta Links -->
-            <div class="mt-8 flex items-center gap-3 text-xs font-medium text-zinc-400 dark:text-zinc-500">
-                <a href="{% filter_url 'records:view_all_records' merged='True' %}"
-                   class="py-1 transition-colors hover:text-zinc-950 dark:hover:text-zinc-100">View merged history</a>
-                <span class="text-zinc-300 dark:text-zinc-800">·</span>
-                <span>Manual Override Protocol</span>
-            </div>
         </div>
-        <!-- Modal Overlay -->
         <div id="modal-overlay"
              x-show="showModal"
              x-transition:enter="transition ease-out duration-250"
