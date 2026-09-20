@@ -7,14 +7,15 @@ services:
     image: verity-workers-wck7vb:latest # Specific name of built image so others can reuse it
     restart: always
 # Uvicorn is async, so 2-4 workers can handle lots of concurrent requests.
-    command: >
-      sh -c "
-      cd /app
-      set -e
-      python manage.py migrate --noinput --skip-checks
-      python manage.py collectstatic --noinput --skip-checks
-      exec python -O -m uvicorn Verity.asgi:application --host 0.0.0.0 --port 8000 --workers 4 --lifespan off --timeout-keep-alive 5 --log-level warning
-      "
+    command:
+      - sh
+      - -c
+      - |
+        cd /app
+        set -e
+        python manage.py migrate --noinput --skip-checks
+        python manage.py collectstatic --noinput --skip-checks
+        exec python -O -m uvicorn Verity.asgi:application --host 0.0.0.0 --port 8000 --workers 4 --lifespan off --timeout-keep-alive 5 --log-level warning
     expose:
       - "8000"
     ports:
