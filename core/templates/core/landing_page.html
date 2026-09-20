@@ -2,7 +2,7 @@
 {% load static %}
 {% block content %}
     {% block sidebar %}{% endblock %}
-    <nav class="sticky top-0 z-50 w-full bg-white/90 backdrop-blur-2xl transition-all duration-300 dark:bg-zinc-950/80">
+    <nav class="sticky top-0 z-50 w-full border-b border-zinc-200 bg-white/90 backdrop-blur-2xl transition-all duration-300 dark:border-[#1D1E1E] dark:bg-zinc-950/80">
         <div class="container mx-auto flex w-full items-center justify-between px-6 py-4 md:max-w-7xl">
             <div class="flex items-center gap-8">
                 <a href="{% url 'core:landing_page' %}"
@@ -17,23 +17,23 @@
                         </a>
                     {% empty %}
                         <a href="#features"
-                           class="rounded-full px-3.5 py-1.5 text-sm font-medium text-zinc-800 transition-all duration-200 hover:bg-zinc-200/70 hover:text-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-900/80 dark:hover:text-zinc-100">Features</a>
+                           class="rounded-full px-3.5 py-1.5 text-[13px] font-medium text-zinc-600 transition-all duration-200 hover:bg-zinc-200/70 hover:text-zinc-950 dark:text-zinc-400 dark:hover:bg-zinc-900/80 dark:hover:text-zinc-100">Features</a>
                         <a href="#performance"
-                           class="rounded-full px-3.5 py-1.5 text-sm font-medium text-zinc-800 transition-all duration-200 hover:bg-zinc-200/70 hover:text-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-900/80 dark:hover:text-zinc-100">Performance</a>
+                           class="rounded-full px-3.5 py-1.5 text-[13px] font-medium text-zinc-600 transition-all duration-200 hover:bg-zinc-200/70 hover:text-zinc-950 dark:text-zinc-400 dark:hover:bg-zinc-900/80 dark:hover:text-zinc-100">Performance</a>
                         <a href="#reimbursements"
-                           class="rounded-full px-3.5 py-1.5 text-sm font-medium text-zinc-800 transition-all duration-200 hover:bg-zinc-200/70 hover:text-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-900/80 dark:hover:text-zinc-100">Reimbursements</a>
+                           class="rounded-full px-3.5 py-1.5 text-[13px] font-medium text-zinc-600 transition-all duration-200 hover:bg-zinc-200/70 hover:text-zinc-950 dark:text-zinc-400 dark:hover:bg-zinc-900/80 dark:hover:text-zinc-100">Reimbursements</a>
                         <a href="#pricing"
-                           class="rounded-full px-3.5 py-1.5 text-sm font-medium text-zinc-800 transition-all duration-200 hover:bg-zinc-200/70 hover:text-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-900/80 dark:hover:text-zinc-100">Pricing</a>
+                           class="rounded-full px-3.5 py-1.5 text-[13px] font-medium text-zinc-600 transition-all duration-200 hover:bg-zinc-200/70 hover:text-zinc-950 dark:text-zinc-400 dark:hover:bg-zinc-900/80 dark:hover:text-zinc-100">Pricing</a>
                         <a href="#faq"
-                           class="rounded-full px-3.5 py-1.5 text-sm font-medium text-zinc-800 transition-all duration-200 hover:bg-zinc-200/70 hover:text-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-900/80 dark:hover:text-zinc-100">FAQ</a>
+                           class="rounded-full px-3.5 py-1.5 text-[13px] font-medium text-zinc-600 transition-all duration-200 hover:bg-zinc-200/70 hover:text-zinc-950 dark:text-zinc-400 dark:hover:bg-zinc-900/80 dark:hover:text-zinc-100">FAQ</a>
                     {% endfor %}
                 </nav>
             </div>
             <div class="inline-flex items-center space-x-3">
                 <a href="{% url 'account_login' %}"
-                   class="rounded-full px-4 py-1.5 text-sm font-semibold text-zinc-800 transition-all duration-200 hover:scale-105 hover:text-zinc-950 active:scale-[0.98] dark:text-zinc-200 dark:hover:text-white">Sign in</a>
+                   class="rounded-full px-4 py-1.5 text-[13px] font-medium text-zinc-600 transition-all duration-200 hover:scale-105 hover:text-zinc-950 active:scale-[0.98] dark:text-zinc-400 dark:hover:text-white">Sign in</a>
                 <a href="{% url 'account_signup' %}"
-                   class="rounded-full bg-zinc-950 px-4 py-1.5 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:scale-105 hover:bg-zinc-800 hover:shadow-md active:scale-[0.98] dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white">Join now</a>
+                   class="rounded-full bg-zinc-950 px-4 py-1.5 text-[13px] font-medium text-white shadow-sm transition-all duration-200 hover:scale-105 hover:bg-zinc-800 hover:shadow-md active:scale-[0.98] dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white">Join now</a>
             </div>
         </div>
     </nav>
