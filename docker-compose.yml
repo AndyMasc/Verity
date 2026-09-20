@@ -77,7 +77,7 @@ services:
       web:
         condition: service_started
     deploy:
-      replicas: 2 # Scale workers for queue throughput
+      replicas: 1 # Scale workers for queue throughput
       resources:
         limits:
           cpus: '2.0'
