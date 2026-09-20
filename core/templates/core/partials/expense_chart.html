@@ -42,7 +42,6 @@
             <p class="text-xs font-medium text-zinc-700 dark:text-zinc-300">No expense data available</p>
             <p class="mt-0.5 text-[11px] text-zinc-400 dark:text-zinc-500">Trends will appear here once data is available.</p>
         </div>
-        {# Tooltip #}
         <div x-show="tooltip.visible"
              x-transition:enter="transition ease-out duration-150"
              x-transition:enter-start="opacity-0 scale-95"
@@ -61,8 +60,8 @@
             </div>
         </div>
     </div>
-    {# Loading overlay #}
     <div x-show="loading"
+         x-cloak
          class="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-white/40 backdrop-blur-xs transition-opacity dark:bg-zinc-900/45">
         <div class="flex items-center gap-2 rounded-full border border-zinc-200/60 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 shadow-sm dark:border-zinc-700/60 dark:bg-zinc-800 dark:text-zinc-300">
             <svg class="h-3.5 w-3.5 animate-spin text-zinc-600 dark:text-zinc-300"
@@ -252,7 +251,7 @@
                 if (isDark) {
                     grad.addColorStop(0, 'rgba(90, 103, 255, 0.35)');
                     grad.addColorStop(0.5, 'rgba(90, 103, 255, 0.15)');
-                    grad.addColorStop(1, 'rgba(90, 103, 255, 0)');     // Fades completely clear at the X-axis
+                    grad.addColorStop(1, 'rgba(90, 103, 255, 0)');
                 } else {
                     grad.addColorStop(0, 'rgba(90, 103, 255, 0.22)');
                     grad.addColorStop(0.5, 'rgba(90, 103, 255, 0.10)');
