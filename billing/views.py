@@ -121,7 +121,7 @@ def _checkout_quantity(raw_qty: str | None, max_quantity: int = 100) -> int:
 
 @login_required
 @require_POST
-@ratelimit(key="user", rate="10/m", method="POST", block=True)
+@ratelimit(key="user", rate="15/m", method="POST", block=True)
 def create_checkout_session(request: HttpRequest) -> HttpResponse:
     user = cast(CustomUser, request.user)
 
@@ -162,6 +162,13 @@ def create_checkout_session(request: HttpRequest) -> HttpResponse:
             user.customer = customer
             user.save(update_fields=["customer"])
 
+    idempotency_key = (
+        f"checkout:user:{user.id}:"
+        f"base:{base_price_id or 'none'}:"
+        f"storage:{storage_price_id or 'none'}:"
+        f"qty:{_checkout_quantity(request.POST.get('quantity'))}"
+    )
+
     try:
         checkout_session = services.create_checkout_session(
             customer=customer.id,
@@ -169,6 +176,7 @@ def create_checkout_session(request: HttpRequest) -> HttpResponse:
             success_url=request.build_absolute_uri(reverse("subscription_confirm"))
             + "?session_id={CHECKOUT_SESSION_ID}",
             cancel_url=request.build_absolute_uri(reverse("pricing_page")),
+            idempotency_key=idempotency_key,
         )
         return HttpResponseRedirect(checkout_session.url)
     except stripe.error.StripeError as e:

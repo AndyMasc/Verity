@@ -1,10 +1,36 @@
 repos:
+  - repo: local
+    hooks:
+      - id: auto-update-dependencies
+        name: Auto-update Poetry dependencies
+        entry: bash -c "poetry self add poetry-plugin-up && poetry up --latest && poetry lock --no-update"
+        language: system
+        files: ^(pyproject\.toml|poetry\.lock)$
+        pass_filenames: false
+
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.11.4
     hooks:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix]
       - id: ruff-format
+
+  - repo: https://github.com
+    rev: v1.36.4
+    hooks:
+      - id: djlint-reformat
+      - id: djlint-lint
+
+  - repo: https://github.com
+    rev: v3.0.7
+    hooks:
+      - id: djhtml
+
+  - repo: https://github.com
+    rev: v0.1.1
+    hooks:
+      - id: rustywind
+        args: [--write]
 
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.15.0
@@ -31,7 +57,6 @@ repos:
         args: [--fix=lf]
 
   - repo: https://github.com/python-poetry/poetry
-    rev: 2.1.removed
+    rev: 2.0.1
     hooks:
       - id: poetry-check
-        stages: [manual]

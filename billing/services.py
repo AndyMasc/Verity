@@ -37,16 +37,20 @@ def create_checkout_session(
     line_items: list[dict],
     success_url: str,
     cancel_url: str,
+    idempotency_key: str | None = None,
 ) -> stripe.checkout.Session:
     """Create a Stripe subscription checkout session."""
     _configure()
-    return stripe.checkout.Session.create(
-        customer=customer,
-        line_items=line_items,
-        mode="subscription",
-        success_url=success_url,
-        cancel_url=cancel_url,
-    )
+    kwargs = {
+        "customer": customer,
+        "line_items": line_items,
+        "mode": "subscription",
+        "success_url": success_url,
+        "cancel_url": cancel_url,
+    }
+    if idempotency_key is not None:
+        kwargs["idempotency_key"] = idempotency_key
+    return stripe.checkout.Session.create(**kwargs)
 
 
 def create_billing_portal_session(

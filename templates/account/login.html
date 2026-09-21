@@ -48,107 +48,107 @@
                name="cf_turnstile_response"
                value="">
         <script>
-            (function() {
-                function isVisible(el) {
-                    if (!el) return false;
-                    const rect = el.getBoundingClientRect();
-                    return rect.width > 0 && rect.height > 0;
-                }
-
-                function findAuthForm() {
-                    const forms = Array.from(document.querySelectorAll('form[method="post"]'));
-                    for (const f of forms) {
-                        const loginInput = f.querySelector('input[type="email"], input[name="login"], input[name="email"], input[type="text"]');
-                        if (loginInput && isVisible(loginInput)) return f;
-                        const action = (f.getAttribute('action') || '').toLowerCase();
-                        if (action.includes('login') || action.includes('account_login')) return f;
-                    }
-                    return forms[0] || null;
-                }
-
-                function attachFormHandler() {
-                    const form = findAuthForm();
-                    let turnstileInput = document.getElementById('cf_turnstile_response');
-
-                    if (form) {
-                        const existing = form.querySelector('input[name="cf_turnstile_response"]');
-                        if (existing) {
-                            turnstileInput = existing;
-                        } else if (!turnstileInput) {
-                            turnstileInput = document.createElement('input');
-                            turnstileInput.type = 'hidden';
-                            turnstileInput.name = 'cf_turnstile_response';
-                            turnstileInput.id = 'cf_turnstile_response';
-                            form.appendChild(turnstileInput);
-                        } else {
-                            if (!form.contains(turnstileInput)) form.appendChild(turnstileInput);
+                    (function() {
+                        function isVisible(el) {
+                            if (!el) return false;
+                            const rect = el.getBoundingClientRect();
+                            return rect.width > 0 && rect.height > 0;
                         }
-                    }
 
-                    if (!form || !turnstileInput) {
-                        setTimeout(attachFormHandler, 100);
-                        return;
-                    }
-
-                    if (form.dataset.turnstileAttached) return;
-                    form.dataset.turnstileAttached = '1';
-
-                    form.addEventListener('submit', function(e) {
-                        var widgetId = 'login-turnstile-widget';
-                        var token = null;
-
-                        try {
-                            if (window.turnstile && typeof window.turnstile.getResponse === 'function') {
-                                token = window.turnstile.getResponse(widgetId) || null;
+                        function findAuthForm() {
+                            const forms = Array.from(document.querySelectorAll('form[method="post"]'));
+                            for (const f of forms) {
+                                const loginInput = f.querySelector('input[type="email"], input[name="login"], input[name="email"], input[type="text"]');
+                                if (loginInput && isVisible(loginInput)) return f;
+                                const action = (f.getAttribute('action') || '').toLowerCase();
+                                if (action.includes('login') || action.includes('account_login')) return f;
                             }
-                        } catch (err) {
-                            console.debug('turnstile.getResponse error', err);
+                            return forms[0] || null;
                         }
+
+                        function attachFormHandler() {
+                            const form = findAuthForm();
+                            let turnstileInput = document.getElementById('cf_turnstile_response');
+
+                            if (form) {
+                                const existing = form.querySelector('input[name="cf_turnstile_response"]');
+                                if (existing) {
+                                    turnstileInput = existing;
+                                } else if (!turnstileInput) {
+                                    turnstileInput = document.createElement('input');
+                                    turnstileInput.type = 'hidden';
+                                    turnstileInput.name = 'cf_turnstile_response';
+                                    turnstileInput.id = 'cf_turnstile_response';
+                                    form.appendChild(turnstileInput);
+                                } else {
+                                    if (!form.contains(turnstileInput)) form.appendChild(turnstileInput);
+                                }
+                            }
+
+                            if (!form || !turnstileInput) {
+                                setTimeout(attachFormHandler, 100);
+                                return;
+                            }
+
+                            if (form.dataset.turnstileAttached) return;
+                            form.dataset.turnstileAttached = '1';
+
+                            form.addEventListener('submit', function(e) {
+                                var widgetId = 'login-turnstile-widget';
+                                var token = null;
+
+                                try {
+                                    if (window.turnstile && typeof window.turnstile.getResponse === 'function') {
+                                        token = window.turnstile.getResponse(widgetId) || null;
+                                    }
+                                } catch (err) {
+                                    console.debug('turnstile.getResponse error', err);
+                                }
 
                         // If Cloudflare injected its own hidden input, try to read it from the widget DOM
-                        if (!token) {
-                            var widgetEl = document.getElementById(widgetId);
-                            if (widgetEl) {
-                                var internal = widgetEl.querySelector('input[name="cf-turnstile-response"], input[id$="_response"], input[name="cf_turnstile_response"]');
-                                if (internal && internal.value) token = internal.value;
-                            }
-                        }
+                                if (!token) {
+                                    var widgetEl = document.getElementById(widgetId);
+                                    if (widgetEl) {
+                                        var internal = widgetEl.querySelector('input[name="cf-turnstile-response"], input[id$="_response"], input[name="cf_turnstile_response"]');
+                                        if (internal && internal.value) token = internal.value;
+                                    }
+                                }
 
                         // Fallback: search globally for any Turnstile response field
-                        if (!token) {
-                            var globalInput = document.querySelector('input[name="cf-turnstile-response"], input[name="cf_turnstile_response"], input[id^="cf-chl-widget-"][id$="_response"]');
-                            if (globalInput && globalInput.value) token = globalInput.value;
-                        }
+                                if (!token) {
+                                    var globalInput = document.querySelector('input[name="cf-turnstile-response"], input[name="cf_turnstile_response"], input[id^="cf-chl-widget-"][id$="_response"]');
+                                    if (globalInput && globalInput.value) token = globalInput.value;
+                                }
 
-                        if (!token) {
-                            e.preventDefault();
-                            alert('Please complete the robot verification and try again');
-                            if (window.turnstile && typeof window.turnstile.reset === 'function') {
-                                try { window.turnstile.reset(widgetId); } catch(_) {}
-                            }
-                            return false;
-                        }
+                                if (!token) {
+                                    e.preventDefault();
+                                    alert('Please complete the robot verification and try again');
+                                    if (window.turnstile && typeof window.turnstile.reset === 'function') {
+                                        try { window.turnstile.reset(widgetId); } catch(_) {}
+                                    }
+                                    return false;
+                                }
 
                         // Ensure the form has our expected hidden input so the server receives cf_turnstile_response
-                        if (!turnstileInput) {
-                            turnstileInput = document.createElement('input');
-                            turnstileInput.type = 'hidden';
-                            turnstileInput.name = 'cf_turnstile_response';
-                            turnstileInput.id = 'cf_turnstile_response';
-                            form.appendChild(turnstileInput);
+                                if (!turnstileInput) {
+                                    turnstileInput = document.createElement('input');
+                                    turnstileInput.type = 'hidden';
+                                    turnstileInput.name = 'cf_turnstile_response';
+                                    turnstileInput.id = 'cf_turnstile_response';
+                                    form.appendChild(turnstileInput);
+                                }
+
+                                turnstileInput.value = token;
+                                return true;
+                            });
                         }
 
-                        turnstileInput.value = token;
-                        return true;
-                    });
-                }
-
-                if (document.readyState === 'loading') {
-                    document.addEventListener('DOMContentLoaded', attachFormHandler);
-                } else {
-                    attachFormHandler();
-                }
-            })();
+                        if (document.readyState === 'loading') {
+                            document.addEventListener('DOMContentLoaded', attachFormHandler);
+                        } else {
+                            attachFormHandler();
+                        }
+                    })();
         </script>
         {% /form %}
     {% endif %}

@@ -23,6 +23,7 @@ CacheControl==0.14.4
 camel-converter==5.1.0
 certifi==2026.5.20
 cffi==2.0.0
+cfgv==3.5.0
 charset-normalizer==3.4.7
 click==8.4.1
 ConfigArgParse==1.7.5
@@ -35,6 +36,7 @@ dateparser==1.4.1
 defusedxml==0.7.1
 deskew==1.6.1
 diff-match-patch==20241021
+distlib==0.4.3
 distro==1.9.0
 dj-stripe==2.11.0
 Django==6.0.7
@@ -100,6 +102,7 @@ http_ece==1.2.1
 httpcore==1.0.9
 httplib2==0.32.0
 httpx==0.28.1
+identify==2.6.19
 idna==3.18
 ImageIO==2.37.3
 iniconfig==2.3.0
@@ -123,6 +126,7 @@ multidict==6.7.1
 mypy==2.3.0
 mypy_extensions==1.1.0
 networkx==3.6.1
+nodeenv==1.10.0
 nulltype==2.3.1
 numpy==2.5.0
 oauthlib==3.3.1
@@ -147,6 +151,7 @@ plaid-python==40.1.0
 platformdirs==4.10.0
 pluggy==1.6.0
 posthog==7.31.0
+pre_commit==4.6.2
 prometheus_client==0.26.0
 propcache==0.5.2
 proto-plus==1.28.0
@@ -173,6 +178,7 @@ pytest-django==4.12.0
 pytest-xdist==3.8.0
 python-bidi==0.6.10
 python-dateutil==2.9.0.post0
+python-discovery==1.6.1
 python-dotenv==1.2.2
 python-engineio==4.13.3
 python-json-logger==4.1.0
@@ -227,6 +233,7 @@ urllib3==2.7.0
 uv==0.11.28
 uvicorn==0.34.0
 uvicorn-worker==0.3.0
+virtualenv==21.9.0
 vulture==2.16
 websocket-client==1.9.0
 websockets==16.0

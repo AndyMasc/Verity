@@ -103,7 +103,7 @@ class PackagePayView(View):
         return render(request, self.template_name, context)
 
 
-@method_decorator(ratelimit(key="ip", rate="2/m", method="POST", block=True), name="dispatch")
+@method_decorator(ratelimit(key="ip", rate="5/m", method="POST", block=True), name="dispatch")
 class RequestVerificationCodeView(View):
     """Email the recipient a one-time code for the package."""
 
@@ -133,7 +133,7 @@ class RequestVerificationCodeView(View):
         return redirect(_code_step_url(pay_url, email))
 
 
-@method_decorator(ratelimit(key="ip", rate="10/m", method="POST", block=True), name="dispatch")
+@method_decorator(ratelimit(key="ip", rate="15/m", method="POST", block=True), name="dispatch")
 class VerifyEmailCodeView(View):
     """Confirm the emailed code and unlock the package for this session."""
 
@@ -163,7 +163,7 @@ class VerifyEmailCodeView(View):
         return redirect(pay_url)
 
 
-@method_decorator(ratelimit(key="ip", rate="10/m", method="POST", block=True), name="dispatch")
+@method_decorator(ratelimit(key="ip", rate="15/m", method="POST", block=True), name="dispatch")
 class PayPackageCheckoutView(View):
     """Start a Stripe checkout for an external payer.
 

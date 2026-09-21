@@ -229,6 +229,7 @@ AUTH_USER_MODEL = "billing.CustomUser"
 TURNSTILE_SITEKEY = env("TURNSTILE_SITEKEY", default="0x4AAAAAAE-iMWMy2QJlviQc")
 TURNSTILE_SECRET = env("TURNSTILE_SECRET", default="")
 TURNSTILE_HOSTNAMES = env.list("TURNSTILE_HOSTNAMES", default=["localhost", "127.0.0.1"])
+TURNSTILE_ENABLED = env.bool("TURNSTILE_ENABLED", default=True)
 
 
 # Templates

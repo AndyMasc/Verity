@@ -49,110 +49,110 @@
                name="cf_turnstile_response"
                value="">
         <script>
-            (function() {
-                function isVisible(el) {
-                    if (!el) return false;
-                    const rect = el.getBoundingClientRect();
-                    return rect.width > 0 && rect.height > 0;
-                }
+                    (function() {
+                        function isVisible(el) {
+                            if (!el) return false;
+                            const rect = el.getBoundingClientRect();
+                            return rect.width > 0 && rect.height > 0;
+                        }
 
-                function findAuthForm() {
+                        function findAuthForm() {
                     // Prefer POST forms that contain an email or login input and are visible.
-                    const forms = Array.from(document.querySelectorAll('form[method="post"]'));
-                    for (const f of forms) {
-                        const emailInput = f.querySelector('input[type="email"], input[name="email"], input[name="login"]');
-                        if (emailInput && isVisible(emailInput)) return f;
+                            const forms = Array.from(document.querySelectorAll('form[method="post"]'));
+                            for (const f of forms) {
+                                const emailInput = f.querySelector('input[type="email"], input[name="email"], input[name="login"]');
+                                if (emailInput && isVisible(emailInput)) return f;
                         // also consider forms whose action looks like account_signup
-                        const action = (f.getAttribute('action') || '').toLowerCase();
-                        if (action.includes('signup') || action.includes('account_signup')) return f;
-                    }
+                                const action = (f.getAttribute('action') || '').toLowerCase();
+                                if (action.includes('signup') || action.includes('account_signup')) return f;
+                            }
                     // Fallback to first POST form
-                    return forms[0] || null;
-                }
+                            return forms[0] || null;
+                        }
 
-                function attachFormHandler() {
-                    const form = findAuthForm();
-                    let turnstileInput = document.getElementById('cf_turnstile_response');
+                        function attachFormHandler() {
+                            const form = findAuthForm();
+                            let turnstileInput = document.getElementById('cf_turnstile_response');
 
                     // If hidden input isn't inside the chosen form, move/create it there so it's included in the POST.
-                    if (form) {
-                        const existing = form.querySelector('input[name="cf_turnstile_response"]');
-                        if (existing) {
-                            turnstileInput = existing;
-                        } else if (!turnstileInput) {
+                            if (form) {
+                                const existing = form.querySelector('input[name="cf_turnstile_response"]');
+                                if (existing) {
+                                    turnstileInput = existing;
+                                } else if (!turnstileInput) {
                             // create inside form
-                            turnstileInput = document.createElement('input');
-                            turnstileInput.type = 'hidden';
-                            turnstileInput.name = 'cf_turnstile_response';
-                            turnstileInput.id = 'cf_turnstile_response';
-                            form.appendChild(turnstileInput);
-                        } else {
+                                    turnstileInput = document.createElement('input');
+                                    turnstileInput.type = 'hidden';
+                                    turnstileInput.name = 'cf_turnstile_response';
+                                    turnstileInput.id = 'cf_turnstile_response';
+                                    form.appendChild(turnstileInput);
+                                } else {
                             // move global into the form to ensure it's submitted
-                            if (!form.contains(turnstileInput)) form.appendChild(turnstileInput);
-                        }
-                    }
-
-                    if (!form || !turnstileInput) {
-                        setTimeout(attachFormHandler, 100);
-                        return;
-                    }
-
-                    if (form.dataset.turnstileAttached) return;
-                    form.dataset.turnstileAttached = '1';
-
-                    form.addEventListener('submit', function(e) {
-                        var widgetId = 'signup-turnstile-widget';
-                        var token = null;
-
-                        try {
-                            if (window.turnstile && typeof window.turnstile.getResponse === 'function') {
-                                token = window.turnstile.getResponse(widgetId) || null;
+                                    if (!form.contains(turnstileInput)) form.appendChild(turnstileInput);
+                                }
                             }
-                        } catch (err) {
-                            console.debug('turnstile.getResponse error', err);
-                        }
 
-                        if (!token) {
-                            var widgetEl = document.getElementById(widgetId);
-                            if (widgetEl) {
-                                var internal = widgetEl.querySelector('input[name="cf-turnstile-response"], input[id$="_response"], input[name="cf_turnstile_response"]');
-                                if (internal && internal.value) token = internal.value;
+                            if (!form || !turnstileInput) {
+                                setTimeout(attachFormHandler, 100);
+                                return;
                             }
+
+                            if (form.dataset.turnstileAttached) return;
+                            form.dataset.turnstileAttached = '1';
+
+                            form.addEventListener('submit', function(e) {
+                                var widgetId = 'signup-turnstile-widget';
+                                var token = null;
+
+                                try {
+                                    if (window.turnstile && typeof window.turnstile.getResponse === 'function') {
+                                        token = window.turnstile.getResponse(widgetId) || null;
+                                    }
+                                } catch (err) {
+                                    console.debug('turnstile.getResponse error', err);
+                                }
+
+                                if (!token) {
+                                    var widgetEl = document.getElementById(widgetId);
+                                    if (widgetEl) {
+                                        var internal = widgetEl.querySelector('input[name="cf-turnstile-response"], input[id$="_response"], input[name="cf_turnstile_response"]');
+                                        if (internal && internal.value) token = internal.value;
+                                    }
+                                }
+
+                                if (!token) {
+                                    var globalInput = document.querySelector('input[name="cf-turnstile-response"], input[name="cf_turnstile_response"], input[id^="cf-chl-widget-"][id$="_response"]');
+                                    if (globalInput && globalInput.value) token = globalInput.value;
+                                }
+
+                                if (!token) {
+                                    e.preventDefault();
+                                    alert('Please complete the robot verification and try again');
+                                    if (window.turnstile && typeof window.turnstile.reset === 'function') {
+                                        try { window.turnstile.reset(widgetId); } catch(_) {}
+                                    }
+                                    return false;
+                                }
+
+                                if (!turnstileInput) {
+                                    turnstileInput = document.createElement('input');
+                                    turnstileInput.type = 'hidden';
+                                    turnstileInput.name = 'cf_turnstile_response';
+                                    turnstileInput.id = 'cf_turnstile_response';
+                                    form.appendChild(turnstileInput);
+                                }
+
+                                turnstileInput.value = token;
+                                return true;
+                            });
                         }
 
-                        if (!token) {
-                            var globalInput = document.querySelector('input[name="cf-turnstile-response"], input[name="cf_turnstile_response"], input[id^="cf-chl-widget-"][id$="_response"]');
-                            if (globalInput && globalInput.value) token = globalInput.value;
+                        if (document.readyState === 'loading') {
+                            document.addEventListener('DOMContentLoaded', attachFormHandler);
+                        } else {
+                            attachFormHandler();
                         }
-
-                        if (!token) {
-                            e.preventDefault();
-                            alert('Please complete the robot verification and try again');
-                            if (window.turnstile && typeof window.turnstile.reset === 'function') {
-                                try { window.turnstile.reset(widgetId); } catch(_) {}
-                            }
-                            return false;
-                        }
-
-                        if (!turnstileInput) {
-                            turnstileInput = document.createElement('input');
-                            turnstileInput.type = 'hidden';
-                            turnstileInput.name = 'cf_turnstile_response';
-                            turnstileInput.id = 'cf_turnstile_response';
-                            form.appendChild(turnstileInput);
-                        }
-
-                        turnstileInput.value = token;
-                        return true;
-                    });
-                }
-
-                if (document.readyState === 'loading') {
-                    document.addEventListener('DOMContentLoaded', attachFormHandler);
-                } else {
-                    attachFormHandler();
-                }
-            })();
+                    })();
         </script>
         {% /form %}
     {% endif %}

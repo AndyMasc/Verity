@@ -18,14 +18,16 @@ class CheckoutPriceIdTests(TestCase):
         )
 
     def _price(self, price_id, *, active=True, interval="month"):
-        return Price.objects.create(
+        price = Price.objects.create(
             id=price_id,
             livemode=False,
             active=active,
             product=self.product,
             currency="usd",
-            recurring={"interval": interval} if interval else None,
         )
+        price.stripe_data = {"recurring": {"interval": interval} if interval else None}
+        price.save(update_fields=["stripe_data"])
+        return price
 
     def test_picks_newest_active_monthly_price(self):
         self._price("price_old")
@@ -59,16 +61,20 @@ class CheckoutPriceIdTests(TestCase):
             active=True,
             product=product,
             currency="usd",
-            recurring={"interval": "month"},
         )
-        Price.objects.create(
+        current.stripe_data = {"recurring": {"interval": "month"}}
+        current.save(update_fields=["stripe_data"])
+
+        archived = Price.objects.create(
             id="price_10_archived",
             livemode=False,
             active=False,
             product=product,
             currency="usd",
-            recurring={"interval": "month"},
         )
+        archived.stripe_data = {"recurring": {"interval": "month"}}
+        archived.save(update_fields=["stripe_data"])
+
         self.assertEqual(services._checkout_price_id(product), current.id)
 
 
@@ -90,22 +96,25 @@ class PricingContextTests(TestCase):
             name="Verity Pro",
             metadata={"category": "base_plan"},
         )
-        Price.objects.create(
+        keep = Price.objects.create(
             id="price_keep",
             livemode=False,
             active=True,
             product=Product.objects.get(id=metadata.VERITY_PRO.stripe_id),
             currency="usd",
-            recurring={"interval": "month"},
         )
-        Price.objects.create(
+        keep.stripe_data = {"recurring": {"interval": "month"}}
+        keep.save(update_fields=["stripe_data"])
+
+        archived = Price.objects.create(
             id="price_archived",
             livemode=False,
             active=False,
             product=Product.objects.get(id=metadata.VERITY_PRO.stripe_id),
             currency="usd",
-            recurring={"interval": "month"},
         )
+        archived.stripe_data = {"recurring": {"interval": "month"}}
+        archived.save(update_fields=["stripe_data"])
 
         context = services.pricing_context(self._user())
         pro_card = next(p for p in context["base_plans"] if p.id == metadata.VERITY_PRO.stripe_id)
@@ -137,16 +146,17 @@ class AlreadyActiveTests(TestCase):
                 "metadata": {"category": meta.category},
             },
         )
-        Price.objects.get_or_create(
+        price, _ = Price.objects.get_or_create(
             id="price_" + meta.stripe_id.replace("prod_", ""),
             livemode=False,
             defaults={
                 "active": True,
                 "product": product,
                 "currency": "usd",
-                "recurring": {"interval": "month"},
             },
         )
+        price.stripe_data = {"recurring": {"interval": "month"}}
+        price.save(update_fields=["stripe_data"])
         return product
 
     def _subscribe(self, meta):

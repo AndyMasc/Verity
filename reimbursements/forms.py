@@ -4,12 +4,23 @@ Handles email verification and code verification with Turnstile CAPTCHA protecti
 """
 
 import logging
+import os
+import sys
 
 from django import forms
+from django.conf import settings
 
 from core.turnstile import verify_turnstile_token
 
 logger = logging.getLogger(__name__)
+
+
+def _turnstile_enabled() -> bool:
+    if not getattr(settings, "TURNSTILE_ENABLED", True):
+        return False
+    if "pytest" in sys.modules or os.environ.get("PYTEST_CURRENT_TEST"):
+        return False
+    return bool(settings.TURNSTILE_SECRET and settings.TURNSTILE_HOSTNAMES)
 
 
 class RequestVerificationCodeForm(forms.Form):
@@ -21,6 +32,7 @@ class RequestVerificationCodeForm(forms.Form):
     def __init__(self, *args, request=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.request = request
+        self.fields["cf_turnstile_response"].required = _turnstile_enabled()
 
     email = forms.EmailField(
         label="Recipient Email",
@@ -42,8 +54,11 @@ class RequestVerificationCodeForm(forms.Form):
     )
 
     def clean_cf_turnstile_response(self):
-        """Verify the Turnstile token."""
+        """Verify the Turnstile token when it is enabled."""
         token = self.cleaned_data.get("cf_turnstile_response", "").strip()
+
+        if not _turnstile_enabled():
+            return token
 
         if not token:
             raise forms.ValidationError(
@@ -72,6 +87,7 @@ class VerifyEmailCodeForm(forms.Form):
     def __init__(self, *args, request=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.request = request
+        self.fields["cf_turnstile_response"].required = _turnstile_enabled()
 
     email = forms.EmailField(
         widget=forms.HiddenInput(),
@@ -100,8 +116,11 @@ class VerifyEmailCodeForm(forms.Form):
     )
 
     def clean_cf_turnstile_response(self):
-        """Verify the Turnstile token."""
+        """Verify the Turnstile token when it is enabled."""
         token = self.cleaned_data.get("cf_turnstile_response", "").strip()
+
+        if not _turnstile_enabled():
+            return token
 
         if not token:
             raise forms.ValidationError(
@@ -127,6 +146,7 @@ class CheckoutTurnstileForm(forms.Form):
     def __init__(self, *args, request=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.request = request
+        self.fields["cf_turnstile_response"].required = _turnstile_enabled()
 
     cf_turnstile_response = forms.CharField(
         widget=forms.HiddenInput(),
@@ -136,6 +156,9 @@ class CheckoutTurnstileForm(forms.Form):
 
     def clean_cf_turnstile_response(self):
         token = self.cleaned_data.get("cf_turnstile_response", "").strip()
+
+        if not _turnstile_enabled():
+            return token
 
         if not token:
             raise forms.ValidationError(

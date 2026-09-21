@@ -40,6 +40,7 @@ CACHALOT_ENABLED = False
 
 # Disable rate limiting in CI tests (short-circuits before any cache lookup)
 RATELIMIT_ENABLE = False
+TURNSTILE_ENABLED = False
 
 # Use plain static file storage (no manifest hashing) so template-rendering
 # tests don't require a prior "collectstatic" run. ManifestStaticFilesStorage

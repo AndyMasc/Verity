@@ -24,81 +24,27 @@
                     <h1 class="text-3xl leading-[1.15] font-semibold tracking-tight text-zinc-950 sm:text-4xl dark:text-zinc-50">
                         This reimbursement request is backed by Verity.
                     </h1>
-                    <p class="mt-4 text-base leading-relaxed text-zinc-600 dark:text-zinc-400">
-                        This request is evidence backed by a purchase record in Verity. Not just an unverified message asking for money. <span class="font-semibold text-zinc-950 dark:text-zinc-100">Sign up  to view them.</span>
+                    <p class="mt-4 text-base text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
+                        This request is evidence backed by a purchase record in Verity. Not just an unverified message asking for money. <span class="font-semibold text-zinc-950 dark:text-zinc-100"><a href="{% url 'account_signup' %}"
+   class="font-semibold text-black dark:text-white hover:underline">Sign up to view them.</a></span>
                     </p>
-                    <div class="mt-10 space-y-6">
-                        <div class="group flex items-start gap-4">
-                            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-700 shadow-xs transition-colors group-hover:border-[#5A67FF]/40 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
-                                <svg xmlns="http://www.w3.org/2000/svg"
-                                     fill="none"
-                                     viewBox="0 0 24 24"
-                                     stroke-width="1.5"
-                                     stroke="currentColor"
-                                     class="size-4">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
-                                </svg>
-                            </div>
-                            <div>
-                                <p class="text-sm font-semibold text-zinc-950 dark:text-zinc-100">Zero bare attachments</p>
-                                <p class="mt-0.5 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">Documents are encrypted at rest and served exclusively through time-limited signed links.</p>
-                            </div>
-                        </div>
-                        <div class="group flex items-start gap-4">
-                            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-700 shadow-xs transition-colors group-hover:border-[#5A67FF]/40 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
-                                <svg xmlns="http://www.w3.org/2000/svg"
-                                     fill="none"
-                                     viewBox="0 0 24 24"
-                                     stroke-width="1.5"
-                                     stroke="currentColor"
-                                     class="size-4">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                                </svg>
-                            </div>
-                            <div>
-                                <p class="text-sm font-semibold text-zinc-950 dark:text-zinc-100">Audit-ready visibility</p>
-                                <p class="mt-0.5 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">Every change is securely logged until the transaction settles.</p>
-                            </div>
-                        </div>
-                        <div class="group flex items-start gap-4">
-                            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-700 shadow-xs transition-colors group-hover:border-[#5A67FF]/40 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
-                                <svg xmlns="http://www.w3.org/2000/svg"
-                                     fill="none"
-                                     viewBox="0 0 24 24"
-                                     stroke-width="1.5"
-                                     stroke="currentColor"
-                                     class="size-4">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
-                                </svg>
-                            </div>
-                            <div>
-                                <p class="text-sm font-semibold text-zinc-950 dark:text-zinc-100">Automated tracking</p>
-                                <p class="mt-0.5 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">Uploaded files are instantly matched and organized with imported transactions.</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="mt-12 border-t border-zinc-200/80 pt-8 dark:border-zinc-800/80">
-                        <p class="text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
-                            Want to sync, generate, and audit your own team's reimbursements?
-                            <a href="{% url 'account_signup' %}"
-                               class="font-semibold text-[#5A67FF] hover:underline">Sign up &rarr;</a>
+                    <div class="py-5 border-t border-zinc-200/80 dark:border-zinc-800/80 mt-5 inline-flex items-center gap-4 text-xs backdrop-blur-md">
+                        <span class="flex h-2 w-2.5 rounded-full bg-[#5A67FF]"></span>
+                        <p class="leading-snug font-medium text-md text-zinc-500 dark:text-zinc-400">
+                            If this request seems incorrect or breaches terms, please alert
+                            <a href="mailto:{{ package.creator.email }}"
+                               class="font-medium text-black transition-colors dark:text-white">the sender</a>
+                            or
+                            <a href="mailto:support@veritypay.app"
+                               class="font-medium text-black transition-colors dark:text-white">Verity support</a>
+                            before paying.
                         </p>
                     </div>
                 </div>
                 <div id="reimburse-receipt"
                      class="lg:max-h-[calc(100vh-10rem)] lg:overflow-y-auto">
-                    <div class="mb-5 flex w-full items-center gap-2.5 rounded-2xl border border-amber-500/25 bg-amber-500/10 px-4 py-2.5 shadow-xs">
-                        <p class="text-xs leading-snug text-amber-800 dark:text-amber-500">
-                            Wasn't expecting this? If you believe this was sent erroneously, contact
-                            <a href="mailto:{{ package.creator.email }}"
-                               class="font-bold underline underline-offset-2">the sender</a>
-                            or <a href="mailto:support@veritypay.app"
-    class="font-bold underline underline-offset-2">Verity support</a>
-                            before paying.
-                        </p>
-                    </div>
                     {% if state == "verify" %}
-                        <div class="rounded-3xl border border-zinc-200/80 bg-white/80 p-8 shadow-xl shadow-zinc-950/5 backdrop-blur-2xl sm:p-10 dark:border-zinc-800 dark:bg-zinc-900/45">
+                        <div class="rounded-3xl border border-zinc-200/80 bg-white/80 p-6 shadow-xl shadow-zinc-950/5 backdrop-blur-2xl sm:p-10 dark:border-zinc-800 dark:bg-zinc-900/45">
                             <div class="mb-6 flex items-center justify-between">
                                 <h1 class="text-xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">Verify identity</h1>
                             </div>
@@ -181,7 +127,7 @@
                                           action="{% url 'reimbursements:pay-request-code' package.uuid %}"
                                           class="space-y-3"
                                           data-turnstile-form="request-code-resend"
-                                          data-turnstile-widget="request-code-resend-turnstile-widget"
+                                          data-turnstile-widget="verify-code-turnstile-widget"
                                           data-turnstile-response="request-code-resend-turnstile-response">
                                         {% csrf_token %}
                                         <input type="hidden" name="email" value="{{ email }}">
@@ -189,12 +135,6 @@
                                                name="cf_turnstile_response"
                                                id="request-code-resend-turnstile-response"
                                                value="">
-                                        <div class="flex justify-center">
-                                            <div id="request-code-resend-turnstile-widget"
-                                                 class="cf-turnstile"
-                                                 data-sitekey="{{ turnstile_sitekey }}"
-                                                 data-action="request_verification"></div>
-                                        </div>
                                         <button type="submit"
                                                 class="text-xs font-semibold text-zinc-500 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100">
                                             Didn't get the code? Resend
@@ -206,7 +146,7 @@
                             {% endif %}
                         </div>
                     {% elif state == "paid" %}
-                        <div class="rounded-3xl border border-zinc-200/80 bg-white/80 p-8 text-center shadow-xl shadow-zinc-950/5 backdrop-blur-2xl sm:p-12 dark:border-zinc-800 dark:bg-zinc-900/45">
+                        <div class="rounded-3xl border border-zinc-200/80 bg-white/80 p-6 text-center shadow-xl shadow-zinc-950/5 backdrop-blur-2xl sm:p-12 dark:border-zinc-800 dark:bg-zinc-900/45">
                             <div class="mx-auto mb-6 flex h-12 w-12 items-center justify-center rounded-2xl border border-emerald-500/20 bg-emerald-500/10 shadow-xs">
                                 <svg class="h-6 w-6 text-emerald-600 dark:text-emerald-400"
                                      fill="none"
@@ -220,7 +160,7 @@
                             <p class="text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">This reimbursement package has already been settled and closed.</p>
                         </div>
                     {% elif state == "expired" %}
-                        <div class="rounded-3xl border border-zinc-200/80 bg-white/80 p-8 text-center shadow-xl shadow-zinc-950/5 backdrop-blur-2xl sm:p-12 dark:border-zinc-800 dark:bg-zinc-900/45">
+                        <div class="rounded-3xl border border-zinc-200/80 bg-white/80 p-6 text-center shadow-xl shadow-zinc-950/5 backdrop-blur-2xl sm:p-12 dark:border-zinc-800 dark:bg-zinc-900/45">
                             <div class="mx-auto mb-6 flex h-12 w-12 items-center justify-center rounded-2xl border border-zinc-200 bg-zinc-100 shadow-xs dark:border-zinc-700 dark:bg-zinc-800">
                                 <svg class="h-6 w-6 text-zinc-600 dark:text-zinc-300"
                                      fill="none"
@@ -235,8 +175,8 @@
                         </div>
                     {% else %}
                         <div class="overflow-hidden rounded-3xl border border-zinc-200/80 bg-white/80 shadow-2xl shadow-zinc-950/10 backdrop-blur-2xl dark:border-zinc-800 dark:bg-zinc-900/45">
-                            <div class="border-b border-zinc-200/80 bg-zinc-50/50 p-6 sm:p-8 dark:border-zinc-800/80 dark:bg-zinc-950/30">
-                                <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
+                            <div class="border-b border-zinc-200/80 bg-zinc-50/50 p-6 sm:p-6 dark:border-zinc-800/80 dark:bg-zinc-950/30">
+                                <div class="mb-3 flex flex-wrap items-center justify-between gap-6">
                                     <span class="inline-flex items-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1 text-[11px] font-bold tracking-wider text-amber-600 uppercase dark:text-amber-400">
                                         <span class="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-500"></span>
                                         Awaiting Payment
@@ -245,10 +185,10 @@
                                 </div>
                                 <h2 class="text-2xl font-semibold tracking-tight break-words text-zinc-950 dark:text-zinc-50">{{ package.title }}</h2>
                             </div>
-                            <div class="space-y-6 p-6 sm:p-8">
+                            <div class="space-y-6 p-6 sm:p-6">
                                 <div class="rounded-2xl border border-zinc-200/80 bg-zinc-50 p-5 dark:border-zinc-800/80 dark:bg-zinc-950/40">
                                     <p class="mb-1 text-[11px] font-bold tracking-wider text-zinc-600 uppercase dark:text-zinc-400">Total Due</p>
-                                    <div class="flex flex-wrap items-baseline gap-3">
+                                    <div class="flex flex-wrap items-baseline gap-6">
                                         <span class="text-3xl font-semibold tracking-tight break-all text-zinc-950 tabular-nums sm:text-4xl dark:text-zinc-50">
                                             {{ converted_total|currency_format:user_currency }}
                                         </span>
@@ -427,10 +367,22 @@
                 attachFormHandler(form);
             });
 
-            const widgetIds = Array.from(document.querySelectorAll('[data-turnstile-widget]')).map(function (el) {
-                return el.id;
-            });
-            widgetIds.forEach(tryRenderWidget);
+            function tryRenderAllWidgets() {
+                try {
+                    const widgetEls = Array.from(document.querySelectorAll('[data-turnstile-widget]'));
+                    widgetEls.forEach(function (el) {
+                        tryRenderWidget(el.id);
+                    });
+                } catch (err) {
+                    console.debug('tryRenderAllWidgets error', err);
+                }
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', function(){ setTimeout(tryRenderAllWidgets, 50); });
+            } else {
+                setTimeout(tryRenderAllWidgets, 50);
+            }
 
             const grid = document.getElementById('reimburse-grid');
             const advert = document.getElementById('reimburse-advertising');
