@@ -23,12 +23,16 @@
                 function attachFormHandler() {
                     const form = document.querySelector('form');
                     const turnstileInput = document.getElementById('cf_turnstile_response');
-                    const submitBtn = document.getElementById('submit-btn');
 
-                    if (!form || !turnstileInput || !submitBtn) {
+                    // Wait until form and hidden response input are present in the DOM.
+                    if (!form || !turnstileInput) {
                         setTimeout(attachFormHandler, 100);
                         return;
                     }
+
+                    // Avoid double-attaching handlers.
+                    if (form.dataset.turnstileAttached) return;
+                    form.dataset.turnstileAttached = '1';
 
                     form.addEventListener('submit', function(e) {
                         const token = window.turnstile?.getResponse?.('signup-turnstile-widget');
