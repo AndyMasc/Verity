@@ -63,7 +63,7 @@ def _invalidate_subscription_caches_for_event(stripe_sub: dict) -> None:
     from .context_processors import invalidate_subscription_status_cache
     from .models import CustomUser
 
-    user_ids = list(CustomUser.objects.filter(customer_id=customer_id).values_list("id", flat=True))
+    user_ids = list(CustomUser.objects.filter(customer__id=customer_id).values_list("id", flat=True))
     for user_id in user_ids:
         invalidate_subscription_status_cache(user_id)
 

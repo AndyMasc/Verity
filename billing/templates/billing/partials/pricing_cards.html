@@ -1,11 +1,11 @@
 <header class="relative mx-auto mb-10 max-w-xl text-center">
     <div class="pointer-events-none absolute -top-20 left-1/2 -z-10 h-56 w-80 -translate-x-1/2 rounded-full bg-indigo-500/10 blur-3xl dark:bg-indigo-500/15"></div>
 
-    <div class="inline-flex items-center gap-2 uppercase rounded-full text-[11px] font-bold tracking-wide text-[#5B66FF]">
+    <div class="inline-flex items-center gap-2 rounded-full text-[11px] font-bold tracking-wide text-[#5B66FF] uppercase">
         Plans & Pricing
     </div>
     
-    <h1 class="text-3xl font-medium tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-4xl">
+    <h1 class="text-3xl font-medium tracking-tight text-zinc-900 sm:text-4xl dark:text-zinc-50">
         Scale your expense workflow.
     </h1>
     <p class="mt-2.5 text-md text-zinc-600 dark:text-zinc-400">
@@ -239,7 +239,7 @@
             </button>
         {% else %}
             <a href="{% url 'account_signup' %}"
-               class="w-full max-w-xs cursor-pointer rounded-4xl text-sm bg-zinc-900 px-5 py-2.5 text-center font-semibold tracking-tight text-white border border-zinc-900 shadow-xs transition-all duration-150 hover:bg-zinc-800 active:scale-[0.99] dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white dark:border-zinc-200">
+               class="w-full max-w-xs cursor-pointer rounded-4xl border border-zinc-900 bg-zinc-900 px-5 py-2.5 text-center text-sm font-semibold tracking-tight text-white shadow-xs transition-all duration-150 hover:bg-zinc-800 active:scale-[0.99] dark:border-zinc-200 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white">
                 Sign up to subscribe
             </a>
         {% endif %}
