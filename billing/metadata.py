@@ -32,6 +32,7 @@ class ProductMetadata:
     # If True, this product is only available to users with a paid base plan.
     # Free users can see it as "disabled" but cannot purchase it via Stripe.
     pro_only: bool = False
+    recommended: bool = False  # If True, this product is recommended for most users
 
 
 VERITY_FREE = ProductMetadata(
@@ -65,6 +66,7 @@ VERITY_PRO = ProductMetadata(
     ],
     storage_limit_gb=features.PRO_STORAGE_LIMIT_GB,
     monthly_scan_limit=features.PRO_SCAN_LIMIT,
+    recommended=True,  # Recommended plan for most users
 )
 
 STORAGE_UPGRADE_10 = ProductMetadata(

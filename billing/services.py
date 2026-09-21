@@ -105,10 +105,13 @@ def pricing_context(user) -> dict:
     """Build the pricing data shared by the pricing page and the landing page."""
     products = list(Product.objects.filter(active=True).prefetch_related("prices"))
     base_plan = metadata.plan_for_user(user)
+    held_product_ids = {meta.stripe_id for meta in metadata.active_products_for_user(user)}
     for product in products:
         meta = metadata.PRODUCTS.get(product.id)
         product.features_list = meta.features if meta else []
         product.checkout_price_id = _checkout_price_id(product)
+        product.already_active = product.id in held_product_ids
+        product.recommended = meta.recommended if meta else False
         # Add pro_only attribute for template rendering:
         # - A product marked pro_only is only available to users on a paid
         #   base plan. Free-plan (or anonymous) users see it as disabled.

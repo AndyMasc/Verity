@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.test import TestCase
-from djstripe.models import Price, Product
+from django.utils import timezone
+from djstripe.models import Customer, Price, Product, Subscription, SubscriptionItem
 
 from .. import metadata, services
 
@@ -109,3 +110,84 @@ class PricingContextTests(TestCase):
         context = services.pricing_context(self._user())
         pro_card = next(p for p in context["base_plans"] if p.id == metadata.VERITY_PRO.stripe_id)
         self.assertEqual(pro_card.checkout_price_id, "price_keep")
+
+
+class AlreadyActiveTests(TestCase):
+    """Plans the user already holds are flagged so the UI can disable them."""
+
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(
+            username="owner",
+            email="owner@example.com",
+            password="password",
+        )
+        self.customer = Customer.objects.create(
+            id="cus_owner", livemode=False, created=timezone.now()
+        )
+        self.user.customer = self.customer
+        self.user.save(update_fields=["customer"])
+
+    def _product(self, meta):
+        product, _ = Product.objects.get_or_create(
+            id=meta.stripe_id,
+            livemode=False,
+            defaults={
+                "active": True,
+                "name": meta.name,
+                "metadata": {"category": meta.category},
+            },
+        )
+        Price.objects.get_or_create(
+            id="price_" + meta.stripe_id.replace("prod_", ""),
+            livemode=False,
+            defaults={
+                "active": True,
+                "product": product,
+                "currency": "usd",
+                "recurring": {"interval": "month"},
+            },
+        )
+        return product
+
+    def _subscribe(self, meta):
+        self._product(meta)
+        price = Price.objects.get(id="price_" + meta.stripe_id.replace("prod_", ""))
+        subscription = Subscription.objects.create(
+            id=f"sub_{meta.stripe_id}",
+            livemode=False,
+            created=timezone.now(),
+            customer=self.customer,
+            stripe_data={"status": "active"},
+        )
+        SubscriptionItem.objects.create(
+            id=f"si_{meta.stripe_id}",
+            livemode=False,
+            created=timezone.now(),
+            subscription=subscription,
+            price=price,
+        )
+
+    def _card(self, context, meta):
+        return next(
+            p for p in context["base_plans"] + context["storage_plans"] if p.id == meta.stripe_id
+        )
+
+    def test_free_user_has_no_active_plan(self):
+        self._product(metadata.VERITY_PRO)
+        context = services.pricing_context(self.user)
+        self.assertFalse(self._card(context, metadata.VERITY_PRO).already_active)
+
+    def test_held_base_plan_is_marked_active(self):
+        self._product(metadata.STORAGE_UPGRADE_10)
+        self._subscribe(metadata.VERITY_PRO)
+        context = services.pricing_context(self.user)
+        self.assertTrue(self._card(context, metadata.VERITY_PRO).already_active)
+        self.assertFalse(self._card(context, metadata.STORAGE_UPGRADE_10).already_active)
+
+    def test_held_storage_plan_is_marked_active(self):
+        self._product(metadata.VERITY_PRO)
+        self._subscribe(metadata.VERITY_PRO)
+        self._subscribe(metadata.STORAGE_UPGRADE_10)
+        context = services.pricing_context(self.user)
+        self.assertTrue(self._card(context, metadata.VERITY_PRO).already_active)
+        self.assertTrue(self._card(context, metadata.STORAGE_UPGRADE_10).already_active)
