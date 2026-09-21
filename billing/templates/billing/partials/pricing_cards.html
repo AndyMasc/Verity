@@ -81,8 +81,8 @@
                         {% if price_id %}
                             <div class="mt-auto border-t border-zinc-200 pt-6 dark:border-zinc-800">
                                 {% if product.already_active %}
-                                    <div class="w-full cursor-not-allowed rounded-full border bg-zinc-100 px-4 py-3 text-center text-xs tracking-tight text-zinc-500 dark:bg-zinc-800/40 dark:text-zinc-400">
-                                        <span class="font-semibold">You already have this plan.</span>
+                                    <div class="w-full cursor-not-allowed rounded-full border border-zinc-200 bg-zinc-100 px-4 py-3 text-center text-xs tracking-tight text-zinc-500 dark:border-zinc-800 dark:bg-zinc-800/40 dark:text-zinc-400">
+                                        <span class="font-medium">You already have this plan.</span>
                                     </div>
                                 {% else %}
                                     <div type="button"
@@ -159,8 +159,8 @@
                         </div>
                         {% if price_id %}
                             {% if product.already_active %}
-                                <div class="w-full cursor-not-allowed rounded-full border bg-zinc-100 px-4 py-3 text-center text-xs tracking-tight text-zinc-500 dark:bg-zinc-800/40 dark:text-zinc-400">
-                                    <span class="font-semibold">You already have this plan.</span>
+                                <div class="w-full cursor-not-allowed rounded-full border border-zinc-200 bg-zinc-100 px-4 py-3 text-center text-xs tracking-tight text-zinc-500 dark:border-zinc-800 dark:bg-zinc-800/40 dark:text-zinc-400">
+                                    <span class="font-medium">You already have this plan.</span>
                                 </div>
                             {% elif product.pro_only %}
                                 <div class="mt-auto border-t border-zinc-200 pt-6 dark:border-zinc-800">
