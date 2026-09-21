@@ -230,9 +230,9 @@
         </div>
     </section>
     <section id="pricing"
-             class="scroll-mt-24 border-t border-zinc-200 bg-zinc-100/70 dark:border-zinc-900 dark:bg-zinc-950">
+             class="scroll-mt-24 border-t border-zinc-200 dark:border-zinc-900">
         <div class="mx-auto max-w-5xl px-6 py-20"
-             x-data="{ selectedCategory: 'base_plan', selectedBasePrice: null, selectedStoragePrice: null }">
+             x-data="{ selectedCategory: 'base_plan', selectedBasePrice: null, selectedStoragePrice: null, selectedPlanCount: 0 }">
             {% include "billing/partials/pricing_cards.html" %}
         </div>
     </section>
