@@ -326,20 +326,93 @@
     </main>
     <script>
         (function () {
-            const forms = document.querySelectorAll('[data-turnstile-form]');
-            forms.forEach(function(form) {
+            function tryRenderWidget(widgetId) {
+                if (!widgetId || !window.turnstile || typeof window.turnstile.render !== 'function') {
+                    return;
+                }
+
+                const widgetEl = document.getElementById(widgetId);
+                const iframe = widgetEl && widgetEl.querySelector('iframe');
+                if (!widgetEl || iframe) return;
+
+                const action = widgetId.startsWith('request-code') ? 'request_verification' :
+                    widgetId.startsWith('verify-code') ? 'verify_code' :
+                    widgetId.startsWith('checkout') ? 'checkout' : 'reimbursement';
+
+                try {
+                    try {
+                        window.turnstile.render(widgetEl, {
+                            sitekey: window.turnstile_sitekey || '{{ turnstile_sitekey }}',
+                            action: action,
+                        });
+                    } catch (err) {
+                        console.warn('Turnstile render(element) failed for', widgetId, err);
+                    }
+                    try {
+                        window.turnstile.render(widgetId, {
+                            sitekey: window.turnstile_sitekey || '{{ turnstile_sitekey }}',
+                            action: action,
+                        });
+                    } catch (err) {
+                        console.warn('Turnstile render(id) failed for', widgetId, err);
+                    }
+                } catch (err) {
+                    console.warn('Turnstile render failed for', widgetId, err);
+                }
+            }
+
+            function attachFormHandler(form) {
                 const widgetId = form.dataset.turnstileWidget;
                 const responseId = form.dataset.turnstileResponse;
-                const responseInput = responseId ? document.getElementById(responseId) : null;
+                let responseInput = responseId ? document.getElementById(responseId) : null;
+
+                if (form) {
+                    const existing = form.querySelector('input[name="cf_turnstile_response"]');
+                    if (existing) {
+                        responseInput = existing;
+                    } else if (!responseInput) {
+                        responseInput = document.createElement('input');
+                        responseInput.type = 'hidden';
+                        responseInput.name = 'cf_turnstile_response';
+                        responseInput.id = responseId || 'cf_turnstile_response';
+                        form.appendChild(responseInput);
+                    } else if (!form.contains(responseInput)) {
+                        form.appendChild(responseInput);
+                    }
+                }
+
                 if (!widgetId || !responseInput) return;
+                if (form.dataset.turnstileAttached) return;
+                form.dataset.turnstileAttached = '1';
 
                 form.addEventListener('submit', function (event) {
-                    const token = window.turnstile?.getResponse?.(widgetId);
+                    let token = null;
+                    try {
+                        if (window.turnstile && typeof window.turnstile.getResponse === 'function') {
+                            token = window.turnstile.getResponse(widgetId) || null;
+                        }
+                    } catch (err) {
+                        console.debug('turnstile.getResponse error', err);
+                    }
+
+                    if (!token) {
+                        const widgetEl = document.getElementById(widgetId);
+                        if (widgetEl) {
+                            const internal = widgetEl.querySelector('input[name="cf-turnstile-response"], input[id$="_response"], input[name="cf_turnstile_response"]');
+                            if (internal && internal.value) token = internal.value;
+                        }
+                    }
+
+                    if (!token) {
+                        const globalInput = document.querySelector('input[name="cf-turnstile-response"], input[name="cf_turnstile_response"], input[id^="cf-chl-widget-"][id$="_response"]');
+                        if (globalInput && globalInput.value) token = globalInput.value;
+                    }
+
                     if (!token) {
                         event.preventDefault();
                         alert('Please complete the robot verification and try again');
-                        if (window.turnstile?.reset) {
-                            window.turnstile.reset(widgetId);
+                        if (window.turnstile && typeof window.turnstile.reset === 'function') {
+                            try { window.turnstile.reset(widgetId); } catch (_) {}
                         }
                         return false;
                     }
@@ -347,7 +420,17 @@
                     responseInput.value = token;
                     return true;
                 });
+            }
+
+            const forms = document.querySelectorAll('[data-turnstile-form]');
+            forms.forEach(function(form) {
+                attachFormHandler(form);
             });
+
+            const widgetIds = Array.from(document.querySelectorAll('[data-turnstile-widget]')).map(function (el) {
+                return el.id;
+            });
+            widgetIds.forEach(tryRenderWidget);
 
             const grid = document.getElementById('reimburse-grid');
             const advert = document.getElementById('reimburse-advertising');
