@@ -82,6 +82,25 @@ def customer_missing_in_stripe(customer_id: str) -> bool:
     return bool(getattr(remote, "deleted", False))
 
 
+def _checkout_price_id(product: Product) -> str | None:
+    """Return the price id to submit at checkout for a product, or None.
+
+    Mirrors the pricing card display: the most recently created active,
+    monthly-recurring price. "prices.first" is deliberately avoided because
+    dj-stripe Prices have no default ordering, so it can select an archived
+    price that the checkout validation (_validated_price) rejects.
+    """
+    candidates = [
+        price
+        for price in product.prices.all()
+        if price.active and price.recurring and price.recurring.get("interval") == "month"
+    ]
+    if not candidates:
+        return None
+    newest = max(candidates, key=lambda price: price.djstripe_created)
+    return newest.id
+
+
 def pricing_context(user) -> dict:
     """Build the pricing data shared by the pricing page and the landing page."""
     products = list(Product.objects.filter(active=True).prefetch_related("prices"))
@@ -89,6 +108,7 @@ def pricing_context(user) -> dict:
     for product in products:
         meta = metadata.PRODUCTS.get(product.id)
         product.features_list = meta.features if meta else []
+        product.checkout_price_id = _checkout_price_id(product)
         # Add pro_only attribute for template rendering:
         # - A product marked pro_only is only available to users on a paid
         #   base plan. Free-plan (or anonymous) users see it as disabled.
