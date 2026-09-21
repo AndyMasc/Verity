@@ -4,17 +4,58 @@
 {% load widget_tweaks %}
 {% load socialaccount %}
 {% block content %}
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+            async
+            defer></script>
     {% trans "Sign up to Verity." as heading %}
     {% #container heading=heading subheading=subheading %}
-    {# 1. Standard Email/Password Signup Form #}
     {% if not SOCIALACCOUNT_ONLY %}
         {% url 'account_signup' as action_url %}
-        {% #form form=form url=action_url button_text="Sign up" %}
+        {% #form form=form url=action_url button_text="Sign up" render_fields="true" %}
         {{ redirect_field }}
         {% csrf_token %}
+        <input type="hidden"
+               id="cf_turnstile_response"
+               name="cf_turnstile_response"
+               value="">
+        <script>
+            (function() {
+                function attachFormHandler() {
+                    const form = document.querySelector('form');
+                    const turnstileInput = document.getElementById('cf_turnstile_response');
+                    const submitBtn = document.getElementById('submit-btn');
+
+                    if (!form || !turnstileInput || !submitBtn) {
+                        setTimeout(attachFormHandler, 100);
+                        return;
+                    }
+
+                    form.addEventListener('submit', function(e) {
+                        const token = window.turnstile?.getResponse?.('signup-turnstile-widget');
+
+                        if (!token) {
+                            e.preventDefault();
+                            alert('Please complete the robot verification and try again');
+                            if (window.turnstile?.reset) {
+                                window.turnstile.reset('signup-turnstile-widget');
+                            }
+                            return false;
+                        }
+
+                        turnstileInput.value = token;
+                        return true;
+                    });
+                }
+
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', attachFormHandler);
+                } else {
+                    attachFormHandler();
+                }
+            })();
+        </script>
         {% /form %}
     {% endif %}
-    {# 2. Social/Third-Party Signup Section #}
     {% get_providers as socialaccount_providers %}
     {% if socialaccount_providers %}
         <div class="relative my-1 mb-2 flex items-center">
@@ -27,5 +68,11 @@
     {% endif %}
     <div class="mt-6 text-center text-sm text-zinc-500 dark:text-zinc-400">Already have an account? <a href="{{ login_url }}"
     class="font-medium text-zinc-900 hover:underline dark:text-zinc-100">Sign in</a></div>
+    <div class="mt-8 flex justify-center">
+        <div id="signup-turnstile-widget"
+             class="cf-turnstile"
+             data-sitekey="{{ turnstile_sitekey }}"
+             data-action="signup"></div>
+    </div>
     {% /container %}
 {% endblock %}

@@ -188,6 +188,7 @@ ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
 ACCOUNT_LOGOUT_ON_GET = False
 ACCOUNT_EMAIL_NOTIFICATIONS = True
 ACCOUNT_DEFAULT_HTTP_PROTOCOL = "https"
+ACCOUNT_SIGNUP_HONEYPOT_FIELD = "phone_number"
 ACCOUNT_FORMS = {
     "signup": "core.forms.PasswordlessSignupForm",
     "login": "core.forms.PasswordlessLoginForm",
@@ -224,6 +225,11 @@ AUTH_PASSWORD_VALIDATORS: list = []
 # Custom user model to check for subscription and customer
 AUTH_USER_MODEL = "billing.CustomUser"
 
+# Turnstile (Cloudflare CAPTCHA)
+TURNSTILE_SITEKEY = env("TURNSTILE_SITEKEY", default="0x4AAAAAAE-iMWMy2QJlviQc")
+TURNSTILE_SECRET = env("TURNSTILE_SECRET", default="")
+TURNSTILE_HOSTNAMES = env.list("TURNSTILE_HOSTNAMES", default=["localhost", "127.0.0.1"])
+
 
 # Templates
 TEMPLATES = [
@@ -239,6 +245,7 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 "core.context_processors.webpush_status",  # Check user webpush status
                 "core.context_processors.posthog_settings",  # PostHog client config
+                "core.context_processors.turnstile_settings",  # Turnstile sitekey
                 # Billing template context_processors
                 "billing.context_processors.subscription_status",  # Subscription status for all templates
                 "billing.context_processors.scan_usage",  # Scan usage for all templates

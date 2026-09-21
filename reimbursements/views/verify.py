@@ -19,6 +19,7 @@ from django.views import View
 from django_ratelimit.decorators import ratelimit
 
 from .. import services
+from ..forms import CheckoutTurnstileForm, RequestVerificationCodeForm, VerifyEmailCodeForm
 from ..models import ReimbursementPackage
 from ..verification import send_verification_code, verify_code
 
@@ -110,12 +111,16 @@ class RequestVerificationCodeView(View):
         package = get_object_or_404(
             ReimbursementPackage, uuid=package_uuid, deleted_at__isnull=True
         )
-        email = request.POST.get("email", "").strip()
         pay_url = reverse("reimbursements:pay-package", kwargs={"package_uuid": package.uuid})
 
-        if not email:
-            messages.error(request, "Enter your email to continue.")
+        form = RequestVerificationCodeForm(request.POST, request=request)
+        if not form.is_valid():
+            for error_list in form.errors.values():
+                for error in error_list:
+                    messages.error(request, error)
             return redirect(pay_url)
+
+        email = form.cleaned_data.get("email", "").strip()
 
         if not send_verification_code(package, email):
             messages.error(request, "That email does not match the recipient for this request.")
@@ -136,13 +141,18 @@ class VerifyEmailCodeView(View):
         package = get_object_or_404(
             ReimbursementPackage, uuid=package_uuid, deleted_at__isnull=True
         )
-        email = request.POST.get("email", "").strip()
-        code = request.POST.get("code", "").strip()
         pay_url = reverse("reimbursements:pay-package", kwargs={"package_uuid": package.uuid})
 
-        if not email or not code:
-            messages.error(request, "Enter both your email and the verification code.")
+        form = VerifyEmailCodeForm(request.POST, request=request)
+        if not form.is_valid():
+            email = request.POST.get("email", "").strip()
+            for error_list in form.errors.values():
+                for error in error_list:
+                    messages.error(request, error)
             return redirect(_code_step_url(pay_url, email))
+
+        email = form.cleaned_data.get("email", "").strip()
+        code = form.cleaned_data.get("code", "").strip()
 
         ok, error = verify_code(package, email, code)
         if not ok:
@@ -169,6 +179,13 @@ class PayPackageCheckoutView(View):
             deleted_at__isnull=True,
         )
         pay_url = reverse("reimbursements:pay-package", kwargs={"package_uuid": package.uuid})
+
+        form = CheckoutTurnstileForm(request.POST, request=request)
+        if not form.is_valid():
+            for error_list in form.errors.values():
+                for error in error_list:
+                    messages.error(request, error)
+            return redirect(pay_url)
 
         if request.user.is_authenticated:
             if request.user not in (package.creator, package.recipient):

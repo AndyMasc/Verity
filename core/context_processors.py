@@ -46,3 +46,13 @@ def posthog_settings(request: HttpRequest) -> dict[str, Any]:  # noqa: ARG001
         "posthog_host": getattr(settings, "POSTHOG_HOST", "https://us.i.posthog.com"),
         "posthog_disabled": getattr(settings, "POSTHOG_DISABLED", False),
     }
+
+
+def turnstile_settings(request: HttpRequest) -> dict[str, Any]:  # noqa: ARG001
+    """Expose Turnstile widget configuration (sitekey) to all templates.
+
+    The sitekey is public and safe to expose to the frontend.
+    """
+    return {
+        "turnstile_sitekey": getattr(settings, "TURNSTILE_SITEKEY", ""),
+    }

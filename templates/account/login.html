@@ -3,11 +3,54 @@
 {% load allauth_ui %}
 {% load widget_tweaks %}
 {% block content %}
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+            async
+            defer></script>
     {% #container heading="Sign in to Verity." subheading=subheading %}
     {% if not SOCIALACCOUNT_ONLY %}
         {% url 'account_login' as action_url %}
-        {% #form form=form url=action_url button_text="Sign in" %}
+        {% #form form=form url=action_url button_text="Sign in" render_fields="true" %}
         {% csrf_token %}
+        <input type="hidden"
+               id="cf_turnstile_response"
+               name="cf_turnstile_response"
+               value="">
+        <script>
+            (function() {
+                function attachFormHandler() {
+                    const form = document.querySelector('form');
+                    const turnstileInput = document.getElementById('cf_turnstile_response');
+                    const submitBtn = document.getElementById('submit-btn');
+
+                    if (!form || !turnstileInput || !submitBtn) {
+                        setTimeout(attachFormHandler, 100);
+                        return;
+                    }
+
+                    form.addEventListener('submit', function(e) {
+                        const token = window.turnstile?.getResponse?.('login-turnstile-widget');
+
+                        if (!token) {
+                            e.preventDefault();
+                            alert('Please complete the robot verification and try again');
+                            if (window.turnstile?.reset) {
+                                window.turnstile.reset('login-turnstile-widget');
+                            }
+                            return false;
+                        }
+
+                        turnstileInput.value = token;
+                        return true;
+                    });
+                }
+
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', attachFormHandler);
+                } else {
+                    attachFormHandler();
+                }
+            })();
+        </script>
         {% /form %}
     {% endif %}
     {% if LOGIN_BY_CODE_ENABLED %}
@@ -24,5 +67,11 @@
     {% endif %}
     <div class="mt-6 text-center text-sm text-zinc-500 dark:text-zinc-400">Don't have an account? <a href="{{ signup_url }}"
     class="font-medium text-zinc-900 hover:underline dark:text-zinc-100">Sign up</a></div>
+    <div class="mt-8 flex justify-center">
+        <div id="login-turnstile-widget"
+             class="cf-turnstile"
+             data-sitekey="{{ turnstile_sitekey }}"
+             data-action="login"></div>
+    </div>
     {% /container %}
 {% endblock content %}

@@ -2,6 +2,9 @@
 {% load form_tags %}
 {% block title %}Reimbursement | Verity{% endblock %}
 {% block content %}
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+            async
+            defer></script>
     <main class="relative flex min-h-screen w-full items-center justify-center overflow-hidden font-sans antialiased selection:bg-zinc-900 selection:text-white dark:selection:bg-white dark:selection:text-zinc-900">
         <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(#e4e4e7_1px,transparent_1px)] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] [background-size:24px_24px] opacity-40 dark:bg-[radial-gradient(#27272a_1px,transparent_1px)] dark:opacity-20">
         </div>
@@ -105,7 +108,10 @@
                                 </p>
                                 <form method="post"
                                       action="{% url 'reimbursements:pay-request-code' package.uuid %}"
-                                      class="space-y-4">
+                                      class="space-y-4"
+                                      data-turnstile-form="request-code"
+                                      data-turnstile-widget="request-code-turnstile-widget"
+                                      data-turnstile-response="request-code-turnstile-response">
                                     {% csrf_token %}
                                     <div>
                                         <label class="mb-2 block text-[11px] font-semibold tracking-wider text-zinc-600 uppercase dark:text-zinc-400">Recipient Email</label>
@@ -121,6 +127,16 @@
                                             class="inline-flex w-full items-center justify-center rounded-xl bg-zinc-900 px-6 py-3 text-xs font-semibold text-white shadow-xs transition-all duration-200 hover:bg-zinc-800 active:scale-[0.98] dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200">
                                         Send verification code
                                     </button>
+                                    <input type="hidden"
+                                           name="cf_turnstile_response"
+                                           id="request-code-turnstile-response"
+                                           value="">
+                                    <div class="flex justify-center pt-1">
+                                        <div id="request-code-turnstile-widget"
+                                             class="cf-turnstile"
+                                             data-sitekey="{{ turnstile_sitekey }}"
+                                             data-action="request_verification"></div>
+                                    </div>
                                 </form>
                             {% else %}
                                 <p class="mb-6 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
@@ -128,7 +144,10 @@
                                 </p>
                                 <form method="post"
                                       action="{% url 'reimbursements:pay-verify-code' package.uuid %}"
-                                      class="space-y-4">
+                                      class="space-y-4"
+                                      data-turnstile-form="verify-code"
+                                      data-turnstile-widget="verify-code-turnstile-widget"
+                                      data-turnstile-response="verify-code-turnstile-response">
                                     {% csrf_token %}
                                     <input type="hidden" name="email" value="{{ email }}">
                                     <div>
@@ -146,12 +165,36 @@
                                             class="inline-flex w-full items-center justify-center rounded-xl bg-zinc-900 px-6 py-3 text-xs font-semibold text-white shadow-xs transition-all duration-200 hover:bg-zinc-800 active:scale-[0.98] dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200">
                                         Verify & Continue
                                     </button>
+                                    <input type="hidden"
+                                           name="cf_turnstile_response"
+                                           id="verify-code-turnstile-response"
+                                           value="">
+                                    <div class="flex justify-center pt-1">
+                                        <div id="verify-code-turnstile-widget"
+                                             class="cf-turnstile"
+                                             data-sitekey="{{ turnstile_sitekey }}"
+                                             data-action="verify_code"></div>
+                                    </div>
                                 </form>
                                 <div class="mt-4 flex items-center justify-between">
                                     <form method="post"
-                                          action="{% url 'reimbursements:pay-request-code' package.uuid %}">
+                                          action="{% url 'reimbursements:pay-request-code' package.uuid %}"
+                                          class="space-y-3"
+                                          data-turnstile-form="request-code-resend"
+                                          data-turnstile-widget="request-code-resend-turnstile-widget"
+                                          data-turnstile-response="request-code-resend-turnstile-response">
                                         {% csrf_token %}
                                         <input type="hidden" name="email" value="{{ email }}">
+                                        <input type="hidden"
+                                               name="cf_turnstile_response"
+                                               id="request-code-resend-turnstile-response"
+                                               value="">
+                                        <div class="flex justify-center">
+                                            <div id="request-code-resend-turnstile-widget"
+                                                 class="cf-turnstile"
+                                                 data-sitekey="{{ turnstile_sitekey }}"
+                                                 data-action="request_verification"></div>
+                                        </div>
                                         <button type="submit"
                                                 class="text-xs font-semibold text-zinc-500 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100">
                                             Didn't get the code? Resend
@@ -245,7 +288,10 @@
                                 </div>
                                 <form method="post"
                                       action="{% url 'reimbursements:pay-checkout' package.uuid %}"
-                                      class="space-y-4 pt-2">
+                                      class="space-y-4 pt-2"
+                                      data-turnstile-form="checkout"
+                                      data-turnstile-widget="checkout-turnstile-widget"
+                                      data-turnstile-response="checkout-turnstile-response">
                                     {% csrf_token %}
                                     <button type="submit"
                                             class="group inline-flex w-full items-center justify-center gap-2.5 rounded-2xl bg-zinc-900 px-6 py-4 text-xs font-semibold text-white shadow-md transition-all duration-200 hover:bg-zinc-800 active:scale-[0.98] dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200">
@@ -260,6 +306,16 @@
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
                                         </svg>
                                     </button>
+                                    <input type="hidden"
+                                           name="cf_turnstile_response"
+                                           id="checkout-turnstile-response"
+                                           value="">
+                                    <div class="flex justify-center pt-1">
+                                        <div id="checkout-turnstile-widget"
+                                             class="cf-turnstile"
+                                             data-sitekey="{{ turnstile_sitekey }}"
+                                             data-action="checkout"></div>
+                                    </div>
                                 </form>
                             </div>
                         </div>
@@ -270,6 +326,29 @@
     </main>
     <script>
         (function () {
+            const forms = document.querySelectorAll('[data-turnstile-form]');
+            forms.forEach(function(form) {
+                const widgetId = form.dataset.turnstileWidget;
+                const responseId = form.dataset.turnstileResponse;
+                const responseInput = responseId ? document.getElementById(responseId) : null;
+                if (!widgetId || !responseInput) return;
+
+                form.addEventListener('submit', function (event) {
+                    const token = window.turnstile?.getResponse?.(widgetId);
+                    if (!token) {
+                        event.preventDefault();
+                        alert('Please complete the robot verification and try again');
+                        if (window.turnstile?.reset) {
+                            window.turnstile.reset(widgetId);
+                        }
+                        return false;
+                    }
+
+                    responseInput.value = token;
+                    return true;
+                });
+            });
+
             const grid = document.getElementById('reimburse-grid');
             const advert = document.getElementById('reimburse-advertising');
             const receipt = document.getElementById('reimburse-receipt');
