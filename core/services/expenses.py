@@ -1,12 +1,14 @@
 """Expense aggregation for the dashboard expense chart.
 
-Moves the query + currency-conversion pipeline out of the view so it is
-cacheable, testable, and free of request/response concerns.
+Returns a complete, contiguous month series so the chart can render an
+accurate x-axis (zero-spend months included) and flag the final month when
+it is still in progress. That lets the frontend draw a solid line for
+completed months and a dashed projection segment into the current month.
 """
 
-from calendar import month_name
+from calendar import month_name, monthrange
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from django.utils import timezone
 
@@ -23,12 +25,19 @@ def get_monthly_expense_series(user, period: str = "3m") -> dict:
         period: "3m", "6m", "1y", or "all" (default "3m").
 
     Returns:
-        "{"months": [{"label": "Jan 24", "total": 1234.56}, ...], "currency": "$"}"
+        "{"months": [{"label": "Jan 24", "total": 1234.56, "is_current": false,
+        "projected_total": 1234.56}, ...], "currency": "$"}"
+
+    - "total" is the recorded spend for the month (0.0 for empty months).
+    - "is_current" marks the calendar month that is still in progress.
+    - "projected_total" extrapolates month-to-date spend across the full
+      month for the current month (equal to "total" for completed months).
     """
     months_back = PERIOD_MONTHS.get(period)
     user_currency = getattr(user.settings, "default_currency", "usd")
 
     now = timezone.now()
+    now_date = now.date()
     if months_back is not None:
         start = (now - timedelta(days=months_back * 30)).date()
     else:
@@ -46,7 +55,7 @@ def get_monthly_expense_series(user, period: str = "3m") -> dict:
         .filter(
             user=user,
             transaction_date__gte=start,
-            transaction_date__lte=now.date(),
+            transaction_date__lte=now_date,
             balance__isnull=False,
         )
         .values_list("balance", "currency", "transaction_date")
@@ -60,14 +69,34 @@ def get_monthly_expense_series(user, period: str = "3m") -> dict:
         converted = convert(balance, currency, user_currency, rates=rates)
         monthly[month_key] += float(converted)
 
+    # Contiguous series from the first month in range through the current
+    # calendar month, so gaps render as real zero months instead of being
+    # skipped (which would distort the time axis).
+    current_key = now.strftime("%Y-%m")
+    days_in_current = monthrange(now.year, now.month)[1]
+    days_elapsed = max(now.day, 1)
+
     months = []
-    for month_key in sorted(monthly):
-        dt = datetime.strptime(month_key, "%Y-%m")
+    cursor = start.replace(day=1)
+    while cursor <= now_date.replace(day=1):
+        month_key = cursor.strftime("%Y-%m")
+        total = round(monthly.get(month_key, 0.0), 2)
+        is_current = month_key == current_key
+        projected = total
+        if is_current:
+            # Month-to-date extrapolation for the still-open month.
+            projected = round(total * days_in_current / days_elapsed, 2)
         months.append(
             {
-                "label": f"{month_name[dt.month][:3]} {dt.strftime('%y')}",
-                "total": round(monthly[month_key], 2),
+                "label": f"{month_name[cursor.month][:3]} {cursor.strftime('%y')}",
+                "total": total,
+                "is_current": is_current,
+                "projected_total": projected,
             }
         )
+        if cursor.month == 12:
+            cursor = cursor.replace(year=cursor.year + 1, month=1)
+        else:
+            cursor = cursor.replace(month=cursor.month + 1)
 
     return {"months": months, "currency": user_currency}

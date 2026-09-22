@@ -11,10 +11,10 @@
           hx-select="#dashboard-content"
           hx-swap="outerHTML">
         <div class="my-auto w-full space-y-4">
-            <header class="flex flex-col justify-between gap-4 md:flex-row md:items-center">
-                <div>
+            <header class="flex justify-end gap-4 md:flex-row md:items-center md:justify-between">
+                <div class="hidden md:block">
                     <a href="{% url 'core:profile_page' %}" class="group inline-block">
-                        <div class="shadow-2xs inline-flex items-center gap-2 rounded-full border border-zinc-200/80 bg-zinc-100 px-3 py-1.5 transition-all duration-200 group-hover:border-zinc-300 group-hover:bg-zinc-200/50 dark:border-white/[0.06] dark:bg-zinc-900/45 dark:group-hover:border-white/[0.12] dark:group-hover:bg-zinc-800/80">
+                        <div class="shadow-2xs inline-flex items-center gap-2 rounded-full border border-zinc-200/80 bg-white px-3 py-1.5 transition-all duration-200 dark:border-white/[0.06] dark:bg-zinc-900/60">
                             <svg xmlns="http://www.w3.org/2000/svg"
                                  fill="none"
                                  viewBox="0 0 24 24"
@@ -23,7 +23,7 @@
                                  class="size-5">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                             </svg>
-                            <span class="text-xs font-semibold tracking-tight text-zinc-800 dark:text-zinc-200">{{ request.user.username }}</span>
+                            <span class="text-xs font-semibold tracking-tight text-zinc-800 dark:text-zinc-200">Hi there, {{ request.user.username }}.</span>
                         </div>
                     </a>
                 </div>
@@ -68,7 +68,7 @@
                             {% include 'core/partials/section_header.html' with title="Notifications" badge_text=unread_notifications_count|stringformat:"s"|add:" unread" view_all_url=notifications_url %}
                             <div class="mt-3.5 space-y-2">
                                 {% for notification in notifications|slice:":3" %}
-                                    <div class="flex items-center justify-between gap-2.5 rounded-xl border border-zinc-200/60 bg-zinc-50 px-3.5 py-2.5 transition-colors hover:border-zinc-300/80 dark:border-white/[0.035] dark:bg-zinc-800/40 dark:hover:border-white/[0.07]">
+                                    <div class="flex items-center justify-between gap-2.5 rounded-xl border border-zinc-200/60 bg-zinc-50 px-3.5 py-2.5 transition-colors hover:border-zinc-300/80 dark:border-white/[0.035] dark:bg-zinc-900/60 dark:hover:border-white/[0.07]">
                                         <div class="flex min-w-0 items-center gap-2">
                                             <span class="block size-1.5 shrink-0 rounded-full bg-[#5A67FF]"></span>
                                             <span class="truncate text-xs font-medium text-zinc-800 dark:text-zinc-200">
@@ -100,14 +100,14 @@
                         {% url 'reimbursements:package-list' as reimbursements_url %}
                         {% include 'core/partials/section_header.html' with title="Reimbursements" view_all_url=reimbursements_url %}
                         <div class="mt-3.5 grid grid-cols-2 gap-3">
-                            <div class="rounded-xl border border-zinc-200/60 bg-zinc-50 p-3.5 dark:border-white/[0.035] dark:bg-zinc-800/40">
+                            <div class="rounded-xl border border-zinc-200/60 bg-zinc-50 p-3.5 dark:border-white/[0.035] dark:bg-zinc-900/40">
                                 <h3 class="text-[10px] font-semibold tracking-wider text-zinc-600 uppercase dark:text-zinc-400">Sent</h3>
                                 <p class="mt-1 truncate text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
                                     {{ reimbursements_sent_total|default:"0.00"|currency_format:user.settings.default_currency }}
                                 </p>
                                 <p class="mt-0.5 text-[11px] font-medium text-zinc-600 dark:text-zinc-400">{{ reimbursements_sent_pending_count }} pending</p>
                             </div>
-                            <div class="rounded-xl border border-zinc-200/60 bg-zinc-50 p-3.5 dark:border-white/[0.035] dark:bg-zinc-800/40">
+                            <div class="rounded-xl border border-zinc-200/60 bg-zinc-50 p-3.5 dark:border-white/[0.035] dark:bg-zinc-900/40">
                                 <h3 class="text-[10px] font-semibold tracking-wider text-zinc-600 uppercase dark:text-zinc-400">Received</h3>
                                 <p class="mt-1 truncate text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
                                     {{ reimbursements_received_total|default:"0.00"|currency_format:user.settings.default_currency }}

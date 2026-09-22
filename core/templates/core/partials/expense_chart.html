@@ -17,7 +17,7 @@
             </template>
         </div>
     </div>
-    <div class="relative min-h-[100px] w-full flex-1">
+    <div class="relative min-h-[240px] w-full flex-1">
         <canvas x-ref="canvas"
                 class="absolute inset-0 h-full w-full cursor-crosshair"
                 @mousemove="onHover($event)"
@@ -171,20 +171,27 @@
 
                 if (this.data.length === 0) return;
 
-                const padTop = 10;
+                const padTop = 16;
                 const padBottom = 28;
                 const padLeft = 0;
                 const padRight = 0;
                 const chartW = w - padLeft - padRight;
                 const chartH = h - padTop - padBottom;
+                const baselineY = padTop + chartH;
 
-                const maxVal = Math.max(...this.data.map(d => d.total), 1);
+                // Scale against the plotted value: completed months use their
+                // actual total, the in-progress month uses its projection so
+                // the dashed point never overflows the plot area.
+                const plotVal = (d) =>
+                    d.is_current ? Math.max(d.total, d.projected_total ?? d.total) : d.total;
+                const maxVal = Math.max(...this.data.map(plotVal), 1);
                 const niceMax = this.niceNum(maxVal);
 
                 const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
                 const textColor = isDark ? '#a1a1aa' : '#71717a';
-                const gridColor = isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)';
+                const gridColor = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
+                const axisColor = isDark ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.16)';
                 const lineColor = '#5A67FF';
 
                 const step = chartW / Math.max(this.data.length - 1, 1);
@@ -194,14 +201,14 @@
 
                 for (let i = 0; i < this.data.length; i++) {
                     const x = this.data.length === 1 ? chartW / 2 : padLeft + i * step;
-                    const val = this.data[i].total * ease;
+                    const val = plotVal(this.data[i]) * ease;
                     const y = padTop + chartH - (val / niceMax) * chartH;
                     this.points.push({ x, y, data: this.data[i] });
                 }
 
                 ctx.save();
 
-                // Background Grid Lines
+                // Horizontal grid lines with y-axis labels on the right.
                 const gridSteps = 4;
                 for (let i = 0; i <= gridSteps; i++) {
                     const y = padTop + (chartH / gridSteps) * i;
@@ -217,8 +224,16 @@
                     ctx.font = '500 10px "Inter", system-ui, sans-serif';
                     ctx.textAlign = 'right';
                     ctx.textBaseline = 'middle';
-                    ctx.fillText(this.formatNum(val), padLeft + chartW, y - 6);
+                    ctx.fillText(this.formatNum(val), w - padRight - 6, y - 7);
                 }
+
+                // X-axis baseline so the axis stays legible in both themes.
+                ctx.beginPath();
+                ctx.strokeStyle = axisColor;
+                ctx.lineWidth = 1;
+                ctx.moveTo(padLeft, baselineY + 0.5);
+                ctx.lineTo(w - padRight, baselineY + 0.5);
+                ctx.stroke();
 
                 if (this.points.length < 2) {
                     if (this.points.length === 1) {
@@ -232,10 +247,18 @@
                         ctx.fillStyle = glow;
                         ctx.fill();
 
-                        ctx.beginPath();
-                        ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
-                        ctx.fillStyle = lineColor;
-                        ctx.fill();
+                        if (p.data.is_current) {
+                            ctx.beginPath();
+                            ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
+                            ctx.lineWidth = 2;
+                            ctx.strokeStyle = lineColor;
+                            ctx.stroke();
+                        } else {
+                            ctx.beginPath();
+                            ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+                            ctx.fillStyle = lineColor;
+                            ctx.fill();
+                        }
 
                         ctx.fillStyle = textColor;
                         ctx.font = '500 11px "Inter", system-ui, sans-serif';
@@ -247,52 +270,84 @@
                     return;
                 }
 
-                const grad = ctx.createLinearGradient(0, padTop, 0, padTop + chartH);
-                if (isDark) {
-                    grad.addColorStop(0, 'rgba(90, 103, 255, 0.35)');
-                    grad.addColorStop(0.5, 'rgba(90, 103, 255, 0.15)');
-                    grad.addColorStop(1, 'rgba(90, 103, 255, 0)');
-                } else {
-                    grad.addColorStop(0, 'rgba(90, 103, 255, 0.22)');
-                    grad.addColorStop(0.5, 'rgba(90, 103, 255, 0.10)');
-                    grad.addColorStop(1, 'rgba(90, 103, 255, 0)');
+                const lastIdx = this.points.length - 1;
+                const projIdx = this.points[lastIdx].data.is_current ? lastIdx : -1;
+                const solidEnd = projIdx >= 0 ? projIdx - 1 : lastIdx;
+
+                const polyPath = (from, to) => {
+                    ctx.beginPath();
+                    for (let i = from; i <= to; i++) {
+                        const p = this.points[i];
+                        if (i === from) ctx.moveTo(p.x, p.y);
+                        else ctx.lineTo(p.x, p.y);
+                    }
+                };
+
+                // Area beneath the whole series — including under the dashed
+                // projection — pinned to the axis baseline. The gradient is
+                // drawn first so both line segments render on top of it.
+                if (lastIdx >= 1) {
+                    const grad = ctx.createLinearGradient(0, padTop, 0, padTop + chartH);
+                    if (isDark) {
+                        grad.addColorStop(0, 'rgba(90, 103, 255, 0.35)');
+                        grad.addColorStop(0.5, 'rgba(90, 103, 255, 0.15)');
+                        grad.addColorStop(1, 'rgba(90, 103, 255, 0)');
+                    } else {
+                        grad.addColorStop(0, 'rgba(90, 103, 255, 0.22)');
+                        grad.addColorStop(0.5, 'rgba(90, 103, 255, 0.10)');
+                        grad.addColorStop(1, 'rgba(90, 103, 255, 0)');
+                    }
+                    polyPath(0, lastIdx);
+                    ctx.lineTo(this.points[lastIdx].x, baselineY);
+                    ctx.lineTo(this.points[0].x, baselineY);
+                    ctx.closePath();
+                    ctx.fillStyle = grad;
+                    ctx.fill();
                 }
 
-                ctx.beginPath();
-                ctx.moveTo(this.points[0].x, padTop + chartH);
-                for (let i = 0; i < this.points.length; i++) {
-                    const p = this.points[i];
-                    if (i === 0) {
-                        ctx.lineTo(p.x, p.y);
-                    } else {
-                        const prev = this.points[i - 1];
-                        const cpx1 = prev.x + step * 0.4;
-                        const cpx2 = p.x - step * 0.4;
-                        ctx.bezierCurveTo(cpx1, prev.y, cpx2, p.y, p.x, p.y);
-                    }
+                // Solid line through completed months — straight segments
+                // between real values, no deliberate spline smoothing.
+                if (solidEnd >= 1) {
+                    polyPath(0, solidEnd);
+                    ctx.strokeStyle = lineColor;
+                    ctx.lineWidth = 2;
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+                    ctx.stroke();
                 }
-                ctx.lineTo(this.points[this.points.length - 1].x, padTop + chartH);
-                ctx.closePath();
-                ctx.fillStyle = grad;
-                ctx.fill();
 
-                // Main Spline Line
-                ctx.beginPath();
-                for (let i = 0; i < this.points.length; i++) {
+                // Dashed segment into the still-open month (its value is an
+                // estimate, so it must not render as a solid trend).
+                if (projIdx >= 1) {
+                    polyPath(projIdx - 1, projIdx);
+                    ctx.strokeStyle = lineColor;
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([5, 5]);
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
+
+                // Point markers. The in-progress month renders as a ring so it
+                // reads as "pending", distinct from completed data points.
+                for (let i = 0; i <= lastIdx; i++) {
                     const p = this.points[i];
-                    if (i === 0) {
-                        ctx.moveTo(p.x, p.y);
+                    if (i === projIdx) {
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, 4.5, 0, Math.PI * 2);
+                        ctx.fillStyle = this.parentBg(isDark);
+                        ctx.fill();
+                        ctx.lineWidth = 2;
+                        ctx.strokeStyle = lineColor;
+                        ctx.stroke();
                     } else {
-                        const prev = this.points[i - 1];
-                        const cpx1 = prev.x + step * 0.4;
-                        const cpx2 = p.x - step * 0.4;
-                        ctx.bezierCurveTo(cpx1, prev.y, cpx2, p.y, p.x, p.y);
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, 3.5, 0, Math.PI * 2);
+                        ctx.fillStyle = lineColor;
+                        ctx.fill();
                     }
                 }
-                ctx.strokeStyle = lineColor;
-                ctx.lineWidth = 2.5;
-                ctx.lineCap = 'round';
-                ctx.stroke();
 
                 // X-Axis Labels
                 const maxLabels = Math.min(this.data.length, Math.floor(chartW / 70));
@@ -328,6 +383,17 @@
                 return x === 1 ? 1 : 1 - Math.pow(2, -10 * x);
             },
 
+            parentBg(isDark) {
+                const canvas = this.$refs.canvas;
+                if (canvas) {
+                    const bg = getComputedStyle(canvas.parentElement).backgroundColor;
+                    if (bg && bg !== 'transparent' && !/rgba\(\s*[^)]*,\s*0\s*\)$/.test(bg)) {
+                        return bg;
+                    }
+                }
+                return isDark ? '#09090b' : '#ffffff';
+            },
+
             onHover(e) {
                 if (this.points.length === 0) return;
                 const canvas = this.$refs.canvas;
@@ -350,12 +416,18 @@
                     if (tx < tipW / 2) tx = tipW / 2;
                     if (tx > rect.width - tipW / 2) tx = rect.width - tipW / 2;
 
+                    const d = closest.data;
+                    const label = d.is_current ? `${d.label} · in progress` : d.label;
+                    const value = d.is_current
+                        ? `${this.formatCurrency(d.total)} MTD · ${this.formatCurrency(d.projected_total)} est.`
+                        : this.formatCurrency(d.total);
+
                     this.tooltip = {
                         visible: true,
                         x: tx,
                         y: closest.y,
-                        label: closest.data.label,
-                        value: this.formatCurrency(closest.data.total),
+                        label: label,
+                        value: value,
                     };
 
                     this.draw();
