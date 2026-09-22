@@ -215,9 +215,18 @@ def plan_for_user(user) -> ProductMetadata:
 
 
 def storage_addons_for_user(user) -> list[ProductMetadata]:
-    """Return the user's storage add-on product (at most one), or an empty list."""
+    """Return the user's valid storage add-on product(s), if any.
+
+    Pro-only packs require an active paid base plan. General storage add-ons
+    may still apply to free users, but a base plan cancellation removes the
+    Pro-only entitlement without invalidating the entire storage add-on model.
+    """
     addon = _products_by_category(user).get("storage_plan")
-    return [addon] if addon is not None else []
+    if addon is None:
+        return []
+    if plan_for_user(user).stripe_id == VERITY_FREE.stripe_id and addon.pro_only:
+        return []
+    return [addon]
 
 
 CATEGORY_ORDER = {"base_plan": 0, "storage_plan": 1}

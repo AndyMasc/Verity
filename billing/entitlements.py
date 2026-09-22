@@ -64,7 +64,7 @@ def has_feature(user, feature: str) -> bool:
 
 
 def get_storage_limit(user) -> int:
-    """Return the user's storage limit in GB: base plan limit plus any storage add-ons."""
+    """Return the user's storage limit in GB: base plan limit plus valid storage add-ons."""
     from .metadata import plan_for_user, storage_addons_for_user
 
     limit = plan_for_user(user).storage_limit_gb

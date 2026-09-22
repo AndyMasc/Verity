@@ -262,14 +262,20 @@ class StorageLimitTests(TestCase):
             metadata.VERITY_PRO.stripe_id,
         )
 
-    def test_storage_addon_alone_boosts_storage_only(self):
-        self._add_subscription_with_product(metadata.STORAGE_UPGRADE_10.stripe_id)
+    def test_available_storage_addon_alone_boosts_storage_only(self):
+        self._add_subscription_with_product(metadata.STORAGE_UPGRADE_1.stripe_id)
         self.assertEqual(
             entitlements.get_storage_limit(self.user),
-            features.FREE_STORAGE_LIMIT_GB + features.STORAGE_ADDITIONAL_GB_10,
+            features.FREE_STORAGE_LIMIT_GB + features.STORAGE_ADDITIONAL_GB_1,
         )
         self.assertEqual(entitlements.get_plan(self.user), "free")
         self.assertEqual(metadata.plan_for_user(self.user).stripe_id, "free")
+
+    def test_pro_only_storage_addon_requires_paid_base_plan(self):
+        self._add_subscription_with_product(metadata.STORAGE_UPGRADE_10.stripe_id)
+        self.assertEqual(entitlements.get_storage_limit(self.user), features.FREE_STORAGE_LIMIT_GB)
+        self.assertEqual(entitlements.get_plan(self.user), "free")
+        self.assertEqual(metadata.storage_addons_for_user(self.user), [])
 
     def test_pro_plus_storage_addon_sums_storage_and_keeps_pro_features(self):
         customer = Customer.objects.create(
