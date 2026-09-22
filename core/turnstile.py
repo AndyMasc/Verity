@@ -15,6 +15,24 @@ from django.http import HttpRequest
 logger = logging.getLogger(__name__)
 
 
+def _test_env() -> bool:
+    """True when running under pytest (module import or active test session)."""
+    return "pytest" in sys.modules or bool(os.environ.get("PYTEST_CURRENT_TEST"))
+
+
+def _stub_result(action: str) -> dict[str, Any]:
+    """Successful stub returned when Turnstile is not configured during testing."""
+    return {
+        "success": True,
+        "message": "Turnstile disabled in test environment",
+        "raw_response": {"success": True, "action": action, "hostname": "testserver"},
+    }
+
+
+def _failure(message: str, raw_response: Any) -> dict[str, Any]:
+    return {"success": False, "message": message, "raw_response": raw_response}
+
+
 def turnstile_enabled() -> bool:
     """Whether server-side Turnstile verification should be enforced.
 
@@ -22,9 +40,7 @@ def turnstile_enabled() -> bool:
     a secret or hostname allowlist, so local and CI development are never
     blocked by an unconfigured widget.
     """
-    if not getattr(settings, "TURNSTILE_ENABLED", True):
-        return False
-    if "pytest" in sys.modules or os.environ.get("PYTEST_CURRENT_TEST"):
+    if not getattr(settings, "TURNSTILE_ENABLED", True) or _test_env():
         return False
     return bool(settings.TURNSTILE_SECRET and settings.TURNSTILE_HOSTNAMES)
 
@@ -44,49 +60,26 @@ def verify_turnstile_token(
     validates the token format and action checks where the secret is configured.
     """
     if not token or not isinstance(token, str) or len(token) > 2048:
-        return {
-            "success": False,
-            "message": "Invalid token format",
-            "raw_response": {},
-        }
+        return _failure("Invalid token format", {})
 
-    secret = settings.TURNSTILE_SECRET
-    if not secret:
-        if "pytest" in sys.modules or getattr(settings, "RATELIMIT_ENABLE", True) is False:
-            return {
-                "success": True,
-                "message": "Turnstile disabled in test environment",
-                "raw_response": {"success": True, "action": action, "hostname": "testserver"},
-            }
+    if not settings.TURNSTILE_SECRET:
+        if _test_env() or getattr(settings, "RATELIMIT_ENABLE", True) is False:
+            return _stub_result(action)
         logger.error("TURNSTILE_SECRET not configured")
-        return {
-            "success": False,
-            "message": "Turnstile not configured",
-            "raw_response": {},
-        }
+        return _failure("Turnstile not configured", {})
 
     expected_hostnames = set(settings.TURNSTILE_HOSTNAMES)
     if not expected_hostnames:
-        if "pytest" in sys.modules:
-            return {
-                "success": True,
-                "message": "Turnstile disabled in test environment",
-                "raw_response": {"success": True, "action": action, "hostname": "testserver"},
-            }
+        if _test_env():
+            return _stub_result(action)
         logger.error("TURNSTILE_HOSTNAMES not configured")
-        return {
-            "success": False,
-            "message": "Turnstile not configured",
-            "raw_response": {},
-        }
-
-    client_ip = get_client_ip(request) if request is not None else ""
+        return _failure("Turnstile not configured", {})
 
     verify_data: dict[str, str] = {
-        "secret": secret,
+        "secret": settings.TURNSTILE_SECRET,
         "response": token,
     }
-    if client_ip:
+    if client_ip := (get_client_ip(request) if request is not None else ""):
         verify_data["remoteip"] = client_ip
 
     try:
@@ -96,62 +89,35 @@ def verify_turnstile_token(
             data=verify_data,
             timeout=10.0,
         )
-
         if response.status_code != 200:
             logger.error("Turnstile siteverify failed: %s", response.status_code)
-            return {
-                "success": False,
-                "message": "Verification service error",
-                "raw_response": {"status_code": response.status_code},
-            }
-
+            return _failure("Verification service error", {"status_code": response.status_code})
         result = response.json()
-
     except Exception as e:
         logger.error("Turnstile verification error: %s", e)
-        return {
-            "success": False,
-            "message": "Verification service unavailable",
-            "raw_response": {},
-        }
+        return _failure("Verification service unavailable", {})
 
     if not result.get("success"):
-        logger.warning(
-            f"Turnstile verification failed: {result.get('error-codes', [])}",
-        )
-        return {
-            "success": False,
-            "message": "Verification failed",
-            "raw_response": result,
-        }
+        logger.warning("Turnstile verification failed: %s", result.get("error-codes", []))
+        return _failure("Verification failed", result)
 
-    returned_action = result.get("action")
-    if returned_action != action:
+    if result.get("action") != action:
         logger.warning(
-            f"Turnstile action mismatch: expected {action}, got {returned_action}",
+            "Turnstile action mismatch: expected %s, got %s",
+            action,
+            result.get("action"),
         )
-        return {
-            "success": False,
-            "message": "Action mismatch",
-            "raw_response": result,
-        }
+        return _failure("Action mismatch", result)
 
-    returned_hostname = result.get("hostname")
-    if returned_hostname not in expected_hostnames:
+    if result.get("hostname") not in expected_hostnames:
         logger.warning(
-            f"Turnstile hostname mismatch: {returned_hostname} not in {expected_hostnames}",
+            "Turnstile hostname mismatch: %s not in %s",
+            result.get("hostname"),
+            expected_hostnames,
         )
-        return {
-            "success": False,
-            "message": "Hostname verification failed",
-            "raw_response": result,
-        }
+        return _failure("Hostname verification failed", result)
 
-    return {
-        "success": True,
-        "message": "Verification successful",
-        "raw_response": result,
-    }
+    return {"success": True, "message": "Verification successful", "raw_response": result}
 
 
 def get_client_ip(request: HttpRequest) -> str:

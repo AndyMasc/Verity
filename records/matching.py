@@ -51,6 +51,46 @@ def _balance_diff(a: Decimal | None, b: Decimal | None) -> Decimal | None:
     return abs(Decimal(a) - Decimal(b))
 
 
+_BALANCE_BANDS: tuple[tuple[Decimal, int], ...] = (
+    (Decimal("0"), 40),
+    (BALANCE_TOLERANCE, 30),
+    (BALANCE_TOLERANCE * 3, 15),
+)
+_DATE_BANDS: tuple[tuple[int, int], ...] = (
+    (0, 30),
+    (1, 20),
+    (DATE_TOLERANCE_DAYS, 10),
+)
+_MERCHANT_BANDS: tuple[tuple[float, int], ...] = (
+    (0.9, 30),
+    (0.7, 20),
+    (0.5, 10),
+    (0.3, 5),
+)
+_TITLE_BANDS: tuple[tuple[float, int], ...] = (
+    (0.9, 20),
+    (0.7, 15),
+    (0.5, 8),
+    (0.3, 3),
+)
+
+
+def _score_at_most(value, bands) -> int:
+    """Return points for the highest band ``value`` does not exceed."""
+    for threshold, points in bands:
+        if value <= threshold:
+            return points
+    return 0
+
+
+def _score_at_least(value, bands) -> int:
+    """Return points for the highest band ``value`` reaches or exceeds."""
+    for threshold, points in bands:
+        if value >= threshold:
+            return points
+    return 0
+
+
 def calculate_match_score(record_a: Record, record_b: Record) -> int:
     """Return a composite score (0-120) measuring how likely two records refer to the same purchase.
 
@@ -62,43 +102,17 @@ def calculate_match_score(record_a: Record, record_b: Record) -> int:
 
     diff = _balance_diff(record_a.balance, record_b.balance)
     if diff is not None:
-        if diff == 0:
-            score += 40
-        elif diff <= BALANCE_TOLERANCE:
-            score += 30
-        elif diff <= BALANCE_TOLERANCE * 3:
-            score += 15
+        score += _score_at_most(diff, _BALANCE_BANDS)
 
     if record_a.transaction_date and record_b.transaction_date:
         date_diff = abs((record_a.transaction_date - record_b.transaction_date).days)
-        if date_diff == 0:
-            score += 30
-        elif date_diff == 1:
-            score += 20
-        elif date_diff <= DATE_TOLERANCE_DAYS:
-            score += 10
+        score += _score_at_most(date_diff, _DATE_BANDS)
 
     if record_a.merchant and record_b.merchant:
-        sim = _similarity(record_a.merchant, record_b.merchant)
-        if sim >= 0.9:
-            score += 30
-        elif sim >= 0.7:
-            score += 20
-        elif sim >= 0.5:
-            score += 10
-        elif sim >= 0.3:
-            score += 5
+        score += _score_at_least(_similarity(record_a.merchant, record_b.merchant), _MERCHANT_BANDS)
 
     if record_a.title and record_b.title:
-        sim = _similarity(record_a.title, record_b.title)
-        if sim >= 0.9:
-            score += 20
-        elif sim >= 0.7:
-            score += 15
-        elif sim >= 0.5:
-            score += 8
-        elif sim >= 0.3:
-            score += 3
+        score += _score_at_least(_similarity(record_a.title, record_b.title), _TITLE_BANDS)
 
     return score
 

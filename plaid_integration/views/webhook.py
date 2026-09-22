@@ -27,7 +27,7 @@ PLAID_JWKS_URL = "https://plaid.com/auth/v1/webhook_public_key"
 _jwks_cache: dict[str, Any] = {}
 _jwks_fetched_at: float | None = None
 
-WEBHOOK_MAX_BODY_SIZE = 1024 * 100  # 100KB
+WEBHOOK_MAX_BODY_SIZE = 1024 * 100
 
 
 def _get_plaid_jwk(kid: str, max_age: int = 3600) -> dict[str, Any] | None:

@@ -106,7 +106,7 @@ def scan_usage(request: HttpRequest) -> dict[str, Any]:
         # Return cached value even if we want fresh data; the cache TTL handles staleness
         return cached
 
-    count = entitlements.get_monthly_scan_count(user)  # already filters by this period
+    count = entitlements.get_monthly_scan_count(user)
     limit = monthly_scan_limit if monthly_scan_limit is not None else features.PRO_SCAN_LIMIT
     percentage = (count / limit * 100) if limit > 0 else 0
 

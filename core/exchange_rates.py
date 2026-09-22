@@ -20,7 +20,7 @@ class ExchangeRateUnavailableError(Exception):
 
 CACHE_KEY = "exchange_rates:v2"
 CACHE_KEY_STALE = "exchange_rates:v2:stale"
-CACHE_TTL = 86_400  # 24 hours
+CACHE_TTL = 86_400
 CACHE_TTL_STALE = 86_400 * 7  # 7 days — kept as fallback when API is unreachable
 CACHE_TTL_EMPTY = 60  # Cache empty results briefly to avoid hammering API
 API_BASE = "https://api.frankfurter.dev"
