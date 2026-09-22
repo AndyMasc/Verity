@@ -5,13 +5,13 @@
     <div class="flex shrink-0 flex-col justify-between gap-3 pb-4 sm:flex-row sm:items-center">
         <div>
             <h3 class="text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">Expense Trends</h3>
-            <p class="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400"
+            <p class="mt-0.5 text-xs text-zinc-600 dark:text-zinc-400"
                x-text="summary"></p>
         </div>
         <div class="flex items-center gap-1 self-start rounded-xl border border-zinc-200/50 bg-zinc-100/80 p-1 sm:self-auto dark:border-zinc-700/40 dark:bg-zinc-800/50">
             <template x-for="p in periods" :key="p.value">
                 <button @click="load(p.value)"
-                        :class="period === p.value ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-50 shadow-xs' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200'"
+                        :class="period === p.value ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-50 shadow-xs' : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200'"
                         class="rounded-lg px-2.5 py-1 text-[11px] font-medium transition-all duration-150 active:scale-[0.97]"
                         x-text="p.label"></button>
             </template>
@@ -27,20 +27,20 @@
              class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
             <p class="text-xs font-medium text-red-600 dark:text-red-400">Couldn't load expense trends</p>
             <button @click="load(period)"
-                    class="mt-2 text-[11px] font-medium text-zinc-500 underline hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200">
+                    class="mt-2 text-[11px] font-medium text-zinc-600 underline hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200">
                 Try again
             </button>
         </div>
         <div x-show="data.length === 0 && !loading && !error"
              x-cloak
              class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
-            <div class="mb-2 flex size-9 items-center justify-center rounded-full bg-zinc-100 text-zinc-400 dark:bg-zinc-800 dark:text-zinc-500">
+            <div class="mb-2 flex size-9 items-center justify-center rounded-full bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round5" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
             </div>
             <p class="text-xs font-medium text-zinc-700 dark:text-zinc-300">No expense data available</p>
-            <p class="mt-0.5 text-[11px] text-zinc-400 dark:text-zinc-500">Trends will appear here once data is available.</p>
+            <p class="mt-0.5 text-[11px] text-zinc-500 dark:text-zinc-400">Trends will appear here once data is available.</p>
         </div>
         <div x-show="tooltip.visible"
              x-transition:enter="transition ease-out duration-150"
@@ -53,7 +53,7 @@
              class="pointer-events-none absolute z-20"
              :style="`left: ${tooltip.x}px; top: ${tooltip.y}px; transform: translate(-50%, -100%) translateY(-8px);`">
             <div class="rounded-xl border border-zinc-700/50 bg-zinc-900 px-3 py-1.5 text-white shadow-xl dark:border-zinc-700 dark:bg-zinc-800">
-                <div class="text-[10px] font-medium tracking-wider text-zinc-400 uppercase"
+                <div class="text-[10px] font-medium tracking-wider text-zinc-500 uppercase"
                      x-text="tooltip.label"></div>
                 <div class="mt-0.5 text-xs font-semibold tabular-nums"
                      x-text="tooltip.value"></div>
@@ -183,7 +183,7 @@
 
                 const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
-                const textColor = isDark ? '#71717a' : '#a1a1aa';
+                const textColor = isDark ? '#a1a1aa' : '#71717a';
                 const gridColor = isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)';
                 const lineColor = '#5A67FF';
 

@@ -49,15 +49,15 @@
                 <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wider uppercase border {{ record.badge_classes }} shadow-2xs">
                     {% render_field form.record_type class="outline-none bg-transparent cursor-pointer text-[11px] font-bold uppercase tracking-wider focus:ring-0 border-none p-0" %}
                 </span>
-                <span class="text-zinc-400 dark:text-zinc-600">&middot;</span>
+                <span class="text-zinc-500 dark:text-zinc-400">&middot;</span>
                 <span class="font-mono text-xs font-medium text-zinc-600 dark:text-zinc-400">REF: #{{ record.pk }}</span>
-                <span class="text-zinc-400 dark:text-zinc-600">&middot;</span>
+                <span class="text-zinc-500 dark:text-zinc-400">&middot;</span>
                 <span class="font-mono text-xs font-medium text-zinc-600 tabular-nums dark:text-zinc-400">{{ record.date_added|date:"M d, Y" }}</span>
             </div>
             <div class="flex gap-2">
                 <a href="{% url 'records:record_history' record.pk %}"
                    class="shadow-2xs inline-flex items-center justify-center gap-1.5 rounded-xl border border-zinc-200/60 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 transition-all duration-200 hover:bg-zinc-50 hover:text-zinc-900 active:scale-[0.97] dark:border-zinc-800/30 dark:bg-zinc-900/45 dark:text-zinc-300 dark:hover:bg-zinc-800/60 dark:hover:text-zinc-100">
-                    <svg class="h-3.5 w-3.5 text-zinc-500 dark:text-zinc-400"
+                    <svg class="h-3.5 w-3.5 text-zinc-600 dark:text-zinc-400"
                          fill="none"
                          viewBox="0 0 24 24"
                          stroke-width="2"
@@ -85,7 +85,7 @@
         </div>
         <div>
             <label for="{{ form.title.id_for_label }}" class="sr-only">Record Title</label>
-            {% render_field form.title placeholder="Untitled Record" class="w-full text-2xl sm:text-3xl font-semibold tracking-tight bg-transparent border-none p-0 text-zinc-900 dark:text-zinc-100 focus:outline-hidden placeholder-zinc-400 dark:placeholder-zinc-500 transition-all" %}
+            {% render_field form.title placeholder="Untitled Record" class="w-full text-2xl sm:text-3xl font-semibold tracking-tight bg-transparent border-none p-0 text-zinc-900 dark:text-zinc-100 focus:outline-hidden placeholder-zinc-500 dark:placeholder-zinc-500 transition-all" %}
             {% if form.title.errors %}
                 <p class="mt-1 text-xs font-semibold text-rose-600 dark:text-rose-400">{{ form.title.errors|striptags }}</p>
             {% endif %}
@@ -114,7 +114,7 @@
                         <div class="flex items-baseline gap-1.5">
                             <span class="text-3xl font-semibold tracking-tight text-zinc-600 tabular-nums sm:text-4xl dark:text-zinc-400"
                                   x-text="sym">$</span>
-                            {% render_field form.balance step="0.01" placeholder="0.00" class="text-3xl sm:text-4xl font-semibold tracking-tight tabular-nums bg-transparent border-none p-0 text-zinc-900 dark:text-zinc-100 focus:outline-hidden w-auto min-w-[120px] placeholder-zinc-400 dark:placeholder-zinc-500" %}
+                            {% render_field form.balance step="0.01" placeholder="0.00" class="text-3xl sm:text-4xl font-semibold tracking-tight tabular-nums bg-transparent border-none p-0 text-zinc-900 dark:text-zinc-100 focus:outline-hidden w-auto min-w-[120px] placeholder-zinc-500 dark:placeholder-zinc-500" %}
                         </div>
                         {% if form.currency %}
                             <div class="self-center text-xs font-semibold text-zinc-700 dark:text-zinc-300">
@@ -131,7 +131,7 @@
                            class="block text-[11px] font-bold tracking-wider text-zinc-600 uppercase dark:text-zinc-400">
                         Merchant / Vendor <span class="font-bold text-rose-600 dark:text-rose-400">*</span>
                     </label>
-                    {% render_field form.merchant placeholder="Merchant name" class="w-full text-sm font-semibold bg-transparent border-none p-0 text-zinc-900 dark:text-zinc-100 focus:outline-hidden placeholder-zinc-400 dark:placeholder-zinc-500" %}
+                    {% render_field form.merchant placeholder="Merchant name" class="w-full text-sm font-semibold bg-transparent border-none p-0 text-zinc-900 dark:text-zinc-100 focus:outline-hidden placeholder-zinc-500 dark:placeholder-zinc-500" %}
                     {% if form.merchant.errors %}
                         <p class="mt-1 text-xs font-semibold text-rose-600 dark:text-rose-400">{{ form.merchant.errors|striptags }}</p>
                     {% endif %}
@@ -167,7 +167,7 @@
                 {% if form.payment_method.field.disabled %}
                     <p class="text-[13px] font-semibold text-zinc-900 dark:text-zinc-100">{{ record.payment_method|default:"&mdash;" }}</p>
                 {% else %}
-                    {% render_field form.payment_method placeholder="e.g., Visa 1234" class="w-full text-[13px] font-semibold bg-transparent border-none p-0 text-zinc-900 dark:text-zinc-100 focus:outline-hidden placeholder-zinc-400 dark:placeholder-zinc-500" %}
+                    {% render_field form.payment_method placeholder="e.g., Visa 1234" class="w-full text-[13px] font-semibold bg-transparent border-none p-0 text-zinc-900 dark:text-zinc-100 focus:outline-hidden placeholder-zinc-500 dark:placeholder-zinc-500" %}
                 {% endif %}
                 {% if form.payment_method.errors %}
                     <p class="text-[11px] font-semibold text-rose-600 dark:text-rose-400">{{ form.payment_method.errors|striptags }}</p>
@@ -185,7 +185,7 @@
                        class="block text-[11px] font-bold tracking-wider text-zinc-600 uppercase dark:text-zinc-400">
                     Account Nickname
                 </label>
-                {% render_field form.nickname placeholder="e.g., Personal Card" class="w-full text-[13px] font-semibold bg-transparent border-none p-0 text-zinc-900 dark:text-zinc-100 focus:outline-hidden placeholder-zinc-400 dark:placeholder-zinc-500" %}
+                {% render_field form.nickname placeholder="e.g., Personal Card" class="w-full text-[13px] font-semibold bg-transparent border-none p-0 text-zinc-900 dark:text-zinc-100 focus:outline-hidden placeholder-zinc-500 dark:placeholder-zinc-500" %}
             </div>
         </div>
         <div class="grid grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-2">
@@ -196,7 +196,7 @@
                 </label>
                 <p class="mt-0.5 text-[11px] font-medium text-zinc-600 dark:text-zinc-400">Itemized products, services, or line items on this record.</p>
                 <div class="mt-4 flex flex-1 flex-col">
-                    {% render_field form.products class="resize-y min-h-[140px] flex-1 w-full bg-transparent border-none text-xs font-medium text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-hidden" %}
+                    {% render_field form.products class="resize-y min-h-[140px] flex-1 w-full bg-transparent border-none text-xs font-medium text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 dark:placeholder-zinc-500 focus:outline-hidden" %}
                     {% if form.products.errors %}
                         <p class="mt-1 text-xs font-semibold text-rose-600 dark:text-rose-400">{{ form.products.errors|striptags }}</p>
                     {% endif %}
@@ -209,7 +209,7 @@
                 </label>
                 <p class="mt-0.5 text-[11px] font-medium text-zinc-600 dark:text-zinc-400">Why this expense was incurred and any supporting context.</p>
                 <div class="mt-4 flex flex-1 flex-col">
-                    {% render_field form.notes rows="3" class="resize-y min-h-[140px] flex-1 w-full bg-transparent border-none text-xs font-medium text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-hidden" %}
+                    {% render_field form.notes rows="3" class="resize-y min-h-[140px] flex-1 w-full bg-transparent border-none text-xs font-medium text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 dark:placeholder-zinc-500 focus:outline-hidden" %}
                     {% if form.notes.errors %}
                         <p class="mt-1 text-xs font-semibold text-rose-600 dark:text-rose-400">{{ form.notes.errors|striptags }}</p>
                     {% endif %}

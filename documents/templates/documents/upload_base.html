@@ -7,11 +7,11 @@
         <section id="uploadContainer"
                  class="container mx-auto flex w-11/12 max-w-11/12 flex-col items-center md:w-3/5 lg:w-lg">
             <p id="status"
-               class="mb-4 min-h-5 text-center text-sm text-zinc-500 dark:text-zinc-400"></p>
+               class="mb-4 min-h-5 text-center text-sm text-zinc-600 dark:text-zinc-400"></p>
             <h1 class="mb-2 text-center text-3xl font-semibold md:text-4xl dark:text-white">
                 {% block page_title %}{{ page_title|default:"Upload a file" }}{% endblock %}
             </h1>
-            <p class="max-w-xl truncate text-center text-sm text-zinc-400">
+            <p class="max-w-xl truncate text-center text-sm text-zinc-500">
                 {% block page_subtitle %}{{ page_subtitle|default:"We'll extract and organize the details automatically." }}{% endblock %}
             </p>
             <div class="mt-8 mb-2 flex w-full flex-col space-y-4">
@@ -19,7 +19,7 @@
                      class="flex max-h-70 w-full cursor-pointer flex-col items-center justify-center rounded-2xl border border-zinc-200 bg-zinc-100 p-10 transition-all duration-200 hover:bg-zinc-200 dark:border-zinc-800 dark:bg-zinc-800/40 dark:hover:bg-zinc-800/70">
                     <div class="bg-neutral-secondary-medium flex h-64 w-full flex-col items-center justify-center">
                         <div class="text-body flex flex-col items-center justify-center pt-5 pb-6">
-                            <svg class="mb-4 size-12 text-zinc-500 dark:text-zinc-300"
+                            <svg class="mb-4 size-12 text-zinc-600 dark:text-zinc-300"
                                  aria-hidden="true"
                                  xmlns="http://www.w3.org/2000/svg"
                                  fill="none"
@@ -27,14 +27,14 @@
                                 <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v9m-5 0H5a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4a1 1 0 0 0-1-1h-2M8 9l4-5 4 5m1 8h.01" />
                             </svg>
                             <p class="text-center text-sm text-zinc-600 dark:text-zinc-300">Drop your file here or click to browse</p>
-                            <p class="mt-2 text-center text-xs text-zinc-400">PNG, JPG, PDF, WEBP, HEIC · up to 5MB</p>
+                            <p class="mt-2 text-center text-xs text-zinc-500">PNG, JPG, PDF, WEBP, HEIC · up to 5MB</p>
                         </div>
                     </div>
                 </div>
                 {% block extra_fields %}
                     <textarea id="docNotes"
                               rows="2"
-                              class="w-full resize-none rounded-xl border border-zinc-200 bg-zinc-100 p-4 text-sm text-zinc-800 placeholder-zinc-400 transition-all duration-200 focus:border-zinc-400 focus:outline-none dark:border-zinc-800 dark:bg-zinc-800/40 dark:text-zinc-200 dark:placeholder-zinc-500 dark:focus:border-zinc-600"
+                              class="w-full resize-none rounded-xl border border-zinc-200 bg-zinc-100 p-4 text-sm text-zinc-800 placeholder-zinc-500 transition-all duration-200 focus:border-zinc-400 focus:outline-none dark:border-zinc-800 dark:bg-zinc-800/40 dark:text-zinc-200 dark:placeholder-zinc-500 dark:focus:border-zinc-600"
                               placeholder="Add a note..."></textarea>
                 {% endblock extra_fields %}
             </div>
@@ -61,7 +61,7 @@
             {% block upload_footer %}
                 <hr class="my-7 mb-5 w-xs text-zinc-200 dark:text-zinc-800">
                 <a href="{% url 'records:add_record_manual' %}"
-                   class="mt-0 text-sm text-zinc-500 transition-all duration-200 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100">
+                   class="mt-0 text-sm text-zinc-600 transition-all duration-200 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100">
                     Or enter record details manually.
                 </a>
                 {% block custom_footer_js %}
@@ -113,13 +113,13 @@
         uploadButton.dataset.forceUpload = "false";
 
         const fileStatus = document.createElement('div');
-        fileStatus.className = "mt-3 text-center text-sm text-zinc-500 dark:text-zinc-400";
+        fileStatus.className = "mt-3 text-center text-sm text-zinc-600 dark:text-zinc-400";
         dropzone.appendChild(fileStatus);
 
         function setStatus(msg, type = "idle") {
             status.innerHTML = msg;
             status.className = "mb-4 text-sm text-center min-h-5 transition-all duration-200 " +
-            (type === "error" ? "text-rose-500" : type === "success" ? "text-emerald-500" : "text-zinc-500 dark:text-zinc-400");
+            (type === "error" ? "text-rose-500" : type === "success" ? "text-emerald-500" : "text-zinc-600 dark:text-zinc-400");
         }
 
         function setFile(file) {
@@ -128,7 +128,7 @@
             uploadButton.dataset.forceUpload = "false";
             fileStatus.innerHTML =
                 `<div class="text-emerald-500 font-medium text-sm truncate max-w-xs">\u2713 ${file.name}</div>` +
-            `<div class="text-xs text-zinc-400 mt-1">${(file.size / 1024 / 1024).toFixed(2)} MB \u00b7 ready</div>`;
+            `<div class="text-xs text-zinc-500 mt-1">${(file.size / 1024 / 1024).toFixed(2)} MB \u00b7 ready</div>`;
             setStatus("");
         }
 
@@ -231,11 +231,11 @@
                         ? `<div class="text-center text-amber-600 dark:text-amber-400 font-medium">
                                This file is already attached to
                                <a href="${data.record_url}" class="underline font-bold hover:text-amber-700 dark:hover:text-amber-300 transition-colors">${data.record_label}</a>.
-                               <button onclick="window.triggerForceUpload();" class="inline underline font-bold text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors cursor-pointer focus:outline-none">Upload anyway?</button>
+                               <button onclick="window.triggerForceUpload();" class="inline underline font-bold text-zinc-600 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors cursor-pointer focus:outline-none">Upload anyway?</button>
                            </div>`
                         : `<div class="text-center text-amber-600 dark:text-amber-400 font-medium">
                                This document has already been uploaded in your library.
-                               <button onclick="window.triggerForceUpload();" class="inline underline font-bold text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors cursor-pointer focus:outline-none">Upload anyway?</button>
+                               <button onclick="window.triggerForceUpload();" class="inline underline font-bold text-zinc-600 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors cursor-pointer focus:outline-none">Upload anyway?</button>
                            </div>`;
                     setStatus(message, "idle");
                     return;

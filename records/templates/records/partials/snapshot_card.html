@@ -1,30 +1,30 @@
 {% load form_tags %}
 <div class="space-y-3 rounded-xl border border-zinc-200/60 bg-zinc-50/60 p-4 dark:border-zinc-800/30 dark:bg-zinc-950/20">
     <div class="flex items-center gap-2">
-        <svg class="h-4 w-4 text-zinc-400"
+        <svg class="h-4 w-4 text-zinc-500"
              fill="none"
              viewBox="0 0 24 24"
              stroke-width="1.8"
              stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" d="{{ icon_path }}" />
         </svg>
-        <span class="text-[10px] font-bold tracking-wider text-zinc-400 uppercase dark:text-zinc-500">{{ label }}</span>
+        <span class="text-[10px] font-bold tracking-wider text-zinc-500 uppercase dark:text-zinc-400">{{ label }}</span>
     </div>
     <div class="space-y-2 text-xs">
         <div>
-            <span class="text-zinc-400 dark:text-zinc-500">Title</span>
+            <span class="text-zinc-500 dark:text-zinc-400">Title</span>
             <p class="font-semibold text-zinc-800 dark:text-zinc-200">{{ snapshot.title|default:"—" }}</p>
         </div>
         <div>
-            <span class="text-zinc-400 dark:text-zinc-500">Merchant</span>
+            <span class="text-zinc-500 dark:text-zinc-400">Merchant</span>
             <p class="font-semibold text-zinc-800 dark:text-zinc-200">{{ snapshot.merchant|default:"—" }}</p>
         </div>
         <div>
-            <span class="text-zinc-400 dark:text-zinc-500">Amount</span>
+            <span class="text-zinc-500 dark:text-zinc-400">Amount</span>
             <p class="font-semibold text-zinc-800 dark:text-zinc-200">{% if snapshot.balance %}{{ snapshot.balance|currency_format:snapshot.currency }}{% else %}—{% endif %}</p>
         </div>
         <div>
-            <span class="text-zinc-400 dark:text-zinc-500">Payment</span>
+            <span class="text-zinc-500 dark:text-zinc-400">Payment</span>
             <p class="font-semibold text-zinc-800 dark:text-zinc-200">{{ snapshot.payment_method|default:"—" }}</p>
         </div>
     </div>

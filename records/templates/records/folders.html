@@ -5,7 +5,7 @@
         <header class="mt-5 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
             <div>
                 <h1 class="text-2xl font-semibold tracking-tight text-zinc-950 capitalize sm:text-3xl dark:text-zinc-50">Folders</h1>
-                <p class="mt-1 text-xs text-zinc-500 sm:text-sm dark:text-zinc-400">Group related records for quick access and streamlined management.</p>
+                <p class="mt-1 text-xs text-zinc-600 sm:text-sm dark:text-zinc-400">Group related records for quick access and streamlined management.</p>
             </div>
             <button type="button"
                     hx-get="{% url 'records:create_folder' %}"
@@ -24,7 +24,7 @@
         </header>
         <section class="space-y-3" aria-label="Directory Search Matrix">
             <div class="group relative w-full">
-                <div class="pointer-events-none absolute inset-y-0 left-3.5 flex items-center text-zinc-400 transition-colors dark:text-zinc-500">
+                <div class="pointer-events-none absolute inset-y-0 left-3.5 flex items-center text-zinc-500 transition-colors dark:text-zinc-400">
                     <svg class="h-4 w-4"
                          fill="none"
                          viewBox="0 0 24 24"
@@ -33,7 +33,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
                     </svg>
                 </div>
-                <input class="shadow-2xs w-full rounded-xl border border-zinc-200 bg-white py-3 pr-4 pl-10 text-xs font-normal text-zinc-900 placeholder-zinc-400 transition-all duration-200 focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 focus:outline-none dark:border-white/[0.06] dark:bg-zinc-900/45 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:border-white dark:focus:ring-white/40"
+                <input class="shadow-2xs w-full rounded-xl border border-zinc-200 bg-white py-3 pr-4 pl-10 text-xs font-normal text-zinc-900 placeholder-zinc-500 transition-all duration-200 focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 focus:outline-none dark:border-white/[0.06] dark:bg-zinc-900/45 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:border-white dark:focus:ring-white/40"
                        placeholder="Search folders by name..."
                        id="folder-search"
                        type="search"
@@ -50,7 +50,7 @@
                  style="top: -2rem;
                         bottom: -2rem">
                 <div class="flex items-center gap-2.5 rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-xs font-medium text-zinc-900 shadow-md dark:border-zinc-800/80 dark:bg-zinc-900 dark:text-zinc-100">
-                    <svg class="h-3.5 w-3.5 animate-spin text-zinc-500"
+                    <svg class="h-3.5 w-3.5 animate-spin text-zinc-600"
                          fill="none"
                          viewBox="0 0 24 24">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>

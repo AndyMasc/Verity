@@ -165,3 +165,12 @@ markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "integration: marks tests requiring external services",
 ]
+[tool.codeflash]
+module-root = "Verity"
+tests-root = "Verity"
+formatter-cmds = ["ruff check --exit-zero --fix $file", "ruff format $file"]
+
+
+[project]
+name = "verity"
+version = "0.0.0"

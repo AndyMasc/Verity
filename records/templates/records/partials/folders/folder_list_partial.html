@@ -12,11 +12,11 @@
         </div>
         <div>
             <h3 class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Unfiled</h3>
-            <p class="mt-0.5 text-xs text-zinc-400 dark:text-zinc-500">Unsorted records</p>
+            <p class="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">Unsorted records</p>
         </div>
     </div>
     <div class="flex items-center gap-4">
-        <span class="rounded-md border border-zinc-200/40 bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-400 dark:border-zinc-800/30 dark:bg-zinc-900/45 dark:text-zinc-500">
+        <span class="rounded-md border border-zinc-200/40 bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-500 dark:border-zinc-800/30 dark:bg-zinc-900/45 dark:text-zinc-400">
             {{ unfiled_count }} items
         </span>
         <a href="{% url 'records:view_all_records' %}?folder=none"
@@ -28,8 +28,8 @@
         {% include 'records/partials/folders/folder_item_partial.html' %}
     {% empty %}
         <div class="col-span-full flex flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-200 py-12 text-center dark:border-zinc-800">
-            <p class="text-sm font-medium text-zinc-500 dark:text-zinc-400">No custom folders.</p>
-            <p class="mt-0.5 text-xs text-zinc-400 dark:text-zinc-500">Generate a folder for intelligent capture to organize them into.</p>
+            <p class="text-sm font-medium text-zinc-600 dark:text-zinc-400">No custom folders.</p>
+            <p class="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">Generate a folder for intelligent capture to organize them into.</p>
         </div>
     {% endfor %}
 </div>

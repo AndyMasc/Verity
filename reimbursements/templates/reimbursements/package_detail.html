@@ -19,7 +19,7 @@
             <div class="flex items-center gap-2">
                 <button @click="copyLink"
                         class="inline-flex items-center gap-1.5 rounded-xl bg-white/60 px-3 py-1.5 text-[12px] font-medium text-zinc-600 shadow-[0_2px_8px_rgba(0,0,0,0.02)] ring-1 ring-black/[0.06] backdrop-blur-md transition-all duration-200 ring-inset hover:bg-white hover:text-zinc-900 active:scale-[0.97] dark:bg-zinc-900/45 dark:text-zinc-400 dark:ring-white/[0.06] dark:hover:bg-zinc-800 dark:hover:text-zinc-100">
-                    <svg class="h-3.5 w-3.5 shrink-0 text-zinc-400"
+                    <svg class="h-3.5 w-3.5 shrink-0 text-zinc-500"
                          fill="none"
                          viewBox="0 0 24 24"
                          stroke="currentColor"
@@ -46,15 +46,15 @@
         </nav>
         <header class="mb-6 sm:mb-10">
             <div class="mb-3 flex flex-wrap items-center gap-2.5">
-                <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-[11px] tracking-wider uppercase ring-1 ring-inset shadow-xs {% if package.status == 'paid' %} bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 ring-emerald-500/20 {% elif package.status == 'queued' %} bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 ring-indigo-500/20 {% elif package.is_expired %} bg-zinc-500/10 text-zinc-500 dark:text-zinc-400 ring-zinc-500/20 {% else %} bg-amber-500/10 text-amber-600 dark:text-amber-400 ring-amber-500/20 {% endif %}">
+                <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-[11px] tracking-wider uppercase ring-1 ring-inset shadow-xs {% if package.status == 'paid' %} bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 ring-emerald-500/20 {% elif package.status == 'queued' %} bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 ring-indigo-500/20 {% elif package.is_expired %} bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 ring-zinc-500/20 {% else %} bg-amber-500/10 text-amber-600 dark:text-amber-400 ring-amber-500/20 {% endif %}">
                     <span class="relative flex h-1.5 w-1.5">
                         <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 {% if package.status == 'paid' %}bg-emerald-400 {% elif package.status == 'queued' %}bg-indigo-400 {% elif package.is_expired %}bg-zinc-400 {% else %}bg-amber-400{% endif %}"></span>
                         <span class="relative inline-flex rounded-full h-1.5 w-1.5 {% if package.status == 'paid' %}bg-emerald-500 {% elif package.status == 'queued' %}bg-indigo-500 {% elif package.is_expired %}bg-zinc-500 {% else %}bg-amber-500{% endif %}"></span>
                     </span>
                     {% if package.status == 'paid' %}Paid{% elif package.status == 'queued' %}Awaiting Payer{% elif package.is_expired %}Expired{% else %}Pending Settlement{% endif %}
                 </div>
-                <span class="text-zinc-300 dark:text-zinc-700">·</span>
-                <span class="text-xs text-zinc-400 tabular-nums">{{ package.created_at|date:"M d, Y" }}</span>
+                <span class="text-zinc-400 dark:text-zinc-600">·</span>
+                <span class="text-xs text-zinc-500 tabular-nums">{{ package.created_at|date:"M d, Y" }}</span>
             </div>
             <h1 class="text-2xl font-semibold tracking-tighter break-words text-zinc-900 sm:text-3xl dark:text-zinc-50">
                 {{ package.title }}
@@ -71,7 +71,7 @@
             </div>
             <div class="relative z-10 flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
                 <div>
-                    <p class="mb-2 text-[11px] font-semibold tracking-wider text-zinc-500 uppercase dark:text-zinc-400">Requested Amount</p>
+                    <p class="mb-2 text-[11px] font-semibold tracking-wider text-zinc-600 uppercase dark:text-zinc-400">Requested Amount</p>
                     <div class="flex flex-wrap items-baseline gap-2.5">
                         <span class="text-3xl font-semibold tracking-tighter break-all text-zinc-900 tabular-nums sm:text-4xl dark:text-zinc-50">
                             {{ converted_total|currency_format:user_currency }}
@@ -83,12 +83,12 @@
                 </div>
                 {% if original_total %}
                     <div class="border-t border-black/[0.04] pt-4 sm:border-t-0 sm:pt-0 sm:text-right dark:border-white/[0.04]">
-                        <p class="mb-2 text-[11px] font-semibold tracking-wider text-zinc-500 uppercase dark:text-zinc-400">Original Amount</p>
+                        <p class="mb-2 text-[11px] font-semibold tracking-wider text-zinc-600 uppercase dark:text-zinc-400">Original Amount</p>
                         <div class="flex flex-wrap items-baseline gap-2 sm:justify-end">
-                            <span class="text-xl font-medium break-all text-zinc-500 tabular-nums dark:text-zinc-400">
+                            <span class="text-xl font-medium break-all text-zinc-600 tabular-nums dark:text-zinc-400">
                                 {{ original_total|currency_format:package_currency }}
                             </span>
-                            <span class="text-[11px] text-zinc-400 uppercase dark:text-zinc-500">{{ package_currency }}</span>
+                            <span class="text-[11px] text-zinc-500 uppercase dark:text-zinc-400">{{ package_currency }}</span>
                         </div>
                     </div>
                 {% endif %}
@@ -96,18 +96,18 @@
         </div>
         <div class="mb-8 grid grid-cols-1 gap-3 sm:mb-10 sm:grid-cols-3 sm:gap-4">
             <div class="rounded-xl bg-white/60 p-4 ring-1 ring-black/[0.04] backdrop-blur-md ring-inset dark:bg-zinc-900/20 dark:ring-white/[0.04]">
-                <p class="mb-1.5 text-[11px] font-semibold tracking-wider text-zinc-500 uppercase dark:text-zinc-400">Creator</p>
+                <p class="mb-1.5 text-[11px] font-semibold tracking-wider text-zinc-600 uppercase dark:text-zinc-400">Creator</p>
                 <p class="truncate text-[13px] font-medium text-zinc-900 dark:text-zinc-200">{{ package.creator.email }}</p>
             </div>
             {% if package.recipient_address %}
                 <div class="rounded-xl bg-white/60 p-4 ring-1 ring-black/[0.04] backdrop-blur-md ring-inset dark:bg-zinc-900/20 dark:ring-white/[0.04]">
-                    <p class="mb-1.5 text-[11px] font-semibold tracking-wider text-zinc-500 uppercase dark:text-zinc-400">Recipient</p>
+                    <p class="mb-1.5 text-[11px] font-semibold tracking-wider text-zinc-600 uppercase dark:text-zinc-400">Recipient</p>
                     <p class="truncate text-[13px] font-medium text-zinc-900 dark:text-zinc-200">{{ package.recipient_address }}</p>
                 </div>
             {% endif %}
             {% if package.expires_at %}
                 <div class="rounded-xl bg-white/60 p-4 ring-1 ring-black/[0.04] backdrop-blur-md ring-inset dark:bg-zinc-900/20 dark:ring-white/[0.04]">
-                    <p class="mb-1.5 text-[11px] font-semibold tracking-wider text-zinc-500 uppercase dark:text-zinc-400">Expires</p>
+                    <p class="mb-1.5 text-[11px] font-semibold tracking-wider text-zinc-600 uppercase dark:text-zinc-400">Expires</p>
                     <p class="text-[13px] font-medium text-zinc-900 tabular-nums dark:text-zinc-200">{{ package.expires_at|date:"M d, Y" }}</p>
                 </div>
             {% endif %}
@@ -116,7 +116,7 @@
             <div class="flex items-center justify-between px-1">
                 <div class="flex items-center gap-2.5">
                     <h2 class="text-[13px] font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">Package Line Items</h2>
-                    <span class="inline-flex h-5 items-center justify-center rounded-full bg-zinc-100 px-2 text-[10px] font-medium text-zinc-500 ring-1 ring-black/[0.04] ring-inset dark:bg-zinc-800 dark:text-zinc-400 dark:ring-white/[0.04]">
+                    <span class="inline-flex h-5 items-center justify-center rounded-full bg-zinc-100 px-2 text-[10px] font-medium text-zinc-600 ring-1 ring-black/[0.04] ring-inset dark:bg-zinc-800 dark:text-zinc-400 dark:ring-white/[0.04]">
                         {{ record_items|length }}
                     </span>
                 </div>
@@ -132,45 +132,45 @@
                                        class="text-[13px] font-medium text-zinc-900 transition-colors hover:text-zinc-950 dark:text-zinc-100 dark:hover:text-white">
                                         {{ item.record.title|default:"Expense Item" }}
                                         {% if item.is_inactive %}
-                                            <span class="ml-1.5 inline-flex items-center rounded-full bg-zinc-200/70 px-1.5 py-0.5 text-[9px] font-medium tracking-wide text-zinc-500 uppercase dark:bg-zinc-700/50 dark:text-zinc-400">Archived</span>
+                                            <span class="ml-1.5 inline-flex items-center rounded-full bg-zinc-200/70 px-1.5 py-0.5 text-[9px] font-medium tracking-wide text-zinc-600 uppercase dark:bg-zinc-700/50 dark:text-zinc-400">Archived</span>
                                         {% endif %}
                                     </a>
                                     {% if item.record.merchant %}
-                                        <p class="mt-0.5 text-[11px] text-zinc-400 dark:text-zinc-500">{{ item.record.merchant }}</p>
+                                        <p class="mt-0.5 text-[11px] text-zinc-500 dark:text-zinc-400">{{ item.record.merchant }}</p>
                                     {% endif %}
                                 </div>
                                 <div class="shrink-0 text-right">
                                     <div class="text-[13px] font-medium text-zinc-900 tabular-nums dark:text-zinc-100">
                                         {{ item.requested_converted|currency_format:item.converted_currency }}
                                     </div>
-                                    <div class="text-[10px] text-zinc-400 uppercase dark:text-zinc-500">{{ item.converted_currency }}</div>
+                                    <div class="text-[10px] text-zinc-500 uppercase dark:text-zinc-400">{{ item.converted_currency }}</div>
                                 </div>
                             </div>
-                            <div class="flex items-center justify-between border-t border-black/[0.03] pt-2 text-[11px] text-zinc-500 dark:border-white/[0.03] dark:text-zinc-400">
+                            <div class="flex items-center justify-between border-t border-black/[0.03] pt-2 text-[11px] text-zinc-600 dark:border-white/[0.03] dark:text-zinc-400">
                                 <div class="flex items-center gap-2">
                                     <span class="inline-flex items-center rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-medium text-zinc-600 ring-1 ring-black/[0.04] ring-inset dark:bg-zinc-800 dark:text-zinc-400 dark:ring-white/[0.04]">
                                         {{ item.record.get_record_type_display|default:"General" }}
                                     </span>
-                                    <span class="text-zinc-400 tabular-nums">
+                                    <span class="text-zinc-500 tabular-nums">
                                         {{ item.record.transaction_date|date:"M d, Y"|default:item.record.date_added }}
                                     </span>
                                 </div>
                                 {% if item.original_converted %}
-                                    <div class="text-[10px] text-zinc-400 tabular-nums">
+                                    <div class="text-[10px] text-zinc-500 tabular-nums">
                                         Orig: {{ item.original_converted|currency_format:item.converted_currency }}
                                     </div>
                                 {% endif %}
                             </div>
                         </div>
                     {% empty %}
-                        <div class="py-12 text-center text-xs text-zinc-400 dark:text-zinc-500">No items attached to this package.</div>
+                        <div class="py-12 text-center text-xs text-zinc-500 dark:text-zinc-400">No items attached to this package.</div>
                     {% endfor %}
                     {% if record_items %}
                         <div class="flex items-center justify-between border-t border-black/[0.06] bg-zinc-50/50 p-4 dark:border-white/[0.06] dark:bg-zinc-900/45">
-                            <span class="text-xs font-medium text-zinc-500 dark:text-zinc-400">Total Calculation</span>
+                            <span class="text-xs font-medium text-zinc-600 dark:text-zinc-400">Total Calculation</span>
                             <div class="text-right">
                                 <div class="text-sm font-semibold text-zinc-900 tabular-nums dark:text-zinc-50">
-                                    {{ converted_total|currency_format:user_currency }} <span class="text-xs font-normal text-zinc-400">{{ user_currency|upper }}</span>
+                                    {{ converted_total|currency_format:user_currency }} <span class="text-xs font-normal text-zinc-500">{{ user_currency|upper }}</span>
                                 </div>
                             </div>
                         </div>
@@ -179,7 +179,7 @@
                 <div class="hidden overflow-x-auto sm:block">
                     <table class="w-full text-left text-xs">
                         <thead>
-                            <tr class="border-b border-black/[0.04] text-[10px] tracking-wider text-zinc-400 uppercase dark:border-white/[0.04] dark:text-zinc-500">
+                            <tr class="border-b border-black/[0.04] text-[10px] tracking-wider text-zinc-500 uppercase dark:border-white/[0.04] dark:text-zinc-400">
                                 <th class="px-5 py-3.5 font-semibold">Item</th>
                                 <th class="px-5 py-3.5 font-semibold">Type</th>
                                 <th class="px-5 py-3.5 font-semibold">Date</th>
@@ -195,34 +195,34 @@
                                            class="text-[13px] font-medium text-zinc-900 transition-colors group-hover:text-zinc-950 dark:text-zinc-100 dark:group-hover:text-white">
                                             {{ item.record.title|default:"Expense Item" }}
                                             {% if item.is_inactive %}
-                                                <span class="ml-1.5 inline-flex items-center rounded-full bg-zinc-200/70 px-1.5 py-0.5 text-[9px] font-medium tracking-wide text-zinc-500 uppercase dark:bg-zinc-700/50 dark:text-zinc-400">Archived</span>
+                                                <span class="ml-1.5 inline-flex items-center rounded-full bg-zinc-200/70 px-1.5 py-0.5 text-[9px] font-medium tracking-wide text-zinc-600 uppercase dark:bg-zinc-700/50 dark:text-zinc-400">Archived</span>
                                             {% endif %}
                                         </a>
                                         {% if item.record.merchant %}
-                                            <p class="mt-0.5 text-[11px] text-zinc-400 dark:text-zinc-500">{{ item.record.merchant }}</p>
+                                            <p class="mt-0.5 text-[11px] text-zinc-500 dark:text-zinc-400">{{ item.record.merchant }}</p>
                                         {% endif %}
                                     </td>
-                                    <td class="px-5 py-4 align-top text-zinc-500 dark:text-zinc-400">
+                                    <td class="px-5 py-4 align-top text-zinc-600 dark:text-zinc-400">
                                         <span class="inline-flex items-center truncate rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-medium text-zinc-600 ring-1 ring-black/[0.04] ring-inset dark:bg-zinc-800 dark:text-zinc-400 dark:ring-white/[0.04]">
                                             {{ item.record.get_record_type_display|default:"General" }}
                                         </span>
                                     </td>
-                                    <td class="px-5 py-4 align-top text-[11px] whitespace-nowrap text-zinc-400 tabular-nums dark:text-zinc-500">
+                                    <td class="px-5 py-4 align-top text-[11px] whitespace-nowrap text-zinc-500 tabular-nums dark:text-zinc-400">
                                         {{ item.record.transaction_date|date:"M d, Y"|default:item.record.date_added }}
                                     </td>
-                                    <td class="px-5 py-4 text-right align-top text-[11px] whitespace-nowrap text-zinc-400 tabular-nums dark:text-zinc-500">
+                                    <td class="px-5 py-4 text-right align-top text-[11px] whitespace-nowrap text-zinc-500 tabular-nums dark:text-zinc-400">
                                         {{ item.original_converted|currency_format:item.converted_currency }}
                                         <span class="ml-0.5 text-[9px] opacity-70">{{ item.converted_currency|upper }}</span>
                                     </td>
                                     <td class="px-5 py-4 text-right align-top text-[13px] font-medium whitespace-nowrap text-zinc-900 tabular-nums dark:text-zinc-100">
                                         {{ item.requested_converted|currency_format:item.converted_currency }}
-                                        <span class="ml-0.5 text-[10px] font-normal text-zinc-400 dark:text-zinc-500">{{ item.converted_currency|upper }}</span>
+                                        <span class="ml-0.5 text-[10px] font-normal text-zinc-500 dark:text-zinc-400">{{ item.converted_currency|upper }}</span>
                                     </td>
                                 </tr>
                             {% empty %}
                                 <tr>
                                     <td colspan="5"
-                                        class="py-16 text-center text-xs text-zinc-400 dark:text-zinc-500">
+                                        class="py-16 text-center text-xs text-zinc-500 dark:text-zinc-400">
                                         No items attached to this package.
                                     </td>
                                 </tr>
@@ -232,14 +232,14 @@
                             <tfoot class="border-t border-black/[0.06] bg-zinc-50/50 dark:border-white/[0.06] dark:bg-zinc-900/45">
                                 <tr>
                                     <td colspan="3"
-                                        class="px-5 py-4 text-xs font-medium text-zinc-500 dark:text-zinc-400">Total Calculation</td>
-                                    <td class="px-5 py-4 text-right text-xs whitespace-nowrap text-zinc-400 tabular-nums dark:text-zinc-500">
+                                        class="px-5 py-4 text-xs font-medium text-zinc-600 dark:text-zinc-400">Total Calculation</td>
+                                    <td class="px-5 py-4 text-right text-xs whitespace-nowrap text-zinc-500 tabular-nums dark:text-zinc-400">
                                         {{ original_total|currency_format:package_currency }}
                                         <span class="ml-0.5 text-[10px]">{{ package_currency|upper }}</span>
                                     </td>
                                     <td class="px-5 py-4 text-right text-sm font-semibold whitespace-nowrap text-zinc-900 tabular-nums dark:text-zinc-50">
                                         {{ converted_total|currency_format:user_currency }}
-                                        <span class="ml-1 text-xs font-normal text-zinc-400 dark:text-zinc-500">{{ user_currency|upper }}</span>
+                                        <span class="ml-1 text-xs font-normal text-zinc-500 dark:text-zinc-400">{{ user_currency|upper }}</span>
                                     </td>
                                 </tr>
                             </tfoot>
@@ -253,7 +253,7 @@
                 {% if is_recipient and package.status != 'paid' %}
                     {% if package.is_expired %}
                         <button disabled
-                                class="w-full cursor-not-allowed rounded-2xl bg-zinc-100 px-6 py-3 text-center text-xs font-medium text-zinc-400 ring-1 ring-black/[0.04] ring-inset sm:w-auto dark:bg-zinc-800 dark:ring-white/[0.04]">
+                                class="w-full cursor-not-allowed rounded-2xl bg-zinc-100 px-6 py-3 text-center text-xs font-medium text-zinc-500 ring-1 ring-black/[0.04] ring-inset sm:w-auto dark:bg-zinc-800 dark:ring-white/[0.04]">
                             Link Expired
                         </button>
                     {% else %}
@@ -300,7 +300,7 @@
                          class="w-full max-w-sm space-y-5 rounded-2xl border border-black/5 bg-white/90 p-6 shadow-[0_16px_64px_rgba(0,0,0,0.2)] backdrop-blur-2xl dark:border-white/10 dark:bg-zinc-900/90">
                         <div class="space-y-1.5">
                             <h3 class="text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">Delete package?</h3>
-                            <p class="text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">This action cannot be undone and will detach all associated records.</p>
+                            <p class="text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">This action cannot be undone and will detach all associated records.</p>
                         </div>
                         <div class="flex items-center justify-end gap-2.5 pt-2">
                             <button @click="showDeleteModal = false"

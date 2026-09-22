@@ -96,7 +96,7 @@
         <header class="flex flex-col justify-between gap-4 border-b border-zinc-200/80 pb-6 sm:flex-row sm:items-center dark:border-zinc-800/80">
             <div>
                 <h1 class="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-white">Connected Banks</h1>
-                <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Manage linked accounts and live transaction syncing.</p>
+                <p class="mt-1 text-xs text-zinc-600 dark:text-zinc-400">Manage linked accounts and live transaction syncing.</p>
             </div>
             {% if not upgrade_required and plaid_items %}
                 <button id="plaid-link-btn"
@@ -125,7 +125,7 @@
                     </svg>
                 </div>
                 <h2 class="text-base font-semibold text-zinc-900 dark:text-zinc-100">Bank Transaction Sync</h2>
-                <p class="mx-auto mt-1 max-w-sm text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
+                <p class="mx-auto mt-1 max-w-sm text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
                     Automated transaction syncing is available exclusively on Pro plans.
                 </p>
                 <a href="{% url 'pricing_page' %}"
@@ -222,7 +222,7 @@
                     {% endfor %}
                 {% else %}
                     <div class="col-span-full rounded-3xl border border-dashed border-zinc-300 bg-zinc-50/50 px-6 py-16 text-center dark:border-zinc-800 dark:bg-zinc-900/20">
-                        <div class="shadow-2xs mx-auto mb-4 flex size-12 items-center justify-center rounded-2xl border border-zinc-200 bg-white text-zinc-400 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-500">
+                        <div class="shadow-2xs mx-auto mb-4 flex size-12 items-center justify-center rounded-2xl border border-zinc-200 bg-white text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
                             <svg class="size-6"
                                  fill="none"
                                  viewBox="0 0 24 24"
@@ -232,7 +232,7 @@
                             </svg>
                         </div>
                         <h3 class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">No linked bank accounts</h3>
-                        <p class="mx-auto mt-1 mb-6 max-w-xs text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
+                        <p class="mx-auto mt-1 mb-6 max-w-xs text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
                             Connect your institution via Plaid to automatically stream live transactions.
                         </p>
                         <button id="plaid-link-btn"
@@ -247,7 +247,7 @@
                             Connect Bank
                         </button>
                         <p id="plaid-status"
-                           class="mt-4 hidden text-xs font-medium text-zinc-400"></p>
+                           class="mt-4 hidden text-xs font-medium text-zinc-500"></p>
                     </div>
                 {% endif %}
             </div>
@@ -277,7 +277,7 @@
                 </div>
                 <div>
                     <h4 class="text-xs font-semibold text-zinc-900 dark:text-zinc-100">Transaction Sync Delay</h4>
-                    <p class="mt-0.5 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
+                    <p class="mt-0.5 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
                         Newly linked accounts can take up to 24–48 hours to fully populate history from financial institutions.
                     </p>
                 </div>
@@ -294,7 +294,7 @@
             function setStatus(msg, isError) {
                 if (!statusEl) return;
                 statusEl.textContent = msg;
-                statusEl.className = 'mt-4 text-xs font-medium ' + (isError ? 'text-red-500' : 'text-zinc-400');
+                statusEl.className = 'mt-4 text-xs font-medium ' + (isError ? 'text-red-500' : 'text-zinc-500');
                 statusEl.classList.remove('hidden');
             }
 

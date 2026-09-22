@@ -7,7 +7,7 @@
         <header class="mb-12 flex flex-col justify-between gap-6 pb-2 md:flex-row md:items-center">
             <div class="space-y-1">
                 <a href="{% url 'core:dashboard' %}"
-                   class="mb-2 inline-flex items-center gap-1.5 text-xs font-medium text-zinc-400 transition-colors duration-150 hover:text-zinc-900 dark:hover:text-zinc-100">
+                   class="mb-2 inline-flex items-center gap-1.5 text-xs font-medium text-zinc-500 transition-colors duration-150 hover:text-zinc-900 dark:hover:text-zinc-100">
                     <svg class="h-3.5 w-3.5"
                          fill="none"
                          viewBox="0 0 24 24"
@@ -18,11 +18,11 @@
                     <span>Dashboard</span>
                 </a>
                 <h1 class="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">Reimbursements</h1>
-                <p class="text-sm text-zinc-500 dark:text-zinc-400">All reimbursement packages you've sent or received.</p>
+                <p class="text-sm text-zinc-600 dark:text-zinc-400">All reimbursement packages you've sent or received.</p>
             </div>
             <div class="flex items-center gap-3">
                 <div class="relative">
-                    <svg class="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-zinc-400"
+                    <svg class="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-zinc-500"
                          fill="none"
                          viewBox="0 0 24 24"
                          stroke="currentColor"
@@ -32,17 +32,17 @@
                     <input type="text"
                            x-model="q"
                            placeholder="Search packages..."
-                           class="w-full rounded-xl border border-zinc-200/60 bg-zinc-100/60 py-1.5 pr-4 pl-10 text-sm text-zinc-900 placeholder-zinc-400 shadow-sm transition-all focus:ring-1 focus:ring-zinc-400 focus:outline-none md:w-56 dark:border-zinc-800/80 dark:bg-zinc-900/45 dark:text-zinc-100 dark:focus:ring-zinc-600">
+                           class="w-full rounded-xl border border-zinc-200/60 bg-zinc-100/60 py-1.5 pr-4 pl-10 text-sm text-zinc-900 placeholder-zinc-500 shadow-sm transition-all focus:ring-1 focus:ring-zinc-400 focus:outline-none md:w-56 dark:border-zinc-800/80 dark:bg-zinc-900/45 dark:text-zinc-100 dark:focus:ring-zinc-600">
                 </div>
                 <div class="inline-flex rounded-xl border border-zinc-200/60 bg-zinc-100/80 p-1 text-sm shadow-sm backdrop-blur-xl dark:border-zinc-800/80 dark:bg-zinc-900/80">
                     <button @click="tab = 'all'"
-                            :class="tab === 'all' ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm font-medium' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200'"
+                            :class="tab === 'all' ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm font-medium' : 'text-zinc-600 hover:text-zinc-900 dark:hover:text-zinc-200'"
                             class="rounded-lg px-3 py-1 transition-all duration-200">All</button>
                     <button @click="tab = 'sent'"
-                            :class="tab === 'sent' ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm font-medium' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200'"
+                            :class="tab === 'sent' ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm font-medium' : 'text-zinc-600 hover:text-zinc-900 dark:hover:text-zinc-200'"
                             class="rounded-lg px-3 py-1 transition-all duration-200">Sent</button>
                     <button @click="tab = 'received'"
-                            :class="tab === 'received' ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm font-medium' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200'"
+                            :class="tab === 'received' ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm font-medium' : 'text-zinc-600 hover:text-zinc-900 dark:hover:text-zinc-200'"
                             class="rounded-lg px-3 py-1 transition-all duration-200">Received</button>
                 </div>
             </div>
@@ -60,9 +60,9 @@
             {% for label, pkgs, type in sections %}
                 <section x-show="tab === 'all' || tab === '{{ type }}'" class="space-y-3">
                     <div class="flex items-center justify-between pb-2">
-                        <h2 class="text-xs font-medium tracking-wider text-zinc-400 uppercase dark:text-zinc-500">{{ label }}</h2>
+                        <h2 class="text-xs font-medium tracking-wider text-zinc-500 uppercase dark:text-zinc-400">{{ label }}</h2>
                         {% if pkgs %}
-                            <span class="rounded-md bg-zinc-100 px-2 py-0.5 text-[11px] font-medium text-zinc-500 dark:bg-zinc-800/80 dark:text-zinc-400">
+                            <span class="rounded-md bg-zinc-100 px-2 py-0.5 text-[11px] font-medium text-zinc-600 dark:bg-zinc-800/80 dark:text-zinc-400">
                                 {{ pkgs|length }}
                             </span>
                         {% endif %}
@@ -81,7 +81,7 @@
                                                 <p class="truncate text-sm font-medium text-zinc-900 transition-colors group-hover:text-zinc-950 dark:text-zinc-200 dark:group-hover:text-white">
                                                     {{ pkg.title }}
                                                 </p>
-                                                <p class="mt-0.5 truncate text-xs text-zinc-400 dark:text-zinc-500">
+                                                <p class="mt-0.5 truncate text-xs text-zinc-500 dark:text-zinc-400">
                                                     {% if type == 'sent' and pkg.recipient_address %}
                                                         To {{ pkg.recipient_address }}
                                                     {% elif type == 'received' %}
@@ -98,8 +98,8 @@
                                             <span class="text-sm font-medium text-zinc-900 tabular-nums dark:text-zinc-200">
                                                 {{ pkg.display_total|currency_format:pkg.currency }}
                                             </span>
-                                            <span class="text-[11px] tracking-wide text-zinc-400 uppercase">{{ pkg.currency }}</span>
-                                            <svg class="h-4 w-4 text-zinc-300 transition-all duration-150 group-hover:translate-x-0.5 group-hover:text-zinc-600 dark:text-zinc-600 dark:group-hover:text-zinc-300"
+                                            <span class="text-[11px] tracking-wide text-zinc-500 uppercase">{{ pkg.currency }}</span>
+                                            <svg class="h-4 w-4 text-zinc-500 transition-all duration-150 group-hover:translate-x-0.5 group-hover:text-zinc-600 dark:text-zinc-400 dark:group-hover:text-zinc-300"
                                                  fill="none"
                                                  viewBox="0 0 24 24"
                                                  stroke="currentColor"
@@ -112,7 +112,7 @@
                             {% endfor %}
                         </ul>
                     {% else %}
-                        <div class="rounded-2xl border border-dashed border-zinc-200/60 py-10 text-center text-xs text-zinc-400 dark:border-zinc-800/60 dark:text-zinc-500">
+                        <div class="rounded-2xl border border-dashed border-zinc-200/60 py-10 text-center text-xs text-zinc-500 dark:border-zinc-800/60 dark:text-zinc-400">
                             {% if type == 'sent' %}
                                 No packages sent yet.
                             {% elif type == 'received' %}
@@ -129,18 +129,18 @@
             <nav class="mt-12 flex items-center justify-between border-t border-zinc-200/40 pt-6 dark:border-zinc-800/30">
                 {% if page_obj.has_previous %}
                     <a href="?page={{ page_obj.previous_page_number }}"
-                       class="rounded-lg px-3 py-1.5 text-xs font-medium text-zinc-500 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200">
+                       class="rounded-lg px-3 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200">
                         ← Previous
                     </a>
                 {% else %}
                     <div></div>
                 {% endif %}
-                <span class="text-xs font-medium text-zinc-400 tabular-nums dark:text-zinc-500">
+                <span class="text-xs font-medium text-zinc-500 tabular-nums dark:text-zinc-400">
                     Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
                 </span>
                 {% if page_obj.has_next %}
                     <a href="?page={{ page_obj.next_page_number }}"
-                       class="rounded-lg px-3 py-1.5 text-xs font-medium text-zinc-500 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200">
+                       class="rounded-lg px-3 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200">
                         Next →
                     </a>
                 {% else %}

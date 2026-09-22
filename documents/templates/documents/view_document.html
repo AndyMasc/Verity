@@ -6,7 +6,7 @@
             <div class="space-y-6">
                 <div>
                     <a href="{% url 'records:view_all_records' %}"
-                       class="inline-flex items-center gap-2 text-xs font-medium text-zinc-400 dark:text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-all duration-200 group">
+                       class="inline-flex items-center gap-2 text-xs font-medium text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-all duration-200 group">
                         <svg class="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform duration-200"
                              fill="none"
                              viewBox="0 0 24 24"
@@ -52,31 +52,31 @@
                     <div class="space-y-5">
                         <div class="flex flex-col">
                             <label for="id_notes"
-                                   class="text-[11px] font-bold tracking-widest text-zinc-400 dark:text-zinc-500 uppercase mb-2 pl-0.5">Notes</label>
+                                   class="text-[11px] font-bold tracking-widest text-zinc-500 dark:text-zinc-400 uppercase mb-2 pl-0.5">Notes</label>
                             <textarea id="id_notes"
                                       name="notes"
                                       rows="4"
-                                      class="focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-600 text-sm w-full p-4 resize-none rounded-xl bg-zinc-50 dark:bg-zinc-800/20 border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 placeholder-zinc-400 dark:placeholder-zinc-600 transition-all duration-200 leading-relaxed"
+                                      class="focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-600 text-sm w-full p-4 resize-none rounded-xl bg-zinc-50 dark:bg-zinc-800/20 border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 placeholder-zinc-500 dark:placeholder-zinc-600 transition-all duration-200 leading-relaxed"
                                       placeholder="Notes regarding this document...">{{ document.notes|default_if_none:'' }}</textarea>
                             {% if form.notes.errors %}
                                 <p class="text-xs text-rose-500 mt-1">{{ form.notes.errors.as_text }}</p>
                             {% endif %}
                         </div>
                         <div class="bg-white dark:bg-zinc-800/20 border border-zinc-200/50 dark:border-zinc-800/50 rounded-xl p-4 space-y-3.5">
-                            <h4 class="text-[11px] font-bold tracking-widest text-zinc-400 dark:text-zinc-500 uppercase pl-0.5">Metadata</h4>
+                            <h4 class="text-[11px] font-bold tracking-widest text-zinc-500 dark:text-zinc-400 uppercase pl-0.5">Metadata</h4>
                             <div class="grid grid-cols-2 gap-4 text-xs">
                                 <div>
-                                    <span class="text-zinc-400 dark:text-zinc-500 block mb-0.5 font-medium">Created</span>
+                                    <span class="text-zinc-500 dark:text-zinc-400 block mb-0.5 font-medium">Created</span>
                                     <span class="text-zinc-700 dark:text-zinc-300 font-semibold">{{ document.date_added|date:"M j, Y" }}</span>
                                 </div>
                                 <div>
-                                    <span class="text-zinc-400 dark:text-zinc-500 block mb-0.5 font-medium">Time</span>
+                                    <span class="text-zinc-500 dark:text-zinc-400 block mb-0.5 font-medium">Time</span>
                                     <span class="text-zinc-700 dark:text-zinc-300 font-semibold">{{ document.date_added|date:"g:i A" }}</span>
                                 </div>
                             </div>
                             <div class="pt-2.5 border-t border-zinc-200/60 dark:border-zinc-800/60">
-                                <span class="text-[11px] text-zinc-400 dark:text-zinc-500 font-bold tracking-wider uppercase block mb-1">Storage Path</span>
-                                <p class="text-[11px] text-zinc-500 dark:text-zinc-400 break-all select-all bg-white dark:bg-zinc-950 p-2 rounded-xl border border-zinc-200 dark:border-zinc-800/30">
+                                <span class="text-[11px] text-zinc-500 dark:text-zinc-400 font-bold tracking-wider uppercase block mb-1">Storage Path</span>
+                                <p class="text-[11px] text-zinc-600 dark:text-zinc-400 break-all select-all bg-white dark:bg-zinc-950 p-2 rounded-xl border border-zinc-200 dark:border-zinc-800/30">
                                     {{ document.filepath }}
                                 </p>
                             </div>
@@ -89,11 +89,11 @@
                 </form>
                 <div class="pt-4 border-t border-zinc-200 dark:border-zinc-800"
                      x-data="{ modalOpen: false }">
-                    <h3 class="text-[11px] font-bold tracking-widest text-zinc-400 dark:text-zinc-500 uppercase mb-2 pl-0.5">Connected Record</h3>
+                    <h3 class="text-[11px] font-bold tracking-widest text-zinc-500 dark:text-zinc-400 uppercase mb-2 pl-0.5">Connected Record</h3>
                     {% if document.associated_record %}
                         <a href="{% url 'records:record_detail' document.associated_record.id %}"
                            class="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-medium py-2.5 px-4 rounded-2xl text-xs flex items-center justify-center gap-2 transition-all duration-200 shadow-xs active:scale-[0.98]">
-                            <svg class="w-4 h-4 text-zinc-400"
+                            <svg class="w-4 h-4 text-zinc-500"
                                  fill="none"
                                  viewBox="0 0 24 24"
                                  stroke-width="2"
@@ -105,7 +105,7 @@
                     {% else %}
                         <button @click="modalOpen=true"
                                 class="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-medium py-2.5 px-4 rounded-2xl text-xs flex items-center justify-center gap-2 transition-all duration-200 shadow-xs active:scale-[0.98] cursor-pointer">
-                            <svg class="w-4 h-4 text-zinc-400"
+                            <svg class="w-4 h-4 text-zinc-500"
                                  fill="none"
                                  viewBox="0 0 24 24"
                                  stroke-width="2"
@@ -141,10 +141,10 @@
                                         <div class="flex justify-between items-start">
                                             <div class="space-y-1">
                                                 <h3 class="text-base font-semibold text-zinc-900 dark:text-white">Link Document</h3>
-                                                <p class="text-xs text-zinc-400 dark:text-zinc-500">Select a record to associate with this file.</p>
+                                                <p class="text-xs text-zinc-500 dark:text-zinc-400">Select a record to associate with this file.</p>
                                             </div>
                                             <button @click="modalOpen=false"
-                                                    class="flex items-center justify-center w-8 h-8 rounded-full text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all duration-200 cursor-pointer">
+                                                    class="flex items-center justify-center w-8 h-8 rounded-full text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all duration-200 cursor-pointer">
                                                 <svg class="w-4 h-4"
                                                      xmlns="http://www.w3.org/2000/svg"
                                                      fill="none"
@@ -156,7 +156,7 @@
                                             </button>
                                         </div>
                                         <div class="relative flex items-center">
-                                            <svg class="w-4 h-4 text-zinc-400 absolute left-3.5 pointer-events-none"
+                                            <svg class="w-4 h-4 text-zinc-500 absolute left-3.5 pointer-events-none"
                                                  fill="none"
                                                  viewBox="0 0 24 24"
                                                  stroke-width="2"
@@ -210,7 +210,7 @@
                     {% csrf_token %}
                     <button type="submit"
                             onclick="return confirm('Delete this document?\nThis action is permanent and cannot be undone.')"
-                            class="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:bg-rose-500/5 dark:hover:bg-rose-500/10 text-zinc-400 dark:text-zinc-500 hover:text-rose-600 dark:hover:text-rose-400 hover:border-rose-200 dark:hover:border-rose-900/50 font-medium py-2.5 px-4 rounded-2xl text-xs flex items-center justify-center gap-2 transition-all duration-200 shadow-xs active:scale-[0.98] cursor-pointer">
+                            class="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:bg-rose-500/5 dark:hover:bg-rose-500/10 text-zinc-500 dark:text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:border-rose-200 dark:hover:border-rose-900/50 font-medium py-2.5 px-4 rounded-2xl text-xs flex items-center justify-center gap-2 transition-all duration-200 shadow-xs active:scale-[0.98] cursor-pointer">
                         Delete Document
                     </button>
                 </form>
@@ -230,7 +230,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14" />
                     </svg>
                 </button>
-                <span class="w-10 text-center text-xs py-2 text-zinc-500 dark:text-zinc-400 font-medium"
+                <span class="w-10 text-center text-xs py-2 text-zinc-600 dark:text-zinc-400 font-medium"
                       x-text="Math.round(zoom * 100) + '%'"></span>
                 <button @click="zoom = Math.min(2.0, zoom + 0.1)"
                         class="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-all duration-200 cursor-pointer">

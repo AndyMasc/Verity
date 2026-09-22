@@ -9,8 +9,8 @@
                     {{ record.title }}
                 </span>
                 {% if record.merchant %}
-                    <span class="hidden shrink-0 text-xs font-light text-zinc-300 sm:inline dark:text-zinc-700">│</span>
-                    <span class="inline-flex max-w-[100px] items-center gap-1.5 truncate text-xs text-zinc-500 md:max-w-[140px] dark:text-zinc-400">
+                    <span class="hidden shrink-0 text-xs font-light text-zinc-400 sm:inline dark:text-zinc-600">│</span>
+                    <span class="inline-flex max-w-[100px] items-center gap-1.5 truncate text-xs text-zinc-600 md:max-w-[140px] dark:text-zinc-400">
                         <svg xmlns="http://www.w3.org/2000/svg"
                              fill="none"
                              viewBox="0 0 24 24"
@@ -23,14 +23,14 @@
                     </span>
                 {% endif %}
                 {% if record.products %}
-                    <span class="hidden shrink-0 text-xs text-zinc-300 md:inline dark:text-zinc-700">·</span>
-                    <span class="hidden max-w-[120px] truncate text-xs text-zinc-400 md:inline lg:max-w-[180px] dark:text-zinc-500">
+                    <span class="hidden shrink-0 text-xs text-zinc-400 md:inline dark:text-zinc-600">·</span>
+                    <span class="hidden max-w-[120px] truncate text-xs text-zinc-500 md:inline lg:max-w-[180px] dark:text-zinc-400">
                         {{ record.products }}
                     </span>
                 {% endif %}
             </div>
-            <div class="flex items-center gap-1.5 text-xs font-normal text-zinc-500 sm:justify-start dark:text-zinc-400">
-                <div class="flex items-center gap-1.5 shrink-0 px-1.5 py-0.5 rounded text-[11px] {% if record.expiry_date %}bg-zinc-100 dark:bg-zinc-800/20 text-zinc-600 dark:text-zinc-300{% else %}text-zinc-400 dark:text-zinc-500{% endif %}">
+            <div class="flex items-center gap-1.5 text-xs font-normal text-zinc-600 sm:justify-start dark:text-zinc-400">
+                <div class="flex items-center gap-1.5 shrink-0 px-1.5 py-0.5 rounded text-[11px] {% if record.expiry_date %}bg-zinc-100 dark:bg-zinc-800/20 text-zinc-600 dark:text-zinc-400{% else %}text-zinc-500 dark:text-zinc-400{% endif %}">
                     <svg class="h-3.5 w-3.5 shrink-0 opacity-65"
                          fill="none"
                          viewBox="0 0 24 24"
@@ -43,11 +43,11 @@
                     </span>
                 </div>
             </div>
-            <div class="hidden text-left text-[11px] font-normal text-zinc-400 sm:block dark:text-zinc-500">
+            <div class="hidden text-left text-[11px] font-normal text-zinc-500 sm:block dark:text-zinc-400">
                 {{ record.transaction_date|default:record.date_added|date:"b d" }}
             </div>
             <div class="text-left text-sm font-semibold tracking-tight text-zinc-900 sm:pr-2 sm:text-right dark:text-zinc-50">
-                {% if record.balance %}{{ record.balance|currency_format:record.currency }}{% else %}<span class="text-zinc-300 dark:text-zinc-700">—</span>{% endif %}
+                {% if record.balance %}{{ record.balance|currency_format:record.currency }}{% else %}<span class="text-zinc-400 dark:text-zinc-600">—</span>{% endif %}
             </div>
         </div>
     </div>

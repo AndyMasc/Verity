@@ -5,8 +5,8 @@
          hx-target="#form-wrapper"
          hx-swap="innerHTML"
          class="animate-pulse space-y-6 p-6">
-        <div class="flex items-center gap-3 text-sm text-zinc-500 dark:text-zinc-400">
-            <svg class="h-4 w-4 animate-spin text-zinc-500"
+        <div class="flex items-center gap-3 text-sm text-zinc-600 dark:text-zinc-400">
+            <svg class="h-4 w-4 animate-spin text-zinc-600"
                  fill="none"
                  viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -40,7 +40,7 @@
             </svg>
         </div>
         <h2 class="text-base font-semibold text-zinc-900 dark:text-zinc-100">Couldn't extract automatically</h2>
-        <p class="mt-1.5 max-w-sm text-sm text-zinc-500 dark:text-zinc-400">{{ error_message }}</p>
+        <p class="mt-1.5 max-w-sm text-sm text-zinc-600 dark:text-zinc-400">{{ error_message }}</p>
         <div class="mt-6 flex items-center gap-3">
             <a href="{% url 'records:add_record_manual' %}"
                class="inline-flex items-center justify-center rounded-2xl bg-zinc-100 px-4 py-2 text-xs font-medium text-zinc-700 shadow-xs transition-all duration-200 hover:bg-zinc-200/70 dark:bg-zinc-800/80 dark:text-zinc-300 dark:hover:bg-zinc-800/60">
@@ -59,7 +59,7 @@
             {% if field.name != 'payment_method' %}
                 <div class="group border-b border-zinc-100 px-6 py-4 transition-all duration-200 focus-within:bg-zinc-50 dark:border-zinc-800/60 dark:focus-within:bg-zinc-800/40">
                     <label for="{{ field.id_for_label }}"
-                           class="mb-1.5 flex w-full items-center text-[11px] font-semibold tracking-wider whitespace-nowrap text-zinc-500 uppercase dark:text-zinc-400">
+                           class="mb-1.5 flex w-full items-center text-[11px] font-semibold tracking-wider whitespace-nowrap text-zinc-600 uppercase dark:text-zinc-400">
                         {% if field.label == 'Title' %}
                             Descriptive title
                         {% else %}
@@ -69,7 +69,7 @@
                             <span class="ml-1 font-bold text-rose-400">*</span>
                         {% endif %}
                     </label>
-                    {% render_field field class="mt-0.5 text-sm resize-none max-h-20 w-full border-none bg-transparent p-0 text-zinc-900 outline-none ring-0 focus:outline-none focus:ring-0 dark:text-zinc-100 placeholder:text-zinc-400" %}
+                    {% render_field field class="mt-0.5 text-sm resize-none max-h-20 w-full border-none bg-transparent p-0 text-zinc-900 outline-none ring-0 focus:outline-none focus:ring-0 dark:text-zinc-100 placeholder:text-zinc-500" %}
                     {% if field.errors %}
                         <p class="mt-2 text-xs text-rose-400">{{ field.errors|join:", " }}</p>
                     {% endif %}
@@ -79,13 +79,13 @@
         {% if form.payment_method %}
             <div class="group border-b border-zinc-100 px-6 py-4 transition-all duration-200 focus-within:bg-zinc-50 dark:border-zinc-800 dark:focus-within:bg-zinc-800/40">
                 <label for="{{ form.payment_method.id_for_label }}"
-                       class="mb-1.5 flex w-full items-center text-xs tracking-wider whitespace-nowrap text-zinc-500 uppercase dark:text-zinc-400">
+                       class="mb-1.5 flex w-full items-center text-xs tracking-wider whitespace-nowrap text-zinc-600 uppercase dark:text-zinc-400">
                     Payment Method / Account <span class="ml-1 font-bold text-rose-400">*</span>
                 </label>
                 {% if form.payment_method.field.disabled %}
                     <p class="mt-0.5 text-sm font-medium text-zinc-700 dark:text-zinc-300">{{ form.payment_method.value|default:"—" }}</p>
                 {% else %}
-                    {% render_field form.payment_method class="mt-0.5 text-sm resize-none max-h-20 w-full border-none bg-transparent p-0 text-zinc-900 outline-none ring-0 focus:outline-none focus:ring-0 dark:text-zinc-100 placeholder:text-zinc-400" %}
+                    {% render_field form.payment_method class="mt-0.5 text-sm resize-none max-h-20 w-full border-none bg-transparent p-0 text-zinc-900 outline-none ring-0 focus:outline-none focus:ring-0 dark:text-zinc-100 placeholder:text-zinc-500" %}
                 {% endif %}
             </div>
         {% endif %}
@@ -93,7 +93,7 @@
             <div class="p-5 text-red-500">{{ form.non_field_errors }}</div>
         {% endif %}
         <div class="flex items-center justify-end gap-3 p-5">
-            <div class="flex-1 text-[10px] text-zinc-400 dark:text-zinc-500"
+            <div class="flex-1 text-[10px] text-zinc-500 dark:text-zinc-400"
                  id="char-hint"></div>
             <button type="submit"
                     class="cursor-pointer rounded-2xl bg-zinc-900 px-6 py-2.5 text-sm font-medium text-white shadow-xs transition-all duration-200 hover:bg-zinc-800 active:scale-[0.98] dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200">

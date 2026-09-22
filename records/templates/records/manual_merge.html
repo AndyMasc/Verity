@@ -8,13 +8,13 @@
             </div>
             <div class="mb-10 space-y-2 text-center">
                 <h1 class="text-2xl font-semibold tracking-tight text-zinc-950 sm:text-3xl dark:text-zinc-50">Manual Record Merge</h1>
-                <p class="mx-auto max-w-md text-xs text-zinc-500 sm:text-sm dark:text-zinc-400">
+                <p class="mx-auto max-w-md text-xs text-zinc-600 sm:text-sm dark:text-zinc-400">
                     Pair a verified bank transaction with an uploaded document record to reconcile your ledger.
                 </p>
             </div>
             <div class="relative grid w-full grid-cols-1 gap-4 sm:grid-cols-2">
                 {% include 'records/partials/merge/merge_slot.html' with mode="plaid" label="Bank Transaction" icon="bank" selectedState="selectedPlaid" selectedTitle="plaidTitle" %}
-                <div class="absolute top-1/2 left-1/2 z-10 hidden h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-400 shadow-sm sm:flex dark:border-white/[0.08] dark:bg-zinc-900">
+                <div class="absolute top-1/2 left-1/2 z-10 hidden h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-500 shadow-sm sm:flex dark:border-white/[0.08] dark:bg-zinc-900">
                     <svg class="h-3.5 w-3.5"
                          fill="none"
                          viewBox="0 0 24 24"
@@ -31,7 +31,7 @@
                 <input type="hidden" name="document_record_id" x-bind:value="selectedDoc">
                 <button type="submit"
                         x-bind:disabled="!canMerge"
-                        x-bind:class="canMerge ? 'bg-black text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200 shadow-lg shadow-black/10 dark:shadow-white/10 cursor-pointer active:scale-[0.99]' : 'bg-zinc-100 dark:bg-zinc-900/45 text-zinc-400 dark:text-zinc-600 border border-zinc-200 dark:border-white/[0.04] cursor-not-allowed'"
+                        x-bind:class="canMerge ? 'bg-black text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200 shadow-lg shadow-black/10 dark:shadow-white/10 cursor-pointer active:scale-[0.99]' : 'bg-zinc-100 dark:bg-zinc-900/45 text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-white/[0.04] cursor-not-allowed'"
                         class="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-wider uppercase transition-all duration-200">
                     <span x-show="!canMerge">Awaiting Record Selection</span>
                     <span x-show="canMerge">Merge</span>

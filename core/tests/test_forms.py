@@ -143,6 +143,8 @@ class PasswordlessLoginFormTurnstileTest(TestCase):
         from allauth.core import context as allauth_context
         from django.test import RequestFactory
 
+        from core.forms import PasswordlessLoginForm
+
         request = RequestFactory().post("/accounts/login/")
         with (
             patch("core.forms.turnstile_enabled", return_value=True),

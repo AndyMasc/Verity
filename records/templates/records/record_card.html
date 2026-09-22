@@ -36,22 +36,22 @@
                 <p class="truncate text-sm font-medium text-zinc-950 transition-colors group-hover:text-black dark:text-zinc-50 dark:group-hover:text-white">
                     {{ record.title }}
                 </p>
-                <p class="mt-0.5 truncate text-[11px] text-zinc-400 dark:text-zinc-500">
+                <p class="mt-0.5 truncate text-[11px] text-zinc-500 dark:text-zinc-400">
                     {% if record.merchant %}{{ record.merchant }}{% endif %}{% if record.merchant and record.notes %} · {% endif %}{% if record.notes %}<span class="italic">{{ record.notes }}</span>{% endif %}
                 </p>
             </div>
         </div>
-        <div class="mr-4 min-w-0 truncate text-right text-xs font-medium text-zinc-500 dark:text-zinc-400">
+        <div class="mr-4 min-w-0 truncate text-right text-xs font-medium text-zinc-600 dark:text-zinc-400">
             {% if record.nickname %} {{ record.nickname }} {% else %} {{ record.payment_method }} {% endif %}
         </div>
-        <div class="text-xs font-medium truncate min-w-0 {% if record.expiry_date %}text-zinc-700 dark:text-zinc-200{% else %}text-zinc-400 dark:text-zinc-600{% endif %}">
+        <div class="text-xs font-medium truncate min-w-0 {% if record.expiry_date %}text-zinc-700 dark:text-zinc-200{% else %}text-zinc-500 dark:text-zinc-400{% endif %}">
             {% if record.expiry_date %}{{ record.expiry_date|timeuntil }}{% else %}—{% endif %}
         </div>
-        <div class="truncate text-xs text-zinc-500 dark:text-zinc-400">
+        <div class="truncate text-xs text-zinc-600 dark:text-zinc-400">
             {% if record.transaction_date %}{{ record.transaction_date|date:"M d" }}{% else %}{{ record.date_added|date:"M d" }}{% endif %}
         </div>
         <div class="truncate text-right text-sm font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">
-            {% if record.balance %}{{ record.balance|currency_format:record.currency }}{% else %}<span class="font-normal text-zinc-400 dark:text-zinc-600">—</span>{% endif %}
+            {% if record.balance %}{{ record.balance|currency_format:record.currency }}{% else %}<span class="font-normal text-zinc-500 dark:text-zinc-400">—</span>{% endif %}
         </div>
     </a>
     <a href="{% url 'records:record_detail' record.pk %}"
@@ -66,7 +66,7 @@
                     {% if record.balance %}{{ record.balance|currency_format:record.currency }}{% else %}—{% endif %}
                 </span>
             </div>
-            <div class="mt-0.5 flex items-center justify-between gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+            <div class="mt-0.5 flex items-center justify-between gap-2 text-xs text-zinc-600 dark:text-zinc-400">
                 <span class="truncate">{{ record.merchant|default:record.get_record_type_display }}</span>
                 <span class="shrink-0">{% if record.transaction_date %}{{ record.transaction_date|date:"M d" }}{% else %}{{ record.date_added|date:"M d" }}{% endif %}</span>
             </div>

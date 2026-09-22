@@ -16,79 +16,79 @@
                name="cf_turnstile_response"
                value="">
         <script>
-            (function() {
-                'use strict';
-                var SITEKEY = '{{ turnstile_sitekey }}';
-                var WIDGET_ID = 'login-turnstile-widget';
-                var RESPONSE_ID = 'cf_turnstile_response';
-                var widgetId = null;
+                    (function() {
+                        'use strict';
+                        var SITEKEY = '{{ turnstile_sitekey }}';
+                        var WIDGET_ID = 'login-turnstile-widget';
+                        var RESPONSE_ID = 'cf_turnstile_response';
+                        var widgetId = null;
 
-                function findAuthForm() {
-                    var forms = Array.prototype.slice.call(document.querySelectorAll('form[method="post"]'));
-                    for (var i = 0; i < forms.length; i++) {
-                        var f = forms[i];
-                        if (f.querySelector('input[type="email"], input[name="email"], input[name="login"], input[type="text"]')) {
-                            return f;
+                        function findAuthForm() {
+                            var forms = Array.prototype.slice.call(document.querySelectorAll('form[method="post"]'));
+                            for (var i = 0; i < forms.length; i++) {
+                                var f = forms[i];
+                                if (f.querySelector('input[type="email"], input[name="email"], input[name="login"], input[type="text"]')) {
+                                    return f;
+                                }
+                                var action = (f.getAttribute('action') || '').toLowerCase();
+                                if (action.indexOf('login') !== -1) return f;
+                            }
+                            return forms[0] || null;
                         }
-                        var action = (f.getAttribute('action') || '').toLowerCase();
-                        if (action.indexOf('login') !== -1) return f;
-                    }
-                    return forms[0] || null;
-                }
 
-                function init() {
-                    if (!window.turnstile || typeof window.turnstile.render !== 'function') {
-                        setTimeout(init, 200);
-                        return;
-                    }
+                        function init() {
+                            if (!window.turnstile || typeof window.turnstile.render !== 'function') {
+                                setTimeout(init, 200);
+                                return;
+                            }
 
                     // The widget container renders outside the allauth form block,
                     // so its token is written into this hidden input inside the form.
-                    var form = findAuthForm();
-                    var input = document.getElementById(RESPONSE_ID);
-                    var el = document.getElementById(WIDGET_ID);
-                    if (!form || !input || !el) {
-                        setTimeout(init, 100);
-                        return;
-                    }
-                    if (!form.contains(input)) form.appendChild(input);
-                    if (form.dataset.turnstileAttached === '1') return;
-                    form.dataset.turnstileAttached = '1';
-
-                    widgetId = window.turnstile.render(el, {
-                        sitekey: SITEKEY,
-                        action: 'login',
-                        callback: function (token) { input.value = token || ''; },
-                        'expired-callback': function () { input.value = ''; },
-                        'error-callback': function () { input.value = ''; },
-                    });
-
-                    form.addEventListener('submit', function (event) {
-                        if (!input.value) {
-                            event.preventDefault();
-                            alert('Please complete the robot verification and try again');
-                            if (widgetId) {
-                                try { window.turnstile.reset(widgetId); } catch (_) {}
+                            var form = findAuthForm();
+                            var input = document.getElementById(RESPONSE_ID);
+                            var el = document.getElementById(WIDGET_ID);
+                            if (!form || !input || !el) {
+                                setTimeout(init, 100);
+                                return;
                             }
-                            return false;
-                        }
-                        return true;
-                    });
-                }
+                            if (!form.contains(input)) form.appendChild(input);
+                            if (form.dataset.turnstileAttached === '1') return;
+                            form.dataset.turnstileAttached = '1';
 
-                if (document.readyState === 'loading') {
-                    document.addEventListener('DOMContentLoaded', init);
-                } else {
-                    init();
-                }
-            })();
+                            widgetId = window.turnstile.render(el, {
+                                sitekey: SITEKEY,
+                                action: 'login',
+                                callback: function (token) { input.value = token || ''; },
+                                'expired-callback': function () { input.value = ''; },
+                                'error-callback': function () { input.value = ''; },
+                            });
+
+                            form.addEventListener('submit', function (event) {
+                                if (!input.value) {
+                                    event.preventDefault();
+                                    alert('Please complete the robot verification and try again');
+                                    if (widgetId) {
+                                        try { window.turnstile.reset(widgetId); } catch (_) {}
+                                    }
+                                    return false;
+                                }
+                                return true;
+                            });
+                        }
+
+                        if (document.readyState === 'loading') {
+                            document.addEventListener('DOMContentLoaded', init);
+                        } else {
+                            init();
+                        }
+                    })();
         </script>
         {% /form %}
     {% endif %}
     {% if LOGIN_BY_CODE_ENABLED %}
         <div class="relative my-1 mb-2 flex items-center">
             <div class="h-px flex-grow bg-zinc-200 dark:bg-zinc-800"></div>
-            <span class="px-3 text-sm text-zinc-400 dark:text-zinc-600">Or</span>
+            <span class="px-3 text-sm text-zinc-500 dark:text-zinc-400">Or</span>
             <div class="h-px flex-grow bg-zinc-200 dark:bg-zinc-800"></div>
         </div>
         <a href="{{ request_login_code_url }}"
@@ -97,7 +97,7 @@
     {% if SOCIALACCOUNT_ENABLED %}
         {% include "socialaccount/snippets/login.html" with page_layout="entrance" %}
     {% endif %}
-    <div class="mt-6 text-center text-sm text-zinc-500 dark:text-zinc-400">Don't have an account? <a href="{{ signup_url }}"
+    <div class="mt-6 text-center text-sm text-zinc-600 dark:text-zinc-400">Don't have an account? <a href="{{ signup_url }}"
     class="font-medium text-zinc-900 hover:underline dark:text-zinc-100">Sign up</a></div>
     <div class="mt-8 flex justify-center">
         <div id="login-turnstile-widget"></div>

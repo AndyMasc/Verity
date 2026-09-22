@@ -16,27 +16,27 @@
                 </svg>
             </div>
             <h1 class="mb-1 text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Payment Successful</h1>
-            <p class="mb-8 text-xs text-zinc-500 dark:text-zinc-400">Your reimbursement has been processed.</p>
+            <p class="mb-8 text-xs text-zinc-600 dark:text-zinc-400">Your reimbursement has been processed.</p>
             {% if package %}
                 <div class="mb-8 rounded-xl border border-zinc-200/10 bg-white/50 p-5 text-left dark:border-zinc-700/20 dark:bg-zinc-800/40">
                     <div class="space-y-0">
                         <div class="flex items-center justify-between py-3">
-                            <span class="text-[11px] font-semibold tracking-wider text-zinc-500 uppercase dark:text-zinc-400">Package</span>
+                            <span class="text-[11px] font-semibold tracking-wider text-zinc-600 uppercase dark:text-zinc-400">Package</span>
                             <span class="text-[13px] font-medium text-zinc-900 dark:text-zinc-100">{{ package.title }}</span>
                         </div>
                         <div class="h-px bg-zinc-200/20 dark:bg-zinc-700/20"></div>
                         <div class="flex items-center justify-between py-3">
-                            <span class="text-[11px] font-semibold tracking-wider text-zinc-500 uppercase dark:text-zinc-400">Amount</span>
+                            <span class="text-[11px] font-semibold tracking-wider text-zinc-600 uppercase dark:text-zinc-400">Amount</span>
                             <span class="text-[13px] font-bold text-zinc-900 tabular-nums dark:text-zinc-50">{{ package.display_total|currency_format:package.currency }}</span>
                         </div>
                         <div class="h-px bg-zinc-200/20 dark:bg-zinc-700/20"></div>
                         <div class="flex items-center justify-between py-3">
-                            <span class="text-[11px] font-semibold tracking-wider text-zinc-500 uppercase dark:text-zinc-400">Paid to</span>
+                            <span class="text-[11px] font-semibold tracking-wider text-zinc-600 uppercase dark:text-zinc-400">Paid to</span>
                             <span class="text-[13px] font-medium text-zinc-900 dark:text-zinc-100">{{ package.creator.get_full_name|default:package.creator.email }}</span>
                         </div>
                         <div class="h-px bg-zinc-200/20 dark:bg-zinc-700/20"></div>
                         <div class="flex items-center justify-between py-3">
-                            <span class="text-[11px] font-semibold tracking-wider text-zinc-500 uppercase dark:text-zinc-400">Status</span>
+                            <span class="text-[11px] font-semibold tracking-wider text-zinc-600 uppercase dark:text-zinc-400">Status</span>
                             <span class="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
                                 <span class="h-1.5 w-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400"></span>
                                 Paid
