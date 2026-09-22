@@ -16,9 +16,7 @@ _LOCAL_HOSTS = {
 }
 
 # Guardrail: local/dev tooling (manage.py, pytest, runserver) must never point
-# at shared/production infrastructure. Without this, a stray DATABASE_URL or
-# RABBIT_MQ_URL in .env makes local commands read/migrate the prod database and
-# tests purge live task queues.
+# at shared/production infrastructure.
 for _var, _host in [
     ("DATABASE_URL", database_config.get("HOST", "")),
     ("RABBIT_MQ_URL", env("RABBIT_MQ_URL", default="").split("@")[-1].split(":")[0]),

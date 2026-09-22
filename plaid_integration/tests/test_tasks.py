@@ -80,7 +80,6 @@ class WebhookVerificationTest(TestCase):
     def test_body_hash_mismatch_returns_false(self):
         import jwt as pyjwt
         from cryptography.hazmat.primitives.asymmetric import rsa
-        from cryptography.hazmat.primitives import serialization
         from datetime import UTC, datetime
         import base64
 

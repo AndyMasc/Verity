@@ -105,7 +105,6 @@ def convert(amount: Decimal, from_curr: str, to_curr: str, rates: dict[str, Deci
         return Decimal("0")
 
     # Rates are relative to base (e.g., USD)
-    # Target = Amount * (To_Rate / From_Rate)
     converted = Decimal(str(amount)) * (to_rate / from_rate)
 
     # Quantize based on target currency decimals

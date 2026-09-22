@@ -176,7 +176,7 @@ class ReconcilePendingPaymentsTaskTest(TestCase):
             amount_paid=Decimal("50.00"),
         )
         mock_retrieve.side_effect = lambda session_id, **kw: _reconcile_session(
-            session_id, bad="cs_recon_bad", good="cs_recon_good"
+            session_id, bad="cs_recon_bad"
         )
 
         reconcile_pending_payments_task.fn()

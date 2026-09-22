@@ -179,9 +179,6 @@
                 const chartH = h - padTop - padBottom;
                 const baselineY = padTop + chartH;
 
-                // Scale against the plotted value: completed months use their
-                // actual total, the in-progress month uses its projection so
-                // the dashed point never overflows the plot area.
                 const plotVal = (d) =>
                     d.is_current ? Math.max(d.total, d.projected_total ?? d.total) : d.total;
                 const maxVal = Math.max(...this.data.map(plotVal), 1);
@@ -208,7 +205,6 @@
 
                 ctx.save();
 
-                // Horizontal grid lines with y-axis labels on the right.
                 const gridSteps = 4;
                 for (let i = 0; i <= gridSteps; i++) {
                     const y = padTop + (chartH / gridSteps) * i;
@@ -227,7 +223,6 @@
                     ctx.fillText(this.formatNum(val), w - padRight - 6, y - 7);
                 }
 
-                // X-axis baseline so the axis stays legible in both themes.
                 ctx.beginPath();
                 ctx.strokeStyle = axisColor;
                 ctx.lineWidth = 1;
@@ -283,9 +278,6 @@
                     }
                 };
 
-                // Area beneath the whole series — including under the dashed
-                // projection — pinned to the axis baseline. The gradient is
-                // drawn first so both line segments render on top of it.
                 if (lastIdx >= 1) {
                     const grad = ctx.createLinearGradient(0, padTop, 0, padTop + chartH);
                     if (isDark) {
@@ -305,8 +297,6 @@
                     ctx.fill();
                 }
 
-                // Solid line through completed months — straight segments
-                // between real values, no deliberate spline smoothing.
                 if (solidEnd >= 1) {
                     polyPath(0, solidEnd);
                     ctx.strokeStyle = lineColor;
@@ -316,8 +306,6 @@
                     ctx.stroke();
                 }
 
-                // Dashed segment into the still-open month (its value is an
-                // estimate, so it must not render as a solid trend).
                 if (projIdx >= 1) {
                     polyPath(projIdx - 1, projIdx);
                     ctx.strokeStyle = lineColor;
@@ -329,8 +317,6 @@
                     ctx.setLineDash([]);
                 }
 
-                // Point markers. The in-progress month renders as a ring so it
-                // reads as "pending", distinct from completed data points.
                 for (let i = 0; i <= lastIdx; i++) {
                     const p = this.points[i];
                     if (i === projIdx) {

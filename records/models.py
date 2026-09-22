@@ -371,12 +371,6 @@ class Record(models.Model):
         """Permanently remove this record from the database. Irreversible."""
         super().delete(using=using, keep_parents=keep_parents)
 
-    def is_shared_with(self, user: AbstractUser) -> bool:
-        """True if "user" can access this record through a share."""
-        if user.pk == self.user_id:
-            return True
-        return self.shares.filter(user=user).exists()
-
     @property
     def shared_count(self) -> int:
         return self.shares.count()

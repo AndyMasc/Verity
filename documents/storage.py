@@ -1,7 +1,7 @@
 """Cloudflare R2 (S3-compatible) storage operations for document files.
 
 Handles presigned URL generation, object existence verification, gatekeeper
-validation of uploaded files, and deletion of single or batch objects.
+validation of uploaded files, and batched deletion of R2 objects.
 """
 
 import logging
@@ -196,15 +196,6 @@ def _validate_header(header_bytes: bytes, content_length: int) -> str | None:
         except Exception as e:
             logger.warning("Image dimension check failed: %s", e)
     return None
-
-
-def delete_r2_object(key: str) -> None:
-    """Delete a single object from R2, logging any client errors."""
-    s3 = get_s3_client()
-    try:
-        s3.delete_object(Bucket=BUCKET, Key=key)
-    except ClientError as e:
-        logger.error("Failed to delete R2 object %s: %s", key, e)
 
 
 def delete_r2_objects_batch(keys: list[str]) -> None:

@@ -72,8 +72,6 @@ LIST_FIELDS = (
     "notes",
 )
 
-DEFERRED_FIELDS = ("products",)
-
 RECORD_LIST_METRICS_TTL = 30
 
 

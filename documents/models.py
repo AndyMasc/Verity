@@ -57,14 +57,6 @@ class DocumentDataQuerySet(models.QuerySet):
         """Return documents awaiting upload confirmation."""
         return self.by_status(DocumentStatus.PENDING_UPLOAD)
 
-    def processing(self) -> DocumentDataQuerySet:
-        """Return documents currently undergoing OCR processing."""
-        return self.by_status(DocumentStatus.PROCESSING)
-
-    def completed(self) -> DocumentDataQuerySet:
-        """Return documents that have finished OCR successfully."""
-        return self.by_status(DocumentStatus.COMPLETED)
-
     def errored(self) -> DocumentDataQuerySet:
         """Return documents that failed OCR processing."""
         return self.by_status(DocumentStatus.ERROR)

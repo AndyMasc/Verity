@@ -39,7 +39,7 @@ def _record(user, balance=Decimal("25.00")):
     )
 
 
-def _reconcile_session(session_id, *, bad, good):
+def _reconcile_session(session_id, *, bad):
     """Fake retrieve_checkout_session for reconciliation tests.
 
     Failures and successes are routed by session id rather than call order,

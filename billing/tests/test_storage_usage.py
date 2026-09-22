@@ -5,7 +5,6 @@ lifecycle transition: create, confirm-size, permanent delete, hard delete,
 and bulk "QuerySet.delete()".
 """
 
-import pytest
 from django.utils import timezone
 
 from billing.models import CustomUser
@@ -14,14 +13,9 @@ from billing.storage import (
     get_storage_usage_bytes,
     reconcile_storage_usage,
 )
-from documents.models import DocumentData, DocumentStatus
+from documents.models import DocumentData
 
 from conftest import DocumentDataFactory
-
-
-@pytest.fixture
-def active_doc(user):
-    return DocumentDataFactory(user=user, file_size=2048, status=DocumentStatus.UPLOADED)
 
 
 def _counter(user) -> int:

@@ -79,8 +79,8 @@ def fire_single_webpush(user_id: int, payload: dict, ttl: int = 1000) -> None:
         User = get_user_model()
         user = User.objects.get(id=user_id)
         send_user_notification(user=user, payload=payload, ttl=ttl)
-        logger.info(f"Dispatched webpush to {user.email}")
+        logger.info("Dispatched webpush to %s", user.email)
     except User.DoesNotExist:
-        logger.error(f"Abandoning webpush task. User ID {user_id} not found.")
+        logger.error("Abandoning webpush task. User ID %s not found.", user_id)
     except Exception as e:
-        logger.error(f"Failed webpush delivery to user {user_id}: {e}")
+        logger.error("Failed webpush delivery to user %s: %s", user_id, e)

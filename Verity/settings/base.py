@@ -89,6 +89,7 @@ INSTALLED_APPS = [
     "django_minify_html",
     # Storage
     "storages",
+    "compressor",
     # Local apps
     "core.apps.CoreConfig",
     "docs.apps.DocsConfig",
@@ -231,6 +232,20 @@ TURNSTILE_SECRET = env("TURNSTILE_SECRET", default="")
 TURNSTILE_HOSTNAMES = env.list("TURNSTILE_HOSTNAMES", default=["localhost", "127.0.0.1"])
 TURNSTILE_ENABLED = env.bool("TURNSTILE_ENABLED", default=True)
 
+# Compressor
+COMPRESSOR_ENABLED = env.bool("COMPRESSOR_ENABLED", default=True)
+COMPRESSOR_CSS_FILTERS = [
+    "compressor.filters.css_default.CssAbsoluteFilter",
+    "compressor.filters.cssmin.CSSMinFilter",
+]
+COMPRESSOR_JS_FILTERS = [
+    "compressor.filters.jsmin.JSMinFilter",
+]
+STATICFILES_FINDERS = [
+    "django.contrib.staticfiles.finders.FileSystemFinder",
+    "django.contrib.staticfiles.finders.AppDirectoriesFinder",
+    "compressor.finders.CompressorFinder",
+]
 
 # Templates
 TEMPLATES = [

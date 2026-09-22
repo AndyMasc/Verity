@@ -98,7 +98,7 @@ def verify_turnstile_token(
         )
 
         if response.status_code != 200:
-            logger.error(f"Turnstile siteverify failed: {response.status_code}")
+            logger.error("Turnstile siteverify failed: %s", response.status_code)
             return {
                 "success": False,
                 "message": "Verification service error",
@@ -108,7 +108,7 @@ def verify_turnstile_token(
         result = response.json()
 
     except Exception as e:
-        logger.error(f"Turnstile verification error: {e}")
+        logger.error("Turnstile verification error: %s", e)
         return {
             "success": False,
             "message": "Verification service unavailable",

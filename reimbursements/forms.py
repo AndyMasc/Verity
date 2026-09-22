@@ -58,7 +58,7 @@ class RequestVerificationCodeForm(forms.Form):
         result = verify_turnstile_token(token, "request_verification", self.request)
 
         if not result.get("success"):
-            logger.warning(f"Turnstile verification failed on code request: {result}")
+            logger.warning("Turnstile verification failed on code request: %s", result)
             raise forms.ValidationError(
                 result.get("message", "Bot verification failed. Please try again."),
                 code="turnstile_failed",
@@ -120,7 +120,7 @@ class VerifyEmailCodeForm(forms.Form):
         result = verify_turnstile_token(token, "verify_code", self.request)
 
         if not result.get("success"):
-            logger.warning(f"Turnstile verification failed on code verify: {result}")
+            logger.warning("Turnstile verification failed on code verify: %s", result)
             raise forms.ValidationError(
                 result.get("message", "Bot verification failed. Please try again."),
                 code="turnstile_failed",
@@ -158,7 +158,7 @@ class CheckoutTurnstileForm(forms.Form):
         result = verify_turnstile_token(token, "checkout", self.request)
 
         if not result.get("success"):
-            logger.warning(f"Turnstile verification failed on checkout: {result}")
+            logger.warning("Turnstile verification failed on checkout: %s", result)
             raise forms.ValidationError(
                 result.get("message", "Bot verification failed. Please try again."),
                 code="turnstile_failed",

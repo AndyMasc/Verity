@@ -55,7 +55,7 @@ class PasswordlessSignupForm(SignupForm):
         result = verify_turnstile_token(token, "signup", self.request)
 
         if not result.get("success"):
-            logger.warning(f"Turnstile signup verification failed: {result}")
+            logger.warning("Turnstile signup verification failed: %s", result)
             raise forms.ValidationError(
                 result.get("message", "Bot verification failed. Please try again."),
                 code="turnstile_failed",
@@ -106,7 +106,7 @@ class PasswordlessLoginForm(LoginForm):
         result = verify_turnstile_token(token, "login", self.request)
 
         if not result.get("success"):
-            logger.warning(f"Turnstile login verification failed: {result}")
+            logger.warning("Turnstile login verification failed: %s", result)
             raise forms.ValidationError(
                 result.get("message", "Bot verification failed. Please try again."),
                 code="turnstile_failed",
