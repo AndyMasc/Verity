@@ -35,6 +35,18 @@ def invalidate_subscription_status_cache(user_id: int) -> None:
     cache.delete(_SUBSCRIPTION_STATUS_KEY.format(user_id=user_id))
 
 
+def invalidate_plan_usage_caches(user_id: int) -> None:
+    """Clear sidebar caches that depend on the user's active plan.
+
+    Subscription status, monthly scan quota, and storage quota all change when
+    a plan or add-on is activated/changed, so they must refresh immediately
+    instead of waiting for the generic 60s TTL to expire.
+    """
+    invalidate_subscription_status_cache(user_id)
+    invalidate_storage_usage_cache(user_id)
+    invalidate_scan_usage_cache(user_id, date.today().strftime("%Y-%m"))
+
+
 def _build_subscription_status(user) -> dict[str, Any]:
     active_subscriptions = metadata._active_subscriptions(user)
     is_subscribed = bool(active_subscriptions)

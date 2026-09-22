@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+{% block content %}
+    <main class="w-full px-6 py-16">
+        <section class="container mx-auto max-w-3xl">
+            <header class="mb-12">
+                <h1 class="mb-4 text-4xl font-semibold md:text-5xl">Terms of Service</h1>
+                <p class="text-zinc-500 dark:text-zinc-400">Last Updated: September 21, 2026</p>
+            </header>
+            <div class="prose-zinc max-w-none prose dark:prose-invert">
+                <p class="mb-8 text-lg text-zinc-600 dark:text-zinc-300">
+                    These Terms of Service (“Terms”) govern your access to and use of Verity’s website, platform, services, and any associated reimbursement, billing, or document workflows. By creating an account, using our service, submitting documents, or initiating a reimbursement or subscription, you agree to these Terms and our Privacy Policy.
+                </p>
+                <h2 class="mt-10 mb-4 text-2xl font-semibold">1. Scope of the Service</h2>
+                <p>Verity is a document organization and financial-record management platform. It supports users in creating, organizing, and reviewing records, and it includes workflows for reimbursement package creation, external verification, and subscription billing.</p>
+                <ul class="list-none space-y-4 pl-0">
+                    <li><strong>Service purpose:</strong> Verity is designed to help users organize records and manage payment-related workflows in a structured way.</li>
+                    <li><strong>Not a guarantor or arbiter:</strong> Verity does not determine whether a payment is owed, whether a reimbursement is valid, or whether a third party has a valid claim against another party.</li>
+                    <li><strong>No responsibility for third-party disputes:</strong> Verity is not a mediator, payment guarantor, insurer, or dispute-resolution service for disagreements between two parties, individuals, or businesses.</li>
+                </ul>
+                <h2 class="mt-10 mb-4 text-2xl font-semibold">2. Account Eligibility and Security</h2>
+                <p>To access the platform, you must provide accurate information and maintain secure control of your account.</p>
+                <ul class="list-none space-y-4 pl-0">
+                    <li><strong>Account responsibility:</strong> You are responsible for all activity that occurs under your account, including activity from any device, browser, or authenticated session associated with your account.</li>
+                    <li><strong>Verification requirements:</strong> We may require email verification, identity checks, Turnstile verification, or other controls to prevent fraud and abuse.</li>
+                    <li><strong>Single user use:</strong> Accounts are intended for individual use. You must not share, transfer, or sell access to your account or login session.</li>
+                    <li><strong>No impersonation:</strong> You may not create an account, submit a reimbursement request, or use the service under false, misleading, or impersonated identity.</li>
+                </ul>
+                <h2 class="mt-10 mb-4 text-2xl font-semibold">3. Reimbursements, Third-Party Payments, and Disputes</h2>
+                <p>Reimbursement workflows in Verity are user-generated and user-controlled. A reimbursement package is simply a structured request and payment flow created within the platform; it does not by itself establish that a payment is valid, due, or approved.</p>
+                <p class="mt-4">The current codebase does not enforce a business-only restriction on reimbursement package creation. Any authenticated user may create a package and send it to a recipient email or registered contact. Verity does not validate the underlying business relationship, legal entitlement, or commercial status of the parties.</p>
+                <ul class="list-none space-y-4 pl-0">
+                    <li><strong>No approval guarantee:</strong> Creating or sending a reimbursement package does not mean Verity has verified the underlying obligation, invoice, receipt, or business relationship.</li>
+                    <li><strong>Third-party disputes:</strong> Verity takes no responsibility for disputes between the party creating the reimbursement request, the recipient, the payer, or any third party. Any disagreement about whether a payment is valid, required, or owed must be resolved between those parties.</li>
+                    <li><strong>Stripe onboarding and business verification:</strong> To receive payouts, the package creator (the intended payee) must complete Stripe Connect onboarding and have an active payout account (the code enforces this via the creator's StripeAccount.is_active check). Stripe may require business or identity verification during onboarding.</li>
+                    <li><strong>Recipient verification:</strong> Recipients should verify the identity of the sender, the requested amount, the records attached, and the business purpose before paying or accepting a reimbursement request.</li>
+                    <li><strong>Independent review required:</strong> Users should review receipts, invoices, contracts, policies, and any supporting records before sending or paying anything. Verity encourages users to confirm details independently before proceeding.</li>
+                    <li><strong>Fraud and misrepresentation:</strong> Any attempt to submit fabricated, duplicate, or misleading reimbursement records is prohibited. The product may detect and block suspicious activity, but it does not guarantee the underlying transaction is legitimate.</li>
+                </ul>
+                <h2 class="mt-10 mb-4 text-2xl font-semibold">4. Abuse Prevention and Security Controls</h2>
+                <p>To protect the platform, other users, and the integrity of reimbursement and billing flows, Verity implements technical and review-based controls. We may intervene when we detect suspicious, fraudulent, or abusive activity.</p>
+                <ul class="list-none space-y-4 pl-0">
+                    <li><strong>Rate limits and verification gates:</strong> We may limit repeated attempts, enforce challenge checks, and require additional confirmation when abnormal traffic, account abuse, or bot behavior is detected.</li>
+                    <li><strong>Bot and automation restrictions:</strong> Use of automated scripts, bots, scraping tools, credential stuffing, spam, or bulk generation of requests is prohibited.</li>
+                    <li><strong>Manual review:</strong> Suspect activity may be delayed pending manual review. In such cases, we may request more information, suspend service temporarily, or permanently restrict the account.</li>
+                    <li><strong>Enforcement actions:</strong> We may warn, throttle, suspend, ban, deny a reimbursement, cancel a subscription, reverse a payment, or report abuse as warranted by the circumstances and applicable law.</li>
+                </ul>
+                <h2 class="mt-10 mb-4 text-2xl font-semibold">5. Billing, Subscriptions, and Paid Features</h2>
+                <p>Some services are offered on a paid basis. Billing may be processed through Stripe or other payment providers.</p>
+                <ul class="list-none space-y-4 pl-0">
+                    <li><strong>Subscription terms:</strong> Paid plans may be monthly or otherwise recurring. By subscribing, you agree to the recurring charges associated with the selected plan.</li>
+                    <li><strong>Plan changes and renewals:</strong> Subscription upgrades, downgrades, and renewals are subject to the pricing and timing disclosed for the selected plan at checkout.</li>
+                    <li><strong>No duplicate checkout intent:</strong> Repeated or accidental duplicate purchase attempts may be rejected or reconciled to avoid duplicate subscriptions or repeated charges.</li>
+                    <li><strong>Cancellation:</strong> You may cancel in accordance with the plan terms and applicable payment provider settings. Cancellation generally prevents future renewals but does not automatically reverse already processed charges.</li>
+                    <li><strong>Refunds:</strong> Refund eligibility is determined by the applicable plan and our billing policy. We may refuse refunds for fraudulent, abusive, or policy-violating use.</li>
+                    <li><strong>Payment disputes:</strong> Chargebacks, payment disputes, or unauthorized billing complaints may trigger account review and restrictions. Verity does not assume responsibility for disputes that are fundamentally between a payer and a counterparty.</li>
+                </ul>
+                <h2 class="mt-10 mb-4 text-2xl font-semibold">6. Acceptable Use</h2>
+                <p>You agree not to misuse the platform or use it to engage in conduct that interferes with the service, exploits vulnerabilities, or harms other users or the operation of Verity.</p>
+                <ul class="list-none space-y-4 pl-0">
+                    <li>Use the service only for lawful purposes and in accordance with these Terms.</li>
+                    <li>Do not attempt to reverse-engineer, abuse, scrape, or overwhelm the service.</li>
+                    <li>Do not upload malicious files, fraudulent documents, stolen records, or data you are not authorized to process.</li>
+                    <li>Do not misuse AI features, automation, or document processing in a way that creates misleading or deceptive outputs.</li>
+                    <li>Do not circumvent rate limits, account protections, moderation controls, or payment safeguards.</li>
+                </ul>
+                <h2 class="mt-10 mb-4 text-2xl font-semibold">7. AI Features and Automated Processing</h2>
+                <p>Verity may process your submitted documents using AI-assisted extraction, classification, and review mechanisms to organize information and support record management.</p>
+                <ul class="list-none space-y-4 pl-0">
+                    <li><strong>User review required:</strong> AI-generated outputs may be used to assist your workflow, but they are not a substitute for your own review and validation.</li>
+                    <li><strong>No guarantee of correctness:</strong> We do not guarantee that automated extraction, categorization, or review is error-free, complete, or legally conclusive.</li>
+                    <li><strong>Data handling:</strong> Document data may be processed by third-party infrastructure providers necessary to deliver the service, as described in our Privacy Policy.</li>
+                    <li><strong>Authorized use only:</strong> You are responsible for ensuring that you have the legal right to upload, process, and submit any document or data through the platform.</li>
+                </ul>
+                <h2 class="mt-10 mb-4 text-2xl font-semibold">8. Intellectual Property and User Content</h2>
+                <p>Verity respects your ownership of your records and documents. Our platform allows you to upload, organize, and manage your own materials.</p>
+                <ul class="list-none space-y-4 pl-0">
+                    <li><strong>Your content:</strong> You retain ownership of the files, records, and information you upload to the platform, subject to any rights you may have granted to us to provide the service.</li>
+                    <li><strong>Platform rights:</strong> Verity retains ownership of the website, software, branding, product design, and service logic used to provide the platform.</li>
+                    <li><strong>Limited license:</strong> We grant you a limited, non-exclusive license to use the service as permitted under these Terms.</li>
+                </ul>
+                <h2 class="mt-10 mb-4 text-2xl font-semibold">9. Privacy, Security, and Data Retention</h2>
+                <p>We process data in accordance with our Privacy Policy and apply technical safeguards designed to reduce information leakage, unauthorized access, and abuse. While we take reasonable precautions, no digital service can be guaranteed 100% secure.</p>
+                <ul class="list-none space-y-4 pl-0">
+                    <li><strong>Reasonable safeguards:</strong> We use modern security practices, encryption in transit, access controls, and infrastructure safeguards to protect operational data.</li>
+                    <li><strong>Not absolute security:</strong> You are responsible for maintaining the security of your own devices, credentials, and email access.</li>
+                    <li><strong>Retention:</strong> We store data only as long as necessary to provide the service, enforce policy, or satisfy legal or operational requirements.</li>
+                    <li><strong>Deletion rights:</strong> You may request deletion or account closure in accordance with our documented account controls and Privacy Policy.</li>
+                </ul>
+                <h2 class="mt-10 mb-4 text-2xl font-semibold">10. Service Availability and Disclaimers</h2>
+                <p>Verity aims to provide reliable service, but availability may be affected by maintenance, provider outages, updates, or force majeure events.</p>
+                <ul class="list-none space-y-4 pl-0">
+                    <li><strong>Availability:</strong> We do not guarantee uninterrupted or error-free access to the service.</li>
+                    <li><strong>No warranty:</strong> The service is provided “as is” and “as available,” without warranties of merchantability, fitness for a particular purpose, or non-infringement, to the maximum extent permitted by law.</li>
+                    <li><strong>Limitation of liability:</strong> Verity is not liable for indirect, incidental, special, consequential, or punitive damages arising from use of the service, except to the extent required by applicable law.</li>
+                </ul>
+                <h2 class="mt-10 mb-4 text-2xl font-semibold">11. Suspension, Termination, and Account Action</h2>
+                <p>We may suspend or terminate access to the service if we determine that a user has violated these Terms, engaged in fraud, created abuse risk, or otherwise put the integrity of the platform at risk.</p>
+                <ul class="list-none space-y-4 pl-0">
+                    <li><strong>Immediate action:</strong> We may restrict access temporarily or permanently while investigating suspicious activity.</li>
+                    <li><strong>Termination:</strong> We may terminate or disable access at any time for breach of these Terms, non-payment, abusive activity, or operational necessity.</li>
+                    <li><strong>Effect of termination:</strong> Upon termination, your right to access the service ends promptly, and we may delete or limit access to your content in accordance with our policies and applicable law.</li>
+                </ul>
+                <h2 class="mt-10 mb-4 text-2xl font-semibold">12. Modifications to the Service and Terms</h2>
+                <p>Verity may update features, policies, pricing, and these Terms over time. We will make reasonable efforts to communicate material changes when appropriate.</p>
+                <ul class="list-none space-y-4 pl-0">
+                    <li><strong>Continued use:</strong> Your continued use of the service after any update constitutes acceptance of the revised Terms.</li>
+                    <li><strong>Material changes:</strong> We may update service features, verification requirements, or billing policies as needed to maintain compliance, security, and a sustainable platform.</li>
+                </ul>
+                <h2 class="mt-10 mb-4 text-2xl font-semibold">13. Contact</h2>
+                <p>
+                    If you have questions about these Terms, reimbursement reviews, account restrictions, billing disputes, or abuse prevention, contact us at:
+                    <a href="mailto:support@veritypay.app"
+                       class="text-black underline decoration-zinc-400 underline-offset-4 dark:text-white">support@veritypay.app</a>
+                </p>
+                <p class="mt-6">By using Verity, you acknowledge that you have read, understood, and agree to these Terms of Service.</p>
+            </div>
+        </section>
+    </main>
+{% endblock content %}

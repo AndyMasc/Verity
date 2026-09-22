@@ -60,14 +60,14 @@ def _invalidate_subscription_caches_for_event(stripe_sub: dict) -> None:
     if not customer_id:
         return
 
-    from .context_processors import invalidate_subscription_status_cache
+    from .context_processors import invalidate_plan_usage_caches
     from .models import CustomUser
 
     user_ids = list(
         CustomUser.objects.filter(customer__id=customer_id).values_list("id", flat=True)
     )
     for user_id in user_ids:
-        invalidate_subscription_status_cache(user_id)
+        invalidate_plan_usage_caches(user_id)
 
 
 @djstripe_receiver("customer.subscription.created")

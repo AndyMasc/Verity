@@ -33,6 +33,16 @@ class PrivacyPolicyTest(TestCase):
         self.assertTemplateUsed(response, "docs/privacy_policy.html")
 
 
+class TermsOfServiceTest(TestCase):
+    def test_status(self):
+        response = self.client.get(reverse("docs:terms_of_service"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_template(self):
+        response = self.client.get(reverse("docs:terms_of_service"))
+        self.assertTemplateUsed(response, "docs/terms_of_service.html")
+
+
 class HealthCheckTest(TestCase):
     def test_health_check_returns_200(self):
         response = self.client.get(reverse("core:health_check"))

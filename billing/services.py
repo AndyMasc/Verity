@@ -209,7 +209,7 @@ def reconcile_subscription_statuses(
 
         # A reconciled status change alters the user's plan/subscription state,
         # so clear the cached billing context for every user on this customer.
-        from .context_processors import invalidate_subscription_status_cache
+        from .context_processors import invalidate_plan_usage_caches
         from .models import CustomUser
 
         # djstripe's Subscription.customer_id holds the Stripe customer id,
@@ -219,6 +219,6 @@ def reconcile_subscription_statuses(
             for user_id in CustomUser.objects.filter(customer_id=customer.djstripe_id).values_list(
                 "id", flat=True
             ):
-                invalidate_subscription_status_cache(user_id)
+                invalidate_plan_usage_caches(user_id)
 
     return corrected

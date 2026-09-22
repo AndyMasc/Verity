@@ -17,3 +17,8 @@ def pricing_doc(request: HttpRequest) -> HttpResponse:
 def privacy_policy(request: HttpRequest) -> HttpResponse:
     """Render the privacy policy page."""
     return render(request, "docs/privacy_policy.html")
+
+
+def terms_of_service(request: HttpRequest) -> HttpResponse:
+    """Render the terms of service page."""
+    return render(request, "docs/terms_of_service.html")

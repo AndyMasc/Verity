@@ -166,9 +166,9 @@ class CustomUser(AbstractUser):
         # The plan/subscription cache must be dropped here, not only in webhook
         # handlers, because this runs on the checkout-success view before any
         # subscription webhook fires (e.g. a freshly purchased storage pack).
-        from .context_processors import invalidate_subscription_status_cache
+        from .context_processors import invalidate_plan_usage_caches
 
-        invalidate_subscription_status_cache(self.id)
+        invalidate_plan_usage_caches(self.id)
 
         overlaps_cleared = True
         active_subs = Subscription.objects.filter(customer=self.customer)

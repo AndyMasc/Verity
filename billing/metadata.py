@@ -28,6 +28,7 @@ class ProductMetadata:
     def id(self) -> str:
         """Compatibility alias used by views and tests that treat metadata like Stripe objects."""
         return self.stripe_id
+
     description: str = ""
     category: str = "base_plan"
     storage_limit_gb: int = 0

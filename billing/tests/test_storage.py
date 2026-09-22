@@ -150,7 +150,6 @@ class StoragePackEntitlementTests(TestCase):
         )
 
 
-
 class StoragePackConfirmFlowTests(TestCase):
     """End-to-end subscription_confirm with a mocked Stripe sync."""
 
