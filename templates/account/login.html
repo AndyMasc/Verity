@@ -3,41 +3,9 @@
 {% load allauth_ui %}
 {% load widget_tweaks %}
 {% block content %}
-    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
             async
             defer></script>
-    <script>
-        // Diagnostic + explicit render fallback for Turnstile widget
-        (function(){
-            function tryRender() {
-                try {
-                    var widgetEl = document.getElementById('login-turnstile-widget');
-                    var iframe = widgetEl && widgetEl.querySelector('iframe');
-                    console.debug('Turnstile diagnostic: widgetEl=', widgetEl, 'iframe=', iframe, 'window.turnstile=', window.turnstile);
-                    if (window.turnstile && widgetEl && !iframe) {
-                        // Attempt explicit render (some environments need this)
-                        try {
-                            // If turnstile.render takes element or id, try both
-                            if (typeof window.turnstile.render === 'function') {
-                                try { window.turnstile.render(widgetEl, { sitekey: window.turnstile_sitekey || '{{ turnstile_sitekey }}', action: 'login' }); } catch(e) { console.warn('turnstile.render(widgetEl) failed', e); }
-                                try { window.turnstile.render('login-turnstile-widget', { sitekey: window.turnstile_sitekey || '{{ turnstile_sitekey }}', action: 'login' }); } catch(e) { /* ignore */ }
-                            }
-                        } catch (e) {
-                            console.error('Turnstile explicit render error', e, e && e.stack);
-                        }
-                    }
-                } catch (err) {
-                    console.error('Turnstile diagnostic error', err, err && err.stack);
-                }
-            }
-
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', function(){ setTimeout(tryRender, 50); });
-            } else {
-                setTimeout(tryRender, 50);
-            }
-        })();
-    </script>
     {% #container heading="Sign in to Verity." subheading=subheading %}
     {% if not SOCIALACCOUNT_ONLY %}
         {% url 'account_login' as action_url %}
@@ -48,107 +16,72 @@
                name="cf_turnstile_response"
                value="">
         <script>
-                    (function() {
-                        function isVisible(el) {
-                            if (!el) return false;
-                            const rect = el.getBoundingClientRect();
-                            return rect.width > 0 && rect.height > 0;
-                        }
+            (function() {
+                'use strict';
+                var SITEKEY = '{{ turnstile_sitekey }}';
+                var WIDGET_ID = 'login-turnstile-widget';
+                var RESPONSE_ID = 'cf_turnstile_response';
+                var widgetId = null;
 
-                        function findAuthForm() {
-                            const forms = Array.from(document.querySelectorAll('form[method="post"]'));
-                            for (const f of forms) {
-                                const loginInput = f.querySelector('input[type="email"], input[name="login"], input[name="email"], input[type="text"]');
-                                if (loginInput && isVisible(loginInput)) return f;
-                                const action = (f.getAttribute('action') || '').toLowerCase();
-                                if (action.includes('login') || action.includes('account_login')) return f;
+                function findAuthForm() {
+                    var forms = Array.prototype.slice.call(document.querySelectorAll('form[method="post"]'));
+                    for (var i = 0; i < forms.length; i++) {
+                        var f = forms[i];
+                        if (f.querySelector('input[type="email"], input[name="email"], input[name="login"], input[type="text"]')) {
+                            return f;
+                        }
+                        var action = (f.getAttribute('action') || '').toLowerCase();
+                        if (action.indexOf('login') !== -1) return f;
+                    }
+                    return forms[0] || null;
+                }
+
+                function init() {
+                    if (!window.turnstile || typeof window.turnstile.render !== 'function') {
+                        setTimeout(init, 200);
+                        return;
+                    }
+
+                    // The widget container renders outside the allauth form block,
+                    // so its token is written into this hidden input inside the form.
+                    var form = findAuthForm();
+                    var input = document.getElementById(RESPONSE_ID);
+                    var el = document.getElementById(WIDGET_ID);
+                    if (!form || !input || !el) {
+                        setTimeout(init, 100);
+                        return;
+                    }
+                    if (!form.contains(input)) form.appendChild(input);
+                    if (form.dataset.turnstileAttached === '1') return;
+                    form.dataset.turnstileAttached = '1';
+
+                    widgetId = window.turnstile.render(el, {
+                        sitekey: SITEKEY,
+                        action: 'login',
+                        callback: function (token) { input.value = token || ''; },
+                        'expired-callback': function () { input.value = ''; },
+                        'error-callback': function () { input.value = ''; },
+                    });
+
+                    form.addEventListener('submit', function (event) {
+                        if (!input.value) {
+                            event.preventDefault();
+                            alert('Please complete the robot verification and try again');
+                            if (widgetId) {
+                                try { window.turnstile.reset(widgetId); } catch (_) {}
                             }
-                            return forms[0] || null;
+                            return false;
                         }
+                        return true;
+                    });
+                }
 
-                        function attachFormHandler() {
-                            const form = findAuthForm();
-                            let turnstileInput = document.getElementById('cf_turnstile_response');
-
-                            if (form) {
-                                const existing = form.querySelector('input[name="cf_turnstile_response"]');
-                                if (existing) {
-                                    turnstileInput = existing;
-                                } else if (!turnstileInput) {
-                                    turnstileInput = document.createElement('input');
-                                    turnstileInput.type = 'hidden';
-                                    turnstileInput.name = 'cf_turnstile_response';
-                                    turnstileInput.id = 'cf_turnstile_response';
-                                    form.appendChild(turnstileInput);
-                                } else {
-                                    if (!form.contains(turnstileInput)) form.appendChild(turnstileInput);
-                                }
-                            }
-
-                            if (!form || !turnstileInput) {
-                                setTimeout(attachFormHandler, 100);
-                                return;
-                            }
-
-                            if (form.dataset.turnstileAttached) return;
-                            form.dataset.turnstileAttached = '1';
-
-                            form.addEventListener('submit', function(e) {
-                                var widgetId = 'login-turnstile-widget';
-                                var token = null;
-
-                                try {
-                                    if (window.turnstile && typeof window.turnstile.getResponse === 'function') {
-                                        token = window.turnstile.getResponse(widgetId) || null;
-                                    }
-                                } catch (err) {
-                                    console.debug('turnstile.getResponse error', err);
-                                }
-
-                        // If Cloudflare injected its own hidden input, try to read it from the widget DOM
-                                if (!token) {
-                                    var widgetEl = document.getElementById(widgetId);
-                                    if (widgetEl) {
-                                        var internal = widgetEl.querySelector('input[name="cf-turnstile-response"], input[id$="_response"], input[name="cf_turnstile_response"]');
-                                        if (internal && internal.value) token = internal.value;
-                                    }
-                                }
-
-                        // Fallback: search globally for any Turnstile response field
-                                if (!token) {
-                                    var globalInput = document.querySelector('input[name="cf-turnstile-response"], input[name="cf_turnstile_response"], input[id^="cf-chl-widget-"][id$="_response"]');
-                                    if (globalInput && globalInput.value) token = globalInput.value;
-                                }
-
-                                if (!token) {
-                                    e.preventDefault();
-                                    alert('Please complete the robot verification and try again');
-                                    if (window.turnstile && typeof window.turnstile.reset === 'function') {
-                                        try { window.turnstile.reset(widgetId); } catch(_) {}
-                                    }
-                                    return false;
-                                }
-
-                        // Ensure the form has our expected hidden input so the server receives cf_turnstile_response
-                                if (!turnstileInput) {
-                                    turnstileInput = document.createElement('input');
-                                    turnstileInput.type = 'hidden';
-                                    turnstileInput.name = 'cf_turnstile_response';
-                                    turnstileInput.id = 'cf_turnstile_response';
-                                    form.appendChild(turnstileInput);
-                                }
-
-                                turnstileInput.value = token;
-                                return true;
-                            });
-                        }
-
-                        if (document.readyState === 'loading') {
-                            document.addEventListener('DOMContentLoaded', attachFormHandler);
-                        } else {
-                            attachFormHandler();
-                        }
-                    })();
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', init);
+                } else {
+                    init();
+                }
+            })();
         </script>
         {% /form %}
     {% endif %}
@@ -167,10 +100,7 @@
     <div class="mt-6 text-center text-sm text-zinc-500 dark:text-zinc-400">Don't have an account? <a href="{{ signup_url }}"
     class="font-medium text-zinc-900 hover:underline dark:text-zinc-100">Sign up</a></div>
     <div class="mt-8 flex justify-center">
-        <div id="login-turnstile-widget"
-             class="cf-turnstile"
-             data-sitekey="{{ turnstile_sitekey }}"
-             data-action="login"></div>
+        <div id="login-turnstile-widget"></div>
     </div>
     {% /container %}
 {% endblock content %}

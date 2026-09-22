@@ -2,7 +2,7 @@
 {% load form_tags %}
 {% block title %}Reimbursement | Verity{% endblock %}
 {% block content %}
-    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
             async
             defer></script>
     <main class="relative flex min-h-screen w-full items-center justify-center overflow-hidden font-sans antialiased selection:bg-zinc-900 selection:text-white dark:selection:bg-white dark:selection:text-zinc-900">
@@ -78,10 +78,7 @@
                                            id="request-code-turnstile-response"
                                            value="">
                                     <div class="flex justify-center pt-1">
-                                        <div id="request-code-turnstile-widget"
-                                             class="cf-turnstile"
-                                             data-sitekey="{{ turnstile_sitekey }}"
-                                             data-action="request_verification"></div>
+                                        <div id="request-code-turnstile-widget" data-action="request_verification"></div>
                                     </div>
                                 </form>
                             {% else %}
@@ -116,10 +113,7 @@
                                            id="verify-code-turnstile-response"
                                            value="">
                                     <div class="flex justify-center pt-1">
-                                        <div id="verify-code-turnstile-widget"
-                                             class="cf-turnstile"
-                                             data-sitekey="{{ turnstile_sitekey }}"
-                                             data-action="verify_code"></div>
+                                        <div id="verify-code-turnstile-widget" data-action="verify_code"></div>
                                     </div>
                                 </form>
                                 <div class="mt-4 flex items-center justify-between">
@@ -127,7 +121,7 @@
                                           action="{% url 'reimbursements:pay-request-code' package.uuid %}"
                                           class="space-y-3"
                                           data-turnstile-form="request-code-resend"
-                                          data-turnstile-widget="verify-code-turnstile-widget"
+                                          data-turnstile-widget="request-code-resend-turnstile-widget"
                                           data-turnstile-response="request-code-resend-turnstile-response">
                                         {% csrf_token %}
                                         <input type="hidden" name="email" value="{{ email }}">
@@ -139,6 +133,10 @@
                                                 class="text-xs font-semibold text-zinc-500 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100">
                                             Didn't get the code? Resend
                                         </button>
+                                        <div class="flex justify-center">
+                                            <div id="request-code-resend-turnstile-widget"
+                                                 data-action="request_verification"></div>
+                                        </div>
                                     </form>
                                     <a href="?step=email"
                                        class="text-xs font-semibold text-[#5A67FF] hover:underline">Change email</a>
@@ -254,10 +252,7 @@
                                            id="checkout-turnstile-response"
                                            value="">
                                     <div class="flex justify-center pt-0.5">
-                                        <div id="checkout-turnstile-widget"
-                                             class="cf-turnstile"
-                                             data-sitekey="{{ turnstile_sitekey }}"
-                                             data-action="checkout"></div>
+                                        <div id="checkout-turnstile-widget" data-action="checkout"></div>
                                     </div>
                                 </form>
                             </div>
@@ -269,122 +264,66 @@
     </main>
     <script>
         (function () {
-            function tryRenderWidget(widgetId) {
-                if (!widgetId || !window.turnstile || typeof window.turnstile.render !== 'function') {
+            'use strict';
+            var SITEKEY = '{{ turnstile_sitekey }}';
+            var widgetIds = {};
+
+            function init() {
+                if (!window.turnstile || typeof window.turnstile.render !== 'function') {
+                    setTimeout(init, 200);
                     return;
                 }
 
-                const widgetEl = document.getElementById(widgetId);
-                const iframe = widgetEl && widgetEl.querySelector('iframe');
-                if (!widgetEl || iframe) return;
-
-                const action = widgetId.startsWith('request-code') ? 'request_verification' :
-                    widgetId.startsWith('verify-code') ? 'verify_code' :
-                    widgetId.startsWith('checkout') ? 'checkout' : 'reimbursement';
-
-                try {
-                    try {
-                        window.turnstile.render(widgetEl, {
-                            sitekey: window.turnstile_sitekey || '{{ turnstile_sitekey }}',
-                            action: action,
-                        });
-                    } catch (err) {
-                        console.warn('Turnstile render(element) failed for', widgetId, err);
+                // Each widget renders explicitly (render=explicit) with an action
+                // from its own data-action, and the token is written into the
+                // corresponding hidden input in the same form.
+                document.querySelectorAll('[data-turnstile-widget]').forEach(function (el) {
+                    if (widgetIds[el.id]) return;
+                    var form = el.closest('form');
+                    if (!form) return;
+                    var responseId = form.getAttribute('data-turnstile-response');
+                    var input = document.getElementById(responseId);
+                    if (!input) {
+                        input = form.querySelector('input[name="cf_turnstile_response"]');
                     }
-                    try {
-                        window.turnstile.render(widgetId, {
-                            sitekey: window.turnstile_sitekey || '{{ turnstile_sitekey }}',
-                            action: action,
-                        });
-                    } catch (err) {
-                        console.warn('Turnstile render(id) failed for', widgetId, err);
-                    }
-                } catch (err) {
-                    console.warn('Turnstile render failed for', widgetId, err);
-                }
-            }
+                    if (!input) return;
 
-            function attachFormHandler(form) {
-                const widgetId = form.dataset.turnstileWidget;
-                const responseId = form.dataset.turnstileResponse;
-                let responseInput = responseId ? document.getElementById(responseId) : null;
+                    widgetIds[el.id] = window.turnstile.render(el, {
+                        sitekey: SITEKEY,
+                        action: el.getAttribute('data-action') || 'reimbursement',
+                        callback: function (token) { input.value = token || ''; },
+                        'expired-callback': function () { input.value = ''; },
+                        'error-callback': function () { input.value = ''; },
+                    });
+                });
 
-                if (form) {
-                    const existing = form.querySelector('input[name="cf_turnstile_response"]');
-                    if (existing) {
-                        responseInput = existing;
-                    } else if (!responseInput) {
-                        responseInput = document.createElement('input');
-                        responseInput.type = 'hidden';
-                        responseInput.name = 'cf_turnstile_response';
-                        responseInput.id = responseId || 'cf_turnstile_response';
-                        form.appendChild(responseInput);
-                    } else if (!form.contains(responseInput)) {
-                        form.appendChild(responseInput);
-                    }
-                }
+                document.querySelectorAll('[data-turnstile-form]').forEach(function (form) {
+                    if (form.dataset.turnstileAttached === '1') return;
+                    var widgetEl = document.getElementById(form.getAttribute('data-turnstile-widget'));
+                    var responseId = form.getAttribute('data-turnstile-response');
+                    var input = document.getElementById(responseId) ||
+                        form.querySelector('input[name="cf_turnstile_response"]');
+                    if (!widgetEl || !input) return;
+                    form.dataset.turnstileAttached = '1';
 
-                if (!widgetId || !responseInput) return;
-                if (form.dataset.turnstileAttached) return;
-                form.dataset.turnstileAttached = '1';
-
-                form.addEventListener('submit', function (event) {
-                    let token = null;
-                    try {
-                        if (window.turnstile && typeof window.turnstile.getResponse === 'function') {
-                            token = window.turnstile.getResponse(widgetId) || null;
+                    form.addEventListener('submit', function (event) {
+                        if (!input.value) {
+                            event.preventDefault();
+                            alert('Please complete the robot verification and try again');
+                            if (window.turnstile && widgetIds[widgetEl.id]) {
+                                try { window.turnstile.reset(widgetIds[widgetEl.id]); } catch (_) {}
+                            }
+                            return false;
                         }
-                    } catch (err) {
-                        console.debug('turnstile.getResponse error', err);
-                    }
-
-                    if (!token) {
-                        const widgetEl = document.getElementById(widgetId);
-                        if (widgetEl) {
-                            const internal = widgetEl.querySelector('input[name="cf-turnstile-response"], input[id$="_response"], input[name="cf_turnstile_response"]');
-                            if (internal && internal.value) token = internal.value;
-                        }
-                    }
-
-                    if (!token) {
-                        const globalInput = document.querySelector('input[name="cf-turnstile-response"], input[name="cf_turnstile_response"], input[id^="cf-chl-widget-"][id$="_response"]');
-                        if (globalInput && globalInput.value) token = globalInput.value;
-                    }
-
-                    if (!token) {
-                        event.preventDefault();
-                        alert('Please complete the robot verification and try again');
-                        if (window.turnstile && typeof window.turnstile.reset === 'function') {
-                            try { window.turnstile.reset(widgetId); } catch (_) {}
-                        }
-                        return false;
-                    }
-
-                    responseInput.value = token;
-                    return true;
+                        return true;
+                    });
                 });
             }
 
-            const forms = document.querySelectorAll('[data-turnstile-form]');
-            forms.forEach(function(form) {
-                attachFormHandler(form);
-            });
-
-            function tryRenderAllWidgets() {
-                try {
-                    const widgetEls = Array.from(document.querySelectorAll('[data-turnstile-widget]'));
-                    widgetEls.forEach(function (el) {
-                        tryRenderWidget(el.id);
-                    });
-                } catch (err) {
-                    console.debug('tryRenderAllWidgets error', err);
-                }
-            }
-
             if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', function(){ setTimeout(tryRenderAllWidgets, 50); });
+                document.addEventListener('DOMContentLoaded', init);
             } else {
-                setTimeout(tryRenderAllWidgets, 50);
+                init();
             }
 
             const grid = document.getElementById('reimburse-grid');

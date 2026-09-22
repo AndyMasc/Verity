@@ -11,7 +11,7 @@ from allauth.account.forms import LoginForm, SignupForm
 from django import forms
 
 from .models import UserSettings
-from .turnstile import verify_turnstile_token
+from .turnstile import turnstile_enabled, verify_turnstile_token
 
 logger = logging.getLogger(__name__)
 
@@ -26,17 +26,24 @@ class PasswordlessSignupForm(SignupForm):
 
     cf_turnstile_response = forms.CharField(
         widget=forms.HiddenInput(),
-        required=True,
+        required=False,
         label="",
     )
 
     def __init__(self, *args, **kwargs):
+        # allauth's SignupForm does not pass/store the request; capture it here
+        # (optional) so server-side siteverify can attach the client IP.
+        self.request = kwargs.pop("request", None)
         super().__init__(*args, **kwargs)
+        self.fields["cf_turnstile_response"].required = turnstile_enabled()
         self.fields.pop("password1", None)
         self.fields.pop("password2", None)
 
     def clean_cf_turnstile_response(self):
         """Verify the Turnstile token on this field specifically."""
+        if not turnstile_enabled():
+            return self.cleaned_data.get("cf_turnstile_response", "")
+
         token = self.cleaned_data.get("cf_turnstile_response", "").strip()
 
         if not token:
@@ -71,16 +78,23 @@ class PasswordlessLoginForm(LoginForm):
 
     cf_turnstile_response = forms.CharField(
         widget=forms.HiddenInput(),
-        required=True,
+        required=False,
         label="",
     )
 
     def __init__(self, *args, **kwargs):
+        # allauth's LoginForm already pops "request" (default None); mirror it
+        # here so server-side siteverify can attach the client IP when present.
+        self.request = kwargs.get("request")
         super().__init__(*args, **kwargs)
+        self.fields["cf_turnstile_response"].required = turnstile_enabled()
         self.fields.pop("password", None)
 
     def clean_cf_turnstile_response(self):
         """Verify the Turnstile token on this field specifically."""
+        if not turnstile_enabled():
+            return self.cleaned_data.get("cf_turnstile_response", "")
+
         token = self.cleaned_data.get("cf_turnstile_response", "").strip()
 
         if not token:

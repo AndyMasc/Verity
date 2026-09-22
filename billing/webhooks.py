@@ -49,7 +49,9 @@ def _base_plan_is_ending(stripe_sub: dict) -> bool:
     return bool(stripe_sub.get("cancel_at_period_end"))
 
 
-def _cancel_pro_only_storage_for_customer(customer_id: str, base_subscription_id: str | None = None) -> None:
+def _cancel_pro_only_storage_for_customer(
+    customer_id: str, base_subscription_id: str | None = None
+) -> None:
     """Cancel any active Pro-only storage add-ons after the user's Pro base plan ends."""
     if not customer_id:
         return
@@ -102,7 +104,9 @@ def handle_subscription_deleted(**kwargs: Any) -> None:
 
     _invalidate_subscription_caches_for_event(stripe_sub)
     if "base_plan" in _subscription_categories(stripe_sub):
-        _cancel_pro_only_storage_for_customer(stripe_sub.get("customer"), base_subscription_id=sub_id)
+        _cancel_pro_only_storage_for_customer(
+            stripe_sub.get("customer"), base_subscription_id=sub_id
+        )
 
     def _clear_user_subscription() -> None:
         from .models import CustomUser
@@ -150,4 +154,6 @@ def handle_subscription_changed(**kwargs: Any) -> None:
     _invalidate_subscription_caches_for_event(stripe_sub)
 
     if "base_plan" in _subscription_categories(stripe_sub) and _base_plan_is_ending(stripe_sub):
-        _cancel_pro_only_storage_for_customer(stripe_sub.get("customer"), base_subscription_id=stripe_sub.get("id"))
+        _cancel_pro_only_storage_for_customer(
+            stripe_sub.get("customer"), base_subscription_id=stripe_sub.get("id")
+        )

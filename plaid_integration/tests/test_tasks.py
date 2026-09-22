@@ -3,6 +3,7 @@ import json
 from datetime import date, timedelta
 from unittest.mock import MagicMock, patch
 
+import plaid
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
@@ -186,6 +187,36 @@ class SyncAndConvertTaskTest(TestCase):
 
         with self.assertRaises(Exception):
             sync_and_convert_for_item_task(self.plaid_item.id)
+
+    @patch("plaid_integration.tasks.client")
+    def test_sync_records_login_required_without_retrying(self, mock_client):
+        error = plaid.ApiException(
+            status=400,
+            reason="Bad Request",
+            http_resp=type(
+                "Response",
+                (),
+                {
+                    "status": 400,
+                    "reason": "Bad Request",
+                    "data": json.dumps(
+                        {
+                            "error_code": "ITEM_LOGIN_REQUIRED",
+                            "error_message": "A user login is required.",
+                        }
+                    ),
+                    "getheaders": lambda _self: {},
+                },
+            )(),
+        )
+        mock_client.transactions_sync.side_effect = error
+
+        result = sync_and_convert_for_item_task(self.plaid_item.id)
+
+        self.assertEqual(result, {"error": "ITEM_LOGIN_REQUIRED"})
+        self.plaid_item.refresh_from_db()
+        self.assertEqual(self.plaid_item.last_error_code, "ITEM_LOGIN_REQUIRED")
+        self.assertEqual(self.plaid_item.last_error_message, "A user login is required.")
 
     @patch("records.matching.try_match_plaid_record")
     @patch("plaid_integration.tasks.client")

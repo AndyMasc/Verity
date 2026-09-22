@@ -70,7 +70,9 @@ class HandleSubscriptionDeletedTests(TestCase):
 
 class HandleSubscriptionChangedTests(TestCase):
     def test_cancels_pro_only_storage_when_base_plan_ends(self):
-        customer = Customer.objects.create(id="cus_cancelled_base", livemode=False, created=timezone.now())
+        customer = Customer.objects.create(
+            id="cus_cancelled_base", livemode=False, created=timezone.now()
+        )
         pro_product = Product.objects.create(
             id=metadata.VERITY_PRO.stripe_id,
             livemode=False,
@@ -136,7 +138,9 @@ class HandleSubscriptionChangedTests(TestCase):
                             "customer": customer.id,
                             "status": "canceled",
                             "cancel_at_period_end": False,
-                            "items": {"data": [{"price": {"product": metadata.VERITY_PRO.stripe_id}}]},
+                            "items": {
+                                "data": [{"price": {"product": metadata.VERITY_PRO.stripe_id}}]
+                            },
                         }
                     }
                 )

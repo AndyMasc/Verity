@@ -1,3 +1,5 @@
+from urllib.parse import urlparse
+
 from django.core.exceptions import ImproperlyConfigured
 from pythonjsonlogger.json import JsonFormatter
 
@@ -27,6 +29,16 @@ CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
 # (reimbursement pay/view links) and webpush "open" URLs. base falls back to
 # localhost, which is wrong in production.
 SITE_URL = env("SITE_URL", default="https://veritypay.app")
+
+# Turning Turnstile hostname verification against the exact frontend hostname
+# that served the page. base defaults to localhost/127.0.0.1, which is safe for
+# local dev but would reject every real submission in production, so default it
+# to the site's own public host. Override TURNSTILE_HOSTNAMES if the app serves
+# more than one frontend hostname. Do not include localhost/127.0.0.1 here.
+TURNSTILE_HOSTNAMES = env.list(
+    "TURNSTILE_HOSTNAMES",
+    default=[urlparse(SITE_URL).hostname or "localhost"],
+)
 
 # Static files are immutable build artifacts (hashed names via WhiteNoise).
 # Cache them for a year so returning visitors never re-fetch them.

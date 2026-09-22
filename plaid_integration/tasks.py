@@ -11,6 +11,7 @@ from datetime import date
 from typing import Any
 
 import dramatiq
+import plaid
 from django.db import IntegrityError
 from django.db import transaction as db_transaction
 from django.db.models import Q
@@ -26,6 +27,21 @@ from .plaid_client import client
 from .services import dispatch_sync
 
 logger: logging.Logger = logging.getLogger(__name__)
+
+
+def _plaid_error_code(exception: plaid.ApiException) -> str:
+    """Extract Plaid's structured error code from an API exception."""
+    body = getattr(exception, "body", "")
+    if isinstance(body, bytes):
+        body = body.decode("utf-8", errors="replace")
+    if not isinstance(body, str):
+        return ""
+
+    try:
+        payload = json.loads(body)
+    except json.JSONDecodeError:
+        return ""
+    return payload.get("error_code", "") if isinstance(payload, dict) else ""
 
 
 def choose_folder(
@@ -252,6 +268,33 @@ def sync_and_convert_for_item_task(plaid_item_id: int | str) -> dict[str, Any]:
                     cursor=cursor,
                 )
             )
+        except plaid.ApiException as e:
+            error_code = _plaid_error_code(e)
+            if error_code == "ITEM_LOGIN_REQUIRED":
+                error_message = getattr(e, "body", "")
+                if isinstance(error_message, bytes):
+                    error_message = error_message.decode("utf-8", errors="replace")
+                try:
+                    error_message = json.loads(error_message).get("error_message", "")
+                except (json.JSONDecodeError, AttributeError, TypeError):
+                    error_message = str(e)
+
+                PlaidItem.objects.filter(id=plaid_item_id).update(
+                    last_error_code=error_code,
+                    last_error_message=error_message,
+                    last_error_at=timezone.now(),
+                )
+                logger.warning(
+                    "Plaid item %s requires user login; task will not be retried.",
+                    plaid_item_id,
+                )
+                return {"error": error_code}
+
+            logger.warning(
+                "Plaid API error or rate limit hit for item %s. Retrying task.",
+                plaid_item_id,
+            )
+            raise e from None
         except Exception as e:
             logger.warning(
                 "Plaid API error or rate limit hit for item %s. Retrying task.",

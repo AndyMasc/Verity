@@ -4,6 +4,7 @@ Provides server-side token verification for Turnstile CAPTCHA responses.
 """
 
 import logging
+import os
 import sys
 from typing import Any
 
@@ -14,12 +15,29 @@ from django.http import HttpRequest
 logger = logging.getLogger(__name__)
 
 
+def turnstile_enabled() -> bool:
+    """Whether server-side Turnstile verification should be enforced.
+
+    Returns False for pytest runs and for deployments that have not configured
+    a secret or hostname allowlist, so local and CI development are never
+    blocked by an unconfigured widget.
+    """
+    if not getattr(settings, "TURNSTILE_ENABLED", True):
+        return False
+    if "pytest" in sys.modules or os.environ.get("PYTEST_CURRENT_TEST"):
+        return False
+    return bool(settings.TURNSTILE_SECRET and settings.TURNSTILE_HOSTNAMES)
+
+
 def verify_turnstile_token(
     token: str,
     action: str,
-    request: HttpRequest,
+    request: HttpRequest | None = None,
 ) -> dict[str, Any]:
     """Verify a Turnstile token with Cloudflare's siteverify endpoint.
+
+    ``request`` is optional and only used to attach ``remoteip`` (an optional
+    siteverify parameter) when it can be derived reliably from the request.
 
     In tests and local developer setups without a real Turnstile secret, return a
     successful stub result instead of blocking form submission. The app still
@@ -62,17 +80,20 @@ def verify_turnstile_token(
             "raw_response": {},
         }
 
-    client_ip = get_client_ip(request)
+    client_ip = get_client_ip(request) if request is not None else ""
+
+    verify_data: dict[str, str] = {
+        "secret": secret,
+        "response": token,
+    }
+    if client_ip:
+        verify_data["remoteip"] = client_ip
 
     try:
         response = httpx.post(
             "https://challenges.cloudflare.com/turnstile/v0/siteverify",
             headers={"Content-Type": "application/x-www-form-urlencoded"},
-            data={
-                "secret": secret,
-                "response": token,
-                "remoteip": client_ip,
-            },
+            data=verify_data,
             timeout=10.0,
         )
 

@@ -72,7 +72,7 @@
                                         <div class="flex min-w-0 items-center gap-2">
                                             <span class="block size-1.5 shrink-0 rounded-full bg-[#5A67FF]"></span>
                                             <span class="truncate text-xs font-medium text-zinc-800 dark:text-zinc-200">
-                                                {{ notification.subject|default:"Notice" }} <span class="font-normal text-zinc-500 dark:text-zinc-400">{{ notification.message|truncatechars:28 }}</span>
+                                                {{ notification.subject|default:"Notice" }}: <span class="font-normal text-zinc-500 dark:text-zinc-400">{{ notification.message|truncatechars:28 }}</span>
                                             </span>
                                         </div>
                                         <span class="shrink-0 text-[10px] text-zinc-400 dark:text-zinc-500">{{ notification.sent_at|timesince }} ago</span>

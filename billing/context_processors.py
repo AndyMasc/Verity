@@ -59,8 +59,7 @@ def _build_subscription_status(user) -> dict[str, Any]:
     storage_pack_requires_paid_base = bool(
         metadata.plan_for_user(user).stripe_id == metadata.VERITY_FREE.stripe_id
         and any(
-            product.category == "storage_plan" and product.pro_only
-            for product in active_products
+            product.category == "storage_plan" and product.pro_only for product in active_products
         )
     )
 
