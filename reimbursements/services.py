@@ -93,17 +93,28 @@ def retrieve_payment_intent(payment_intent_id: str) -> stripe.PaymentIntent:
     return stripe.PaymentIntent.retrieve(str(payment_intent_id))
 
 
-def create_refund(payment_intent_id: str, *, reason: str) -> stripe.Refund:
+def create_refund(
+    payment_intent_id: str,
+    *,
+    reason: str,
+    refund_application_fee: bool = True,
+) -> stripe.Refund:
     """Refund a captured PaymentIntent with a deterministic idempotency key.
 
     The key is stable per (reason, payment intent) so webhook/task retries can
     never double-refund: Stripe replays the first refund's result instead.
     Raises "stripe.error.StripeError" on failure.
+
+    Destination charges with a collected application fee must refund that fee
+    back to the payer, otherwise the platform retains it and the payer is not
+    made whole. "refund_application_fee=True" (default) returns the fee
+    proportionally; it is a no-op for charges without an application fee.
     """
     _configure()
     return stripe.Refund.create(
         payment_intent=str(payment_intent_id),
         idempotency_key=f"refund:{reason}:{payment_intent_id}",
+        refund_application_fee=refund_application_fee,
     )
 
 

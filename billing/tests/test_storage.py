@@ -325,7 +325,9 @@ class StoragePackConfirmFlowTests(TestCase):
             session_create.assert_called_once()
             called_customer = session_create.call_args.kwargs["customer"]
             self.assertEqual(called_customer, self.customer.id)
-            self.assertIn("checkout:user:", session_create.call_args.kwargs["idempotency_key"])
+            # No idempotency key must be sent: a deterministic key makes Stripe
+            # return the original (possibly expired) session on later attempts.
+            self.assertNotIn("idempotency_key", session_create.call_args.kwargs)
         get_or_create.assert_not_called()
 
     def test_checkout_falls_back_when_customer_deleted_in_stripe(self):

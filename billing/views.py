@@ -162,21 +162,17 @@ def create_checkout_session(request: HttpRequest) -> HttpResponse:
             user.customer = customer
             user.save(update_fields=["customer"])
 
-    idempotency_key = (
-        f"checkout:user:{user.id}:"
-        f"base:{base_price_id or 'none'}:"
-        f"storage:{storage_price_id or 'none'}:"
-        f"qty:{_checkout_quantity(request.POST.get('quantity'))}"
-    )
-
     try:
+        # No idempotency key: Checkout Sessions are already idempotent. A
+        # deterministic key previously made Stripe return the (possibly
+        # expired) session from the first request on every retry, which caused
+        # the "checkout session has timed out or expired" page.
         checkout_session = services.create_checkout_session(
             customer=customer.id,
             line_items=line_items,
             success_url=request.build_absolute_uri(reverse("subscription_confirm"))
             + "?session_id={CHECKOUT_SESSION_ID}",
             cancel_url=request.build_absolute_uri(reverse("pricing_page")),
-            idempotency_key=idempotency_key,
         )
         return HttpResponseRedirect(checkout_session.url)
     except stripe.error.StripeError as e:

@@ -1982,6 +1982,9 @@
   .bg-\[\#5A67FF\]\/10 {
     background-color: color-mix(in oklab, #5A67FF 10%, transparent);
   }
+  .bg-\[\#5B66FF\] {
+    background-color: #5B66FF;
+  }
   .bg-\[\#5B67FF\]\/60 {
     background-color: color-mix(in oklab, #5B67FF 60%, transparent);
   }
