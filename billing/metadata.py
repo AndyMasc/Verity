@@ -168,9 +168,12 @@ def _active_subscriptions(user):
     direct = getattr(user, "subscription", None)
     if direct is not None and not any(s.pk == direct.pk for s in subscriptions):
         subscriptions.append(direct)
-    active = [
-        sub for sub in subscriptions if getattr(sub, "status", None) in ACTIVE_SUBSCRIPTION_STATUSES
-    ]
+    active = []
+    for sub in subscriptions:
+        status = getattr(sub, "status", None)
+        cancel_at_period_end = bool(getattr(sub, "cancel_at_period_end", False))
+        if status in ACTIVE_SUBSCRIPTION_STATUSES or cancel_at_period_end:
+            active.append(sub)
     user._pt_active_subscriptions = active
     return active
 

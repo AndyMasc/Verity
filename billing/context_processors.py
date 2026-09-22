@@ -56,6 +56,13 @@ def _build_subscription_status(user) -> dict[str, Any]:
     plan_name = ", ".join(product.name for product in active_products) or (
         metadata.VERITY_FREE.name
     )
+    storage_pack_requires_paid_base = bool(
+        metadata.plan_for_user(user).stripe_id == metadata.VERITY_FREE.stripe_id
+        and any(
+            product.category == "storage_plan" and product.pro_only
+            for product in active_products
+        )
+    )
 
     # The Stripe model instance is intentionally not cached (stale serialized
     # objects in Redis); every template consumes the primitives below instead.
@@ -69,6 +76,7 @@ def _build_subscription_status(user) -> dict[str, Any]:
         "plan_name": plan_name,
         "monthly_scan_limit": entitlements.get_monthly_scan_limit(user),
         "features": list(entitlements.get_features(user)),
+        "storage_pack_requires_paid_base": storage_pack_requires_paid_base,
     }
 
 

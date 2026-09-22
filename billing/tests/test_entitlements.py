@@ -74,6 +74,39 @@ class EntitlementTests(TestCase):
         self.assertEqual(entitlements.get_plan(self.user), "free")
         self.assertFalse(entitlements.has_feature(self.user, features.BANK_TRANSACTION_SYNC))
 
+    def test_cancel_at_period_end_keeps_paid_access_until_cycle_end(self):
+        sub = Subscription.objects.create(
+            id="sub_ent_cancel_at_period_end",
+            livemode=False,
+            created=timezone.now(),
+            customer=self.customer,
+            stripe_data={"status": "canceled", "cancel_at_period_end": True},
+        )
+        product = Product.objects.create(
+            id=metadata.VERITY_PRO.stripe_id,
+            livemode=False,
+            active=True,
+            name="Test",
+        )
+        price = Price.objects.create(
+            id=f"price_{metadata.VERITY_PRO.stripe_id}",
+            livemode=False,
+            active=True,
+            product=product,
+            currency="usd",
+        )
+        SubscriptionItem.objects.create(
+            id="si_cancel_at_period_end",
+            livemode=False,
+            created=timezone.now(),
+            subscription=sub,
+            price=price,
+        )
+        self.user.subscription = sub
+        self.user.save()
+        self.assertEqual(entitlements.get_plan(self.user), "paid")
+        self.assertTrue(entitlements.has_feature(self.user, features.BANK_TRANSACTION_SYNC))
+
     def test_storage_addon_alone_does_not_unlock_pro_features(self):
         self._add_subscription(status="active", product_id=metadata.STORAGE_UPGRADE_10.stripe_id)
         self.assertEqual(entitlements.get_plan(self.user), "free")
@@ -163,6 +196,7 @@ class ContextProcessorTests(TestCase):
         self.assertEqual(ctx["plan"], "free")
         self.assertEqual(ctx["monthly_scan_limit"], entitlements.FREE_MONTHLY_SCAN_LIMIT)
         self.assertNotIn(features.UNLIMITED_SCANS, ctx["features"])
+        self.assertTrue(ctx["storage_pack_requires_paid_base"])
 
     def test_pro_plan_name_is_dynamic(self):
         from ..context_processors import subscription_status

@@ -2,9 +2,13 @@ import logging
 from typing import Any
 
 import djstripe.signals as djstripe_signals
+import stripe
 from django.db import transaction
 from django.dispatch import receiver
 from djstripe.event_handlers import djstripe_receiver
+from djstripe.models import Subscription
+
+from . import metadata, services
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +28,65 @@ def report_webhook_processing_error(**kwargs: Any) -> None:
     )
 
 
+def _subscription_categories(stripe_sub: dict) -> set[str]:
+    """Return the pricing categories covered by a Stripe subscription payload."""
+    categories: set[str] = set()
+    for item in (stripe_sub or {}).get("items", {}).get("data", []):
+        product_id = item.get("price", {}).get("product")
+        category = metadata.category_for_product(product_id)
+        if category:
+            categories.add(category)
+    return categories
+
+
+def _base_plan_is_ending(stripe_sub: dict) -> bool:
+    """True when a base plan is being canceled or scheduled for cancellation."""
+    if not stripe_sub:
+        return False
+    status = stripe_sub.get("status")
+    if status in {"canceled", "unpaid", "incomplete_expired"}:
+        return True
+    return bool(stripe_sub.get("cancel_at_period_end"))
+
+
+def _cancel_pro_only_storage_for_customer(customer_id: str, base_subscription_id: str | None = None) -> None:
+    """Cancel any active Pro-only storage add-ons after the user's Pro base plan ends."""
+    if not customer_id:
+        return
+
+    queryset = Subscription.objects.filter(customer__id=customer_id)
+    if base_subscription_id:
+        queryset = queryset.exclude(id=base_subscription_id)
+
+    for sub in queryset.iterator():
+        status = (sub.stripe_data or {}).get("status")
+        if status not in {"active", "trialing"}:
+            continue
+
+        for item in sub.items.select_related("price__product").all():
+            product = item.price.product if item.price else None
+            if product is None:
+                continue
+            meta = metadata.PRODUCTS.get(product.id)
+            if meta is not None and meta.category == "storage_plan" and meta.pro_only:
+                try:
+                    services.cancel_subscription(sub.id)
+                    logger.warning(
+                        "Auto-canceled pro-only storage pack %s for customer %s because base plan %s ended.",
+                        sub.id,
+                        customer_id,
+                        base_subscription_id,
+                    )
+                except stripe.error.StripeError as exc:
+                    logger.warning(
+                        "Failed to auto-cancel pro-only storage pack %s for customer %s after base plan cancellation: %s",
+                        sub.id,
+                        customer_id,
+                        exc,
+                    )
+                break
+
+
 @djstripe_receiver("customer.subscription.deleted")
 def handle_subscription_deleted(**kwargs: Any) -> None:
     """Clears the user's subscription relation when cancelled in Stripe."""
@@ -38,6 +101,8 @@ def handle_subscription_deleted(**kwargs: Any) -> None:
         return
 
     _invalidate_subscription_caches_for_event(stripe_sub)
+    if "base_plan" in _subscription_categories(stripe_sub):
+        _cancel_pro_only_storage_for_customer(stripe_sub.get("customer"), base_subscription_id=sub_id)
 
     def _clear_user_subscription() -> None:
         from .models import CustomUser
@@ -83,3 +148,6 @@ def handle_subscription_changed(**kwargs: Any) -> None:
         return
 
     _invalidate_subscription_caches_for_event(stripe_sub)
+
+    if "base_plan" in _subscription_categories(stripe_sub) and _base_plan_is_ending(stripe_sub):
+        _cancel_pro_only_storage_for_customer(stripe_sub.get("customer"), base_subscription_id=stripe_sub.get("id"))

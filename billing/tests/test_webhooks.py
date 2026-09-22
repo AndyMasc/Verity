@@ -3,14 +3,16 @@ from unittest import mock
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.utils import timezone
-from djstripe.models import Customer, Subscription
+from djstripe.models import Customer, Price, Product, Subscription, SubscriptionItem
 
 from reimbursements.webhooks import (
     HANDLED_EVENT_TYPES,
     enqueue_reimbursement_processing,
 )
 
+from .. import metadata
 from ..webhooks import (
+    handle_subscription_changed,
     handle_subscription_deleted,
     report_webhook_processing_error,
 )
@@ -64,6 +66,83 @@ class HandleSubscriptionDeletedTests(TestCase):
             )
         self.user.refresh_from_db()
         self.assertEqual(self.user.subscription_id, self.subscription.djstripe_id)
+
+
+class HandleSubscriptionChangedTests(TestCase):
+    def test_cancels_pro_only_storage_when_base_plan_ends(self):
+        customer = Customer.objects.create(id="cus_cancelled_base", livemode=False, created=timezone.now())
+        pro_product = Product.objects.create(
+            id=metadata.VERITY_PRO.stripe_id,
+            livemode=False,
+            active=True,
+            name="Verity Pro",
+        )
+        pro_price = Price.objects.create(
+            id="price_pro_cancel",
+            livemode=False,
+            active=True,
+            product=pro_product,
+            currency="usd",
+        )
+        pro_sub = Subscription.objects.create(
+            id="sub_pro_cancel",
+            livemode=False,
+            created=timezone.now(),
+            customer=customer,
+            stripe_data={"status": "active"},
+        )
+        SubscriptionItem.objects.create(
+            id="si_pro_cancel",
+            livemode=False,
+            created=timezone.now(),
+            subscription=pro_sub,
+            price=pro_price,
+        )
+
+        storage_product = Product.objects.create(
+            id=metadata.STORAGE_UPGRADE_10.stripe_id,
+            livemode=False,
+            active=True,
+            name="10 GB Storage Pack",
+        )
+        storage_price = Price.objects.create(
+            id="price_storage_cancel",
+            livemode=False,
+            active=True,
+            product=storage_product,
+            currency="usd",
+        )
+        storage_sub = Subscription.objects.create(
+            id="sub_storage_cancel",
+            livemode=False,
+            created=timezone.now(),
+            customer=customer,
+            stripe_data={"status": "active"},
+        )
+        SubscriptionItem.objects.create(
+            id="si_storage_cancel",
+            livemode=False,
+            created=timezone.now(),
+            subscription=storage_sub,
+            price=storage_price,
+        )
+
+        with mock.patch("billing.webhooks.services.cancel_subscription") as cancel_mock:
+            handle_subscription_changed(
+                event=mock.Mock(
+                    data={
+                        "object": {
+                            "id": pro_sub.id,
+                            "customer": customer.id,
+                            "status": "canceled",
+                            "cancel_at_period_end": False,
+                            "items": {"data": [{"price": {"product": metadata.VERITY_PRO.stripe_id}}]},
+                        }
+                    }
+                )
+            )
+
+        cancel_mock.assert_called_once_with(storage_sub.id)
 
 
 class EnqueueReimbursementProcessingTests(TestCase):
