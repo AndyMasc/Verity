@@ -405,7 +405,7 @@
                     const d = closest.data;
                     const label = d.is_current ? `${d.label} · in progress` : d.label;
                     const value = d.is_current
-                        ? `${this.formatCurrency(d.total)} MTD · ${this.formatCurrency(d.projected_total)} est.`
+                        ? `${this.formatCurrency(d.projected_total)} est`
                         : this.formatCurrency(d.total);
 
                     this.tooltip = {
