@@ -15,6 +15,7 @@ from django_ratelimit.decorators import ratelimit
 
 from billing import features
 from core.posthog_client import get_posthog_client
+from core.posthog_logs import POSTHOG_LOGGER_NAME
 
 from .. import services
 from ..mixins import ReimbursementRequestRequiredMixin
@@ -22,6 +23,7 @@ from ..models import ReimbursementPackage
 from ..notifications import send_package_created_notification
 
 logger = logging.getLogger(__name__)
+posthog_logger = logging.getLogger(POSTHOG_LOGGER_NAME)
 
 
 class PackageListView(LoginRequiredMixin, ListView):
@@ -164,6 +166,12 @@ class PackageDeleteView(LoginRequiredMixin, View):
             )
 
         logger.info("Package %s soft-deleted by user %s", package.uuid, request.user.id)
+        if posthog_client := get_posthog_client():
+            posthog_client.capture("reimbursement_package_deleted")
+        posthog_logger.info(
+            "reimbursement package deleted",
+            extra={"event": "reimbursement_package_deleted"},
+        )
         messages.success(request, "Package deleted.")
 
         if request.headers.get("HX-Request"):

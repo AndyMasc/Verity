@@ -70,7 +70,6 @@ class RecordAdmin(admin.ModelAdmin):
                 obj.delete()
 
     def get_deleted_objects(self, queryset, request):
-        # Fix: Updated signature from old (objs, request) to modern (queryset, request)
         deleted, protected, perms_needed, view_only = super().get_deleted_objects(queryset, request)
         return deleted, protected, perms_needed, view_only
 

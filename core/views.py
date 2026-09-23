@@ -31,9 +31,11 @@ from billing.services import pricing_context
 from .forms import UpdateUserSettingsForm
 from .models import Notification, UserSettings
 from .posthog_client import get_posthog_client
+from .posthog_logs import POSTHOG_LOGGER_NAME
 from .services.dashboard import get_dashboard_context
 
 logger = logging.getLogger(__name__)
+posthog_logger = logging.getLogger(POSTHOG_LOGGER_NAME)
 
 
 def index(request: HttpRequest) -> HttpResponse:
@@ -182,6 +184,12 @@ class ProfilePageView(LoginRequiredMixin, UpdateView):
         user_settings = form.save(commit=False)
         user_settings.user = self.request.user
         user_settings.save()
+        if posthog_client := get_posthog_client():
+            posthog_client.capture("user_settings_updated")
+        posthog_logger.info(
+            "user settings updated",
+            extra={"event": "user_settings_updated"},
+        )
 
         messages.success(self.request, "Settings saved successfully.")
 

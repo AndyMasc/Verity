@@ -2,6 +2,7 @@ from django.apps import AppConfig
 from django.conf import settings
 
 from core.posthog_client import initialize_posthog
+from core.posthog_logs import configure_posthog_log_export
 
 
 class CoreConfig(AppConfig):
@@ -27,5 +28,6 @@ class CoreConfig(AppConfig):
                 return
 
         settings.POSTHOG_MW_CLIENT = initialize_posthog(token, host)
+        configure_posthog_log_export(token, host)
 
         from core import posthog_signals  # noqa: F401

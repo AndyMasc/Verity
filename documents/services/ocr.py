@@ -147,7 +147,10 @@ def process_image(image_bytes: bytes, filepath: str) -> list[types.Part]:
     return [types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg")]
 
 
-def call_gemini(image_parts: list[types.Part], folder_names: list[str]) -> dict[str, Any]:
+def call_gemini(
+    image_parts: list[types.Part],
+    folder_names: list[str],
+) -> dict[str, Any]:
     """Send the images to Gemini with folder context and return parsed OCR results."""
     contents: list[Any] = []
 
