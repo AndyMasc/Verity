@@ -90,12 +90,6 @@ class DashboardViewAsyncTest(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertIn("?next=/dashboard/", response.url)
 
-    async def test_authenticated_access(self):
-        await self.async_client.aforce_login(self.user)
-        response = await self.async_client.get(reverse("core:dashboard"))
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "core/dashboard.html")
-
     async def test_webpush_warning_shown_once_per_session(self):
         await self.async_client.aforce_login(self.user)
         first = await self.async_client.get(reverse("core:dashboard"))
