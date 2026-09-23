@@ -56,7 +56,7 @@ def _with_maxlength(field: forms.Field, limit: int) -> None:
 
 class BaseRecordForm(forms.ModelForm):
     title = forms.CharField(max_length=255, required=True)
-    products = forms.CharField(required=False)
+    products = forms.CharField(required=False, widget=forms.Textarea)
     merchant = forms.CharField(max_length=255, required=True)
     balance = forms.DecimalField(max_digits=10, decimal_places=2, required=True)
     transaction_date = forms.DateField(
@@ -71,6 +71,7 @@ class BaseRecordForm(forms.ModelForm):
         required=False,
         max_length=500,
         label="Business Purpose / Notes",
+        widget=forms.Textarea,
     )
     payment_method = forms.CharField(
         max_length=255,
