@@ -133,7 +133,7 @@ class HardDeleteViewHTTPTest(TestCase):
         record = self._make_young_record()
         self.client.force_login(self.user)
         url = reverse(self.url_name, args=[record.pk])
-        response = self.client.post(url, HTTP_HX_REQUEST="true")
+        response = self.client.post(url, headers={"hx-request": "true"})
         self.assertEqual(response.status_code, 409)
         import json
 
@@ -152,7 +152,7 @@ class HardDeleteViewHTTPTest(TestCase):
         record = self._make_old_record()
         self.client.force_login(self.user)
         url = reverse(self.url_name, args=[record.pk])
-        response = self.client.post(url, HTTP_HX_REQUEST="true")
+        response = self.client.post(url, headers={"hx-request": "true"})
         self.assertEqual(response.status_code, 204)
         self.assertFalse(Record.objects.filter(pk=record.pk).exists())
 
@@ -282,7 +282,7 @@ class BulkArchiveViewTest(TestCase):
             self.url,
             data=json.dumps({"record_ids": ids}),
             content_type="application/json",
-            HTTP_HX_REQUEST="true",
+            headers={"hx-request": "true"},
         )
         self.assertEqual(response.status_code, 200)
         for r in Record.objects.filter(pk__in=ids):
@@ -312,7 +312,7 @@ class BulkArchiveViewTest(TestCase):
             self.url,
             data=json.dumps({"record_ids": ids}),
             content_type="application/json",
-            HTTP_HX_REQUEST="true",
+            headers={"hx-request": "true"},
         )
         self.assertEqual(response.status_code, 200)
         audit_count = AuditLog.objects.filter(
@@ -344,7 +344,7 @@ class BulkArchiveViewTest(TestCase):
             self.url,
             data=json.dumps({"record_ids": [self.records[0].pk]}),
             content_type="application/json",
-            HTTP_HX_REQUEST="true",
+            headers={"hx-request": "true"},
         )
         self.assertEqual(response.status_code, 200)
         trigger = json.loads(response["HX-Trigger"])
@@ -368,7 +368,7 @@ class BulkArchiveViewTest(TestCase):
             self.url,
             data=json.dumps({"record_ids": []}),
             content_type="application/json",
-            HTTP_HX_REQUEST="true",
+            headers={"hx-request": "true"},
         )
         self.assertEqual(response.status_code, 400)
         self.assertIn("No records were archived", response.json()["error"])

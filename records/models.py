@@ -232,10 +232,6 @@ class Folder(models.Model):
         return self.name
 
 
-class RecordManager(models.Manager.from_queryset(RecordQuerySet)):
-    pass
-
-
 class Record(models.Model):
     """Central domain object representing an individual financial record.
 
@@ -321,7 +317,7 @@ class Record(models.Model):
         related_name="records",
     )
 
-    objects = RecordManager()
+    objects = RecordQuerySet.as_manager()
     history = HistoricalRecords()
 
     class Meta:

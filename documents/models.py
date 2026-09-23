@@ -125,7 +125,7 @@ class DocumentData(models.Model):
     file_hash = models.CharField(max_length=64, db_index=True)
     status = models.CharField(
         max_length=20,
-        choices=DocumentStatus.choices,
+        choices=DocumentStatus,
         default=DocumentStatus.PENDING_UPLOAD,
         db_index=True,
     )

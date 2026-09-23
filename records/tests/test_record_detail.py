@@ -230,7 +230,7 @@ class RecordDetailViewTest(TestCase):
                 "balance": "100.00",
                 "currency": "usd",
             },
-            HTTP_HX_REQUEST="true",
+            headers={"hx-request": "true"},
         )
         self.assertIn(response.status_code, [200, 204])
         self.record.refresh_from_db()
@@ -254,7 +254,7 @@ class RecordDetailViewTest(TestCase):
                 "nickname": "",
                 "folder": "",
             },
-            HTTP_HX_REQUEST="true",
+            headers={"hx-request": "true"},
         )
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "record-form")

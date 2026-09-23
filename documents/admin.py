@@ -17,6 +17,7 @@ def hard_delete_documents(modeladmin, request, queryset):  # noqa: ARG001
     messages.success(request, f"Permanently deleted {count} document(s).")
 
 
+@admin.register(DocumentData)
 class DocumentDataAdmin(admin.ModelAdmin):
     list_display = ("title", "user", "status", "did_ocr")
     list_filter = ("status", "did_ocr")
@@ -52,6 +53,3 @@ class DocumentDataAdmin(admin.ModelAdmin):
         if request.user.is_superuser:
             return qs
         return qs.for_user(request.user)
-
-
-admin.site.register(DocumentData, DocumentDataAdmin)

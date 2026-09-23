@@ -50,7 +50,7 @@ class BulkUnarchiveViewTest(TestCase):
             self.url,
             data=json.dumps({"record_ids": ids}),
             content_type="application/json",
-            HTTP_HX_REQUEST="true",
+            headers={"hx-request": "true"},
         )
         self.assertEqual(response.status_code, 200)
         for r in Record.objects.filter(pk__in=ids):

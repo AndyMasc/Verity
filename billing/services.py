@@ -105,24 +105,33 @@ def _checkout_price_id(product: Product) -> str | None:
     return newest.id
 
 
+def _product_pro_only(meta, base_plan) -> bool:
+    """Return whether a product should be hidden from users on the free plan."""
+    if not meta or not meta.pro_only:
+        return False
+    return base_plan.stripe_id == metadata.VERITY_FREE.stripe_id
+
+
+def _decorate_product_for_pricing(product, *, base_plan, held_product_ids):
+    """Attach display metadata used by the pricing cards and checkout UI."""
+    meta = metadata.PRODUCTS.get(product.id)
+    product.features_list = meta.features if meta else []
+    product.checkout_price_id = _checkout_price_id(product)
+    product.already_active = product.id in held_product_ids
+    product.recommended = meta.recommended if meta else False
+    product.pro_only = _product_pro_only(meta, base_plan)
+
+
 def pricing_context(user) -> dict:
     """Build the pricing data shared by the pricing page and the landing page."""
     products = list(Product.objects.filter(active=True).prefetch_related("prices"))
     base_plan = metadata.plan_for_user(user)
     held_product_ids = {meta.stripe_id for meta in metadata.active_products_for_user(user)}
+
     for product in products:
-        meta = metadata.PRODUCTS.get(product.id)
-        product.features_list = meta.features if meta else []
-        product.checkout_price_id = _checkout_price_id(product)
-        product.already_active = product.id in held_product_ids
-        product.recommended = meta.recommended if meta else False
-        # Add pro_only attribute for template rendering:
-        # - A product marked pro_only is only available to users on a paid
-        #   base plan. Free-plan (or anonymous) users see it as disabled.
-        if meta and meta.pro_only:
-            product.pro_only = base_plan.stripe_id == metadata.VERITY_FREE.stripe_id
-        else:
-            product.pro_only = False
+        _decorate_product_for_pricing(
+            product, base_plan=base_plan, held_product_ids=held_product_ids
+        )
 
     free_plan = metadata.VERITY_FREE
     free_plan.features_list = free_plan.features

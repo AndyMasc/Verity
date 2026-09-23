@@ -9,9 +9,7 @@ from typing import ClassVar
 
 from django import forms
 from django.core.exceptions import ValidationError
-from django.forms.utils import flatatt
 from django.utils import timezone
-from django.utils.html import format_html
 
 from core.currencies import CURRENCY_CHOICES
 
@@ -40,22 +38,6 @@ class FolderForm(forms.ModelForm):
         }
 
 
-class TrimmedTextarea(forms.Textarea):
-    """Textarea widget that renders without Django's default "value" attribute.
-
-    Prevents whitespace from being injected into the "<textarea>"
-    element on initial render, which would cause cursor-position issues
-    and extra trailing newlines.
-    """
-
-    def render(self, name, value, attrs=None, renderer=None):  # noqa: ARG002
-        if value is None:
-            value = ""
-        attrs = self.build_attrs(self.attrs, attrs)
-        attrs["name"] = name
-        return format_html("<textarea{}>{}</textarea>", flatatt(attrs), value)
-
-
 _MAXLENGTH_HELP = {
     "title": 255,
     "merchant": 255,
@@ -73,18 +55,8 @@ def _with_maxlength(field: forms.Field, limit: int) -> None:
 
 
 class BaseRecordForm(forms.ModelForm):
-    """Shared form logic for creating and editing Record instances.
-
-    Enforces business rules common to both creation and update flows:
-    - Transaction date must not be in the future.
-    - Balance must be non-negative.
-    - Expiry date must be on or after the transaction date.
-    - Expense receipts and invoices require a business purpose (notes) and
-      payment method.
-    """
-
     title = forms.CharField(max_length=255, required=True)
-    products = forms.CharField(widget=TrimmedTextarea, required=False)
+    products = forms.CharField(required=False)
     merchant = forms.CharField(max_length=255, required=True)
     balance = forms.DecimalField(max_digits=10, decimal_places=2, required=True)
     transaction_date = forms.DateField(
@@ -96,7 +68,6 @@ class BaseRecordForm(forms.ModelForm):
         required=True,
     )
     notes = forms.CharField(
-        widget=TrimmedTextarea,
         required=False,
         max_length=500,
         label="Business Purpose / Notes",
@@ -184,7 +155,9 @@ class BaseRecordForm(forms.ModelForm):
         """Ensure expiry date is not earlier than the transaction date."""
         expiry_date = cleaned_data.get("expiry_date")
         transaction_date = cleaned_data.get("transaction_date")
-        if expiry_date and transaction_date and expiry_date < transaction_date:
+        if expiry_date is None or transaction_date is None:
+            return
+        if expiry_date < transaction_date:
             raise ValidationError({"expiry_date": "Expiry date cannot be before transaction date."})
 
     def _validate_record_type_requirements(self, cleaned_data):
@@ -199,9 +172,11 @@ class BaseRecordForm(forms.ModelForm):
         ):
             return
 
-        if not notes or not notes.strip():
+        notes_missing = not notes or not notes.strip()
+        payment_method_missing = not payment_method or not payment_method.strip()
+        if notes_missing:
             raise ValidationError({"notes": "Business purpose is required for this record type."})
-        if not payment_method or not payment_method.strip():
+        if payment_method_missing:
             raise ValidationError(
                 {"payment_method": "Payment method is required for this record type."}
             )
@@ -235,12 +210,17 @@ class RecordUpdateForm(BaseRecordForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        instance = self.instance if self.instance and self.instance.pk else None
+        instance = self.instance
+        if not instance or not instance.pk:
+            instance = None
         user = getattr(instance, "user", None)
         self.setup_folder_field(user)
 
         payment_field = self.fields.get("payment_method")
-        if instance and getattr(instance, "is_plaid_record", False) and payment_field:
+        is_plaid_record = False
+        if instance:
+            is_plaid_record = getattr(instance, "is_plaid_record", False)
+        if is_plaid_record and payment_field:
             payment_field.disabled = True
 
 

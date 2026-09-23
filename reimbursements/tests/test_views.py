@@ -489,7 +489,7 @@ class PackageDeleteViewTest(TestCase):
 
     def test_recipient_cannot_delete_open_package_ajax_returns_403(self, _mock_rl):
         self.client.force_login(self.recipient)
-        response = self.client.post(self.url, HTTP_X_REQUESTED_WITH="XMLHttpRequest")
+        response = self.client.post(self.url, headers={"x-requested-with": "XMLHttpRequest"})
         self.assertEqual(response.status_code, 403)
         self.assertIn("error", response.json())
         self.pkg.refresh_from_db()
@@ -508,7 +508,7 @@ class PackageDeleteViewTest(TestCase):
             "reimbursements.services.revoke_package_access",
             side_effect=RuntimeError("boom"),
         ):
-            response = self.client.post(self.url, HTTP_X_REQUESTED_WITH="XMLHttpRequest")
+            response = self.client.post(self.url, headers={"x-requested-with": "XMLHttpRequest"})
         self.assertEqual(response.status_code, 502)
         self.assertIn("error", response.json())
         self.pkg.refresh_from_db()

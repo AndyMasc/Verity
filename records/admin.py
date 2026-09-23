@@ -32,6 +32,7 @@ def safe_delete_selected(modeladmin, request, queryset):  # noqa: ARG001
     messages.success(request, f"Soft-deleted {queryset.count()} record(s).")
 
 
+@admin.register(Record)
 class RecordAdmin(admin.ModelAdmin):
     """Admin class for Record with superuser-gated destructive actions."""
 
@@ -77,7 +78,6 @@ class RecordAdmin(admin.ModelAdmin):
         return request.user.is_superuser
 
 
-admin.site.register(Record, RecordAdmin)
 admin.site.register(Folder)
 
 

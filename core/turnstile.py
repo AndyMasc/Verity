@@ -126,7 +126,7 @@ def get_client_ip(request: HttpRequest) -> str:
     Checks X-Forwarded-For header first (for proxied requests),
     then falls back to REMOTE_ADDR.
     """
-    x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
+    x_forwarded_for = request.headers.get("x-forwarded-for")
     if x_forwarded_for:
         ip = x_forwarded_for.split(",")[0].strip()
         return ip

@@ -29,19 +29,21 @@ from .services import dispatch_sync
 logger: logging.Logger = logging.getLogger(__name__)
 
 
-def _plaid_error_code(exception: plaid.ApiException) -> str:
-    """Extract Plaid's structured error code from an API exception."""
-    body = getattr(exception, "body", "")
+def _extract_plaid_error(error: plaid.ApiException) -> tuple[str, str]:
+    """Return ``(error_code, error_message)`` parsed from a Plaid API exception."""
+    body = getattr(error, "body", "")
     if isinstance(body, bytes):
         body = body.decode("utf-8", errors="replace")
     if not isinstance(body, str):
-        return ""
+        return "", str(error)
 
     try:
         payload = json.loads(body)
     except json.JSONDecodeError:
-        return ""
-    return payload.get("error_code", "") if isinstance(payload, dict) else ""
+        return "", str(error)
+    if not isinstance(payload, dict):
+        return "", str(error)
+    return payload.get("error_code", ""), payload.get("error_message", str(error))
 
 
 def choose_folder(
@@ -62,7 +64,7 @@ def choose_folder(
     if folder_cache is not None and category_clean in folder_cache:
         return folder_cache[category_clean]
 
-    key_words = [word.strip().lower() for word in category_clean.split() if len(word.strip()) > 0]
+    key_words = [word.strip().lower() for word in category_clean.split()]
     if not key_words:
         return None
 
@@ -74,7 +76,7 @@ def choose_folder(
 
     if not folder:
         try:
-            folder, _created = Folder.objects.get_or_create(user=user, name=category_clean)
+            folder = Folder.objects.get_or_create(user=user, name=category_clean)[0]
         except IntegrityError:
             folder = Folder.objects.filter(user=user, name=category_clean).first()
 
@@ -218,9 +220,7 @@ def _bulk_create_update_records(to_create: list[Record], to_update: list[Record]
                 "folder",
                 "payment_method",
                 "last_edited",
-                # Plaid corrections can re-add ("resurrect") a transaction that
-                # was previously removed; without this the record stays
-                # inactive forever with no recovery path.
+                # Plaid corrections can ressurect a transaction that was previously removed; without this the record stays inactive forever with no recovery path.
                 "is_active",
             ],
         )
@@ -239,6 +239,62 @@ def _match_records_to_documents(plaid_item: PlaidItem, plaid_item_id: int | str)
             try_match_plaid_record(plaid_record)
     except Exception:
         logger.exception("Error matching plaid records to documents for item %s", plaid_item_id)
+
+
+def _fetch_sync_page(plaid_item: PlaidItem, cursor: str) -> dict[str, Any] | None:
+    """Fetch one Transactions Sync page; return ``None`` when the item needs re-authentication.
+
+    A "ITEM_LOGIN_REQUIRED" error is recorded on the item and surfaced as
+    ``None`` so the caller stops without retrying. Any other failure is
+    re-raised unchanged so the broker's retry policy still applies.
+    """
+    try:
+        response = client.transactions_sync(
+            TransactionsSyncRequest(access_token=plaid_item.access_token, cursor=cursor)
+        )
+    except plaid.ApiException as e:
+        error_code, error_message = _extract_plaid_error(e)
+        if error_code != "ITEM_LOGIN_REQUIRED":
+            raise
+        PlaidItem.objects.filter(id=plaid_item.id).update(
+            last_error_code=error_code,
+            last_error_message=error_message,
+            last_error_at=timezone.now(),
+        )
+        return None
+    return response if isinstance(response, dict) else response.to_dict()
+
+
+def _process_sync_page(
+    data: dict[str, Any],
+    plaid_item: PlaidItem,
+    folder_cache: dict[str, Folder],
+    stats: dict[str, int],
+) -> tuple[str, bool]:
+    """Apply one Transactions Sync page atomically; return ``(next_cursor, has_more)``."""
+    with db_transaction.atomic():
+        _process_removed_transactions(data, stats)
+
+        batch = data.get("added", []) + data.get("modified", [])
+        if batch:
+            txn_ids = [t["transaction_id"] for t in batch]
+            existing_ids = set(
+                Record.objects.filter(plaid_transaction_id__in=txn_ids).values_list(
+                    "plaid_transaction_id", flat=True
+                )
+            )
+            to_create, to_update = _process_added_modified_transactions(
+                batch, existing_ids, plaid_item, folder_cache
+            )
+            _bulk_create_update_records(to_create, to_update)
+            stats["added"] += len(data["added"])
+            stats["modified"] += len(data["modified"])
+
+        cursor = data.get("next_cursor", plaid_item.next_cursor)
+        has_more = data.get("has_more", False)
+        plaid_item.next_cursor = cursor
+        plaid_item.save(update_fields=["next_cursor"])
+        return cursor, has_more
 
 
 @dramatiq.actor(max_retries=3)
@@ -261,75 +317,10 @@ def sync_and_convert_for_item_task(plaid_item_id: int | str) -> dict[str, Any]:
     folder_cache: dict[str, Folder] = {}
 
     while has_more:
-        try:
-            response: Any = client.transactions_sync(
-                TransactionsSyncRequest(
-                    access_token=plaid_item.access_token,
-                    cursor=cursor,
-                )
-            )
-        except plaid.ApiException as e:
-            error_code = _plaid_error_code(e)
-            if error_code == "ITEM_LOGIN_REQUIRED":
-                error_message = getattr(e, "body", "")
-                if isinstance(error_message, bytes):
-                    error_message = error_message.decode("utf-8", errors="replace")
-                try:
-                    error_message = json.loads(error_message).get("error_message", "")
-                except (json.JSONDecodeError, AttributeError, TypeError):
-                    error_message = str(e)
-
-                PlaidItem.objects.filter(id=plaid_item_id).update(
-                    last_error_code=error_code,
-                    last_error_message=error_message,
-                    last_error_at=timezone.now(),
-                )
-                logger.warning(
-                    "Plaid item %s requires user login; task will not be retried.",
-                    plaid_item_id,
-                )
-                return {"error": error_code}
-
-            logger.warning(
-                "Plaid API error or rate limit hit for item %s. Retrying task.",
-                plaid_item_id,
-            )
-            raise e from None
-        except Exception as e:
-            logger.warning(
-                "Plaid API error or rate limit hit for item %s. Retrying task.",
-                plaid_item_id,
-            )
-            raise e from None
-
-        data: dict[str, Any] = response if isinstance(response, dict) else response.to_dict()
-
-        with db_transaction.atomic():
-            _process_removed_transactions(data, stats)
-
-            added_txns = data.get("added", [])
-            modified_txns = data.get("modified", [])
-            batch = added_txns + modified_txns
-
-            if batch:
-                txn_ids = [t["transaction_id"] for t in batch]
-                existing_ids = set(
-                    Record.objects.filter(plaid_transaction_id__in=txn_ids).values_list(
-                        "plaid_transaction_id", flat=True
-                    )
-                )
-                to_create, to_update = _process_added_modified_transactions(
-                    batch, existing_ids, plaid_item, folder_cache
-                )
-                _bulk_create_update_records(to_create, to_update)
-                stats["added"] += len(added_txns)
-                stats["modified"] += len(modified_txns)
-
-            cursor = data.get("next_cursor", cursor)
-            has_more = data.get("has_more", False)
-
-            plaid_item.next_cursor = cursor
-            plaid_item.save(update_fields=["next_cursor"])
+        data = _fetch_sync_page(plaid_item, cursor)
+        if data is None:
+            return {"error": "ITEM_LOGIN_REQUIRED"}
+        cursor, has_more = _process_sync_page(data, plaid_item, folder_cache, stats)
 
     _match_records_to_documents(plaid_item, plaid_item_id)
     return {"status": "synced", **stats}
@@ -337,12 +328,6 @@ def sync_and_convert_for_item_task(plaid_item_id: int | str) -> dict[str, Any]:
 
 @dramatiq.actor(max_retries=3, min_backoff=2, periodic=cron("0 * * * *"))
 def periodic_plaid_sync_task() -> None:
-    """Poll Transactions Sync for every linked item hourly as a webhook fallback.
-
-    Plaid webhooks are best-effort; a missed or undelivered webhook would
-    otherwise leave transactions un-synced until a manual sync. This task
-    dispatches through the atomic per-item cooldown so it can never race
-    a webhook-triggered sync for the same item.
-    """
+    """Poll Transactions Sync for every linked item hourly as a webhook fallback."""
     for plaid_item in PlaidItem.objects.all().only("id", "item_id"):
         dispatch_sync(plaid_item)

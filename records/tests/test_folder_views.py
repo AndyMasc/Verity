@@ -53,7 +53,9 @@ class CreateFolderViewTest(TestCase):
 
     def test_post_valid(self):
         self.client.force_login(self.user)
-        response = self.client.post(self.url, {"name": "New Folder"}, HTTP_HX_REQUEST="true")
+        response = self.client.post(
+            self.url, {"name": "New Folder"}, headers={"hx-request": "true"}
+        )
         self.assertIn(response.status_code, [200, 302])
         self.assertTrue(Folder.objects.filter(name="New Folder", user=self.user).exists())
 
@@ -66,7 +68,7 @@ class FolderUpdateViewTest(TestCase):
 
     def test_owner_can_update(self):
         self.client.force_login(self.user)
-        response = self.client.post(self.url, {"name": "New Name"}, HTTP_HX_REQUEST="true")
+        response = self.client.post(self.url, {"name": "New Name"}, headers={"hx-request": "true"})
         self.assertIn(response.status_code, [200, 302])
         self.folder.refresh_from_db()
         self.assertEqual(self.folder.name, "New Name")
@@ -113,7 +115,7 @@ class FolderDeleteViewTest(TestCase):
             folder=self.folder,
         )
         record_id = record.id
-        response = self.client.post(self.url, HTTP_HX_REQUEST="true")
+        response = self.client.post(self.url, headers={"hx-request": "true"})
         self.assertFalse(Folder.objects.filter(id=self.folder.id).exists())
         remaining = Record.objects.filter(id=record_id).exists()
         if remaining:
