@@ -245,7 +245,12 @@ scheduler as separate containers/services, or use a process manager.
    `WebhookEndpoint` row (see `Verity/urls.py`). In dev, `stripe_listen`
    creates it. In prod: create the endpoint in the Stripe dashboard, sync it
    locally, fix the URL to include the UUID, and store the signing secret on
-   the row (`djstripe_validation_method="verify_signature"`).
+   the row (`djstripe_validation_method="verify_signature"`). Stripe never
+   returns the secret on sync, so set `STRIPE_WEBHOOK_SECRET` to the
+   dashboard's `whsec_...` value and run
+   `python manage.py backfill_webhook_secret` (add `--endpoint we_...` if
+   several rows lack one). Without it, signature checks fail and the admin
+   cannot save the endpoint.
 2. Enable events (from `billing/webhooks.py` + `reimbursements/webhooks.py`):
    `customer.subscription.created/updated/deleted`, `invoice.paid`,
    `invoice.payment_failed`, `checkout.session.completed`,
