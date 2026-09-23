@@ -75,6 +75,35 @@ class DashboardViewTest(TestCase):
         self.assertIn("orphaned_document_count", response.context)
 
 
+class DashboardViewAsyncTest(TestCase):
+    def setUp(self):
+        cache.clear()
+        self.user = User.objects.create_user(username="testuser", password="pass")
+
+    def test_view_is_async(self):
+        from core.views import DashboardView
+
+        self.assertTrue(DashboardView.view_is_async)
+
+    async def test_login_required(self):
+        response = await self.async_client.get(reverse("core:dashboard"))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("?next=/dashboard/", response.url)
+
+    async def test_authenticated_access(self):
+        await self.async_client.aforce_login(self.user)
+        response = await self.async_client.get(reverse("core:dashboard"))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "core/dashboard.html")
+
+    async def test_webpush_warning_shown_once_per_session(self):
+        await self.async_client.aforce_login(self.user)
+        first = await self.async_client.get(reverse("core:dashboard"))
+        second = await self.async_client.get(reverse("core:dashboard"))
+        self.assertEqual(len(list(first.context["messages"])), 1)
+        self.assertEqual(len(list(second.context["messages"])), 0)
+
+
 class ProfilePageViewTest(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(username="testuser", password="pass")

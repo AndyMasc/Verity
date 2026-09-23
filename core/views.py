@@ -7,9 +7,9 @@ caches the result to reduce database load on repeated visits.
 import json
 import logging
 import time as _time
+from inspect import iscoroutine
 from typing import Any
 
-from asgiref.sync import async_to_sync
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -133,17 +133,29 @@ class DashboardView(LoginRequiredMixin, TemplateView):
 
     template_name = "core/dashboard.html"
 
-    def get(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:  # noqa: ARG002
-        return async_to_sync(self._get_async)(request)
+    async def dispatch(  # type: ignore[override]
+        self, request: HttpRequest, *args: Any, **kwargs: Any
+    ) -> HttpResponse:
+        # LoginRequiredMixin reads request.user synchronously, which is not safe on the event loop.
+        request.user = await request.auser()
+        response = super().dispatch(request, *args, **kwargs)
+        return await response if iscoroutine(response) else response
 
-    async def _get_async(self, request: HttpRequest) -> HttpResponse:
+    async def get(  # type: ignore[override]
+        self,
+        request: HttpRequest,
+        *args: Any,  # noqa: ARG002
+        **kwargs: Any,  # noqa: ARG002
+    ) -> HttpResponse:
         from django.contrib.auth import get_user_model
 
         user = await get_user_model().objects.select_related("settings").aget(pk=request.user.pk)
         context = await get_dashboard_context(user)
-        if context.get("webpush_warning") and not request.session.get("_webpush_warning_shown"):
-            messages.warning(self.request, context["webpush_warning"])
-            request.session["_webpush_warning_shown"] = True
+        if context.get("webpush_warning") and not await request.session.aget(
+            "_webpush_warning_shown"
+        ):
+            messages.warning(request, context["webpush_warning"])
+            await request.session.aset("_webpush_warning_shown", True)
         if posthog_client := get_posthog_client():
             posthog_client.capture("dashboard_viewed")
         return self.render_to_response(context)
