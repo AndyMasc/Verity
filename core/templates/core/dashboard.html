@@ -57,12 +57,12 @@
             {% include 'core/partials/metric_cards.html' %}
             <div class="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-12">
                 <div class="flex flex-col lg:col-span-7 xl:col-span-8">
-                    <div class="shadow-2xs flex flex-1 flex-col rounded-2xl border border-zinc-200/60 bg-white p-5 md:p-6 dark:border-zinc-800/30 dark:bg-zinc-900/45">
+                    <div class="shadow-2xs flex flex-1 flex-col rounded-2xl border border-zinc-200/60 bg-white p-5 dark:border-zinc-800/30 dark:bg-zinc-900/45">
                         {% include 'core/partials/expense_chart.html' %}
                     </div>
                 </div>
                 <div class="flex flex-col justify-between gap-4 lg:col-span-5 xl:col-span-4">
-                    <section class="shadow-2xs flex flex-1 flex-col justify-between rounded-2xl border border-zinc-200/60 bg-white p-5 md:p-6 dark:border-zinc-800/30 dark:bg-zinc-900/45">
+                    <section class="shadow-2xs flex flex-1 flex-col justify-between rounded-2xl border border-zinc-200/60 bg-white p-5 dark:border-zinc-800/30 dark:bg-zinc-900/45">
                         <div class="flex min-h-[180px] flex-col">
                             {% url 'core:notifications' as notifications_url %}
                             {% include 'core/partials/section_header.html' with title="Notifications" badge_text=unread_notifications_count|stringformat:"s"|add:" unread" view_all_url=notifications_url %}
@@ -96,7 +96,7 @@
                             </div>
                         </div>
                     </section>
-                    <section class="shadow-2xs flex flex-1 flex-col justify-between rounded-2xl border border-zinc-200/60 bg-white p-5 md:p-6 dark:border-zinc-800/30 dark:bg-zinc-900/45">
+                    <section class="shadow-2xs flex flex-1 flex-col justify-between rounded-2xl border border-zinc-200/60 bg-white p-5 dark:border-zinc-800/30 dark:bg-zinc-900/45">
                         {% url 'reimbursements:package-list' as reimbursements_url %}
                         {% include 'core/partials/section_header.html' with title="Reimbursements" view_all_url=reimbursements_url %}
                         <div class="mt-3.5 grid grid-cols-2 gap-3">
@@ -118,7 +118,7 @@
                     </section>
                 </div>
             </div>
-            <section class="shadow-2xs flex flex-col rounded-2xl border border-zinc-200/60 bg-white p-6 pb-2 dark:border-zinc-800/30 dark:bg-zinc-900/45">
+            <section class="shadow-2xs flex flex-col rounded-2xl border border-zinc-200/60 bg-white p-5 pb-2 dark:border-zinc-800/30 dark:bg-zinc-900/45">
                 {% url 'records:view_all_records' as view_all_records_url %}
                 {% include 'core/partials/section_header.html' with title="Recent Activity" view_all_url=view_all_records_url %}
                 <div class="flex min-h-[180px] flex-1 flex-col divide-y divide-zinc-200/60 dark:divide-white/[0.035]">
