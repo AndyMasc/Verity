@@ -502,6 +502,12 @@ class PackageDeleteViewTest(TestCase):
         self.pkg.refresh_from_db()
         self.assertIsNotNone(self.pkg.deleted_at)
 
+    def test_repeat_ajax_delete_of_deleted_package_returns_404(self, _mock_rl):
+        self.client.force_login(self.creator)
+        self.client.post(self.url, headers={"x-requested-with": "XMLHttpRequest"})
+        response = self.client.post(self.url, headers={"x-requested-with": "XMLHttpRequest"})
+        self.assertEqual(response.status_code, 404)
+
     def test_ajax_delete_failure_returns_502_and_keeps_package(self, _mock_rl):
         self.client.force_login(self.creator)
         with patch(

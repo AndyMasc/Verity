@@ -344,7 +344,8 @@
                                 "X-Requested-With": "XMLHttpRequest",
                             },
                         });
-                        if (resp.ok || resp.headers.get("HX-Redirect")) {
+                        // 404 means the package is already deleted (e.g. a repeat submit).
+                        if (resp.ok || resp.status === 404 || resp.headers.get("HX-Redirect")) {
                             window.location.href = "{% url 'reimbursements:package-list' %}";
                         } else {
                             const data = await resp.json().catch(() => ({}));
