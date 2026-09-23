@@ -9,7 +9,6 @@ import logging
 import time as _time
 from typing import Any
 
-import posthog
 from asgiref.sync import async_to_sync
 from django.conf import settings
 from django.contrib import messages
@@ -31,6 +30,7 @@ from billing.services import pricing_context
 
 from .forms import UpdateUserSettingsForm
 from .models import Notification, UserSettings
+from .posthog_client import get_posthog_client
 from .services.dashboard import get_dashboard_context
 
 logger = logging.getLogger(__name__)
@@ -144,7 +144,8 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         if context.get("webpush_warning") and not request.session.get("_webpush_warning_shown"):
             messages.warning(self.request, context["webpush_warning"])
             request.session["_webpush_warning_shown"] = True
-        posthog.capture("dashboard_viewed", distinct_id=str(request.user.pk))
+        if posthog_client := get_posthog_client():
+            posthog_client.capture("dashboard_viewed")
         return self.render_to_response(context)
 
 

@@ -40,8 +40,10 @@
                 posthog.init('{{ posthog_project_token|escapejs }}', {
                     api_host: '{{ posthog_host|escapejs }}',
                     defaults: '2026-05-30',
-                    opt_out_capturing_by_default: true,
                 })
+                if (localStorage.getItem('cookie_consent') !== 'accepted') {
+                    posthog.opt_out_capturing()
+                }
             {% endif %}
         </script>
         <meta name="htmx-config"

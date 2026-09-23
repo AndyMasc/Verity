@@ -43,7 +43,7 @@ def posthog_settings(request: HttpRequest) -> dict[str, Any]:  # noqa: ARG001
     """
     return {
         "posthog_project_token": getattr(settings, "POSTHOG_PROJECT_TOKEN", ""),
-        "posthog_host": getattr(settings, "POSTHOG_HOST", "https://us.i.posthog.com"),
+        "posthog_host": getattr(settings, "POSTHOG_HOST", ""),
         "posthog_disabled": getattr(settings, "POSTHOG_DISABLED", False),
     }
 

@@ -6,7 +6,6 @@ a 204 response so the client can update the UI without a full page reload.
 
 import json
 
-import posthog
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpRequest, HttpResponse, JsonResponse
@@ -16,6 +15,7 @@ from django.views import View
 from django.views.decorators.http import require_POST
 from django_ratelimit.decorators import ratelimit
 
+from core.posthog_client import get_posthog_client
 from core.services.dashboard import invalidate_dashboard_cache
 from Verity.views import parse_record_ids
 
@@ -36,13 +36,13 @@ class ArchiveRecord(LoginRequiredMixin, View):
     def post(self, request: HttpRequest, record_id: int) -> HttpResponse:
         record = get_object_or_404(Record, id=record_id, user=request.user, is_active=True)
         archive_record(request.user, record)
-        posthog.capture(
-            "record_archived",
-            distinct_id=str(request.user.pk),
-            properties={
-                "record_type": record.record_type,
-            },
-        )
+        if posthog_client := get_posthog_client():
+            posthog_client.capture(
+                "record_archived",
+                properties={
+                    "record_type": record.record_type,
+                },
+            )
         if request.headers.get("HX-Request") == "true":
             response = HttpResponse(status=204)
             response["HX-Trigger"] = json.dumps({"recordChanged": {}})
@@ -71,13 +71,13 @@ class DeleteRecordView(LoginRequiredMixin, View):
     def post(self, request: HttpRequest, record_id: int) -> HttpResponse:
         record = get_object_or_404(Record, id=record_id, user=request.user)
         soft_delete_record(request.user, record)
-        posthog.capture(
-            "record_deleted",
-            distinct_id=str(request.user.pk),
-            properties={
-                "record_type": record.record_type,
-            },
-        )
+        if posthog_client := get_posthog_client():
+            posthog_client.capture(
+                "record_deleted",
+                properties={
+                    "record_type": record.record_type,
+                },
+            )
         if request.headers.get("HX-Request") == "true":
             response = HttpResponse(status=200)
             response["HX-Trigger"] = json.dumps({"recordChanged": {}})

@@ -7,17 +7,22 @@ and fixes the ambient context, so every capture later in that same request
 is attributed to the user who just logged in.
 """
 
-import posthog
 from django.contrib.auth.signals import user_logged_in
 from django.dispatch import receiver
 from posthog import identify_context
 
+from core.posthog_client import get_posthog_client
+
 
 @receiver(user_logged_in)
 def identify_posthog_user(sender, request, user, **kwargs):  # type: ignore[no-untyped-def]  # noqa: ARG001
+    posthog_client = get_posthog_client()
+    if posthog_client is None:
+        return
+
     identify_context(str(user.pk))
 
-    posthog.set(
+    posthog_client.set(
         distinct_id=str(user.pk),
         properties={
             "email": user.email,

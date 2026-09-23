@@ -11,6 +11,8 @@ from django.views import View
 from django.views.generic import TemplateView
 from django_ratelimit.decorators import ratelimit
 
+from core.posthog_client import get_posthog_client
+
 from .. import services
 from ..models import ReimbursementPackage
 
@@ -60,4 +62,6 @@ class CreatePackageCheckoutView(LoginRequiredMixin, View):
         if outcome.error:
             messages.error(request, outcome.error)
             return redirect(detail_url)
+        if posthog_client := get_posthog_client():
+            posthog_client.capture("reimbursement_checkout_started")
         return redirect(outcome.redirect_url)

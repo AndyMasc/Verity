@@ -3,7 +3,6 @@
 import logging
 from typing import Any
 
-import posthog
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction
 from django.http import HttpRequest, HttpResponse, JsonResponse
@@ -13,6 +12,7 @@ from django.utils.decorators import method_decorator
 from django.views import View
 from django_ratelimit.decorators import ratelimit
 
+from core.posthog_client import get_posthog_client
 from records.models import Record
 
 from ..models import DocumentData, DocumentStatus
@@ -127,14 +127,14 @@ class ConfirmUploadView(LoginRequiredMixin, View):
                     warning,
                 )
 
-        posthog.capture(
-            "document_uploaded",
-            distinct_id=str(request.user.pk),
-            properties={
-                "mime_type": document.mime_type,
-                "file_size_bytes": document.file_size,
-            },
-        )
+        if posthog_client := get_posthog_client():
+            posthog_client.capture(
+                "document_uploaded",
+                properties={
+                    "mime_type": document.mime_type,
+                    "file_size_bytes": document.file_size,
+                },
+            )
         return JsonResponse({"status": "confirmed", "document_id": document.id})
 
 

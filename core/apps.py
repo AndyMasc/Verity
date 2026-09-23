@@ -1,9 +1,7 @@
-import logging
-
 from django.apps import AppConfig
 from django.conf import settings
 
-logger = logging.getLogger(__name__)
+from core.posthog_client import initialize_posthog
 
 
 class CoreConfig(AppConfig):
@@ -14,22 +12,20 @@ class CoreConfig(AppConfig):
         import core.signals  # noqa: F401
 
         token = getattr(settings, "POSTHOG_PROJECT_TOKEN", "")
-        if not token:
-            if settings.DEBUG:
-                raise RuntimeError(
-                    "POSTHOG_PROJECT_TOKEN variable required by PostHog is missing or "
-                    "un-configured, this causes events to be silently missed. "
-                    "This error stops appearing once POSTHOG_PROJECT_TOKEN is configured."
-                )
-            return
+        host = getattr(settings, "POSTHOG_HOST", "")
+        for variable_name, value in (
+            ("POSTHOG_PROJECT_TOKEN", token),
+            ("POSTHOG_HOST", host),
+        ):
+            if not value:
+                if settings.DEBUG:
+                    raise RuntimeError(
+                        f"{variable_name} variable required by PostHog is missing or "
+                        "un-configured, this causes events to be silently missed. "
+                        f"This error stops appearing once {variable_name} is configured."
+                    )
+                return
 
-        import posthog
-
-        posthog.api_key = token
-        posthog.host = getattr(settings, "POSTHOG_HOST", "https://us.i.posthog.com")
-        posthog.disabled = getattr(settings, "POSTHOG_DISABLED", False)
-
-        if settings.DEBUG:
-            posthog.debug = True
+        settings.POSTHOG_MW_CLIENT = initialize_posthog(token, host)
 
         from core import posthog_signals  # noqa: F401

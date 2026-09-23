@@ -2,7 +2,6 @@
 
 import logging
 
-import posthog
 from cachalot.api import cachalot_disabled
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -15,6 +14,7 @@ from django.utils.functional import cached_property
 from django.views.generic.base import View
 from django.views.generic.edit import CreateView
 
+from core.posthog_client import get_posthog_client
 from documents.models import DocumentData, DocumentStatus
 
 from .. import services
@@ -122,14 +122,14 @@ class AddRecordView(LoginRequiredMixin, CreateView):
             document.associated_record = self.object
             document.save(update_fields=["associated_record"])
 
-        posthog.capture(
-            "record_created",
-            distinct_id=str(self.request.user.pk),
-            properties={
-                "record_type": self.object.record_type,
-                "has_document": document is not None,
-            },
-        )
+        if posthog_client := get_posthog_client():
+            posthog_client.capture(
+                "record_created",
+                properties={
+                    "record_type": self.object.record_type,
+                    "has_document": document is not None,
+                },
+            )
 
         merged = try_match_document_record(self.object, document) if document else None
         if merged:

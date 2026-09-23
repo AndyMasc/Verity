@@ -14,9 +14,8 @@ if env_file.exists():
     env.read_env(str(env_file))
 
 # PostHog
-POSTHOG_PROJECT_TOKEN = env("POSTHOG_PROJECT_TOKEN")
-POSTHOG_HOST = env("POSTHOG_HOST", default="https://us.i.posthog.com")
-POSTHOG_DISABLED = env.bool("POSTHOG_DISABLED", default=False)
+POSTHOG_PROJECT_TOKEN = env("POSTHOG_PROJECT_TOKEN", default="")
+POSTHOG_HOST = env("POSTHOG_HOST", default="")
 
 # Core
 SECRET_KEY = env("SECRET_KEY")

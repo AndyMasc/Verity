@@ -14,6 +14,7 @@ from django.views.generic import DetailView, ListView
 from django_ratelimit.decorators import ratelimit
 
 from billing import features
+from core.posthog_client import get_posthog_client
 
 from .. import services
 from ..mixins import ReimbursementRequestRequiredMixin
@@ -232,6 +233,14 @@ class CreatePackageFromRecordsView(LoginRequiredMixin, ReimbursementRequestRequi
             )
 
         send_package_created_notification(package)
+        if posthog_client := get_posthog_client():
+            posthog_client.capture(
+                "reimbursement_package_created",
+                properties={
+                    "record_count": attached,
+                    "days_valid": days_valid,
+                },
+            )
 
         redirect_url = reverse(
             "reimbursements:package-detail", kwargs={"package_uuid": package.uuid}

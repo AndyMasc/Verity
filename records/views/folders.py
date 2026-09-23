@@ -7,7 +7,6 @@ HTMX partial responses for seamless in-page folder management.
 import json
 from typing import ClassVar
 
-import posthog
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import redirect, render
@@ -15,6 +14,7 @@ from django.urls import reverse_lazy
 from django.views.generic import ListView
 from django.views.generic.edit import CreateView, DeleteView, UpdateView
 
+from core.posthog_client import get_posthog_client
 from core.services.dashboard import invalidate_dashboard_cache
 
 from ..forms import FolderForm
@@ -73,10 +73,8 @@ class CreateFolder(LoginRequiredMixin, CreateView):
     def form_valid(self, form):
         form.instance.user = self.request.user
         self.object = form.save()
-        posthog.capture(
-            "folder_created",
-            distinct_id=str(self.request.user.pk),
-        )
+        if posthog_client := get_posthog_client():
+            posthog_client.capture("folder_created")
         if self.request.headers.get("HX-Request"):
             ctx = _folder_list_context(self.request.user)
             response = render(
@@ -133,23 +131,21 @@ class FolderDeleteView(LoginRequiredMixin, DeleteView):
     def get_queryset(self):
         return Folder.objects.filter(user=self.request.user)
 
-    def delete(self, request, *_, **__):
-        folder = self.get_object()
+    def form_valid(self, _form):
+        folder = self.object
         folder.records.update(folder=None)
         folder.delete()
-        invalidate_dashboard_cache(request.user.id)
-        posthog.capture(
-            "folder_deleted",
-            distinct_id=str(request.user.pk),
-        )
-        if request.headers.get("HX-Request"):
-            ctx = _folder_list_context(request.user)
+        invalidate_dashboard_cache(self.request.user.id)
+        if posthog_client := get_posthog_client():
+            posthog_client.capture("folder_deleted")
+        if self.request.headers.get("HX-Request"):
+            ctx = _folder_list_context(self.request.user)
             response = render(
-                request,
+                self.request,
                 "records/partials/folders/folder_list_partial.html",
                 ctx,
             )
             response["HX-Trigger"] = json.dumps({"recordChanged": {}})
             return response
-        messages.info(request, "Folder deleted. Records unfiled.")
+        messages.info(self.request, "Folder deleted. Records unfiled.")
         return redirect(self.success_url)

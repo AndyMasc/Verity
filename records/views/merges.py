@@ -6,7 +6,6 @@ mutation endpoints are rate-limited and create AuditLog entries.
 
 import json
 
-import posthog
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.paginator import Page, Paginator
@@ -19,6 +18,7 @@ from django.views.generic.base import View
 from django.views.generic.edit import FormView
 from django_ratelimit.decorators import ratelimit
 
+from core.posthog_client import get_posthog_client
 from documents.models import DocumentData
 from Verity.responses import api_error
 from Verity.views import create_audit_log
@@ -123,10 +123,8 @@ class ManualMergeView(LoginRequiredMixin, FormView):
                 merge_log=merge_log,
                 details={"document_record_id": document_record.pk},
             )
-            posthog.capture(
-                "merge_completed",
-                distinct_id=str(self.request.user.pk),
-            )
+            if posthog_client := get_posthog_client():
+                posthog_client.capture("merge_completed")
             if self.request.headers.get("HX-Request") == "true":
                 response = HttpResponse(status=204)
                 response["HX-Trigger"] = json.dumps(
@@ -245,10 +243,8 @@ class UndoMergeView(LoginRequiredMixin, View):
                 record=merge_log.plaid_record,
                 merge_log=merge_log,
             )
-            posthog.capture(
-                "merge_undone",
-                distinct_id=str(request.user.pk),
-            )
+            if posthog_client := get_posthog_client():
+                posthog_client.capture("merge_undone")
             if request.headers.get("HX-Request") == "true":
                 response = HttpResponse(status=204)
                 response["HX-Trigger"] = json.dumps(

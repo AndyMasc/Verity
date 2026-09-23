@@ -4,7 +4,6 @@ import logging
 from typing import ClassVar
 
 import plaid
-import posthog
 from django.conf import settings
 from django.core.cache import cache
 from django.db import transaction
@@ -23,6 +22,7 @@ from rest_framework.views import APIView
 from billing import features
 from billing.entitlements import has_feature
 from billing.mixins import FeatureRequiredMixin
+from core.posthog_client import get_posthog_client
 
 from ..models import PlaidItem
 from ..plaid_client import client
@@ -136,14 +136,14 @@ class PublicTokenExchange(FeatureRequiredMixin, APIView):
             trigger_initial_sync(plaid_item)
             cache.delete(f"plaid_status:{request.user.id}")
 
-            posthog.capture(
-                "bank_linked",
-                distinct_id=str(request.user.id),
-                properties={
-                    "institution_name": institution_name,
-                    "account_count": len(accounts_data),
-                },
-            )
+            if posthog_client := get_posthog_client():
+                posthog_client.capture(
+                    "bank_linked",
+                    properties={
+                        "institution_name": institution_name,
+                        "account_count": len(accounts_data),
+                    },
+                )
             return Response({"success": "Bank linked successfully! Syncing transactions…"})
         except Exception:
             logger.exception("Failed to exchange public token for user %s", request.user.id)
