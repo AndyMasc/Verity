@@ -1,0 +1,83 @@
+<div id="cookie-consent-panel"
+     class="inset-e-0 fixed bottom-0 z-60 mx-auto w-full p-6 sm:max-w-sm"
+     hidden>
+    <div class="rounded-2xl border border-white/40 bg-white/60 p-4 shadow-2xl shadow-zinc-950/10 backdrop-blur-lg dark:border-white/10 dark:bg-zinc-900/60 dark:shadow-black/50">
+        <div class="flex justify-between gap-x-5">
+            <div class="grow">
+                <h2 class="font-semibold tracking-tight text-zinc-950 dark:text-white">Cookie Settings</h2>
+            </div>
+        </div>
+        <p class="mt-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
+            We use cookies to improve your experience and for marketing. Visit our <a href="{% url 'docs:privacy_policy' %}"
+    class="inline-flex items-center gap-x-1.5 font-medium text-[#5A67FF] decoration-2 hover:underline focus-visible:underline focus-visible:outline-none">Cookies Policy</a>
+            to learn more.
+        </p>
+        <div class="mt-5 mb-2 flex w-full gap-x-2">
+            <div class="grid w-full">
+                <button type="button"
+                        data-cookie-action="allow"
+                        class="inline-flex items-center justify-center gap-x-2 rounded-xl bg-black px-3 py-1 text-sm font-medium text-white shadow-sm transition-colors disabled:pointer-events-none disabled:opacity-50 dark:border-[#5A67FF] dark:bg-white dark:bg-[#5A67FF] dark:text-black dark:hover:bg-[#4A55E3]">
+                    Accept all
+                </button>
+            </div>
+            <div class="grid w-full">
+                <button type="button"
+                        data-cookie-action="reject"
+                        class="inline-flex items-center justify-center gap-x-2 rounded-xl px-3 py-1 text-sm font-medium text-white shadow-sm transition-colors disabled:pointer-events-none disabled:opacity-50 dark:bg-zinc-800 dark:text-white dark:hover:bg-zinc-900">
+                    Reject all
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    (function () {
+        'use strict';
+        var STORAGE_KEY = 'verity_cookie_consent';
+        var panel = document.getElementById('cookie-consent-panel');
+        if (!panel) return;
+
+        function getConsent() {
+            try { return window.localStorage.getItem(STORAGE_KEY); } catch (e) { return null; }
+        }
+
+        function setConsent(value) {
+            try { window.localStorage.setItem(STORAGE_KEY, value); } catch (e) {}
+        }
+
+        function dismiss() {
+            panel.remove();
+        }
+
+        if (getConsent()) {
+            dismiss();
+            return;
+        }
+
+        panel.hidden = false;
+
+        var dismissBtn = document.getElementById('cookie-consent-dismiss');
+        if (dismissBtn) dismissBtn.addEventListener('click', dismiss);
+
+        document.querySelectorAll('[data-cookie-action]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var action = btn.getAttribute('data-cookie-action');
+                if (action === 'allow') {
+                    setConsent('allowed');
+                    if (window.posthog && typeof window.posthog.opt_in_capturing === 'function') {
+                        window.posthog.opt_in_capturing();
+                    }
+                    dismiss();
+                } else if (action === 'reject') {
+                    setConsent('rejected');
+                    if (window.posthog && typeof window.posthog.opt_out_capturing === 'function') {
+                        window.posthog.opt_out_capturing();
+                    }
+                    dismiss();
+                } else {
+                    dismiss();
+                }
+            });
+        });
+    })();
+</script>
