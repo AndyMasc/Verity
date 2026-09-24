@@ -57,7 +57,7 @@
 
                             widgetId = window.turnstile.render(el, {
                                 sitekey: SITEKEY,
-                                action: 'login',
+                                action: '{{ turnstile_actions.login }}',
                                 callback: function (token) { input.value = token || ''; },
                                 'expired-callback': function () { input.value = ''; },
                                 'error-callback': function () { input.value = ''; },

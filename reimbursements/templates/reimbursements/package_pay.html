@@ -78,7 +78,8 @@
                                            id="request-code-turnstile-response"
                                            value="">
                                     <div class="flex justify-center pt-1">
-                                        <div id="request-code-turnstile-widget" data-action="request_verification"></div>
+                                        <div id="request-code-turnstile-widget"
+                                             data-action="{{ turnstile_actions.request_verification }}"></div>
                                     </div>
                                 </form>
                             {% else %}
@@ -113,7 +114,8 @@
                                            id="verify-code-turnstile-response"
                                            value="">
                                     <div class="flex justify-center pt-1">
-                                        <div id="verify-code-turnstile-widget" data-action="verify_code"></div>
+                                        <div id="verify-code-turnstile-widget"
+                                             data-action="{{ turnstile_actions.verify_code }}"></div>
                                     </div>
                                 </form>
                                 <div class="mt-4 flex items-center justify-between">
@@ -135,7 +137,7 @@
                                         </button>
                                         <div class="flex justify-center">
                                             <div id="request-code-resend-turnstile-widget"
-                                                 data-action="request_verification"></div>
+                                                 data-action="{{ turnstile_actions.request_verification }}"></div>
                                         </div>
                                     </form>
                                     <a href="?step=email"
@@ -252,7 +254,8 @@
                                            id="checkout-turnstile-response"
                                            value="">
                                     <div class="flex justify-center pt-0.5">
-                                        <div id="checkout-turnstile-widget" data-action="checkout"></div>
+                                        <div id="checkout-turnstile-widget"
+                                             data-action="{{ turnstile_actions.checkout }}"></div>
                                     </div>
                                 </form>
                             </div>

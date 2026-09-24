@@ -7,7 +7,13 @@ import logging
 
 from django import forms
 
-from core.turnstile import turnstile_enabled, verify_turnstile_token
+from core.turnstile import (
+    ACTION_CHECKOUT,
+    ACTION_REQUEST_VERIFICATION,
+    ACTION_VERIFY_CODE,
+    turnstile_enabled,
+    verify_turnstile_token,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +61,7 @@ class RequestVerificationCodeForm(forms.Form):
                 code="turnstile_missing",
             )
 
-        result = verify_turnstile_token(token, "request_verification", self.request)
+        result = verify_turnstile_token(token, ACTION_REQUEST_VERIFICATION, self.request)
 
         if not result.get("success"):
             logger.warning("Turnstile verification failed on code request: %s", result)
@@ -117,7 +123,7 @@ class VerifyEmailCodeForm(forms.Form):
                 code="turnstile_missing",
             )
 
-        result = verify_turnstile_token(token, "verify_code", self.request)
+        result = verify_turnstile_token(token, ACTION_VERIFY_CODE, self.request)
 
         if not result.get("success"):
             logger.warning("Turnstile verification failed on code verify: %s", result)
@@ -155,7 +161,7 @@ class CheckoutTurnstileForm(forms.Form):
                 code="turnstile_missing",
             )
 
-        result = verify_turnstile_token(token, "checkout", self.request)
+        result = verify_turnstile_token(token, ACTION_CHECKOUT, self.request)
 
         if not result.get("success"):
             logger.warning("Turnstile verification failed on checkout: %s", result)

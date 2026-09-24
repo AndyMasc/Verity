@@ -1,8 +1,11 @@
+import logging
 from pathlib import Path
 from urllib.parse import urlsplit, urlunsplit
 
 import environ
 import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
+from sentry_sdk.integrations.logging import LoggingIntegration
 from sentry_sdk.utils import BadDsn
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -445,6 +448,18 @@ if _sentry_dsn:
         sentry_sdk.init(
             dsn=_sentry_dsn,
             environment=env("SENTRY_ENVIRONMENT", default="production"),
+            integrations=[
+                DjangoIntegration(),
+                # Project-wide server-side tracking: every WARNING+ log record
+                # becomes a Sentry/GlitchTip event, and INFO+ records attach as
+                # breadcrumbs. Notably captures handled failures such as the
+                # Turnstile "Action mismatch" rejections (logged as warnings in
+                # core.turnstile) that never raise a 5xx.
+                LoggingIntegration(
+                    level=logging.INFO,
+                    event_level=logging.WARNING,
+                ),
+            ],
             send_default_pii=False,
             traces_sample_rate=1.0 if not _is_prod else 0.1,
             auto_session_tracking=False,

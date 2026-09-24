@@ -14,6 +14,17 @@ from django.http import HttpRequest
 
 logger = logging.getLogger(__name__)
 
+# Turnstile action names. Single-sourced here so the client-side widget action
+# (rendered from the turnstile_actions context processor) and the server-side
+# form validation can never drift apart and produce the "Action mismatch"
+# rejection seen when a widget renders without its data-action attribute and
+# falls back to a different value.
+ACTION_SIGNUP = "signup"
+ACTION_LOGIN = "login"
+ACTION_REQUEST_VERIFICATION = "request_verification"
+ACTION_VERIFY_CODE = "verify_code"
+ACTION_CHECKOUT = "checkout"
+
 
 def _test_env() -> bool:
     """True when running under pytest (module import or active test session)."""

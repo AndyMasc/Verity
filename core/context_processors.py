@@ -6,6 +6,14 @@ from django.conf import settings
 from django.core.cache import cache
 from django.http import HttpRequest
 
+from core.turnstile import (
+    ACTION_CHECKOUT,
+    ACTION_LOGIN,
+    ACTION_REQUEST_VERIFICATION,
+    ACTION_SIGNUP,
+    ACTION_VERIFY_CODE,
+)
+
 WEBPUSH_STATUS_CACHE_TTL = 300
 
 
@@ -42,4 +50,11 @@ def turnstile_settings(request: HttpRequest) -> dict[str, Any]:  # noqa: ARG001
     """
     return {
         "turnstile_sitekey": getattr(settings, "TURNSTILE_SITEKEY", ""),
+        "turnstile_actions": {
+            "signup": ACTION_SIGNUP,
+            "login": ACTION_LOGIN,
+            "request_verification": ACTION_REQUEST_VERIFICATION,
+            "verify_code": ACTION_VERIFY_CODE,
+            "checkout": ACTION_CHECKOUT,
+        },
     }

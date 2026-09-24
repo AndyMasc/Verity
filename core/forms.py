@@ -11,7 +11,12 @@ from allauth.account.forms import LoginForm, SignupForm
 from django import forms
 
 from .models import UserSettings
-from .turnstile import turnstile_enabled, verify_turnstile_token
+from .turnstile import (
+    ACTION_LOGIN,
+    ACTION_SIGNUP,
+    turnstile_enabled,
+    verify_turnstile_token,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +57,7 @@ class PasswordlessSignupForm(SignupForm):
                 code="turnstile_missing",
             )
 
-        result = verify_turnstile_token(token, "signup", self.request)
+        result = verify_turnstile_token(token, ACTION_SIGNUP, self.request)
 
         if not result.get("success"):
             logger.warning("Turnstile signup verification failed: %s", result)
@@ -103,7 +108,7 @@ class PasswordlessLoginForm(LoginForm):
                 code="turnstile_missing",
             )
 
-        result = verify_turnstile_token(token, "login", self.request)
+        result = verify_turnstile_token(token, ACTION_LOGIN, self.request)
 
         if not result.get("success"):
             logger.warning("Turnstile login verification failed: %s", result)
