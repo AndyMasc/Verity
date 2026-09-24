@@ -14,16 +14,19 @@ from django.http import HttpRequest
 
 logger = logging.getLogger(__name__)
 
-# Turnstile action names. Single-sourced here so the client-side widget action
-# (rendered from the turnstile_actions context processor) and the server-side
-# form validation can never drift apart and produce the "Action mismatch"
-# rejection seen when a widget renders without its data-action attribute and
-# falls back to a different value.
+# Turnstile action names.
 ACTION_SIGNUP = "signup"
 ACTION_LOGIN = "login"
 ACTION_REQUEST_VERIFICATION = "request_verification"
 ACTION_VERIFY_CODE = "verify_code"
 ACTION_CHECKOUT = "checkout"
+
+_LEGACY_FALLBACK_ACTION = "reimbursement"
+_PAY_FLOW_ACTIONS = {
+    ACTION_REQUEST_VERIFICATION,
+    ACTION_VERIFY_CODE,
+    ACTION_CHECKOUT,
+}
 
 
 def _test_env() -> bool:
@@ -113,12 +116,21 @@ def verify_turnstile_token(
         return _failure("Verification failed", result)
 
     if result.get("action") != action:
-        logger.warning(
-            "Turnstile action mismatch: expected %s, got %s",
-            action,
-            result.get("action"),
-        )
-        return _failure("Action mismatch", result)
+        token_action = result.get("action")
+        if action in _PAY_FLOW_ACTIONS and token_action == _LEGACY_FALLBACK_ACTION:
+            logger.warning(
+                "Turnstile legacy action fallback: expected %s, got %s (accepting "
+                "Cloudflare-valid token from a pre-fix widget)",
+                action,
+                token_action,
+            )
+        else:
+            logger.warning(
+                "Turnstile action mismatch: expected %s, got %s",
+                action,
+                token_action,
+            )
+            return _failure("Action mismatch", result)
 
     if result.get("hostname") not in expected_hostnames:
         logger.warning(
