@@ -31,7 +31,7 @@ class ProductMetadata:
 
     description: str = ""
     category: str = "base_plan"
-    storage_limit_gb: int = 0
+    storage_limit_gb: float = 0
     # Monthly Quick Scan allowance; None means unlimited. Storage add-ons leave
     # this unset -- scan entitlement always comes from the user's base plan.
     monthly_scan_limit: int | None = None
@@ -53,7 +53,7 @@ VERITY_FREE = ProductMetadata(
         features.EXPIRY_REMINDERS,
         features.FREE_STORAGE_LIMIT,
     ],
-    storage_limit_gb=int(features.FREE_STORAGE_LIMIT_GB),
+    storage_limit_gb=features.FREE_STORAGE_LIMIT_GB,
     monthly_scan_limit=features.FREE_MONTHLY_SCAN_LIMIT,
 )
 

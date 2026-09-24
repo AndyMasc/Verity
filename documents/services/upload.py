@@ -102,7 +102,7 @@ class UploadService:
             return PresignResult(
                 status="error",
                 error=(
-                    f"Storage limit reached ({limit_gb} GB). Upgrade to upload more files, or contact us to hard delete documents for you."
+                    f"Storage limit reached ({limit_gb} GB). Upgrade to upload more files, or delete documents for."
                 ),
             )
 
