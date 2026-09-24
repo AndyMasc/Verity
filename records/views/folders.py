@@ -14,7 +14,6 @@ from django.urls import reverse_lazy
 from django.views.generic import ListView
 from django.views.generic.edit import CreateView, DeleteView, UpdateView
 
-from core.posthog_client import get_posthog_client
 from core.services.dashboard import invalidate_dashboard_cache
 
 from ..forms import FolderForm
@@ -73,8 +72,6 @@ class CreateFolder(LoginRequiredMixin, CreateView):
     def form_valid(self, form):
         form.instance.user = self.request.user
         self.object = form.save()
-        if posthog_client := get_posthog_client():
-            posthog_client.capture("folder_created")
         if self.request.headers.get("HX-Request"):
             ctx = _folder_list_context(self.request.user)
             response = render(
@@ -136,8 +133,6 @@ class FolderDeleteView(LoginRequiredMixin, DeleteView):
         folder.records.update(folder=None)
         folder.delete()
         invalidate_dashboard_cache(self.request.user.id)
-        if posthog_client := get_posthog_client():
-            posthog_client.capture("folder_deleted")
         if self.request.headers.get("HX-Request"):
             ctx = _folder_list_context(self.request.user)
             response = render(

@@ -34,22 +34,6 @@
                 }
             })();
         </script>
-        <script>
-            !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="init capture register register_once register_for_session unregister unregister_for_session getFeatureFlag getFeatureFlagPayload isFeatureFlagEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException loadToolbar get_property getSessionProperty createPersonProfile opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing clear_opt_in_out_capturing debug".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);  
-            {% if posthog_project_token %}
-                posthog.init('{{ posthog_project_token|escapejs }}', {
-                    api_host: '{{ posthog_host|escapejs }}',
-                    defaults: '2026-05-30',
-                })
-                if (localStorage.getItem('cookie_consent') === 'declined') {
-                    posthog.opt_out_capturing()
-                }
-            {% endif %}
-        </script>
-        {% if posthog_project_token %}
-        <script src="https://us-assets.i.posthog.com/static/array.js" crossorigin="anonymous"></script>
-        {% endif %}
-        </script>
         <meta name="htmx-config"
               content='{"historyCacheSize": 0, "refreshOnHistoryMiss": true, "csrfHeaderName": "X-CSRFToken", "csrfTokenSelector": "meta[name=csrf-token]"}'>
         <meta name="csrf-token" content="{{ csrf_token }}">
@@ -87,8 +71,7 @@
               content="#0f172a"
               media="(prefers-color-scheme: dark)">
         <title>{% block title %}Verity{% endblock %}</title>
-        {% block head %}
-        {% endblock %}
+        {% block head %}{% endblock %}
         {% block extra_head %}{% endblock %}
     </head>
     <body class="font-sans bg-zinc-50 dark:bg-black text-zinc-950 dark:text-zinc-50 min-h-screen antialiased selection:bg-zinc-900/10 dark:selection:bg-zinc-100/10"
@@ -174,58 +157,4 @@
             }
         });
     </script>
-    <div x-data="{ showNotice: false, init() { const consent = localStorage.getItem('cookie_consent'); if (!consent) { setTimeout(() => this.showNotice = true, 600); } else if (consent === 'accepted') { posthog?.opt_in_capturing?.(); } }, acceptCookies() { localStorage.setItem('cookie_consent', 'accepted'); this.showNotice = false; posthog?.opt_in_capturing?.(); }, declineCookies() { localStorage.setItem('cookie_consent', 'declined'); this.showNotice = false; posthog?.opt_out_capturing?.(); } }"
-         x-show="showNotice"
-         x-cloak
-         x-transition:enter="transition duration-400 ease-[cubic-bezier(0.16,1,0.3,1)]"
-         x-transition:enter-start="opacity-0 translate-y-6 scale-95"
-         x-transition:enter-end="opacity-100 translate-y-0 scale-100"
-         x-transition:leave="transition duration-200 ease-in"
-         x-transition:leave-start="opacity-100 translate-y-0 scale-100"
-         x-transition:leave-end="opacity-0 translate-y-4 scale-95"
-         class="pointer-events-none fixed inset-x-0 bottom-0 z-50 p-4 sm:right-6 sm:bottom-6 sm:left-auto sm:w-full sm:max-w-md sm:p-0">
-        <div class="pointer-events-auto relative overflow-hidden rounded-2xl border border-zinc-200/80 bg-white/80 p-5 font-sans shadow-[0_20px_50px_rgba(0,0,0,0.1)] backdrop-blur-2xl dark:border-white/10 dark:bg-[#0B0C0E]/85 dark:shadow-[0_24px_60px_rgba(0,0,0,0.8)]">
-            <div class="pointer-events-none absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-indigo-500/40 via-violet-500/40 to-transparent">
-            </div>
-            <div class="pointer-events-none absolute -top-10 -left-10 h-32 w-32 rounded-full bg-indigo-500/10 blur-2xl"></div>
-            <div class="pointer-events-none absolute -right-10 -bottom-10 h-32 w-32 rounded-full bg-violet-500/10 blur-2xl"></div>
-            <div class="pointer-events-none absolute inset-0 rounded-2xl shadow-[inset_0_1px_0_0_rgba(255,255,255,0.15)] dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08)]">
-            </div>
-            <div class="relative z-10 flex items-start gap-4">
-                <div class="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-b from-zinc-100 to-zinc-200/50 p-px shadow-sm dark:from-white/15 dark:to-white/5">
-                    <div class="flex h-full w-full items-center justify-center rounded-[11px] bg-white text-zinc-900 dark:bg-[#121318] dark:text-zinc-100">
-                        <svg class="h-4 w-4"
-                             fill="none"
-                             viewBox="0 0 24 24"
-                             stroke="currentColor"
-                             stroke-width="1.75">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751A11.959 11.959 0 0112 2.714z" />
-                        </svg>
-                    </div>
-                </div>
-                <div class="flex-1 space-y-1">
-                    <div class="flex items-center gap-2">
-                        <h3 class="text-xs font-semibold text-zinc-900 dark:text-zinc-100">Privacy Preferences</h3>
-                    </div>
-                    <p class="text-[12px] leading-relaxed text-zinc-600 dark:text-zinc-400">
-                        We use essential telemetry to analyze traffic and improve user experience. Learn more in our
-                        <a href="{% url 'docs:privacy_policy' %}"
-                           class="font-medium text-zinc-900 underline underline-offset-2 transition-colors hover:text-indigo-500 dark:text-zinc-200 dark:hover:text-indigo-400">
-                            Privacy Policy.
-                        </a>
-                    </p>
-                </div>
-            </div>
-            <div class="relative z-10 mt-4 flex items-center justify-end gap-2.5 pt-1">
-                <button @click="declineCookies()"
-                        class="rounded-lg border border-zinc-200 bg-zinc-100/60 px-3 py-1.5 text-xs font-medium text-zinc-700 transition-all duration-150 hover:bg-zinc-200/80 hover:text-zinc-900 active:scale-95 dark:border-white/10 dark:bg-white/[0.04] dark:text-zinc-300 dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] dark:hover:border-white/20 dark:hover:bg-white/[0.08] dark:hover:text-white">
-                    Decline Optional
-                </button>
-                <button @click="acceptCookies()"
-                        class="group relative inline-flex items-center justify-center overflow-hidden rounded-lg bg-zinc-900 px-3.5 py-1.5 text-xs font-medium text-white shadow-md transition-all duration-150 hover:bg-zinc-800 active:scale-95 dark:bg-gradient-to-b dark:from-white dark:to-zinc-200 dark:text-zinc-950 dark:shadow-[0_0_20px_rgba(255,255,255,0.15),inset_0_1px_0_rgba(255,255,255,0.8)] dark:hover:brightness-110">
-                    Accept All
-                </button>
-            </div>
-        </div>
-    </div>
 </html>

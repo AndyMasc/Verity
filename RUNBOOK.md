@@ -24,7 +24,6 @@ Compiled from the code itself (`Verity/settings/base.py`, `production.py`,
 | Google / GitHub OAuth        | allauth social login                                         | required                      | required               |
 | Web Push (VAPID)             | Browser notifications                                        | required                      | required               |
 | Sentry                       | Error + performance monitoring                               | required (DSN has no default) | required               |
-| PostHog                      | Product analytics                                            | optional (default off)        | optional               |
 | Tailwind (standalone binary) | CSS build                                                    | `tailwind start`              | build output committed |
 
 Everything marked **required** is read at settings load with **no default** — the app
@@ -129,14 +128,12 @@ venv/bin/python -c "from py_vapid import Vapid01; v = Vapid01(); v.generate_keys
 | `WEB_PUSH_PUBLIC_KEY` / `WEB_PUSH_PRIVATE_KEY` | VAPID keypair (generate once, keep private key secret) |
 | `WEB_PUSH_EMAIL`                               | contact address for push subscriptions                 |
 
-### Sentry & PostHog
+### Sentry
 
-| Variable                            | Notes                                                               |
-| ----------------------------------- | ------------------------------------------------------------------- |
-| `SENTRY_DSN`                        | **required, no default** — settings crash if missing, even in dev   |
-| `SENTRY_ENVIRONMENT`                | default `development`; set `production` in prod (controls sampling) |
-| `POSTHOG_PROJECT_TOKEN`             | default `""` = analytics off                                        |
-| `POSTHOG_HOST` / `POSTHOG_DISABLED` | optional                                                            |
+| Variable             | Notes                                                               |
+| -------------------- | ------------------------------------------------------------------- |
+| `SENTRY_DSN`         | **required, no default** — settings crash if missing, even in dev   |
+| `SENTRY_ENVIRONMENT` | default `development`; set `production` in prod (controls sampling) |
 
 ---
 
@@ -206,8 +203,7 @@ pre-commit run --all-files
 8. **Stripe** — live keys; products/prices expected by `billing/metadata.py`. Sync them into the DB after deploy.
 9. **OAuth apps** — Google + GitHub with the exact callback URLs from section 2.
 10. **Sentry** — Django project → `SENTRY_DSN`; `SENTRY_ENVIRONMENT=production`.
-11. **PostHog** — optional; token or `POSTHOG_DISABLED=1`.
-12. **VAPID keys** — generate once (`WEB_PUSH_*`).
+11. **VAPID keys** — generate once (`WEB_PUSH_*`).
 
 ### Phase B — Build & run
 

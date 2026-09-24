@@ -35,19 +35,6 @@ def webpush_status(request: HttpRequest) -> dict[str, Any]:
     }
 
 
-def posthog_settings(request: HttpRequest) -> dict[str, Any]:  # noqa: ARG001
-    """Expose PostHog client configuration so the snippet is not hardcoded.
-
-    The project token and host come from Django settings (loaded from the
-    environment) instead of being baked into the template.
-    """
-    return {
-        "posthog_project_token": getattr(settings, "POSTHOG_PROJECT_TOKEN", ""),
-        "posthog_host": getattr(settings, "POSTHOG_HOST", ""),
-        "posthog_disabled": getattr(settings, "POSTHOG_DISABLED", False),
-    }
-
-
 def turnstile_settings(request: HttpRequest) -> dict[str, Any]:  # noqa: ARG001
     """Expose Turnstile widget configuration (sitekey) to all templates.
 

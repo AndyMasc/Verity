@@ -16,7 +16,6 @@ __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
-.posthog-wizard-cache
 *.cache
 *_cache
 

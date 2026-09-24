@@ -14,7 +14,6 @@ from django.utils.functional import cached_property
 from django.views.generic.base import View
 from django.views.generic.edit import CreateView
 
-from core.posthog_client import get_posthog_client
 from documents.models import DocumentData, DocumentStatus
 
 from .. import services
@@ -121,15 +120,6 @@ class AddRecordView(LoginRequiredMixin, CreateView):
         if document:
             document.associated_record = self.object
             document.save(update_fields=["associated_record"])
-
-        if posthog_client := get_posthog_client():
-            posthog_client.capture(
-                "record_created",
-                properties={
-                    "record_type": self.object.record_type,
-                    "has_document": document is not None,
-                },
-            )
 
         merged = try_match_document_record(self.object, document) if document else None
         if merged:

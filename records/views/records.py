@@ -20,7 +20,6 @@ from django.views.generic.edit import UpdateView
 from django_filters.views import FilterView
 from django_ratelimit.decorators import ratelimit
 
-from core.posthog_client import get_posthog_client
 from Verity.views import CachedPaginatorMixin, htmx_response
 
 from .. import services
@@ -302,14 +301,6 @@ class RecordDetailView(LoginRequiredMixin, UpdateView):
         messages.success(self.request, "Record updated successfully.")
         self.object = form.save()
 
-        if posthog_client := get_posthog_client():
-            posthog_client.capture(
-                "record_updated",
-                properties={
-                    "record_type": self.object.record_type,
-                },
-            )
-
         resp = htmx_response(self.request, toast="Record updated successfully.")
         if resp is not None:
             return resp
@@ -361,14 +352,6 @@ class HardDeleteRecordView(LoginRequiredMixin, View):
             return redirect("records:record_detail", pk=pk)
 
         services.hard_delete_record(request.user, record)
-
-        if posthog_client := get_posthog_client():
-            posthog_client.capture(
-                "record_hard_deleted",
-                properties={
-                    "record_type": record.record_type,
-                },
-            )
 
         resp = htmx_response(
             request,

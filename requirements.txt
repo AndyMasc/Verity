@@ -157,9 +157,6 @@ numpy==2.5.0
 oauthlib==3.3.1
 odfpy==1.4.1
 opencv-python-headless==4.13.0.92
-opentelemetry-api==1.44.0
-opentelemetry-exporter-otlp==1.44.0
-opentelemetry-sdk==1.44.0
 openpyxl==3.1.5
 packageurl-python==0.17.6
 packaging==26.2
@@ -180,7 +177,6 @@ pipreqs==0.4.13
 plaid-python==44.0.0
 platformdirs==4.10.0
 pluggy==1.6.0
-posthog==7.31.0
 pre_commit==4.6.2
 prometheus_client==0.26.0
 propcache==0.5.2

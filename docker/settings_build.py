@@ -17,7 +17,6 @@ external service is connected.
 import os
 
 _REQUIRED_ENV = {
-    "POSTHOG_PROJECT_TOKEN": "staticbuild",
     "SECRET_KEY": "staticbuild",
     "GOOGLE_OAUTH_CLIENT_ID": "staticbuild",
     "GOOGLE_OAUTH_CLIENT_SECRET": "staticbuild",
