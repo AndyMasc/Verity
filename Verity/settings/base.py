@@ -114,6 +114,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "posthog.integrations.django.PosthogContextMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "simple_history.middleware.HistoryRequestMiddleware",
     "core.middleware.HtmxMessageMiddleware",  # Send messages without reload

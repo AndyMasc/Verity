@@ -5,11 +5,13 @@ verity_service_account.json
 # Environment variables
 .env
 venv/
+*venv/
 build/
 dist/
 !theme/static/css/dist/
 !theme/static/css/dist/**/*
 *.egg-info/
+.posthog-wizard-cache
 
 # Python build artifacts
 __pycache__/

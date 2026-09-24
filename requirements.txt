@@ -157,6 +157,9 @@ numpy==2.5.0
 oauthlib==3.3.1
 odfpy==1.4.1
 opencv-python-headless==4.13.0.92
+opentelemetry-api==1.44.0
+opentelemetry-exporter-otlp==1.44.0
+opentelemetry-sdk==1.44.0
 openpyxl==3.1.5
 packageurl-python==0.17.6
 packaging==26.2
@@ -166,6 +169,7 @@ parsy==1.1.0
 pathspec==1.1.1
 pendulum==3.2.0
 periodiq==0.14.0
+posthog==7.31.0
 pika==1.4.4
 pillow==12.3.0
 pillow_heif==1.4.0

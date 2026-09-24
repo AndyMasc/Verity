@@ -9,12 +9,14 @@ delegates here for all extraction work.
 
 import logging
 import re
+import uuid
 from typing import Any
 
 from django.conf import settings
 from django.core.cache import cache
 from dramatiq.middleware import CurrentMessage
 
+from core import apps as core_apps
 from documents.models import DocumentData, DocumentStatus
 from documents.ocr_helpers import prepare_image_for_gemini, render_pdf_pages
 from documents.storage import BUCKET, get_s3_client, validate_uploaded_bytes
@@ -29,11 +31,20 @@ MAX_OCR_RETRIES = 3
 try:
     from google import genai
     from google.genai import types
+    from posthog.ai.gemini import genai as posthog_genai
     from pydantic import BaseModel, Field
 
     from records.models import Record
 
-    client = genai.Client(api_key=settings.GEMINI_API_KEY)
+    client = (
+        posthog_genai.Client(
+            api_key=settings.GEMINI_API_KEY,
+            posthog_client=core_apps.posthog_client,
+            posthog_privacy_mode=False,
+        )
+        if core_apps.posthog_client is not None
+        else genai.Client(api_key=settings.GEMINI_API_KEY)
+    )
 
     class OCRResult(BaseModel):
         title: str = Field(
@@ -150,6 +161,9 @@ def process_image(image_bytes: bytes, filepath: str) -> list[types.Part]:
 def call_gemini(
     image_parts: list[types.Part],
     folder_names: list[str],
+    *,
+    document_id: int,
+    user_id: int,
 ) -> dict[str, Any]:
     """Send the images to Gemini with folder context and return parsed OCR results."""
     contents: list[Any] = []
@@ -162,10 +176,20 @@ def call_gemini(
     contents.append(folder_context)
     contents.extend(image_parts)
 
+    posthog_arguments = (
+        {
+            "posthog_distinct_id": str(user_id),
+            "posthog_trace_id": str(uuid.uuid4()),
+            "posthog_properties": {"$ai_session_id": f"document-{document_id}"},
+        }
+        if isinstance(client, posthog_genai.Client)
+        else {}
+    )
     result = client.models.generate_content(
         model="gemini-3.5-flash-lite",
         contents=contents,
         config=CONFIG,
+        **posthog_arguments,
     )
 
     if result.parsed is not None:
@@ -225,7 +249,12 @@ def extract(document_id: int) -> dict[str, Any]:
 
         image_parts = process_image(image_content, document.filepath)
 
-        final_data = call_gemini(image_parts, folder_names)
+        final_data = call_gemini(
+            image_parts,
+            folder_names,
+            document_id=document.id,
+            user_id=document.user_id,
+        )
 
         cache.set(cache_key, final_data, timeout=OCR_CACHE_TTL)
         set_document_status(

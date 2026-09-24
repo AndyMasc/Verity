@@ -22,6 +22,7 @@ from rest_framework.views import APIView
 from billing import features
 from billing.entitlements import has_feature
 from billing.mixins import FeatureRequiredMixin
+from core.apps import posthog_client
 
 from ..models import PlaidItem
 from ..plaid_client import client
@@ -134,6 +135,8 @@ class PublicTokenExchange(FeatureRequiredMixin, APIView):
 
             trigger_initial_sync(plaid_item)
             cache.delete(f"plaid_status:{request.user.id}")
+            if posthog_client is not None:
+                posthog_client.capture("bank_linked")
 
             return Response({"success": "Bank linked successfully! Syncing transactions…"})
         except Exception:

@@ -14,6 +14,7 @@ from django.utils.functional import cached_property
 from django.views.generic.base import View
 from django.views.generic.edit import CreateView
 
+from core.apps import posthog_client
 from documents.models import DocumentData, DocumentStatus
 
 from .. import services
@@ -21,6 +22,8 @@ from ..forms import AddRecordForm
 from ..matching import try_match_document_record
 
 logger = logging.getLogger(__name__)
+posthog_log_logger = logging.getLogger("posthog.export")
+posthog_log_logger.propagate = False
 
 _PROCESSING_STATUSES = (
     DocumentStatus.UPLOADED,
@@ -122,6 +125,23 @@ class AddRecordView(LoginRequiredMixin, CreateView):
             document.save(update_fields=["associated_record"])
 
         merged = try_match_document_record(self.object, document) if document else None
+        creation_source = "document" if document else "manual"
+        if posthog_client is not None:
+            posthog_client.capture(
+                "record_created",
+                properties={
+                    "creation_source": creation_source,
+                    "merged_with_transaction": bool(merged),
+                },
+            )
+        posthog_log_logger.info(
+            "Record creation completed",
+            extra={
+                "event": "record_created",
+                "creation_source": creation_source,
+                "merged_with_transaction": bool(merged),
+            },
+        )
         if merged:
             messages.success(self.request, "Receipt matched with bank transaction and merged.")
             return redirect("records:record_detail", pk=merged.pk)

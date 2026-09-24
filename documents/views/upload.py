@@ -12,6 +12,7 @@ from django.utils.decorators import method_decorator
 from django.views import View
 from django_ratelimit.decorators import ratelimit
 
+from core.apps import posthog_client
 from records.models import Record
 
 from ..models import DocumentData, DocumentStatus
@@ -126,6 +127,11 @@ class ConfirmUploadView(LoginRequiredMixin, View):
                     warning,
                 )
 
+        if posthog_client is not None:
+            posthog_client.capture(
+                "document_upload_confirmed",
+                properties={"is_supporting_document": document.associated_record_id is not None},
+            )
         return JsonResponse({"status": "confirmed", "document_id": document.id})
 
 

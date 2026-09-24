@@ -47,12 +47,13 @@ VERITY_FREE = ProductMetadata(
     description="For personal use",
     category="base_plan",
     features=[
+        features.RECORD_RETENTION,
         features.LIMITED_SCANS,
         features.SUPPORTING_FILE_UPLOAD,
         features.EXPIRY_REMINDERS,
         features.FREE_STORAGE_LIMIT,
     ],
-    storage_limit_gb=features.FREE_STORAGE_LIMIT_GB,
+    storage_limit_gb=int(features.FREE_STORAGE_LIMIT_GB),
     monthly_scan_limit=features.FREE_MONTHLY_SCAN_LIMIT,
 )
 
@@ -72,7 +73,7 @@ VERITY_PRO = ProductMetadata(
     ],
     storage_limit_gb=features.PRO_STORAGE_LIMIT_GB,
     monthly_scan_limit=features.PRO_SCAN_LIMIT,
-    recommended=True,  # Recommended plan for most users
+    recommended=True,
 )
 
 STORAGE_UPGRADE_10 = ProductMetadata(

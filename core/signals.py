@@ -7,10 +7,13 @@ underlying data changes.
 """
 
 from django.conf import settings
+from django.contrib.auth.signals import user_logged_in
 from django.core.cache import cache
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
+from posthog import identify_context
 
+from core import apps
 from core.services.dashboard import invalidate_dashboard_cache
 from Verity.utils import bump_paginator_count_version
 
@@ -22,6 +25,17 @@ def create_user_settings(sender, instance, created, **kwargs):  # noqa: ARG001
     """Create a default UserSettings row whenever a new User is saved."""
     if created:
         UserSettings.objects.create(user=instance)
+
+
+@receiver(user_logged_in)
+def identify_posthog_user(sender, request, user, **kwargs):  # noqa: ARG001
+    """Identify the login request after Django has authenticated the user."""
+    if apps.posthog_client is None:
+        return
+
+    distinct_id = str(user.pk)
+    identify_context(distinct_id)
+    apps.posthog_client.set(distinct_id=distinct_id, properties={"email": user.email})
 
 
 def _invalidate_webpush_count_cache(user_id):

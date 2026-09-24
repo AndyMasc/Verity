@@ -14,6 +14,7 @@ from django.views.generic import DetailView, ListView
 from django_ratelimit.decorators import ratelimit
 
 from billing import features
+from core.apps import posthog_client
 
 from .. import services
 from ..mixins import ReimbursementRequestRequiredMixin
@@ -224,6 +225,15 @@ class CreatePackageFromRecordsView(LoginRequiredMixin, ReimbursementRequestRequi
 
         attached = package.records.count()
         requested = len(set(record_ids))
+        if posthog_client is not None:
+            posthog_client.capture(
+                "reimbursement_package_created",
+                properties={
+                    "record_count": attached,
+                    "requested_record_count": requested,
+                    "days_valid": days_valid,
+                },
+            )
         if attached < requested:
             messages.warning(
                 request,

@@ -21,6 +21,8 @@ from djstripe.models import (
 )
 from djstripe.settings import djstripe_settings
 
+from core.apps import posthog_client
+
 from . import metadata, services
 from .metadata import VERITY_FREE, plan_for_user
 from .models import CustomUser
@@ -62,6 +64,11 @@ def subscription_confirm(request: HttpRequest) -> HttpResponse:
 
     djstripe_subscription = Subscription.sync_from_stripe_data(subscription)
     overlaps_cleared = subscription_holder.handle_new_subscription(djstripe_subscription)
+    if posthog_client is not None:
+        posthog_client.capture(
+            "subscription_activated",
+            properties={"overlapping_subscription_cleared": overlaps_cleared},
+        )
 
     if overlaps_cleared:
         messages.success(request, "Your subscription has been updated successfully!")
@@ -174,6 +181,14 @@ def create_checkout_session(request: HttpRequest) -> HttpResponse:
             + "?session_id={CHECKOUT_SESSION_ID}",
             cancel_url=request.build_absolute_uri(reverse("pricing_page")),
         )
+        if posthog_client is not None:
+            posthog_client.capture(
+                "subscription_checkout_started",
+                properties={
+                    "includes_base_plan": bool(base_price_id),
+                    "includes_storage_plan": bool(storage_price_id),
+                },
+            )
         return HttpResponseRedirect(checkout_session.url)
     except stripe.error.StripeError as e:
         logger.error("Stripe error creating checkout session: %s", e)

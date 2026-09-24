@@ -12,6 +12,7 @@ AUTO_TXN_CATEGORIZATION = "Automatic transaction categorization and matching"
 RECORD_SHARING = "Collaborative records"  # Gate for granting record access to others
 
 # Free plan features
+RECORD_RETENTION = "7 year record retention period"
 FREE_MONTHLY_SCAN_LIMIT = 15
 LIMITED_SCANS = f"{FREE_MONTHLY_SCAN_LIMIT} quick scans / month"  # ie, 10-30 / month
 SUPPORTING_FILE_UPLOAD = "Supporting file uploads"

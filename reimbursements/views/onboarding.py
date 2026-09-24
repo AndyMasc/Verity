@@ -10,6 +10,8 @@ from django.utils.decorators import method_decorator
 from django.views import View
 from django_ratelimit.decorators import ratelimit
 
+from core.apps import posthog_client
+
 from .. import services
 from ..models import StripeAccount
 
@@ -56,6 +58,8 @@ class StripeOnboardView(LoginRequiredMixin, View):
                 refresh_url,
                 return_url,
             )
+            if posthog_client is not None:
+                posthog_client.capture("stripe_onboarding_started")
             return redirect(account_link.url)
         except stripe.error.StripeError:
             logger.exception("Failed to create Stripe account link for user %s", request.user.id)

@@ -18,6 +18,7 @@ from django_ratelimit.decorators import ratelimit
 
 from billing.entitlements import has_feature
 from billing.features import RECORD_SHARING
+from core.apps import posthog_client
 from records.models import Record, RecordShare
 from Verity.views import parse_record_ids
 
@@ -90,6 +91,15 @@ class ShareRecordView(LoginRequiredMixin, View):
             messages.error(request, str(exc))
         else:
             if shares:
+                if posthog_client is not None:
+                    posthog_client.capture(
+                        "record_shared",
+                        properties={
+                            "recipient_count": len(shares),
+                            "permission": permission,
+                            "includes_documents": include_documents,
+                        },
+                    )
                 messages.success(
                     request,
                     f"Shared with {len(shares)} user{'s' if len(shares) != 1 else ''}",
@@ -155,6 +165,15 @@ class BulkShareView(LoginRequiredMixin, View):
             total_shares += len(shares)
 
         resolved_recipients = [u for u in recipients if u.pk != request.user.pk]
+        if total_shares and posthog_client is not None:
+            posthog_client.capture(
+                "records_shared_in_bulk",
+                properties={
+                    "record_count": len(owned),
+                    "recipient_count": len(resolved_recipients),
+                    "share_count": total_shares,
+                },
+            )
         return JsonResponse(
             {
                 "success": True,
