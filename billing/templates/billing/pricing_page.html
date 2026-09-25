@@ -2,7 +2,8 @@
 {% block title %}Choose Your Plan | Verity{% endblock %}
 {% block content %}
     <main class="mx-auto flex min-h-screen w-full max-w-5xl flex-col items-center justify-center px-6 py-12 font-sans antialiased sm:py-16"
-          x-data="{ selectedCategory: 'base_plan', selectedBasePrice: null, selectedStoragePrice: null }">
+          data-plan-view-tracking
+          x-data="{ selectedCategory: 'base_plan' }">
         {% include "billing/partials/pricing_cards.html" %}
     </main>
 {% endblock content %}
