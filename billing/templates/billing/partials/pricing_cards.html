@@ -235,3 +235,16 @@
         </form>
     </div>
 {% endif %}
+<script>
+    document.addEventListener('alpine:initialized', function () {
+        if (typeof posthog === 'undefined') { return; }
+        var root = document.querySelector('[x-data~="selectedCategory"]');
+        if (!root) { return; }
+        var data = Alpine.$data(root);
+        var track = function () {
+            posthog.capture('subscription_plan_viewed', { plan_name: data.selectedCategory });
+        };
+        track();
+        data.$watch('selectedCategory', track);
+    });
+</script>

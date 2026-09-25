@@ -14,7 +14,9 @@ import stripe
 from django.db import transaction
 from django.db.models import Q
 from django.dispatch import receiver
+from django.utils import timezone
 
+from core.apps import posthog_client
 from core.currencies import from_stripe_amount
 from records.models import AuditLog
 
@@ -421,6 +423,23 @@ def _handle_account_updated(event):
         charges_enabled=account.get("charges_enabled", False),
         payouts_enabled=account.get("payouts_enabled", False),
     )
+    if posthog_client is None:
+        return
+    row = (
+        StripeAccount.objects.filter(stripe_account_id=account_id)
+        .select_related("user")
+        .first()
+    )
+    if row is not None and row.is_active:
+        posthog_client.capture(
+            "stripe_onboarding_completed",
+            distinct_id=str(row.user_id),
+            properties={
+                "duration_seconds": int(
+                    (timezone.now() - row.created_at).total_seconds()
+                )
+            },
+        )
 
 
 def _handle_payment_failure(event):

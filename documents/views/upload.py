@@ -113,9 +113,25 @@ class ConfirmUploadView(LoginRequiredMixin, View):
                 )
 
             service = ConfirmUploadService(document=document, key=key)
-            result = service.confirm()
+            try:
+                result = service.confirm()
+            except Exception as exc:
+                logger.exception(
+                    "Unexpected error confirming upload for doc %s", document_id
+                )
+                if posthog_client is not None:
+                    posthog_client.capture(
+                        "document_upload_failed",
+                        properties={"error_type": type(exc).__name__},
+                    )
+                raise
 
             if not result.valid:
+                if posthog_client is not None:
+                    posthog_client.capture(
+                        "document_upload_failed",
+                        properties={"error_type": result.error},
+                    )
                 return JsonResponse({"error": result.error}, status=result.status_code)
 
         if document.associated_record_id is None:

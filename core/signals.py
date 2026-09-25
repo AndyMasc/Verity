@@ -6,6 +6,10 @@ subscription count cache and the dashboard context cache when the
 underlying data changes.
 """
 
+from allauth.account.signals import (
+    user_logged_in as allauth_user_logged_in,
+)
+from allauth.account.signals import user_signed_up
 from django.conf import settings
 from django.contrib.auth.signals import user_logged_in
 from django.core.cache import cache
@@ -27,15 +31,44 @@ def create_user_settings(sender, instance, created, **kwargs):  # noqa: ARG001
         UserSettings.objects.create(user=instance)
 
 
+@receiver(user_signed_up)
+def track_user_signed_up(request, user, **kwargs):  # noqa: ARG001
+    if apps.posthog_client is None:
+        return
+    apps.posthog_client.capture(
+        "user_signed_up",
+        distinct_id=str(user.pk),
+        properties={
+            "email": user.email,
+            "username": user.username,
+            "signup_method": (
+                user.socialaccount_set.first().provider
+                if user.socialaccount_set.exists()
+                else "email"
+            ),
+        },
+    )
+
+
 @receiver(user_logged_in)
+@receiver(allauth_user_logged_in)
 def identify_posthog_user(sender, request, user, **kwargs):  # noqa: ARG001
-    """Identify the login request after Django has authenticated the user."""
+    """Identify the login request after authentication and track the login."""
     if apps.posthog_client is None:
         return
 
     distinct_id = str(user.pk)
     identify_context(distinct_id)
     apps.posthog_client.set(distinct_id=distinct_id, properties={"email": user.email})
+
+    sociallogin = kwargs.get("sociallogin")
+    apps.posthog_client.capture(
+        "user_logged_in",
+        distinct_id=distinct_id,
+        properties={
+            "login_method": sociallogin.account.provider if sociallogin else "email",
+        },
+    )
 
 
 def _invalidate_webpush_count_cache(user_id):

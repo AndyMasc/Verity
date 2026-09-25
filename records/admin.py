@@ -50,7 +50,6 @@ class RecordAdmin(admin.ModelAdmin):
                 del actions["delete_selected"]
         else:
             if "delete_selected" in actions:
-                # Fix: Extract tuple properties safely and overwrite with a new tuple
                 _func, name, description = actions["delete_selected"]
                 actions["delete_selected"] = (safe_delete_selected, name, description)
         return actions

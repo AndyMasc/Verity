@@ -5,8 +5,11 @@ import djstripe.signals as djstripe_signals
 import stripe
 from django.db import transaction
 from django.dispatch import receiver
+from django.utils import timezone
 from djstripe.event_handlers import djstripe_receiver
-from djstripe.models import Subscription
+from djstripe.models import Customer, Subscription
+
+from core.apps import posthog_client
 
 from . import metadata, services
 
@@ -163,9 +166,74 @@ def handle_subscription_changed(**kwargs: Any) -> None:
 
     _invalidate_subscription_caches_for_event(stripe_sub)
 
-    if "base_plan" in _subscription_categories(stripe_sub) and _base_plan_is_ending(
-        stripe_sub
-    ):
-        _cancel_pro_only_storage_for_customer(
-            stripe_sub.get("customer"), base_subscription_id=stripe_sub.get("id")
-        )
+    if _base_plan_is_ending(stripe_sub):
+        _capture_subscription_cancelled(stripe_sub.get("id"))
+        if "base_plan" in _subscription_categories(stripe_sub):
+            _cancel_pro_only_storage_for_customer(
+                stripe_sub.get("customer"), base_subscription_id=stripe_sub.get("id")
+            )
+
+
+def _capture_subscription_cancelled(sub_id: str) -> None:
+    """Track a base-plan cancellation for churn analysis."""
+    if posthog_client is None:
+        return
+
+    sub = (
+        Subscription.objects.filter(id=sub_id)
+        .select_related("customer__subscriber")
+        .first()
+    )
+    user = getattr(getattr(sub, "customer", None), "subscriber", None)
+    if sub is None or user is None:
+        return
+
+    item = sub.items.select_related("price__product").first()
+    plan_name = (
+        item.price.product.name if item and item.price and item.price.product else None
+    )
+
+    months_active = None
+    if sub.start_date:
+        months_active = round((timezone.now() - sub.start_date).days / 30.44, 1)
+
+    posthog_client.capture(
+        "subscription_cancelled",
+        distinct_id=str(user.pk),
+        properties={"plan": plan_name, "months_active": months_active},
+    )
+
+
+@djstripe_receiver("invoice.payment_failed")
+def handle_payment_failed(**kwargs: Any) -> None:
+    """Track failed subscription payments for churn and recovery flows."""
+    event = kwargs.get("event")
+    if not event:
+        return
+
+    invoice = event.data.get("object", {})
+    customer_id = invoice.get("customer")
+    if not customer_id or posthog_client is None:
+        return
+
+    customer = (
+        Customer.objects.filter(id=customer_id, subscriber__isnull=False)
+        .select_related("subscriber")
+        .first()
+    )
+    if customer is None or customer.subscriber is None:
+        return
+
+    amount_due = invoice.get("amount_due") or invoice.get("amount") or 0
+    failure = invoice.get("last_payment_error") or {}
+    error_message = failure.get("message") or failure.get("code") or "unknown"
+
+    posthog_client.capture(
+        "payment_failed",
+        distinct_id=str(customer.subscriber.pk),
+        properties={
+            "amount": amount_due / 100,
+            "currency": invoice.get("currency", "usd"),
+            "failure_reason": error_message,
+        },
+    )

@@ -27,6 +27,7 @@ from webpush.models import SubscriptionInfo
 from webpush.views import save_info
 
 from billing.services import pricing_context
+from core.apps import posthog_client
 
 from .forms import UpdateUserSettingsForm
 from .models import Notification, UserSettings
@@ -183,6 +184,12 @@ class ProfilePageView(LoginRequiredMixin, UpdateView):
         user_settings = form.save(commit=False)
         user_settings.user = self.request.user
         user_settings.save()
+
+        if posthog_client is not None:
+            posthog_client.capture(
+                "profile_updated",
+                properties={"fields_changed": list(form.changed_data)},
+            )
 
         messages.success(self.request, "Settings saved successfully.")
 

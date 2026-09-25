@@ -4,7 +4,7 @@ from typing import Any
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import Q
+from django.db.models import Q, Sum
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
@@ -239,6 +239,12 @@ class CreatePackageFromRecordsView(
 
         attached = package.records.count()
         requested = len(set(record_ids))
+        total_amount = (
+            package.records.filter(is_active=True).aggregate(total=Sum("balance"))[
+                "total"
+            ]
+            or 0
+        )
         if posthog_client is not None:
             posthog_client.capture(
                 "reimbursement_package_created",
@@ -246,6 +252,7 @@ class CreatePackageFromRecordsView(
                     "record_count": attached,
                     "requested_record_count": requested,
                     "days_valid": days_valid,
+                    "total_amount": float(total_amount),
                 },
             )
         if attached < requested:

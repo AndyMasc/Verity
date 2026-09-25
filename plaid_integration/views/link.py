@@ -147,8 +147,16 @@ class PublicTokenExchange(FeatureRequiredMixin, APIView):
             return Response(
                 {"success": "Bank linked successfully! Syncing transactions…"}
             )
-        except Exception:
+        except Exception as exc:
             logger.exception(
                 "Failed to exchange public token for user %s", request.user.id
             )
+            if posthog_client is not None:
+                posthog_client.capture(
+                    "bank_link_failed",
+                    properties={
+                        "error_type": type(exc).__name__,
+                        "provider": "plaid",
+                    },
+                )
             return Response({"error": "Failed to exchange token"}, status=400)

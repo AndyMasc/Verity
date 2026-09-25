@@ -20,6 +20,7 @@ from django.views.generic.edit import UpdateView
 from django_filters.views import FilterView
 from django_ratelimit.decorators import ratelimit
 
+from core.apps import posthog_client
 from Verity.views import CachedPaginatorMixin, htmx_response
 
 from .. import services
@@ -246,6 +247,21 @@ class RecordDetailView(LoginRequiredMixin, UpdateView):
             return ["records/partials/record_form_partial.html"]
         return [self.template_name]
 
+    def get(self, request, *args, **kwargs):
+        response = super().get(request, *args, **kwargs)
+        if (
+            self.request.headers.get("HX-Request") != "true"
+            and posthog_client is not None
+        ):
+            posthog_client.capture(
+                "record_viewed",
+                properties={
+                    "record_type": self.object.record_type,
+                    "is_plaid_record": self.object.is_plaid_record,
+                },
+            )
+        return response
+
     def get_queryset(self):
         return Record.objects.visible_to(self.request.user).with_documents()
 
@@ -376,6 +392,13 @@ class HardDeleteRecordView(LoginRequiredMixin, View):
             return redirect("records:record_detail", pk=pk)
 
         services.hard_delete_record(request.user, record)
+
+        if posthog_client is not None:
+            age_days = (timezone.now().date() - record.date_added).days
+            posthog_client.capture(
+                "record_deleted",
+                properties={"record_type": record.record_type, "age_days": age_days},
+            )
 
         resp = htmx_response(
             request,
