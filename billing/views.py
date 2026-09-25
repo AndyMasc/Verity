@@ -32,6 +32,10 @@ logger = logging.getLogger(__name__)
 
 @login_required
 def pricing_page(request: HttpRequest) -> HttpResponse:
+    if request.GET.get("checkout") == "canceled":
+        messages.info(
+            request, "Checkout canceled. You were not charged. Select a plan to try again."
+        )
     return render(
         request, "billing/pricing_page.html", services.pricing_context(request.user)
     )
@@ -193,7 +197,8 @@ def create_checkout_session(request: HttpRequest) -> HttpResponse:
             line_items=line_items,
             success_url=request.build_absolute_uri(reverse("subscription_confirm"))
             + "?session_id={CHECKOUT_SESSION_ID}",
-            cancel_url=request.build_absolute_uri(reverse("pricing_page")),
+            cancel_url=request.build_absolute_uri(reverse("pricing_page"))
+            + "?checkout=canceled",
         )
         if posthog_client is not None:
             posthog_client.capture(
