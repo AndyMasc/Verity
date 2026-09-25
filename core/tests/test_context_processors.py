@@ -61,7 +61,9 @@ class NotificationsServiceTest(TestCase):
     def test_user_can_receive_email_default_true(self):
         from core.services.notifications import _user_can_receive_email
 
-        user_no_settings = User.objects.create_user(username="nosettings", password="pass")
+        user_no_settings = User.objects.create_user(
+            username="nosettings", password="pass"
+        )
         result = _user_can_receive_email(user_no_settings)
         self.assertTrue(result)
 
@@ -84,7 +86,9 @@ class NotificationsServiceTest(TestCase):
     def test_user_can_receive_push_no_settings(self):
         from core.services.notifications import _user_can_receive_push
 
-        user_no_settings = User.objects.create_user(username="nosettings2", password="pass")
+        user_no_settings = User.objects.create_user(
+            username="nosettings2", password="pass"
+        )
         result = _user_can_receive_push(user_no_settings)
         self.assertFalse(result)
 

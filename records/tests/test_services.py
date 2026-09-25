@@ -55,7 +55,9 @@ class BulkToggleArchiveTest(TestCase):
         self.user = User.objects.create_user(username="testuser", password="pass")
         self.other_user = User.objects.create_user(username="other", password="pass")
         self.records = [
-            Record.objects.create(user=self.user, title=f"Rec {i}", record_type="expense_receipt")
+            Record.objects.create(
+                user=self.user, title=f"Rec {i}", record_type="expense_receipt"
+            )
             for i in range(5)
         ]
 
@@ -106,7 +108,9 @@ class BulkToggleArchiveTest(TestCase):
     def test_creates_audit_logs(self):
         ids = [r.id for r in self.records[:2]]
         bulk_toggle_archive(ids, self.user, archive=True)
-        log_count = AuditLog.objects.filter(user=self.user, action=AuditLog.Action.ARCHIVE).count()
+        log_count = AuditLog.objects.filter(
+            user=self.user, action=AuditLog.Action.ARCHIVE
+        ).count()
         self.assertEqual(log_count, 2)
 
     def test_raises_on_limit_exceeded(self):
@@ -126,7 +130,9 @@ class BulkToggleArchiveTest(TestCase):
     def test_transaction_rolls_back_on_error(self):
         ids = [r.id for r in self.records[:2]]
         with self.assertRaises(BulkLimitExceededError):
-            bulk_toggle_archive(list(range(1, BULK_LIMIT + 2)) + ids, self.user, archive=True)
+            bulk_toggle_archive(
+                list(range(1, BULK_LIMIT + 2)) + ids, self.user, archive=True
+            )
         for r in self.records[:2]:
             r.refresh_from_db()
             self.assertTrue(r.is_active)

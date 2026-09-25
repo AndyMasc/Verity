@@ -107,7 +107,9 @@ def delete_7year_archived_records() -> None:
     from .models import MergeLog
 
     merged_ids = set(
-        MergeLog.objects.filter(undone_at__isnull=True).values_list("document_record_id", flat=True)
+        MergeLog.objects.filter(undone_at__isnull=True).values_list(
+            "document_record_id", flat=True
+        )
     )
 
     seven_years_ago = timezone.now() - timedelta(days=365 * COMPLIANCE_RETENTION_YEARS)
@@ -118,9 +120,9 @@ def delete_7year_archived_records() -> None:
     ).exclude(pk__in=merged_ids)
 
     document_paths = list(
-        DocumentData.objects.filter(associated_record__in=seven_year_expired_records).values_list(
-            "filepath", flat=True
-        )
+        DocumentData.objects.filter(
+            associated_record__in=seven_year_expired_records
+        ).values_list("filepath", flat=True)
     )
 
     deleted_count = 0
@@ -220,7 +222,8 @@ def send_expiry_notifications() -> None:
         user_settings = user_settings_cache.get(user_id)
         auto_archive_msg = (
             "Since you have enabled auto-archiving, your records will be automatically archived once the expiry passes."
-            if user_settings and getattr(user_settings, "auto_archive_expired_records", False)
+            if user_settings
+            and getattr(user_settings, "auto_archive_expired_records", False)
             else ""
         )
 
@@ -242,11 +245,17 @@ def send_expiry_notifications() -> None:
         send_multi_channel_notification(
             user=user,
             subject="Expiring Records on Verity",
-            text_body=render_to_string("notifications/expiring_record_email.txt", context),
-            html_body=render_to_string("notifications/expiring_record_email.html", context),
+            text_body=render_to_string(
+                "notifications/expiring_record_email.txt", context
+            ),
+            html_body=render_to_string(
+                "notifications/expiring_record_email.html", context
+            ),
             webpush_payload=webpush_payload,
             send_db=True,
             db_message=f"Your record '{', '.join(r.title for r in records[:3])}' is expiring soon.",
         )
 
-    logger.info("Successfully scheduled notices for %d unique users.", len(user_records_map))
+    logger.info(
+        "Successfully scheduled notices for %d unique users.", len(user_records_map)
+    )

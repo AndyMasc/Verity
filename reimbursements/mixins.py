@@ -23,7 +23,10 @@ class StripeAccountRequiredMixin(UserPassesTestMixin):
 
         onboard_url = reverse("reimbursements:stripe-onboard")
 
-        if self.request.content_type and "application/json" in self.request.content_type:
+        if (
+            self.request.content_type
+            and "application/json" in self.request.content_type
+        ):
             return JsonResponse(
                 {
                     "error": "You must connect your Stripe account before requesting reimbursements.",
@@ -39,7 +42,9 @@ class StripeAccountRequiredMixin(UserPassesTestMixin):
         return redirect(onboard_url)
 
 
-class ReimbursementRequestRequiredMixin(StripeAccountRequiredMixin, FeatureRequiredMixin):
+class ReimbursementRequestRequiredMixin(
+    StripeAccountRequiredMixin, FeatureRequiredMixin
+):
     """Requires a connected Stripe account and the Quick Reimbursement feature.
 
     Combines the Stripe Connect onboarding check ("StripeAccountRequiredMixin")

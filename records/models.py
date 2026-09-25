@@ -159,7 +159,10 @@ class RecordQuerySet(models.QuerySet):
         lower = search_query.lower()
         conditions = reduce(
             or_,
-            (Q(**{f"{field}__icontains": search_query}) for field in _TEXT_SEARCH_FIELDS),
+            (
+                Q(**{f"{field}__icontains": search_query})
+                for field in _TEXT_SEARCH_FIELDS
+            ),
         )
 
         matching_choices = [
@@ -308,7 +311,9 @@ class Record(models.Model):
 
     expiry_notification_sent = models.BooleanField(default=False, db_index=True)
 
-    plaid_transaction_id = models.CharField(max_length=255, unique=True, null=True, blank=True)
+    plaid_transaction_id = models.CharField(
+        max_length=255, unique=True, null=True, blank=True
+    )
     plaid_item = models.ForeignKey(
         "plaid_integration.PlaidItem",
         on_delete=models.SET_NULL,
@@ -324,7 +329,9 @@ class Record(models.Model):
         ordering: ClassVar[list[str]] = ["-last_edited"]
         indexes: ClassVar[list[models.Index]] = [
             models.Index(fields=["user", "is_active"], name="idx_record_user_active"),
-            models.Index(fields=["user", "-last_edited"], name="idx_record_user_edited"),
+            models.Index(
+                fields=["user", "-last_edited"], name="idx_record_user_edited"
+            ),
             models.Index(fields=["user", "record_type"], name="idx_record_user_type"),
             models.Index(
                 fields=["user", "is_active", "-last_edited"],
@@ -334,7 +341,9 @@ class Record(models.Model):
                 fields=["user", "is_active", "record_type"],
                 name="idx_record_type_filter",
             ),
-            models.Index(fields=["expiry_date", "is_active"], name="idx_record_expiry_active"),
+            models.Index(
+                fields=["expiry_date", "is_active"], name="idx_record_expiry_active"
+            ),
             models.Index(
                 fields=["expiry_date", "is_active", "user"],
                 name="idx_record_expiry_active_user",
@@ -354,7 +363,9 @@ class Record(models.Model):
         if self.pk and self.is_plaid_record:
             protected = {"plaid_transaction_id", "plaid_item"}
             if update_fields := kwargs.get("update_fields"):
-                kwargs["update_fields"] = [f for f in update_fields if f not in protected]
+                kwargs["update_fields"] = [
+                    f for f in update_fields if f not in protected
+                ]
         super().save(*args, **kwargs)
 
     def delete(self, using=None, keep_parents=False):  # noqa: ARG002
@@ -374,7 +385,9 @@ class Record(models.Model):
     @property
     def badge_classes(self) -> str:
         """Return Tailwind CSS classes for the record-type badge in the UI."""
-        return RECORD_TYPE_COLOR_MAP.get(self.record_type, RECORD_TYPE_COLOR_MAP["other"])
+        return RECORD_TYPE_COLOR_MAP.get(
+            self.record_type, RECORD_TYPE_COLOR_MAP["other"]
+        )
 
     @property
     def is_plaid_record(self) -> bool:
@@ -391,7 +404,9 @@ class Record(models.Model):
     def is_expiring_soon(self, days: int = 30) -> bool:
         """True when the expiry date falls within the next "days" days."""
         if self.expiry_date:
-            return self.expiry_date <= (timezone.now().date() + datetime.timedelta(days=days))
+            return self.expiry_date <= (
+                timezone.now().date() + datetime.timedelta(days=days)
+            )
         return False
 
 
@@ -450,9 +465,13 @@ class MergeLog(models.Model):
     ):
         parts = []
         if self.plaid_record_id and self.plaid_record:
-            parts.extend([self.plaid_record.title or "", self.plaid_record.merchant or ""])
+            parts.extend(
+                [self.plaid_record.title or "", self.plaid_record.merchant or ""]
+            )
         if self.document_record_id and self.document_record:
-            parts.extend([self.document_record.title or "", self.document_record.merchant or ""])
+            parts.extend(
+                [self.document_record.title or "", self.document_record.merchant or ""]
+            )
         self.search_text = " ".join(p for p in parts if p)
         super().save(
             force_insert=force_insert,
@@ -493,7 +512,9 @@ class AuditLog(models.Model):
     record = models.ForeignKey(
         Record, on_delete=models.SET_NULL, null=True, related_name="audit_logs"
     )
-    merge_log = models.ForeignKey(MergeLog, on_delete=models.SET_NULL, null=True, blank=True)
+    merge_log = models.ForeignKey(
+        MergeLog, on_delete=models.SET_NULL, null=True, blank=True
+    )
     details = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
 
@@ -501,7 +522,9 @@ class AuditLog(models.Model):
         ordering: ClassVar[list[str]] = ["-created_at"]
         indexes: ClassVar[list[models.Index]] = [
             models.Index(fields=["user", "action"], name="idx_auditlog_user_action"),
-            models.Index(fields=["record", "action"], name="idx_auditlog_record_action"),
+            models.Index(
+                fields=["record", "action"], name="idx_auditlog_record_action"
+            ),
         ]
 
     def __str__(self) -> str:
@@ -629,6 +652,8 @@ class RecordShare(models.Model):
         by the user are always document-visible and handled by the caller.
         """
         return Record.objects.filter(
-            pk__in=cls.active_for(user).filter(include_documents=True).values("record_id"),
+            pk__in=cls.active_for(user)
+            .filter(include_documents=True)
+            .values("record_id"),
             is_active=True,
         )

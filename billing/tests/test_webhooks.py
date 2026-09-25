@@ -139,7 +139,13 @@ class HandleSubscriptionChangedTests(TestCase):
                             "status": "canceled",
                             "cancel_at_period_end": False,
                             "items": {
-                                "data": [{"price": {"product": metadata.VERITY_PRO.stripe_id}}]
+                                "data": [
+                                    {
+                                        "price": {
+                                            "product": metadata.VERITY_PRO.stripe_id
+                                        }
+                                    }
+                                ]
                             },
                         }
                     }
@@ -154,7 +160,9 @@ class EnqueueReimbursementProcessingTests(TestCase):
         with mock.patch("reimbursements.tasks.process_stripe_event_task.send") as send:
             with self.captureOnCommitCallbacks(execute=True):
                 enqueue_reimbursement_processing(
-                    instance=mock.Mock(event=_fake_event("charge.refunded", "ch_refunded"))
+                    instance=mock.Mock(
+                        event=_fake_event("charge.refunded", "ch_refunded")
+                    )
                 )
         send.assert_called_once()
 
@@ -162,7 +170,9 @@ class EnqueueReimbursementProcessingTests(TestCase):
         with mock.patch("reimbursements.tasks.process_stripe_event_task.send") as send:
             with self.captureOnCommitCallbacks(execute=True):
                 enqueue_reimbursement_processing(
-                    instance=mock.Mock(event=_fake_event("customer.subscription.updated", "sub_x"))
+                    instance=mock.Mock(
+                        event=_fake_event("customer.subscription.updated", "sub_x")
+                    )
                 )
         send.assert_not_called()
 

@@ -72,7 +72,9 @@ class CustomUser(AbstractUser):
         except CustomUser.DoesNotExist:
             return None
 
-    def get_verified_session_holder(self, session: stripe.checkout.Session) -> CustomUser | None:
+    def get_verified_session_holder(
+        self, session: stripe.checkout.Session
+    ) -> CustomUser | None:
         """Validates session ownership against the logged-in user or client reference ID."""
         customer_email = (getattr(session, "customer_details", None) or {}).get("email")
 
@@ -201,7 +203,9 @@ class ScanUsage(models.Model):
 
     class Meta:
         constraints: ClassVar[list[models.UniqueConstraint]] = [
-            models.UniqueConstraint(fields=["user", "period"], name="unique_scan_usage_period")
+            models.UniqueConstraint(
+                fields=["user", "period"], name="unique_scan_usage_period"
+            )
         ]
 
     def __str__(self):

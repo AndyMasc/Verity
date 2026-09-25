@@ -62,7 +62,9 @@ class BaseRecordForm(forms.ModelForm):
     transaction_date = forms.DateField(
         widget=forms.DateInput(attrs={"type": "date"}), required=True
     )
-    expiry_date = forms.DateField(widget=forms.DateInput(attrs={"type": "date"}), required=False)
+    expiry_date = forms.DateField(
+        widget=forms.DateInput(attrs={"type": "date"}), required=False
+    )
     record_type = forms.ChoiceField(
         choices=Record.RecordTypes.choices,
         required=True,
@@ -159,7 +161,9 @@ class BaseRecordForm(forms.ModelForm):
         if expiry_date is None or transaction_date is None:
             return
         if expiry_date < transaction_date:
-            raise ValidationError({"expiry_date": "Expiry date cannot be before transaction date."})
+            raise ValidationError(
+                {"expiry_date": "Expiry date cannot be before transaction date."}
+            )
 
     def _validate_record_type_requirements(self, cleaned_data):
         """Require notes and payment method for expense and invoice records."""
@@ -176,7 +180,9 @@ class BaseRecordForm(forms.ModelForm):
         notes_missing = not notes or not notes.strip()
         payment_method_missing = not payment_method or not payment_method.strip()
         if notes_missing:
-            raise ValidationError({"notes": "Business purpose is required for this record type."})
+            raise ValidationError(
+                {"notes": "Business purpose is required for this record type."}
+            )
         if payment_method_missing:
             raise ValidationError(
                 {"payment_method": "Payment method is required for this record type."}

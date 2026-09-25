@@ -238,8 +238,12 @@ class DocumentDataModelTest(TestCase):
     def test_unique_constraint_different_user(self):
         user2 = User.objects.create_user(username="user2", password="pass")
         h = _make_hash()
-        DocumentData.objects.create(user=self.user, filepath="users/1/a.pdf", file_hash=h)
-        doc = DocumentData.objects.create(user=user2, filepath="users/2/a.pdf", file_hash=h)
+        DocumentData.objects.create(
+            user=self.user, filepath="users/1/a.pdf", file_hash=h
+        )
+        doc = DocumentData.objects.create(
+            user=user2, filepath="users/2/a.pdf", file_hash=h
+        )
         self.assertIsNotNone(doc.pk)
 
 

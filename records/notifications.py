@@ -30,7 +30,9 @@ def build_record_url(record_id: int) -> str:
     return f"{site_url}/record_detail/{record_id}/"
 
 
-def send_record_shared_notification(*, record: Record, share: RecordShare, actor) -> None:
+def send_record_shared_notification(
+    *, record: Record, share: RecordShare, actor
+) -> None:
     """Notify the share recipient that a record has been shared with them.
 
     Bulds the subject line, renders the email body (HTML + plain text), and
@@ -65,8 +67,12 @@ def send_record_shared_notification(*, record: Record, share: RecordShare, actor
         **_site_context(),
     }
 
-    html_body = render_to_string("records/email/record_shared_message.html", template_context)
-    text_body = render_to_string("records/email/record_shared_message.txt", template_context)
+    html_body = render_to_string(
+        "records/email/record_shared_message.html", template_context
+    )
+    text_body = render_to_string(
+        "records/email/record_shared_message.txt", template_context
+    )
 
     db_message = f'{plain_actor} shared the record "{plain_title}" with you ({formatted_amount}).'
 

@@ -139,7 +139,9 @@ class TestDeleteOrphanedDocuments:
             file_hash=_make_hash(b"old"),
             did_ocr=False,
         )
-        DocumentData.objects.filter(id=doc.id).update(date_added=timezone.now() - timedelta(days=2))
+        DocumentData.objects.filter(id=doc.id).update(
+            date_added=timezone.now() - timedelta(days=2)
+        )
         with patch("documents.services.cleanup.bulk_delete_documents") as mock_bulk:
             delete_orphaned_documents()
             mock_bulk.assert_called_once()
@@ -163,7 +165,9 @@ class TestDeleteOrphanedDocuments:
             did_ocr=True,
             status=DocumentStatus.UPLOADED,
         )
-        DocumentData.objects.filter(id=doc.id).update(date_added=timezone.now() - timedelta(days=8))
+        DocumentData.objects.filter(id=doc.id).update(
+            date_added=timezone.now() - timedelta(days=8)
+        )
         with patch("documents.services.cleanup.bulk_delete_documents") as mock_bulk:
             delete_orphaned_documents()
             mock_bulk.assert_called_once()
@@ -198,7 +202,9 @@ class TestDeleteOrphanedDocuments:
             did_ocr=False,
             status=DocumentStatus.DELETING,
         )
-        DocumentData.objects.filter(id=doc.id).update(date_added=timezone.now() - timedelta(days=2))
+        DocumentData.objects.filter(id=doc.id).update(
+            date_added=timezone.now() - timedelta(days=2)
+        )
         with patch("documents.services.cleanup.bulk_delete_documents") as mock_bulk:
             delete_orphaned_documents()
             mock_bulk.assert_not_called()
@@ -246,7 +252,9 @@ class TestReconcileDocuments:
             file_hash=_make_hash(b"dangling"),
             status=DocumentStatus.ERROR,
         )
-        DocumentData.objects.filter(id=doc.id).update(date_added=timezone.now() - timedelta(days=3))
+        DocumentData.objects.filter(id=doc.id).update(
+            date_added=timezone.now() - timedelta(days=3)
+        )
         reconcile_documents()
         assert not DocumentData.objects.filter(id=doc.id).exists()
         mock_r2.assert_called_once()

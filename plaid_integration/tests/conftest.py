@@ -14,5 +14,7 @@ def _bypass_webhook_verification():
     verifier is stubbed instead of fetching live JWKS keys from plaid.com.
     Signature behavior itself is covered by WebhookVerificationTest.
     """
-    with patch("plaid_integration.views.webhook.verify_plaid_webhook", return_value=True):
+    with patch(
+        "plaid_integration.views.webhook.verify_plaid_webhook", return_value=True
+    ):
         yield

@@ -23,5 +23,7 @@ urlpatterns = [
         views.AddSupportDocuments.as_view(),
         name="add_support_docs",
     ),
-    path("document_lists/", views.DocumentListView.as_view(), name="document_list_view"),
+    path(
+        "document_lists/", views.DocumentListView.as_view(), name="document_list_view"
+    ),
 ]

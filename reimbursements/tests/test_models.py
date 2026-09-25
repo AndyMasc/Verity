@@ -273,7 +273,9 @@ class PackageBusinessLogicTest(TestCase):
         )
         mock_retrieve.return_value.status = "open"
         mock_retrieve.return_value.url = "https://checkout.stripe.com/foo"
-        self.assertEqual(self.pkg.resumable_session_url(), "https://checkout.stripe.com/foo")
+        self.assertEqual(
+            self.pkg.resumable_session_url(), "https://checkout.stripe.com/foo"
+        )
 
     @patch("reimbursements.services.retrieve_checkout_session")
     def test_resumable_session_url_completed(self, mock_retrieve):
@@ -300,7 +302,9 @@ class PackageBusinessLogicTest(TestCase):
     def test_create_for_attaches_records(self):
         r1 = _record(self.creator, Decimal("10.00"))
         r2 = _record(self.creator, Decimal("20.00"))
-        records = Record.objects.filter(id__in=[r1.id, r2.id], user=self.creator, is_active=True)
+        records = Record.objects.filter(
+            id__in=[r1.id, r2.id], user=self.creator, is_active=True
+        )
         pkg = ReimbursementPackage.objects.create_for(
             PackageDraft(
                 creator=self.creator,
@@ -330,7 +334,9 @@ class PackageBusinessLogicTest(TestCase):
         r1 = _record(self.creator, Decimal("12.50"))
         self.pkg.records.add(r1)
         packages = list(
-            ReimbursementPackage.objects.filter(pk=self.pkg.pk).with_prefetched_active_records()
+            ReimbursementPackage.objects.filter(
+                pk=self.pkg.pk
+            ).with_prefetched_active_records()
         )
         ReimbursementPackage.prefetch_converted_totals(packages, "usd")
         self.assertEqual(packages[0].display_total, Decimal("12.50"))

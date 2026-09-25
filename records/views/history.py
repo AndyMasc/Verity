@@ -50,11 +50,17 @@ class RecordHistoryView(LoginRequiredMixin, ListView):
             # Documents follow the grant: a share with include_documents=False
             # hides attached documents from the recipient, mirroring
             # RecordDetailView. Document history must not leak their titles/notes.
-            share = RecordShare.active_for(self.request.user).filter(record=self._record).first()
+            share = (
+                RecordShare.active_for(self.request.user)
+                .filter(record=self._record)
+                .first()
+            )
             can_see_documents = share is not None and share.include_documents
 
         record_entries = list(
-            self._record.history.select_related("history_user")[:_HISTORY_MAX_ENTRIES_PER_SOURCE]
+            self._record.history.select_related("history_user")[
+                :_HISTORY_MAX_ENTRIES_PER_SOURCE
+            ]
         )
         for h in record_entries:
             h.source_type = "record"
@@ -69,9 +75,9 @@ class RecordHistoryView(LoginRequiredMixin, ListView):
             )
             doc_entries = (
                 list(
-                    DocumentData.history.filter(pk__in=doc_ids).select_related("history_user")[
-                        :_HISTORY_MAX_ENTRIES_PER_SOURCE
-                    ]
+                    DocumentData.history.filter(pk__in=doc_ids).select_related(
+                        "history_user"
+                    )[:_HISTORY_MAX_ENTRIES_PER_SOURCE]
                 )
                 if doc_ids
                 else []

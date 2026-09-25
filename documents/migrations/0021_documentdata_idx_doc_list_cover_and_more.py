@@ -14,7 +14,9 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AddIndex(
             model_name="documentdata",
-            index=models.Index(fields=["user", "-date_added"], name="idx_doc_list_cover"),
+            index=models.Index(
+                fields=["user", "-date_added"], name="idx_doc_list_cover"
+            ),
         ),
         migrations.AddIndex(
             model_name="documentdata",

@@ -46,7 +46,9 @@ class AddRecordViewTest(TestCase):
             },
         )
         self.assertIn(response.status_code, [200, 302])
-        self.assertTrue(Record.objects.filter(title="New Record", user=self.user).exists())
+        self.assertTrue(
+            Record.objects.filter(title="New Record", user=self.user).exists()
+        )
 
     def test_post_invalid(self):
         self.client.force_login(self.user)
@@ -176,7 +178,9 @@ class RecordDetailViewTest(TestCase):
             document_snapshot={"title": "Receipt", "balance": "10.00"},
         )
         self.client.force_login(self.user)
-        response = self.client.get(reverse("records:record_detail", args=[plaid_record.id]))
+        response = self.client.get(
+            reverse("records:record_detail", args=[plaid_record.id])
+        )
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "€")
 
@@ -213,7 +217,9 @@ class RecordDetailViewTest(TestCase):
             document_snapshot={"title": "Receipt", "balance": "10.00"},
         )
         self.client.force_login(self.user)
-        response = self.client.get(reverse("records:record_detail", args=[plaid_record.id]))
+        response = self.client.get(
+            reverse("records:record_detail", args=[plaid_record.id])
+        )
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "€")
 

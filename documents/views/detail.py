@@ -48,7 +48,11 @@ class ViewDocument(LoginRequiredMixin, UpdateView):
         # disabled (e.g. reimbursement grants) are hidden from the recipient.
         return DocumentData.objects.filter(
             Q(user=self.request.user)
-            | Q(associated_record__in=RecordShare.document_visible_records(self.request.user))
+            | Q(
+                associated_record__in=RecordShare.document_visible_records(
+                    self.request.user
+                )
+            )
         ).select_related("associated_record")
 
     def get_form_kwargs(self):
@@ -83,18 +87,24 @@ class ViewDocument(LoginRequiredMixin, UpdateView):
             return HttpResponseForbidden("This document is view-only.")
         if "associated_record" in self.request.POST:
             record_id = self.request.POST.get("associated_record", "").strip()
-            DocumentDetailService.associate_record(form.instance, record_id, self.request.user)
+            DocumentDetailService.associate_record(
+                form.instance, record_id, self.request.user
+            )
 
         form.save()
 
         if self.request.headers.get("HX-Request") == "true":
             if "associated_record" in self.request.POST:
-                redirect_url = reverse("documents:view_document", kwargs={"pk": self.object.pk})
+                redirect_url = reverse(
+                    "documents:view_document", kwargs={"pk": self.object.pk}
+                )
                 response = HttpResponse(status=204)
                 response["HX-Redirect"] = redirect_url
                 return response
             response = HttpResponse(status=204)
-            response["HX-Trigger"] = json.dumps({"recordChanged": {}, "documentChanged": {}})
+            response["HX-Trigger"] = json.dumps(
+                {"recordChanged": {}, "documentChanged": {}}
+            )
             return response
 
         messages.success(self.request, "Updated successfully.")
@@ -107,7 +117,9 @@ class ViewDocument(LoginRequiredMixin, UpdateView):
         return super().form_invalid(form)
 
 
-@method_decorator(ratelimit(key="user", rate="10/m", method="POST", block=True), name="dispatch")
+@method_decorator(
+    ratelimit(key="user", rate="10/m", method="POST", block=True), name="dispatch"
+)
 class DeleteDocument(LoginRequiredMixin, View):
     """Permanently deletes a document and redirects to the parent record."""
 

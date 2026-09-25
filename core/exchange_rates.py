@@ -85,7 +85,9 @@ def get_rates(base: str = "USD") -> dict[str, Decimal]:
         return {}
 
 
-def convert(amount: Decimal, from_curr: str, to_curr: str, rates: dict[str, Decimal]) -> Decimal:
+def convert(
+    amount: Decimal, from_curr: str, to_curr: str, rates: dict[str, Decimal]
+) -> Decimal:
     from_curr = from_curr.upper()
     to_curr = to_curr.upper()
 
@@ -96,7 +98,9 @@ def convert(amount: Decimal, from_curr: str, to_curr: str, rates: dict[str, Deci
     to_rate = rates.get(to_curr)
 
     if from_rate is None:
-        logger.warning("No exchange rate for %s — returning amount unchanged", from_curr)
+        logger.warning(
+            "No exchange rate for %s — returning amount unchanged", from_curr
+        )
         return Decimal(str(amount))
     if to_rate is None:
         logger.warning("No exchange rate for %s — returning amount unchanged", to_curr)
@@ -133,11 +137,15 @@ def convert_strict(
     to_rate = rates.get(to_curr)
 
     if from_rate is None:
-        raise ExchangeRateUnavailableError(f"No exchange rate available for {from_curr}")
+        raise ExchangeRateUnavailableError(
+            f"No exchange rate available for {from_curr}"
+        )
     if to_rate is None:
         raise ExchangeRateUnavailableError(f"No exchange rate available for {to_curr}")
     if from_rate == 0 or to_rate == 0:
-        raise ExchangeRateUnavailableError(f"Invalid zero exchange rate for {from_curr}/{to_curr}")
+        raise ExchangeRateUnavailableError(
+            f"Invalid zero exchange rate for {from_curr}/{to_curr}"
+        )
 
     converted = Decimal(str(amount)) * (to_rate / from_rate)
     decimals = get_currency_decimals(to_curr)

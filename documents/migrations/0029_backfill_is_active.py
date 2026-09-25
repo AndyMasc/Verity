@@ -3,7 +3,9 @@ from django.db import migrations
 
 def backfill_is_active(apps, schema_editor):
     DocumentData = apps.get_model("documents", "DocumentData")
-    DocumentData.objects.filter(deleted_at__isnull=False, is_active=True).update(is_active=False)
+    DocumentData.objects.filter(deleted_at__isnull=False, is_active=True).update(
+        is_active=False
+    )
 
 
 class Migration(migrations.Migration):

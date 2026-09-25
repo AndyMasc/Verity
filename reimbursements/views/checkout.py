@@ -26,19 +26,23 @@ class PaymentSuccessView(TemplateView):
         if self.request.user.is_authenticated:
             package_uuid = self.request.GET.get("package")
             if package_uuid:
-                package = services.get_payment_success_package(self.request.user, package_uuid)
+                package = services.get_payment_success_package(
+                    self.request.user, package_uuid
+                )
                 if package:
                     context["package"] = package
         return context
 
 
-@method_decorator(ratelimit(key="user", rate="10/m", method="POST", block=True), name="dispatch")
+@method_decorator(
+    ratelimit(key="user", rate="10/m", method="POST", block=True), name="dispatch"
+)
 class CreatePackageCheckoutView(LoginRequiredMixin, View):
     def post(self, request: HttpRequest, package_uuid: str) -> HttpResponse:
         package = get_object_or_404(
-            ReimbursementPackage.objects.select_related("creator", "recipient").prefetch_related(
-                "records"
-            ),
+            ReimbursementPackage.objects.select_related(
+                "creator", "recipient"
+            ).prefetch_related("records"),
             Q(creator=request.user) | Q(recipient=request.user),
             uuid=package_uuid,
             deleted_at__isnull=True,

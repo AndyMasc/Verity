@@ -170,7 +170,9 @@ def send_multi_channel_notification(
     and a message is provided.
     """
     if send_push and webpush_payload and _user_can_receive_push(user):
-        fire_single_webpush.send(user_id=user.id, payload=webpush_payload, ttl=webpush_ttl)
+        fire_single_webpush.send(
+            user_id=user.id, payload=webpush_payload, ttl=webpush_ttl
+        )
 
     if send_email and _user_can_receive_email(user):
         send_email_notification(

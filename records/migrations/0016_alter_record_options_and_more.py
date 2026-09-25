@@ -135,6 +135,8 @@ class Migration(migrations.Migration):
         ),
         migrations.AddIndex(
             model_name="record",
-            index=models.Index(fields=["user", "balance"], name="idx_record_user_balance"),
+            index=models.Index(
+                fields=["user", "balance"], name="idx_record_user_balance"
+            ),
         ),
     ]

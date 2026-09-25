@@ -31,7 +31,9 @@ def get_storage_usage_bytes(user) -> int:
     if user is None or not getattr(user, "pk", None):
         return 0
     value = (
-        CustomUser.objects.filter(pk=user.pk).values_list("storage_used_bytes", flat=True).first()
+        CustomUser.objects.filter(pk=user.pk)
+        .values_list("storage_used_bytes", flat=True)
+        .first()
     )
     return value or 0
 

@@ -40,7 +40,9 @@ class TasksTest(TestCase):
             is_active=False,
             transaction_date=date(2024, 6, 15),
         )
-        Record.objects.filter(pk=already_inactive.pk).update(date_added=past - timedelta(days=1))
+        Record.objects.filter(pk=already_inactive.pk).update(
+            date_added=past - timedelta(days=1)
+        )
         from records.tasks import archive_expired_records
 
         archive_expired_records()

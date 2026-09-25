@@ -20,7 +20,9 @@ from django.contrib.messages import get_messages
 from django.http import HttpRequest, HttpResponse
 from django.utils import timezone
 
-request_id_var: contextvars.ContextVar[str] = contextvars.ContextVar("request_id", default="")
+request_id_var: contextvars.ContextVar[str] = contextvars.ContextVar(
+    "request_id", default=""
+)
 
 
 class RequestIDMiddleware:
@@ -106,7 +108,9 @@ class HtmxMessageMiddleware:
         if not messages_list:
             return response
 
-        response["HX-Trigger"] = self._build_hx_trigger(response.get("HX-Trigger"), messages_list)
+        response["HX-Trigger"] = self._build_hx_trigger(
+            response.get("HX-Trigger"), messages_list
+        )
         return response
 
     @staticmethod
@@ -118,10 +122,15 @@ class HtmxMessageMiddleware:
     @staticmethod
     def _build_messages_list(request: HttpRequest) -> list[dict[str, Any]]:
         storage = get_messages(request)
-        return [{"message": str(message.message), "level": message.level} for message in storage]
+        return [
+            {"message": str(message.message), "level": message.level}
+            for message in storage
+        ]
 
     @staticmethod
-    def _build_hx_trigger(hx_trigger: str | None, messages_list: list[dict[str, Any]]) -> str:
+    def _build_hx_trigger(
+        hx_trigger: str | None, messages_list: list[dict[str, Any]]
+    ) -> str:
         payload: dict[str, Any] = {"djangoMessages": messages_list}
 
         if not hx_trigger:

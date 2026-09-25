@@ -59,12 +59,16 @@ class ReimbursementRecordAccessTest(TestCase):
 
     def test_create_only_grants_packaged_records(self):
         _, r1, r2 = self._package_with_records()
-        visible = set(Record.objects.visible_to(self.recipient).values_list("pk", flat=True))
+        visible = set(
+            Record.objects.visible_to(self.recipient).values_list("pk", flat=True)
+        )
         self.assertIn(r1.pk, visible)
         self.assertIn(r2.pk, visible)
         self.assertNotIn(self.other_record.pk, visible)
         self.assertFalse(
-            RecordShare.objects.filter(record=self.other_record, user=self.recipient).exists()
+            RecordShare.objects.filter(
+                record=self.other_record, user=self.recipient
+            ).exists()
         )
 
     def test_mark_as_paid_revokes_access(self):

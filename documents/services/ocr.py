@@ -66,8 +66,12 @@ try:
             default_factory=list,
             description="List of items. Standardize typos, expand abbreviations, use Title Case. If no products are listed, use an empty list.",
         )
-        transaction_date: str | None = Field(default=None, description="Date in YYYY-MM-DD format.")
-        expiry_date: str | None = Field(default=None, description="Date in YYYY-MM-DD format.")
+        transaction_date: str | None = Field(
+            default=None, description="Date in YYYY-MM-DD format."
+        )
+        expiry_date: str | None = Field(
+            default=None, description="Date in YYYY-MM-DD format."
+        )
         record_type: Record.RecordTypes = Field(
             description="Strictly classify the document type. If no clear type can be found, default to EXPENSE_RECEIPT"
         )
@@ -84,7 +88,9 @@ try:
         max_output_tokens=700,
         # Structured extraction with temperature 0 needs no reasoning budget;
         # minimal thinking cuts time-to-first-token and total latency.
-        thinking_config=types.ThinkingConfig(thinking_level=types.ThinkingLevel.MINIMAL),
+        thinking_config=types.ThinkingConfig(
+            thinking_level=types.ThinkingLevel.MINIMAL
+        ),
     )
 except ImportError:
     client = None
@@ -150,7 +156,8 @@ def process_image(image_bytes: bytes, filepath: str) -> list[types.Part]:
         page_images = render_pdf_pages(image_bytes)
         if page_images:
             return [
-                types.Part.from_bytes(data=page, mime_type="image/jpeg") for page in page_images
+                types.Part.from_bytes(data=page, mime_type="image/jpeg")
+                for page in page_images
             ]
         return [types.Part.from_bytes(data=image_bytes, mime_type="application/pdf")]
 
@@ -209,7 +216,9 @@ def extract(document_id: int) -> dict[str, Any]:
     """
     cache_key = get_cache_key(document_id)
 
-    doc_lookup = DocumentData.objects.filter(id=document_id).values("status", "did_ocr").first()
+    doc_lookup = (
+        DocumentData.objects.filter(id=document_id).values("status", "did_ocr").first()
+    )
     if not doc_lookup:
         logger.warning("Document %s does not exist; skipping OCR.", document_id)
         return {"error": "Document not found."}
@@ -267,7 +276,9 @@ def extract(document_id: int) -> dict[str, Any]:
         return final_data
 
     except Exception as exc:
-        logger.warning("OCR attempt failed for doc %s: %s", document_id, exc, exc_info=True)
+        logger.warning(
+            "OCR attempt failed for doc %s: %s", document_id, exc, exc_info=True
+        )
         if _is_final_attempt():
             mark_ocr_failed(document_id, str(exc))
         raise

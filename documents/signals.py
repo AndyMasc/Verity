@@ -40,7 +40,11 @@ def snapshot_storage_state(sender, instance, **kwargs):
         instance._storage_previous_counted = 0
         return
 
-    old_size = sender.objects.filter(pk=instance.pk).values_list("file_size", flat=True).first()
+    old_size = (
+        sender.objects.filter(pk=instance.pk)
+        .values_list("file_size", flat=True)
+        .first()
+    )
     instance._storage_previous_counted = old_size if old_size else 0
 
 

@@ -42,8 +42,11 @@ class RecordSharingSectionView(LoginRequiredMixin, View):
         record = get_object_or_404(Record.objects.visible_to(request.user), pk=pk)
         context = {
             "record": record,
-            "shares": share_services.shares_for_viewer(record=record, viewer=request.user),
-            "can_grant": _can_grant_shares(request.user) and record.user_id == request.user.pk,
+            "shares": share_services.shares_for_viewer(
+                record=record, viewer=request.user
+            ),
+            "can_grant": _can_grant_shares(request.user)
+            and record.user_id == request.user.pk,
             "can_share_feature": _can_grant_shares(request.user),
             "is_recipient": record.user_id != request.user.pk
             and RecordShare.objects.filter(record=record, user=request.user).exists(),
@@ -124,7 +127,9 @@ class BulkShareView(LoginRequiredMixin, View):
     @method_decorator(ratelimit(key="user", rate="10/m", method="POST", block=True))
     def post(self, request: HttpRequest) -> HttpResponse:
         if not _can_grant_shares(request.user):
-            return JsonResponse({"error": "Record sharing requires the Pro plan"}, status=403)
+            return JsonResponse(
+                {"error": "Record sharing requires the Pro plan"}, status=403
+            )
 
         record_ids, error = parse_record_ids(request)
         if error:
@@ -136,7 +141,9 @@ class BulkShareView(LoginRequiredMixin, View):
             return JsonResponse({"error": "Invalid request body."}, status=400)
         emails = [e.strip() for e in raw.split(",") if e.strip()]
         if not emails:
-            return JsonResponse({"error": "At least one recipient email is required."}, status=400)
+            return JsonResponse(
+                {"error": "At least one recipient email is required."}, status=400
+            )
 
         owned = (
             Record.objects.filter(pk__in=record_ids, user=request.user)

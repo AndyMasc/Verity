@@ -68,7 +68,9 @@ class SubscriptionConfirmTests(TestCase):
                 "billing.services.retrieve_subscription",
                 return_value={
                     "id": "sub_test",
-                    "items": {"data": [{"price": {"product": metadata.VERITY_PRO.stripe_id}}]},
+                    "items": {
+                        "data": [{"price": {"product": metadata.VERITY_PRO.stripe_id}}]
+                    },
                 },
             ),
             mock.patch(
@@ -147,8 +149,12 @@ class SubscriptionConfirmTests(TestCase):
         self.user.customer = self.customer
         self.user.save()
 
-        cache.set(_SUBSCRIPTION_STATUS_KEY.format(user_id=self.user.id), {"plan": "free"}, 60)
-        self.assertIsNotNone(cache.get(_SUBSCRIPTION_STATUS_KEY.format(user_id=self.user.id)))
+        cache.set(
+            _SUBSCRIPTION_STATUS_KEY.format(user_id=self.user.id), {"plan": "free"}, 60
+        )
+        self.assertIsNotNone(
+            cache.get(_SUBSCRIPTION_STATUS_KEY.format(user_id=self.user.id))
+        )
 
         session = FakeSession(
             customer="cus_existing",
@@ -160,4 +166,6 @@ class SubscriptionConfirmTests(TestCase):
         response = client.get(self.url, {"session_id": "cs_test"})
 
         self.assertEqual(response.status_code, 302)
-        self.assertIsNone(cache.get(_SUBSCRIPTION_STATUS_KEY.format(user_id=self.user.id)))
+        self.assertIsNone(
+            cache.get(_SUBSCRIPTION_STATUS_KEY.format(user_id=self.user.id))
+        )

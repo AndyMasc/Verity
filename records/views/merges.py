@@ -45,7 +45,11 @@ def _get_merge_candidate_qs(request: HttpRequest, mode: str) -> QuerySet[Record]
     cached = getattr(request, cache_attr, None)
     if cached is not None:
         return cached
-    qs = Record.objects.for_user(request.user).filter(is_active=True).select_related("folder")
+    qs = (
+        Record.objects.for_user(request.user)
+        .filter(is_active=True)
+        .select_related("folder")
+    )
     if mode == "plaid":
         qs = qs.filter(plaid_transaction_id__isnull=False)
     else:
@@ -90,7 +94,9 @@ class ManualMergeView(LoginRequiredMixin, FormView):
             plaid_transaction_id__isnull=True,
             is_active=True,
         )
-        document = DocumentData.objects.filter(associated_record=document_record).first()
+        document = DocumentData.objects.filter(
+            associated_record=document_record
+        ).first()
         result = merge_document_into_plaid(plaid_record, document_record, document)
         if result is None:
             if self.request.headers.get("HX-Request") == "true":
@@ -188,7 +194,9 @@ class ManualMergeModalView(LoginRequiredMixin, View):
         qs = qs.order_by("-transaction_date")
         paginator = Paginator(qs, MANUAL_MERGE_PAGE_SIZE)
         page_obj = paginator.get_page(1)
-        filter_instance = RecordFilter(request=request, data=None, queryset=Record.objects.none())
+        filter_instance = RecordFilter(
+            request=request, data=None, queryset=Record.objects.none()
+        )
         return render(
             request,
             "records/partials/merge/merge_modal_content.html",
@@ -214,7 +222,9 @@ class UndoMergeView(LoginRequiredMixin, View):
     @method_decorator(ratelimit(key="user", rate="10/m", method="POST", block=True))
     def post(self, request, merge_id: int) -> HttpResponse:
         merge_log = get_object_or_404(
-            MergeLog.objects.select_related("plaid_record", "document_record", "document"),
+            MergeLog.objects.select_related(
+                "plaid_record", "document_record", "document"
+            ),
             pk=merge_id,
             plaid_record__user=request.user,
         )

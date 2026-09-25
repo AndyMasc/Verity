@@ -122,11 +122,15 @@ def reconcile_documents() -> None:
             try:
                 delete_r2_objects_batch(upload_paths)
             except Exception as e:
-                logger.error("Failed cleanup of object storage for stale uploads: %s", e)
+                logger.error(
+                    "Failed cleanup of object storage for stale uploads: %s", e
+                )
                 storage_ok = False
         if storage_ok:
             DocumentData.objects.filter(id__in=upload_ids).delete()
-            logger.info("Reconciliation: cleaned up %d stale pending uploads.", len(upload_ids))
+            logger.info(
+                "Reconciliation: cleaned up %d stale pending uploads.", len(upload_ids)
+            )
 
     dangling_records = DocumentData.objects.filter(
         status=DocumentStatus.ERROR,
@@ -138,4 +142,6 @@ def reconcile_documents() -> None:
         if dangling_paths:
             delete_r2_objects_batch(dangling_paths)
         DocumentData.objects.filter(id__in=[d[0] for d in dangling_ids]).delete()
-        logger.info("Reconciliation: removed %d dangling error records.", len(dangling_ids))
+        logger.info(
+            "Reconciliation: removed %d dangling error records.", len(dangling_ids)
+        )

@@ -58,7 +58,9 @@ def create_billing_portal_session(
 ) -> stripe.billing_portal.Session:
     """Create a Stripe billing portal session."""
     _configure()
-    return stripe.billing_portal.Session.create(customer=customer, return_url=return_url)
+    return stripe.billing_portal.Session.create(
+        customer=customer, return_url=return_url
+    )
 
 
 def cancel_subscription(subscription_id: str) -> None:
@@ -97,7 +99,9 @@ def _checkout_price_id(product: Product) -> str | None:
     candidates = [
         price
         for price in product.prices.all()
-        if price.active and price.recurring and price.recurring.get("interval") == "month"
+        if price.active
+        and price.recurring
+        and price.recurring.get("interval") == "month"
     ]
     if not candidates:
         return None
@@ -126,7 +130,9 @@ def pricing_context(user) -> dict:
     """Build the pricing data shared by the pricing page and the landing page."""
     products = list(Product.objects.filter(active=True).prefetch_related("prices"))
     base_plan = metadata.plan_for_user(user)
-    held_product_ids = {meta.stripe_id for meta in metadata.active_products_for_user(user)}
+    held_product_ids = {
+        meta.stripe_id for meta in metadata.active_products_for_user(user)
+    }
 
     for product in products:
         _decorate_product_for_pricing(
@@ -153,7 +159,9 @@ def pricing_context(user) -> dict:
     return {
         "products": products,
         "free_plan": free_plan,
-        "has_active_subscription": bool(user.is_authenticated and user.has_active_subscription),
+        "has_active_subscription": bool(
+            user.is_authenticated and user.has_active_subscription
+        ),
         "base_plans": base_plans,
         "storage_plans": storage_plans,
     }
@@ -225,9 +233,9 @@ def reconcile_subscription_statuses(
         # while CustomUser.customer_id is a plain FK keyed on djstripe_id.
         customer = local.customer
         if customer is not None:
-            for user_id in CustomUser.objects.filter(customer_id=customer.djstripe_id).values_list(
-                "id", flat=True
-            ):
+            for user_id in CustomUser.objects.filter(
+                customer_id=customer.djstripe_id
+            ).values_list("id", flat=True):
                 invalidate_plan_usage_caches(user_id)
 
     return corrected

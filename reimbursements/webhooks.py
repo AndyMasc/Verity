@@ -190,7 +190,9 @@ def apply_paid_session(payment, session, *, source: str) -> bool:
             },
         )
         transaction.on_commit(
-            lambda: _notify_package_paid(package.pk, payment.payer.pk if payment.payer else None)
+            lambda: _notify_package_paid(
+                package.pk, payment.payer.pk if payment.payer else None
+            )
         )
     return True
 
@@ -211,7 +213,9 @@ def _get_or_link_payment(package_uuid: str, payment_intent_id: str):
     payment = (
         PackagePayment.objects.select_related("package", "payer")
         .filter(package__uuid=package_uuid)
-        .filter(Q(stripe_payment_intent_id="") | Q(stripe_payment_intent_id__isnull=True))
+        .filter(
+            Q(stripe_payment_intent_id="") | Q(stripe_payment_intent_id__isnull=True)
+        )
         .order_by("-created_at")
         .first()
     )
@@ -256,7 +260,9 @@ def _payment_from_charge(charge_id: str):
     return _payment_for_payment_intent(payment_intent_id)
 
 
-def _revert_package_payment(payment, *, event: str, refund: bool = True, **extra) -> None:
+def _revert_package_payment(
+    payment, *, event: str, refund: bool = True, **extra
+) -> None:
     """Mark a payment failed and revert its package to open, with an audit log.
 
     Money safety: when the payer's charge was already CAPTURED (transfer.failed
@@ -323,7 +329,9 @@ def _refund_captured_payment(payment, *, event: str) -> bool:
         services.create_refund(payment_intent_id, reason=event)
     except stripe.error.InvalidRequestError as e:
         # Typically "already refunded" / "charge not capturable" — nothing more to do.
-        logger.warning("Refund skipped for payment intent %s (%s): %s", payment_intent_id, event, e)
+        logger.warning(
+            "Refund skipped for payment intent %s (%s): %s", payment_intent_id, event, e
+        )
         return False
     except stripe.error.StripeError:
         logger.exception(
@@ -344,7 +352,9 @@ def _refund_captured_payment(payment, *, event: str) -> bool:
 def _restore_paid_payment(payment, *, event: str, **extra) -> None:
     """Restore a payment/package that a won dispute brought back to the platform."""
     package = payment.package
-    was_paid = payment.is_completed and package.status == ReimbursementPackage.Status.PAID
+    was_paid = (
+        payment.is_completed and package.status == ReimbursementPackage.Status.PAID
+    )
     payment.is_completed = True
     payment.save(update_fields=["is_completed"])
     payer_currency = getattr(payment, "payer_currency", None) or "usd"
@@ -395,7 +405,9 @@ def _handle_async_payment(event):
         return
 
     payment.mark_failed()
-    logger.warning("Async payment failed for session %s (package %s)", session["id"], package_uuid)
+    logger.warning(
+        "Async payment failed for session %s (package %s)", session["id"], package_uuid
+    )
 
 
 def _handle_account_updated(event):
@@ -469,7 +481,9 @@ def _handle_charge_refunded(event):
 
     payment = _payment_for_payment_intent(payment_intent_id)
     if payment is None:
-        logger.warning("No PackagePayment found for refunded payment_intent %s", payment_intent_id)
+        logger.warning(
+            "No PackagePayment found for refunded payment_intent %s", payment_intent_id
+        )
         return
 
     is_full_refund = amount_refunded_cents >= amount_captured_cents

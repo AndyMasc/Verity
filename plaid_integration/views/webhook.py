@@ -94,7 +94,9 @@ def plaid_webhook(request: HttpRequest) -> HttpResponse:
     if verification_required and not verify_plaid_webhook(
         request.body, request.headers.get("Plaid-Verification")
     ):
-        logger.warning("Plaid webhook verification failed for %s", payload.get("item_id"))
+        logger.warning(
+            "Plaid webhook verification failed for %s", payload.get("item_id")
+        )
         return HttpResponseForbidden("Invalid webhook signature")
 
     webhook_type: str = payload.get("webhook_type", "")

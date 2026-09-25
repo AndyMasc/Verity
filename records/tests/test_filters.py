@@ -94,6 +94,8 @@ class RecordFilterTest(TestCase):
             queryset=Record.objects.for_user(self.user),
             request=make_filter_request(self.user),
         )
-        result = f.filter_by_folder(Record.objects.for_user(self.user), "folder", str(folder.id))
+        result = f.filter_by_folder(
+            Record.objects.for_user(self.user), "folder", str(folder.id)
+        )
         self.assertIn(self.active, result)
         self.assertNotIn(self.inactive, result)

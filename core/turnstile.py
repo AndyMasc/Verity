@@ -105,14 +105,18 @@ def verify_turnstile_token(
         )
         if response.status_code != 200:
             logger.error("Turnstile siteverify failed: %s", response.status_code)
-            return _failure("Verification service error", {"status_code": response.status_code})
+            return _failure(
+                "Verification service error", {"status_code": response.status_code}
+            )
         result = response.json()
     except Exception as e:
         logger.error("Turnstile verification error: %s", e)
         return _failure("Verification service unavailable", {})
 
     if not result.get("success"):
-        logger.warning("Turnstile verification failed: %s", result.get("error-codes", []))
+        logger.warning(
+            "Turnstile verification failed: %s", result.get("error-codes", [])
+        )
         return _failure("Verification failed", result)
 
     if result.get("action") != action:
@@ -140,7 +144,11 @@ def verify_turnstile_token(
         )
         return _failure("Hostname verification failed", result)
 
-    return {"success": True, "message": "Verification successful", "raw_response": result}
+    return {
+        "success": True,
+        "message": "Verification successful",
+        "raw_response": result,
+    }
 
 
 def get_client_ip(request: HttpRequest) -> str:

@@ -12,6 +12,8 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="packagepayment",
             name="stripe_payment_intent_id",
-            field=models.CharField(blank=True, db_index=True, max_length=255, null=True),
+            field=models.CharField(
+                blank=True, db_index=True, max_length=255, null=True
+            ),
         ),
     ]

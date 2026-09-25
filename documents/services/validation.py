@@ -82,7 +82,9 @@ class DocumentUploadService:
         if head is None:
             self.document.status = DocumentStatus.ERROR
             self.document.save(update_fields=["status"])
-            return UploadResult(valid=False, error="File not found in storage.", status_code=404)
+            return UploadResult(
+                valid=False, error="File not found in storage.", status_code=404
+            )
 
         file_size = head.get("ContentLength")
 
@@ -93,23 +95,30 @@ class DocumentUploadService:
             ).strip()
             self.document.save(update_fields=["status", "notes"])
             logger.warning("Gatekeeper rejected doc %s: empty file", self.document.id)
-            return UploadResult(valid=False, error="Empty file rejected.", status_code=422)
+            return UploadResult(
+                valid=False, error="Empty file rejected.", status_code=422
+            )
 
         if file_size is not None and file_size > MAX_FILE_SIZE:
             limit_mb = MAX_FILE_SIZE / 1024 / 1024
             self.document.status = DocumentStatus.ERROR
             self.document.notes = (
-                (self.document.notes or "") + f"\n[Gatekeeper] File exceeds {limit_mb}MB limit."
+                (self.document.notes or "")
+                + f"\n[Gatekeeper] File exceeds {limit_mb}MB limit."
             ).strip()
             self.document.save(update_fields=["status", "notes"])
-            logger.warning("Gatekeeper rejected doc %s: file too large", self.document.id)
+            logger.warning(
+                "Gatekeeper rejected doc %s: file too large", self.document.id
+            )
             return UploadResult(
                 valid=False,
                 error=f"File exceeds {limit_mb}MB limit.",
                 status_code=422,
             )
 
-        mime_type = (head.get("ContentType") or "").split(";")[0].strip() if head else ""
+        mime_type = (
+            (head.get("ContentType") or "").split(";")[0].strip() if head else ""
+        )
 
         if (
             transition

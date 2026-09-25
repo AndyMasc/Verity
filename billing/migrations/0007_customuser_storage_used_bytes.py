@@ -14,7 +14,9 @@ def backfill_storage_used_bytes(apps, schema_editor):
         .annotate(total=models.Sum("file_size"))
     )
     for row in totals:
-        CustomUser.objects.filter(pk=row["user_id"]).update(storage_used_bytes=row["total"] or 0)
+        CustomUser.objects.filter(pk=row["user_id"]).update(
+            storage_used_bytes=row["total"] or 0
+        )
 
 
 def noop(apps, schema_editor):

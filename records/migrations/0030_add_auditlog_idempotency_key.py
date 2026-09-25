@@ -83,8 +83,12 @@ class Migration(migrations.Migration):
             options={
                 "ordering": ["-created_at"],
                 "indexes": [
-                    models.Index(fields=["user", "action"], name="idx_auditlog_user_action"),
-                    models.Index(fields=["record", "action"], name="idx_auditlog_record_action"),
+                    models.Index(
+                        fields=["user", "action"], name="idx_auditlog_user_action"
+                    ),
+                    models.Index(
+                        fields=["record", "action"], name="idx_auditlog_record_action"
+                    ),
                 ],
             },
         ),

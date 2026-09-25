@@ -67,7 +67,9 @@ class AddRecordView(LoginRequiredMixin, CreateView):
         document = self.document
         if document:
             if document.associated_record:
-                return redirect("records:record_detail", pk=document.associated_record.pk)
+                return redirect(
+                    "records:record_detail", pk=document.associated_record.pk
+                )
 
             if document.status == DocumentStatus.COMPLETED:
                 record = services.create_record_from_ocr(document.id)
@@ -95,7 +97,9 @@ class AddRecordView(LoginRequiredMixin, CreateView):
             elif document.status == DocumentStatus.ERROR:
                 error_message = _ocr_error_message(document)
             else:
-                error_message = "Extraction produced no data. Please enter details manually."
+                error_message = (
+                    "Extraction produced no data. Please enter details manually."
+                )
 
         context.update(
             {
@@ -143,7 +147,9 @@ class AddRecordView(LoginRequiredMixin, CreateView):
             },
         )
         if merged:
-            messages.success(self.request, "Receipt matched with bank transaction and merged.")
+            messages.success(
+                self.request, "Receipt matched with bank transaction and merged."
+            )
             return redirect("records:record_detail", pk=merged.pk)
 
         return redirect("records:record_detail", pk=self.object.pk)
@@ -158,7 +164,9 @@ class CheckOCRStatus(LoginRequiredMixin, View):
 
     def get(self, request: HttpRequest, document_id: int) -> HttpResponse:
         with cachalot_disabled():
-            document = DocumentData.objects.filter(id=document_id, user=request.user).first()
+            document = DocumentData.objects.filter(
+                id=document_id, user=request.user
+            ).first()
             if not document:
                 raise Http404("Document not found.")
 

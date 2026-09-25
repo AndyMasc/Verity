@@ -28,7 +28,9 @@ from ..forms import RecordUpdateForm
 from ..models import MergeLog, Record, RecordShare
 
 
-def snapshot_with_currency(snapshot: dict[str, Any] | None, fallback: str) -> dict[str, Any]:
+def snapshot_with_currency(
+    snapshot: dict[str, Any] | None, fallback: str
+) -> dict[str, Any]:
     """Ensure a MergeLog snapshot dict carries a "currency" key for templates.
 
     Snapshots created before currency was recorded lack the key; the detail
@@ -90,7 +92,8 @@ def _build_record_metrics(user) -> dict[str, int]:
         expiring_count=Count(
             "id",
             distinct=True,
-            filter=Q(expiry_date__gte=now, expiry_date__lte=expiring_cutoff) & Q(is_active=True),
+            filter=Q(expiry_date__gte=now, expiry_date__lte=expiring_cutoff)
+            & Q(is_active=True),
         ),
         inactive_count=Count("id", distinct=True, filter=Q(is_active=False)),
         shared_count=Count(
@@ -99,7 +102,10 @@ def _build_record_metrics(user) -> dict[str, int]:
             filter=(
                 (Q(shares__user=user) | Q(shares__shared_by=user))
                 & Q(shares__revoked_at__isnull=True)
-                & (Q(shares__expires_at__isnull=True) | Q(shares__expires_at__gt=timezone.now()))
+                & (
+                    Q(shares__expires_at__isnull=True)
+                    | Q(shares__expires_at__gt=timezone.now())
+                )
                 & Q(is_active=True)
             ),
         ),
@@ -109,7 +115,9 @@ def _build_record_metrics(user) -> dict[str, int]:
         plaid_record__user=user,
         undone_at__isnull=True,
     ).values_list("plaid_record_id", flat=True)
-    metrics["merged_count"] = base_qs.filter(pk__in=merged_plaid_ids, is_active=True).count()
+    metrics["merged_count"] = base_qs.filter(
+        pk__in=merged_plaid_ids, is_active=True
+    ).count()
 
     return metrics
 
@@ -153,7 +161,9 @@ class RecordListView(LoginRequiredMixin, CachedPaginatorMixin, FilterView):
                     pk__in=merged_plaid_ids
                 )
 
-        self.filterset = self.filterset_class(self.request.GET, queryset=qs, request=self.request)
+        self.filterset = self.filterset_class(
+            self.request.GET, queryset=qs, request=self.request
+        )
         return self.filterset.qs.order_by("-last_edited").only(*LIST_FIELDS)
 
     def get_context_data(self, **kwargs):
@@ -169,7 +179,9 @@ class RecordListView(LoginRequiredMixin, CachedPaginatorMixin, FilterView):
         # hides archived records). The "All Records" card deliberately counts
         # everything and links with an explicit is_active="" so the list shows
         # all records, archived included.
-        all_records_url = _record_list_url(self.request, is_active="", merged=None, shared=None)
+        all_records_url = _record_list_url(
+            self.request, is_active="", merged=None, shared=None
+        )
         context["metrics"] = [
             {
                 "label": "All Records",
@@ -243,7 +255,11 @@ class RecordDetailView(LoginRequiredMixin, UpdateView):
         context["seven_years_ago_unix"] = seven_years_ago.timestamp()
 
         if self.object.user_id != self.request.user.pk:
-            share = RecordShare.active_for(self.request.user).filter(record=self.object).first()
+            share = (
+                RecordShare.active_for(self.request.user)
+                .filter(record=self.object)
+                .first()
+            )
             context["share_permission"] = (
                 share.permission if share is not None else RecordShare.Permission.VIEW
             )
@@ -281,7 +297,11 @@ class RecordDetailView(LoginRequiredMixin, UpdateView):
     def form_valid(self, form):
         # Only the owner or an editor-permission sharee may mutate the record.
         if self.object.user_id != self.request.user.pk:
-            share = RecordShare.active_for(self.request.user).filter(record=self.object).first()
+            share = (
+                RecordShare.active_for(self.request.user)
+                .filter(record=self.object)
+                .first()
+            )
             if share is None or share.permission != RecordShare.Permission.EDIT:
                 if self.request.headers.get("HX-Request") == "true":
                     response = HttpResponse(status=204)
@@ -296,7 +316,9 @@ class RecordDetailView(LoginRequiredMixin, UpdateView):
                     return response
                 from django.http import HttpResponseForbidden
 
-                return HttpResponseForbidden("This record is shared with you as view-only.")
+                return HttpResponseForbidden(
+                    "This record is shared with you as view-only."
+                )
 
         messages.success(self.request, "Record updated successfully.")
         self.object = form.save()
@@ -348,7 +370,9 @@ class HardDeleteRecordView(LoginRequiredMixin, View):
             )
             if resp is not None:
                 return resp
-            messages.error(request, "This record is not old enough for permanent deletion.")
+            messages.error(
+                request, "This record is not old enough for permanent deletion."
+            )
             return redirect("records:record_detail", pk=pk)
 
         services.hard_delete_record(request.user, record)

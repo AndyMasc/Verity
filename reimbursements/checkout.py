@@ -84,7 +84,9 @@ def _line_item_for(record, payer_currency: str, rates) -> tuple[dict, Decimal] |
     has no positive balance or converts to zero in the payer's currency."""
     if not record.balance or record.balance <= 0:
         return None
-    converted = convert_currency(record.balance, record.currency, payer_currency, rates=rates)
+    converted = convert_currency(
+        record.balance, record.currency, payer_currency, rates=rates
+    )
     converted_stripe = to_stripe_amount(converted, payer_currency)
     if converted_stripe <= 0:
         return None
@@ -230,7 +232,9 @@ def prefetch_converted_totals(packages: list, to_currency: str) -> list:
         return packages
     rates = get_rates("USD")
     for package in packages:
-        package._prefetched_converted_total = _converted_total_of(package, to_currency, rates)
+        package._prefetched_converted_total = _converted_total_of(
+            package, to_currency, rates
+        )
     return packages
 
 
@@ -239,5 +243,7 @@ def _converted_total_of(package, to_currency: str, rates) -> Decimal:
     total = Decimal("0.00")
     for record in package.records.all():
         if record.is_active and record.balance:
-            total += convert_currency(record.balance, record.currency, to_currency, rates=rates)
+            total += convert_currency(
+                record.balance, record.currency, to_currency, rates=rates
+            )
     return total

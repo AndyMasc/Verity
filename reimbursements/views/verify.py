@@ -19,7 +19,11 @@ from django.views import View
 from django_ratelimit.decorators import ratelimit
 
 from .. import services
-from ..forms import CheckoutTurnstileForm, RequestVerificationCodeForm, VerifyEmailCodeForm
+from ..forms import (
+    CheckoutTurnstileForm,
+    RequestVerificationCodeForm,
+    VerifyEmailCodeForm,
+)
 from ..models import ReimbursementPackage
 from ..verification import send_verification_code, verify_code
 
@@ -39,11 +43,15 @@ def _verified_in_session(request: HttpRequest, package: ReimbursementPackage) ->
     return bool(request.session.get(f"{_VERIFIED_SESSION_PREFIX}:{package.uuid}"))
 
 
-def _mark_verified_in_session(request: HttpRequest, package: ReimbursementPackage) -> None:
+def _mark_verified_in_session(
+    request: HttpRequest, package: ReimbursementPackage
+) -> None:
     request.session[f"{_VERIFIED_SESSION_PREFIX}:{package.uuid}"] = True
 
 
-@method_decorator(ratelimit(key="ip", rate="60/m", method="GET", block=True), name="dispatch")
+@method_decorator(
+    ratelimit(key="ip", rate="60/m", method="GET", block=True), name="dispatch"
+)
 class PackagePayView(View):
     """Public view of a package for external payment.
 
@@ -72,7 +80,9 @@ class PackagePayView(View):
             if step not in ("email", "code"):
                 step = "email"
             email = request.GET.get("email", "")
-            return self._render(request, package, state="verify", verify_step=step, email=email)
+            return self._render(
+                request, package, state="verify", verify_step=step, email=email
+            )
 
         services.activate_queued_package(package)
         package.refresh_from_db()
@@ -103,7 +113,9 @@ class PackagePayView(View):
         return render(request, self.template_name, context)
 
 
-@method_decorator(ratelimit(key="ip", rate="5/m", method="POST", block=True), name="dispatch")
+@method_decorator(
+    ratelimit(key="ip", rate="5/m", method="POST", block=True), name="dispatch"
+)
 class RequestVerificationCodeView(View):
     """Email the recipient a one-time code for the package."""
 
@@ -111,7 +123,9 @@ class RequestVerificationCodeView(View):
         package = get_object_or_404(
             ReimbursementPackage, uuid=package_uuid, deleted_at__isnull=True
         )
-        pay_url = reverse("reimbursements:pay-package", kwargs={"package_uuid": package.uuid})
+        pay_url = reverse(
+            "reimbursements:pay-package", kwargs={"package_uuid": package.uuid}
+        )
 
         form = RequestVerificationCodeForm(request.POST, request=request)
         if not form.is_valid():
@@ -123,7 +137,9 @@ class RequestVerificationCodeView(View):
         email = form.cleaned_data.get("email", "").strip()
 
         if not send_verification_code(package, email):
-            messages.error(request, "That email does not match the recipient for this request.")
+            messages.error(
+                request, "That email does not match the recipient for this request."
+            )
             return redirect(pay_url)
 
         messages.success(
@@ -133,7 +149,9 @@ class RequestVerificationCodeView(View):
         return redirect(_code_step_url(pay_url, email))
 
 
-@method_decorator(ratelimit(key="ip", rate="15/m", method="POST", block=True), name="dispatch")
+@method_decorator(
+    ratelimit(key="ip", rate="15/m", method="POST", block=True), name="dispatch"
+)
 class VerifyEmailCodeView(View):
     """Confirm the emailed code and unlock the package for this session."""
 
@@ -141,7 +159,9 @@ class VerifyEmailCodeView(View):
         package = get_object_or_404(
             ReimbursementPackage, uuid=package_uuid, deleted_at__isnull=True
         )
-        pay_url = reverse("reimbursements:pay-package", kwargs={"package_uuid": package.uuid})
+        pay_url = reverse(
+            "reimbursements:pay-package", kwargs={"package_uuid": package.uuid}
+        )
 
         form = VerifyEmailCodeForm(request.POST, request=request)
         if not form.is_valid():
@@ -163,7 +183,9 @@ class VerifyEmailCodeView(View):
         return redirect(pay_url)
 
 
-@method_decorator(ratelimit(key="ip", rate="15/m", method="POST", block=True), name="dispatch")
+@method_decorator(
+    ratelimit(key="ip", rate="15/m", method="POST", block=True), name="dispatch"
+)
 class PayPackageCheckoutView(View):
     """Start a Stripe checkout for an external payer.
 
@@ -178,7 +200,9 @@ class PayPackageCheckoutView(View):
             uuid=package_uuid,
             deleted_at__isnull=True,
         )
-        pay_url = reverse("reimbursements:pay-package", kwargs={"package_uuid": package.uuid})
+        pay_url = reverse(
+            "reimbursements:pay-package", kwargs={"package_uuid": package.uuid}
+        )
 
         form = CheckoutTurnstileForm(request.POST, request=request)
         if not form.is_valid():

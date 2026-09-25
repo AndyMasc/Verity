@@ -29,7 +29,10 @@ class FeatureRequiredMixin(UserPassesTestMixin):
 
         pricing_url = reverse("pricing_page")
 
-        if self.request.content_type and "application/json" in self.request.content_type:
+        if (
+            self.request.content_type
+            and "application/json" in self.request.content_type
+        ):
             return JsonResponse(
                 {
                     "error": "This feature requires the Verity Pro plan.",

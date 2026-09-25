@@ -98,7 +98,9 @@ async def get_dashboard_context(user) -> dict:
         notifications,
         unread_notifications_count,
     ) = await asyncio.gather(
-        MergeLog.objects.filter(plaid_record__user=user, undone_at__isnull=True).acount(),
+        MergeLog.objects.filter(
+            plaid_record__user=user, undone_at__isnull=True
+        ).acount(),
         _fetch_values_list(
             active_records_qs.filter(
                 transaction_date__gte=start_of_month,

@@ -92,7 +92,9 @@ class ExportExcelAllViewTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("Record_export.xlsx", response["Content-Disposition"])
 
-    @patch("accounting.views.export_records_to_excel", side_effect=RuntimeError("db down"))
+    @patch(
+        "accounting.views.export_records_to_excel", side_effect=RuntimeError("db down")
+    )
     def test_returns_500_on_export_failure(self, _mock_export, _mock_rl):
         self.client.force_login(self.user)
         response = self.client.get(EXPORT_URL)
@@ -123,7 +125,9 @@ class ExportExcelAllServiceTest(TestCase):
 class ExportSelectedExcelViewTest(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(username="export_sel", password="pass")
-        self.other_user = User.objects.create_user(username="export_other", password="pass")
+        self.other_user = User.objects.create_user(
+            username="export_other", password="pass"
+        )
 
     def test_login_required(self, _mock_rl):
         response = self.client.post(

@@ -138,8 +138,12 @@ def send_package_paid_notification(package, payer) -> None:
         **_site_context(),
     }
 
-    html_body = render_to_string("reimbursements/email/package_paid_message.html", template_context)
-    text_body = render_to_string("reimbursements/email/package_paid_message.txt", template_context)
+    html_body = render_to_string(
+        "reimbursements/email/package_paid_message.html", template_context
+    )
+    text_body = render_to_string(
+        "reimbursements/email/package_paid_message.txt", template_context
+    )
 
     formatted_amount = format_currency(amount, currency)
     plain_payer = payer.get_full_name() or payer.email if payer else "Someone"

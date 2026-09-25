@@ -46,7 +46,9 @@ def plaid_connect_page(request: Request) -> HttpResponse:
             "plaid/connect.html",
             {"plaid_items": [], "upgrade_required": True},
         )
-    plaid_items = PlaidItem.objects.filter(user=request.user).prefetch_related("records")
+    plaid_items = PlaidItem.objects.filter(user=request.user).prefetch_related(
+        "records"
+    )
     return render(request, "plaid/connect.html", {"plaid_items": plaid_items})
 
 
@@ -72,7 +74,9 @@ class CreateLinkTokenView(FeatureRequiredMixin, APIView):
             return Response({"link_token": response["link_token"]})
         except plaid.ApiException:
             logger.exception("Link token creation failed for user %s", request.user.id)
-            return Response({"error": "Failed to create link token with Plaid"}, status=400)
+            return Response(
+                {"error": "Failed to create link token with Plaid"}, status=400
+            )
 
 
 class CreateUpdateLinkTokenView(FeatureRequiredMixin, APIView):
@@ -103,7 +107,9 @@ class CreateUpdateLinkTokenView(FeatureRequiredMixin, APIView):
             return Response({"link_token": response["link_token"]})
         except plaid.ApiException:
             logger.exception("Update link token creation failed for item %s", item_id)
-            return Response({"error": "Failed to create update token with Plaid"}, status=400)
+            return Response(
+                {"error": "Failed to create update token with Plaid"}, status=400
+            )
 
 
 class PublicTokenExchange(FeatureRequiredMixin, APIView):
@@ -138,7 +144,11 @@ class PublicTokenExchange(FeatureRequiredMixin, APIView):
             if posthog_client is not None:
                 posthog_client.capture("bank_linked")
 
-            return Response({"success": "Bank linked successfully! Syncing transactions…"})
+            return Response(
+                {"success": "Bank linked successfully! Syncing transactions…"}
+            )
         except Exception:
-            logger.exception("Failed to exchange public token for user %s", request.user.id)
+            logger.exception(
+                "Failed to exchange public token for user %s", request.user.id
+            )
             return Response({"error": "Failed to exchange token"}, status=400)

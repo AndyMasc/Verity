@@ -109,10 +109,14 @@ def calculate_match_score(record_a: Record, record_b: Record) -> int:
         score += _score_at_most(date_diff, _DATE_BANDS)
 
     if record_a.merchant and record_b.merchant:
-        score += _score_at_least(_similarity(record_a.merchant, record_b.merchant), _MERCHANT_BANDS)
+        score += _score_at_least(
+            _similarity(record_a.merchant, record_b.merchant), _MERCHANT_BANDS
+        )
 
     if record_a.title and record_b.title:
-        score += _score_at_least(_similarity(record_a.title, record_b.title), _TITLE_BANDS)
+        score += _score_at_least(
+            _similarity(record_a.title, record_b.title), _TITLE_BANDS
+        )
 
     return score
 
@@ -225,7 +229,9 @@ def _restore_plaid_from_snapshot(locked_plaid: Record, snap: dict) -> None:
     locked_plaid._skip_auto_match = True
     locked_plaid.products = snap.get("products", "")
     locked_plaid.notes = snap.get("notes", "")
-    locked_plaid.record_type = snap.get("record_type", Record.RecordTypes.FINANCIAL_DOCUMENT)
+    locked_plaid.record_type = snap.get(
+        "record_type", Record.RecordTypes.FINANCIAL_DOCUMENT
+    )
     locked_plaid.folder_id = snap.get("folder_id")
     locked_plaid.payment_method = snap.get("payment_method", "")
     locked_plaid.save(update_fields=PLAID_RESTORE_FIELDS)
@@ -284,9 +290,13 @@ def merge_document_into_plaid(
     fresh_doc._skip_auto_match = True
 
     doc_document_ids = list(
-        DocumentData.objects.filter(associated_record=fresh_doc).values_list("pk", flat=True)
+        DocumentData.objects.filter(associated_record=fresh_doc).values_list(
+            "pk", flat=True
+        )
     )
-    DocumentData.objects.filter(associated_record=fresh_doc).update(associated_record=locked_plaid)
+    DocumentData.objects.filter(associated_record=fresh_doc).update(
+        associated_record=locked_plaid
+    )
     document_snapshot["document_ids"] = doc_document_ids
 
     _apply_doc_fields_to_plaid(locked_plaid, fresh_doc)
@@ -342,7 +352,9 @@ def undo_merge(merge_log: MergeLog) -> Record | None:
 
     doc_ids: list[int] | None = merge_log.document_snapshot.get("document_ids")
     if doc_ids and plaid_record and document_record:
-        DocumentData.objects.filter(pk__in=doc_ids).update(associated_record=document_record)
+        DocumentData.objects.filter(pk__in=doc_ids).update(
+            associated_record=document_record
+        )
     elif document and document_record:
         document.associated_record = document_record
         document.save(update_fields=["associated_record"])

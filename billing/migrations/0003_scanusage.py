@@ -26,7 +26,9 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "period",
-                    models.CharField(help_text="Calendar month, e.g. 2026-08", max_length=7),
+                    models.CharField(
+                        help_text="Calendar month, e.g. 2026-08", max_length=7
+                    ),
                 ),
                 ("count", models.PositiveIntegerField(default=0)),
                 (

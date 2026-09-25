@@ -50,7 +50,9 @@ class BulkDeleteDocumentsTest(TestCase):
         _bulk_delete_documents(file_data)
         expected_keys = [f"users/1/doc_{i}.pdf" for i in range(3)]
         mock_s3.delete_objects.assert_called_once()
-        actual_keys = [o["Key"] for o in mock_s3.delete_objects.call_args[1]["Delete"]["Objects"]]
+        actual_keys = [
+            o["Key"] for o in mock_s3.delete_objects.call_args[1]["Delete"]["Objects"]
+        ]
         self.assertCountEqual(actual_keys, expected_keys)
 
     @patch("documents.services.cleanup.get_s3_client")
@@ -131,7 +133,9 @@ class StorageUtilsTest(TestCase):
     @patch("documents.storage.get_s3_client")
     def test_generate_presigned_post(self, mock_get_s3):
         mock_s3 = MagicMock()
-        mock_s3.generate_presigned_url.return_value = "https://example.com/presigned-url"
+        mock_s3.generate_presigned_url.return_value = (
+            "https://example.com/presigned-url"
+        )
         mock_get_s3.return_value = mock_s3
         result = generate_presigned_post(1, "users/1/test.pdf", "application/pdf")
         self.assertEqual(result, "https://example.com/presigned-url")

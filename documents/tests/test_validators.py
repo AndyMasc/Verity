@@ -14,7 +14,9 @@ class ValidatorsTest(TestCase):
     def test_validate_file_upload_ok(self):
         from django.core.files.uploadedfile import SimpleUploadedFile
 
-        file = SimpleUploadedFile("test.pdf", b"%PDF-1.4 content", content_type="application/pdf")
+        file = SimpleUploadedFile(
+            "test.pdf", b"%PDF-1.4 content", content_type="application/pdf"
+        )
         result = validate_file_upload(file)
         self.assertEqual(result.mime_type, "application/pdf")
 

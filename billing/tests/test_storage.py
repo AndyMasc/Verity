@@ -321,7 +321,9 @@ class StoragePackConfirmFlowTests(TestCase):
             get_or_create.return_value = (Customer(id="cus_brand_new"), True)
             session_create.return_value = FakeSession(subscription=None)
             self.client.force_login(self.user)
-            self.client.post(reverse("create_checkout_session"), {"base_price_id": "price_pro"})
+            self.client.post(
+                reverse("create_checkout_session"), {"base_price_id": "price_pro"}
+            )
             session_create.assert_called_once()
             called_customer = session_create.call_args.kwargs["customer"]
             self.assertEqual(called_customer, self.customer.id)
@@ -341,11 +343,15 @@ class StoragePackConfirmFlowTests(TestCase):
                 ),
             ),
         ):
-            fresh = Customer.objects.create(id="cus_fresh", livemode=False, created=timezone.now())
+            fresh = Customer.objects.create(
+                id="cus_fresh", livemode=False, created=timezone.now()
+            )
             get_or_create.return_value = (fresh, True)
             session_create.return_value = FakeSession(subscription=None)
             self.client.force_login(self.user)
-            self.client.post(reverse("create_checkout_session"), {"base_price_id": "price_pro"})
+            self.client.post(
+                reverse("create_checkout_session"), {"base_price_id": "price_pro"}
+            )
             session_create.assert_called_once()
             self.assertEqual(session_create.call_args.kwargs["customer"], "cus_fresh")
             self.user.refresh_from_db()

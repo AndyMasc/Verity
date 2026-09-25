@@ -122,9 +122,13 @@ def handle_subscription_deleted(**kwargs: Any) -> None:
     def _clear_user_subscription() -> None:
         from .models import CustomUser
 
-        updated_count = CustomUser.objects.filter(subscription__id=sub_id).update(subscription=None)
+        updated_count = CustomUser.objects.filter(subscription__id=sub_id).update(
+            subscription=None
+        )
         if updated_count:
-            logger.info("Cleared subscription %s from %d user(s).", sub_id, updated_count)
+            logger.info(
+                "Cleared subscription %s from %d user(s).", sub_id, updated_count
+            )
 
     transaction.on_commit(_clear_user_subscription)
 
@@ -159,7 +163,9 @@ def handle_subscription_changed(**kwargs: Any) -> None:
 
     _invalidate_subscription_caches_for_event(stripe_sub)
 
-    if "base_plan" in _subscription_categories(stripe_sub) and _base_plan_is_ending(stripe_sub):
+    if "base_plan" in _subscription_categories(stripe_sub) and _base_plan_is_ending(
+        stripe_sub
+    ):
         _cancel_pro_only_storage_for_customer(
             stripe_sub.get("customer"), base_subscription_id=stripe_sub.get("id")
         )

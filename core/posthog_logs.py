@@ -14,7 +14,10 @@ posthog_logger = logging.getLogger(POSTHOG_LOGGER_NAME)
 
 def configure_posthog_log_export(project_token: str, host: str) -> None:
     """Export only records written to the dedicated PostHog logger."""
-    if any(getattr(handler, "_posthog_log_export", False) for handler in posthog_logger.handlers):
+    if any(
+        getattr(handler, "_posthog_log_export", False)
+        for handler in posthog_logger.handlers
+    ):
         return
 
     logger_provider = LoggerProvider()

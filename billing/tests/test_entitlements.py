@@ -52,27 +52,45 @@ class EntitlementTests(TestCase):
 
     def test_free_plan_features(self):
         self.assertEqual(entitlements.get_plan(self.user), "free")
-        self.assertEqual(entitlements.get_features(self.user), entitlements.FREE_FEATURES)
-        self.assertFalse(entitlements.has_feature(self.user, features.BANK_TRANSACTION_SYNC))
+        self.assertEqual(
+            entitlements.get_features(self.user), entitlements.FREE_FEATURES
+        )
+        self.assertFalse(
+            entitlements.has_feature(self.user, features.BANK_TRANSACTION_SYNC)
+        )
         self.assertTrue(entitlements.has_feature(self.user, features.LIMITED_SCANS))
 
     def test_paid_plan_features_include_free(self):
-        self._add_subscription(status="active", product_id=metadata.VERITY_PRO.stripe_id)
+        self._add_subscription(
+            status="active", product_id=metadata.VERITY_PRO.stripe_id
+        )
         self.assertEqual(entitlements.get_plan(self.user), "paid")
-        self.assertEqual(entitlements.get_features(self.user), entitlements.PAID_FEATURES)
+        self.assertEqual(
+            entitlements.get_features(self.user), entitlements.PAID_FEATURES
+        )
         self.assertTrue(entitlements.has_feature(self.user, features.UNLIMITED_SCANS))
-        self.assertTrue(entitlements.has_feature(self.user, features.BANK_TRANSACTION_SYNC))
-        self.assertTrue(entitlements.has_feature(self.user, features.QUICK_REIMBURSEMENT_REQUEST))
+        self.assertTrue(
+            entitlements.has_feature(self.user, features.BANK_TRANSACTION_SYNC)
+        )
+        self.assertTrue(
+            entitlements.has_feature(self.user, features.QUICK_REIMBURSEMENT_REQUEST)
+        )
         self.assertTrue(entitlements.has_feature(self.user, features.LIMITED_SCANS))
 
     def test_trialing_counts_as_paid(self):
-        self._add_subscription(status="trialing", product_id=metadata.VERITY_PRO.stripe_id)
+        self._add_subscription(
+            status="trialing", product_id=metadata.VERITY_PRO.stripe_id
+        )
         self.assertEqual(entitlements.get_plan(self.user), "paid")
 
     def test_canceled_subscription_is_free(self):
-        self._add_subscription(status="canceled", product_id=metadata.VERITY_PRO.stripe_id)
+        self._add_subscription(
+            status="canceled", product_id=metadata.VERITY_PRO.stripe_id
+        )
         self.assertEqual(entitlements.get_plan(self.user), "free")
-        self.assertFalse(entitlements.has_feature(self.user, features.BANK_TRANSACTION_SYNC))
+        self.assertFalse(
+            entitlements.has_feature(self.user, features.BANK_TRANSACTION_SYNC)
+        )
 
     def test_cancel_at_period_end_keeps_paid_access_until_cycle_end(self):
         sub = Subscription.objects.create(
@@ -105,15 +123,25 @@ class EntitlementTests(TestCase):
         self.user.subscription = sub
         self.user.save()
         self.assertEqual(entitlements.get_plan(self.user), "paid")
-        self.assertTrue(entitlements.has_feature(self.user, features.BANK_TRANSACTION_SYNC))
+        self.assertTrue(
+            entitlements.has_feature(self.user, features.BANK_TRANSACTION_SYNC)
+        )
 
     def test_storage_addon_alone_does_not_unlock_pro_features(self):
-        self._add_subscription(status="active", product_id=metadata.STORAGE_UPGRADE_10.stripe_id)
+        self._add_subscription(
+            status="active", product_id=metadata.STORAGE_UPGRADE_10.stripe_id
+        )
         self.assertEqual(entitlements.get_plan(self.user), "free")
-        self.assertEqual(entitlements.get_features(self.user), entitlements.FREE_FEATURES)
+        self.assertEqual(
+            entitlements.get_features(self.user), entitlements.FREE_FEATURES
+        )
         self.assertFalse(entitlements.has_feature(self.user, features.UNLIMITED_SCANS))
-        self.assertFalse(entitlements.has_feature(self.user, features.BANK_TRANSACTION_SYNC))
-        self.assertFalse(entitlements.has_feature(self.user, features.QUICK_REIMBURSEMENT_REQUEST))
+        self.assertFalse(
+            entitlements.has_feature(self.user, features.BANK_TRANSACTION_SYNC)
+        )
+        self.assertFalse(
+            entitlements.has_feature(self.user, features.QUICK_REIMBURSEMENT_REQUEST)
+        )
         self.assertTrue(entitlements.has_feature(self.user, features.LIMITED_SCANS))
 
     def test_unauthenticated_user_has_no_features(self):
@@ -153,7 +181,9 @@ class ContextProcessorTests(TestCase):
         from django.core.cache import cache
 
         cache.clear()
-        self.customer = Customer.objects.create(id="cus_cp", livemode=False, created=timezone.now())
+        self.customer = Customer.objects.create(
+            id="cus_cp", livemode=False, created=timezone.now()
+        )
         self.user = get_user_model().objects.create_user(
             username="cp",
             email="cp@example.com",
@@ -190,18 +220,24 @@ class ContextProcessorTests(TestCase):
     def test_storage_addon_plan_name_is_not_free(self):
         from ..context_processors import subscription_status
 
-        self._add_subscription(status="active", product_id=metadata.STORAGE_UPGRADE_10.stripe_id)
+        self._add_subscription(
+            status="active", product_id=metadata.STORAGE_UPGRADE_10.stripe_id
+        )
         ctx = subscription_status(self._request())
         self.assertEqual(ctx["plan_name"], metadata.STORAGE_UPGRADE_10.name)
         self.assertEqual(ctx["plan"], "free")
-        self.assertEqual(ctx["monthly_scan_limit"], entitlements.FREE_MONTHLY_SCAN_LIMIT)
+        self.assertEqual(
+            ctx["monthly_scan_limit"], entitlements.FREE_MONTHLY_SCAN_LIMIT
+        )
         self.assertNotIn(features.UNLIMITED_SCANS, ctx["features"])
         self.assertTrue(ctx["storage_pack_requires_paid_base"])
 
     def test_pro_plan_name_is_dynamic(self):
         from ..context_processors import subscription_status
 
-        self._add_subscription(status="active", product_id=metadata.VERITY_PRO.stripe_id)
+        self._add_subscription(
+            status="active", product_id=metadata.VERITY_PRO.stripe_id
+        )
         ctx = subscription_status(self._request())
         self.assertEqual(ctx["plan_name"], metadata.VERITY_PRO.name)
         self.assertEqual(ctx["plan"], "paid")
@@ -285,12 +321,16 @@ class StorageLimitTests(TestCase):
         return sub
 
     def test_free_user_gets_free_storage_limit(self):
-        self.assertEqual(entitlements.get_storage_limit(self.user), features.FREE_STORAGE_LIMIT_GB)
+        self.assertEqual(
+            entitlements.get_storage_limit(self.user), features.FREE_STORAGE_LIMIT_GB
+        )
         self.assertEqual(metadata.plan_for_user(self.user).stripe_id, "free")
 
     def test_paid_user_gets_pro_storage_limit(self):
         self._add_subscription_with_product(metadata.VERITY_PRO.stripe_id)
-        self.assertEqual(entitlements.get_storage_limit(self.user), features.PRO_STORAGE_LIMIT_GB)
+        self.assertEqual(
+            entitlements.get_storage_limit(self.user), features.PRO_STORAGE_LIMIT_GB
+        )
         self.assertEqual(
             metadata.plan_for_user(self.user).stripe_id,
             metadata.VERITY_PRO.stripe_id,
@@ -307,7 +347,9 @@ class StorageLimitTests(TestCase):
 
     def test_pro_only_storage_addon_requires_paid_base_plan(self):
         self._add_subscription_with_product(metadata.STORAGE_UPGRADE_10.stripe_id)
-        self.assertEqual(entitlements.get_storage_limit(self.user), features.FREE_STORAGE_LIMIT_GB)
+        self.assertEqual(
+            entitlements.get_storage_limit(self.user), features.FREE_STORAGE_LIMIT_GB
+        )
         self.assertEqual(entitlements.get_plan(self.user), "free")
         self.assertEqual(metadata.storage_addons_for_user(self.user), [])
 
@@ -315,7 +357,9 @@ class StorageLimitTests(TestCase):
         customer = Customer.objects.create(
             id="cus_pro_addon", livemode=False, created=timezone.now()
         )
-        self._add_subscription_with_product(metadata.VERITY_PRO.stripe_id, customer=customer)
+        self._add_subscription_with_product(
+            metadata.VERITY_PRO.stripe_id, customer=customer
+        )
         self._add_subscription_with_product(
             metadata.STORAGE_UPGRADE_10.stripe_id, customer=customer
         )

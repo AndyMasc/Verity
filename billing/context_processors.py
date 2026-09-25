@@ -59,7 +59,8 @@ def _build_subscription_status(user) -> dict[str, Any]:
     storage_pack_requires_paid_base = bool(
         metadata.plan_for_user(user).stripe_id == metadata.VERITY_FREE.stripe_id
         and any(
-            product.category == "storage_plan" and product.pro_only for product in active_products
+            product.category == "storage_plan" and product.pro_only
+            for product in active_products
         )
     )
 
@@ -69,7 +70,9 @@ def _build_subscription_status(user) -> dict[str, Any]:
         "subscription": None,
         "is_subscribed": is_subscribed,
         "subscription_cancel_at_period_end": (
-            primary_subscription.cancel_at_period_end if primary_subscription is not None else False
+            primary_subscription.cancel_at_period_end
+            if primary_subscription is not None
+            else False
         ),
         "plan": entitlements.get_plan(user),
         "plan_name": plan_name,
@@ -107,14 +110,20 @@ def scan_usage(request: HttpRequest) -> dict[str, Any]:
         return cached
 
     count = entitlements.get_monthly_scan_count(user)
-    limit = monthly_scan_limit if monthly_scan_limit is not None else features.PRO_SCAN_LIMIT
+    limit = (
+        monthly_scan_limit
+        if monthly_scan_limit is not None
+        else features.PRO_SCAN_LIMIT
+    )
     percentage = (count / limit * 100) if limit > 0 else 0
 
     value = {
         "scan_usage_count": count,
         "scan_usage_period": period,
         "free_monthly_scan_limit": (
-            monthly_scan_limit if monthly_scan_limit is not None else features.PRO_SCAN_LIMIT
+            monthly_scan_limit
+            if monthly_scan_limit is not None
+            else features.PRO_SCAN_LIMIT
         ),
         "scan_usage_percentage": min(round(percentage), 100),
         "is_fair_use_approaching": percentage >= 80 and percentage < 100,

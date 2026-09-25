@@ -65,17 +65,25 @@ class CurrencyConverter:
     """Thin wrapper around the exchange-rate service for batch conversion."""
 
     @staticmethod
-    def convert_batch(items: list[tuple[Decimal, str]], target_currency: str) -> Decimal:
+    def convert_batch(
+        items: list[tuple[Decimal, str]], target_currency: str
+    ) -> Decimal:
         """Convert a batch of (amount, currency) tuples to target currency."""
         from core.exchange_rates import convert_batch
 
         return convert_batch(items, target_currency)
 
     @staticmethod
-    def get_active_record_items(cache: dict, records_queryset) -> list[tuple[Decimal, str]]:
+    def get_active_record_items(
+        cache: dict, records_queryset
+    ) -> list[tuple[Decimal, str]]:
         """Extract active record balance and currency pairs from cache or queryset."""
         if "records" in cache:
-            return [(r.balance, r.currency) for r in cache["records"] if r.is_active and r.balance]
+            return [
+                (r.balance, r.currency)
+                for r in cache["records"]
+                if r.is_active and r.balance
+            ]
         return list(
             records_queryset.filter(is_active=True)
             .exclude(balance__isnull=True)

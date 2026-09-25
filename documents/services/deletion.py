@@ -34,7 +34,9 @@ class DocumentDeletionService:
 
         Retained for API stability; every document delete is now permanent.
         """
-        record_id = document.associated_record_id if document.associated_record else None
+        record_id = (
+            document.associated_record_id if document.associated_record else None
+        )
         filepath = document.filepath
 
         try:

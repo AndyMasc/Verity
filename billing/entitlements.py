@@ -133,7 +133,9 @@ def record_scan(user) -> None:
         usage, _ = ScanUsage.objects.get_or_create(user=user, period=period)
         # Guard against the row being deleted between get_or_create and the
         # atomic increment (e.g. by a monthly cleanup job).
-        updated = ScanUsage.objects.filter(pk=usage.pk).update(count=models.F("count") + 1)
+        updated = ScanUsage.objects.filter(pk=usage.pk).update(
+            count=models.F("count") + 1
+        )
         if updated:
             invalidate_scan_usage_cache(user.pk, period)
             return

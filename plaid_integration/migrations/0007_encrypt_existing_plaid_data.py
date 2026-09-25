@@ -49,7 +49,9 @@ def encrypt_plaid_data(apps, schema_editor):
             and not str(access_token).startswith("gAAAAAB")
         ):
             token_bytes = (
-                access_token if isinstance(access_token, bytes) else access_token.encode("utf-8")
+                access_token
+                if isinstance(access_token, bytes)
+                else access_token.encode("utf-8")
             )
             encrypted_token = fernet.encrypt(token_bytes)
             token_updates.append("access_token = %s")
@@ -58,7 +60,9 @@ def encrypt_plaid_data(apps, schema_editor):
         # Encrypt plaintext accounts_data (skip if already encrypted)
         if accounts_data:
             acct_str = (
-                accounts_data if isinstance(accounts_data, str) else accounts_data.decode("utf-8")
+                accounts_data
+                if isinstance(accounts_data, str)
+                else accounts_data.decode("utf-8")
             )
             if not acct_str.startswith("gAAAAAB"):
                 # accounts_data was stored as a JSON string or a Python repr string
@@ -98,7 +102,9 @@ def reverse_encrypt(apps, schema_editor):
 
         if access_token:
             token_bytes = (
-                access_token if isinstance(access_token, bytes) else access_token.encode("utf-8")
+                access_token
+                if isinstance(access_token, bytes)
+                else access_token.encode("utf-8")
             )
             if token_bytes.startswith(b"gAAAAAB"):
                 decrypted = fernet.decrypt(token_bytes)
@@ -107,7 +113,9 @@ def reverse_encrypt(apps, schema_editor):
 
         if accounts_data:
             acct_bytes = (
-                accounts_data if isinstance(accounts_data, bytes) else accounts_data.encode("utf-8")
+                accounts_data
+                if isinstance(accounts_data, bytes)
+                else accounts_data.encode("utf-8")
             )
             if acct_bytes.startswith(b"gAAAAAB"):
                 decrypted = fernet.decrypt(acct_bytes)

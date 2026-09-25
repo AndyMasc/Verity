@@ -13,7 +13,9 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AddIndex(
             model_name="record",
-            index=models.Index(fields=["user", "is_active"], name="records_rec_user_id_4d2ecf_idx"),
+            index=models.Index(
+                fields=["user", "is_active"], name="records_rec_user_id_4d2ecf_idx"
+            ),
         ),
         migrations.AddIndex(
             model_name="record",
@@ -29,10 +31,14 @@ class Migration(migrations.Migration):
         ),
         migrations.AddIndex(
             model_name="record",
-            index=models.Index(fields=["expiry_date"], name="records_rec_expiry__a15941_idx"),
+            index=models.Index(
+                fields=["expiry_date"], name="records_rec_expiry__a15941_idx"
+            ),
         ),
         migrations.AddIndex(
             model_name="record",
-            index=models.Index(fields=["transaction_date"], name="records_rec_transac_d49e5c_idx"),
+            index=models.Index(
+                fields=["transaction_date"], name="records_rec_transac_d49e5c_idx"
+            ),
         ),
     ]

@@ -37,13 +37,17 @@ class Migration(migrations.Migration):
                 migrations.AlterField(
                     model_name="plaiditem",
                     name="accounts_data",
-                    field=plaid_integration.models.EncryptedJSONField(blank=True, null=True),
+                    field=plaid_integration.models.EncryptedJSONField(
+                        blank=True, null=True
+                    ),
                 ),
             ],
         ),
         migrations.AlterField(
             model_name="plaiditem",
             name="next_cursor",
-            field=models.CharField(blank=True, db_index=True, max_length=255, null=True),
+            field=models.CharField(
+                blank=True, db_index=True, max_length=255, null=True
+            ),
         ),
     ]

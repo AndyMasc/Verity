@@ -73,13 +73,17 @@ def public_token_exchange(public_token: str) -> tuple[str, str]:
 def fetch_institution_name(access_token: str, item_id: str) -> str:
     """Fetch the institution name from Plaid, returning a default on failure."""
     try:
-        item_resp = _plaid_dict(plaid_client.item_get(ItemGetRequest(access_token=access_token)))
+        item_resp = _plaid_dict(
+            plaid_client.item_get(ItemGetRequest(access_token=access_token))
+        )
         inst_id = item_resp.get("item", {}).get("institution_id", "")
         if inst_id:
             inst_req = InstitutionsGetByIdRequest(
                 institution_id=inst_id,
                 country_codes=[CountryCode("US")],
-                options=InstitutionsGetByIdRequestOptions(include_optional_metadata=False),
+                options=InstitutionsGetByIdRequestOptions(
+                    include_optional_metadata=False
+                ),
             )
             inst_dict = _plaid_dict(plaid_client.institutions_get_by_id(inst_req))
             return inst_dict.get("institution", {}).get("name", "Bank Account")
@@ -121,7 +125,9 @@ def trigger_initial_sync(plaid_item: PlaidItem) -> None:
                 )
             )
         except plaid.ApiException:
-            logger.warning("Failed to fire initial sandbox webhook for item %s", plaid_item.item_id)
+            logger.warning(
+                "Failed to fire initial sandbox webhook for item %s", plaid_item.item_id
+            )
     else:
         from .tasks import sync_and_convert_for_item_task
 
@@ -135,12 +141,15 @@ def dispatch_sync(plaid_item: PlaidItem) -> bool:
     skipped because the last sync fell within the cooldown window.
     """
     now = tz.now()
-    cooldown_threshold = now - datetime.timedelta(seconds=settings.PLAID_SYNC_COOLDOWN_SECONDS)
+    cooldown_threshold = now - datetime.timedelta(
+        seconds=settings.PLAID_SYNC_COOLDOWN_SECONDS
+    )
 
     updated_count = (
         PlaidItem.objects.filter(id=plaid_item.id)
         .filter(
-            models.Q(last_synced_at__isnull=True) | models.Q(last_synced_at__lt=cooldown_threshold)
+            models.Q(last_synced_at__isnull=True)
+            | models.Q(last_synced_at__lt=cooldown_threshold)
         )
         .update(last_synced_at=now)
     )
@@ -158,7 +167,9 @@ def dispatch_sync(plaid_item: PlaidItem) -> bool:
     return True
 
 
-def route_webhook(webhook_code: str, plaid_item: PlaidItem, payload: dict[str, Any]) -> None:
+def route_webhook(
+    webhook_code: str, plaid_item: PlaidItem, payload: dict[str, Any]
+) -> None:
     """Dispatch a webhook to the appropriate handler based on the code."""
     if webhook_code in ("SYNC_UPDATES_AVAILABLE", "HISTORICAL_UPDATE"):
         dispatch_sync(plaid_item)

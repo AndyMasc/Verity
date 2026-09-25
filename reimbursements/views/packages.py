@@ -46,7 +46,9 @@ class PackageListView(LoginRequiredMixin, ListView):
         sent_packages = list(context["packages"])
 
         paid_by_me = list(
-            ReimbursementPackage.objects.filter(paid_by=self.request.user, deleted_at__isnull=True)
+            ReimbursementPackage.objects.filter(
+                paid_by=self.request.user, deleted_at__isnull=True
+            )
             .with_annotated_total()
             .with_prefetched_active_records()
             .select_related("creator", "recipient", "paid_by")
@@ -119,7 +121,9 @@ class PackageDetailView(LoginRequiredMixin, DetailView):
         return context
 
 
-@method_decorator(ratelimit(key="user", rate="10/m", method="POST", block=True), name="dispatch")
+@method_decorator(
+    ratelimit(key="user", rate="10/m", method="POST", block=True), name="dispatch"
+)
 class PackageDeleteView(LoginRequiredMixin, View):
     def post(self, request: HttpRequest, package_uuid: str) -> HttpResponse:
         package = get_object_or_404(
@@ -135,7 +139,9 @@ class PackageDeleteView(LoginRequiredMixin, View):
                     {"error": "You do not have permission to delete this package."},
                     status=403,
                 )
-            messages.error(request, "You do not have permission to delete this package.")
+            messages.error(
+                request, "You do not have permission to delete this package."
+            )
             return redirect(
                 reverse(
                     "reimbursements:package-detail",
@@ -167,7 +173,9 @@ class PackageDeleteView(LoginRequiredMixin, View):
         messages.success(request, "Package deleted.")
 
         if request.headers.get("HX-Request"):
-            return HttpResponse(headers={"HX-Redirect": reverse("reimbursements:package-list")})
+            return HttpResponse(
+                headers={"HX-Redirect": reverse("reimbursements:package-list")}
+            )
 
         return redirect(reverse("reimbursements:package-list"))
 
@@ -179,8 +187,12 @@ def _clamp_days_valid(raw: Any) -> int:
         return 7
 
 
-@method_decorator(ratelimit(key="user", rate="5/m", method="POST", block=True), name="dispatch")
-class CreatePackageFromRecordsView(LoginRequiredMixin, ReimbursementRequestRequiredMixin, View):
+@method_decorator(
+    ratelimit(key="user", rate="5/m", method="POST", block=True), name="dispatch"
+)
+class CreatePackageFromRecordsView(
+    LoginRequiredMixin, ReimbursementRequestRequiredMixin, View
+):
     required_feature = features.QUICK_REIMBURSEMENT_REQUEST
 
     def post(self, request: HttpRequest) -> HttpResponse:
@@ -196,7 +208,9 @@ class CreatePackageFromRecordsView(LoginRequiredMixin, ReimbursementRequestRequi
             days_valid = _clamp_days_valid(data.get("days_valid", 7))
         else:
             record_ids = [
-                int(rid) for rid in request.POST.getlist("selected_records") if rid.isdigit()
+                int(rid)
+                for rid in request.POST.getlist("selected_records")
+                if rid.isdigit()
             ]
             title = request.POST.get("title", "Reimbursement Package")
             recipient_email = request.POST.get("recipient_email", "").strip()

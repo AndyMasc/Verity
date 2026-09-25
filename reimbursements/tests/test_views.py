@@ -171,7 +171,9 @@ class CreatePackageFromRecordsViewTest(TestCase):
         self.assertEqual(response.status_code, 200)
         data = json.loads(response.content)
         self.assertIn("redirect_url", data)
-        self.assertTrue(ReimbursementPackage.objects.filter(title="Test Reimbursement").exists())
+        self.assertTrue(
+            ReimbursementPackage.objects.filter(title="Test Reimbursement").exists()
+        )
 
     def test_unavailable_records_are_reported(self, _mock_notify, _mock_rl):
         r = _record(self.user)
@@ -288,7 +290,9 @@ class CreatePackageCheckoutViewTest(TestCase):
         self.payer = _user("payer@test.com")
         self.pkg = _package(self.creator, self.payer, title="Checkout Test")
         self.client.force_login(self.payer)
-        self.url = reverse("reimbursements:create-checkout", kwargs={"package_uuid": self.pkg.uuid})
+        self.url = reverse(
+            "reimbursements:create-checkout", kwargs={"package_uuid": self.pkg.uuid}
+        )
 
     def test_creator_cannot_pay(self, _mock_rl):
         self.client.force_login(self.creator)
@@ -364,7 +368,9 @@ class PublicPayFlowTest(TestCase):
             title="External Request",
             days_valid=7,
         )
-        self.pay_url = reverse("reimbursements:pay-package", kwargs={"package_uuid": self.pkg.uuid})
+        self.pay_url = reverse(
+            "reimbursements:pay-package", kwargs={"package_uuid": self.pkg.uuid}
+        )
         self.request_code_url = reverse(
             "reimbursements:pay-request-code", kwargs={"package_uuid": self.pkg.uuid}
         )
@@ -386,7 +392,9 @@ class PublicPayFlowTest(TestCase):
         self.assertNotContains(resp, "Total Due")
 
     def test_code_step_renders_with_email(self, _mock_rl):
-        resp = self.client.get(self.pay_url, {"step": "code", "email": "external@test.com"})
+        resp = self.client.get(
+            self.pay_url, {"step": "code", "email": "external@test.com"}
+        )
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, "external@test.com")
 
@@ -400,7 +408,9 @@ class PublicPayFlowTest(TestCase):
     @patch("reimbursements.verification.send_background_email")
     def test_verify_code_failure_keeps_email(self, _mock_email, _mock_rl):
         send_verification_code(self.pkg, "external@test.com")
-        resp = self._post(self.verify_code_url, {"email": "external@test.com", "code": "wrongcode"})
+        resp = self._post(
+            self.verify_code_url, {"email": "external@test.com", "code": "wrongcode"}
+        )
         self.assertEqual(resp.status_code, 302)
         self.assertIn("email=external%40test.com", resp.url)
 
@@ -417,13 +427,17 @@ class PublicPayFlowTest(TestCase):
         verification = PackageEmailVerification.objects.get(package=self.pkg)
         self.assertIsNone(verification.verified_at)
 
-        resp = self._post(self.verify_code_url, {"email": "external@test.com", "code": "000000"})
+        resp = self._post(
+            self.verify_code_url, {"email": "external@test.com", "code": "000000"}
+        )
         self.assertEqual(resp.status_code, 302)
         verification.refresh_from_db()
         self.assertEqual(verification.attempts, 1)
         self.assertNotContains(self.client.get(self.pay_url), "External Request")
 
-        resp = self._post(self.verify_code_url, {"email": "external@test.com", "code": "123456"})
+        resp = self._post(
+            self.verify_code_url, {"email": "external@test.com", "code": "123456"}
+        )
         self.assertEqual(resp.status_code, 302)
         with patch("reimbursements.checkout.get_rates", return_value={}):
             page = self.client.get(self.pay_url)
@@ -485,11 +499,15 @@ class PackageDeleteViewTest(TestCase):
         self.creator = _user("creator@test.com")
         self.recipient = _user("recipient@test.com")
         self.pkg = _package(self.creator, recipient=self.recipient, status="open")
-        self.url = reverse("reimbursements:package-delete", kwargs={"package_uuid": self.pkg.uuid})
+        self.url = reverse(
+            "reimbursements:package-delete", kwargs={"package_uuid": self.pkg.uuid}
+        )
 
     def test_recipient_cannot_delete_open_package_ajax_returns_403(self, _mock_rl):
         self.client.force_login(self.recipient)
-        response = self.client.post(self.url, headers={"x-requested-with": "XMLHttpRequest"})
+        response = self.client.post(
+            self.url, headers={"x-requested-with": "XMLHttpRequest"}
+        )
         self.assertEqual(response.status_code, 403)
         self.assertIn("error", response.json())
         self.pkg.refresh_from_db()
@@ -505,7 +523,9 @@ class PackageDeleteViewTest(TestCase):
     def test_repeat_ajax_delete_of_deleted_package_returns_404(self, _mock_rl):
         self.client.force_login(self.creator)
         self.client.post(self.url, headers={"x-requested-with": "XMLHttpRequest"})
-        response = self.client.post(self.url, headers={"x-requested-with": "XMLHttpRequest"})
+        response = self.client.post(
+            self.url, headers={"x-requested-with": "XMLHttpRequest"}
+        )
         self.assertEqual(response.status_code, 404)
 
     def test_ajax_delete_failure_returns_502_and_keeps_package(self, _mock_rl):
@@ -514,7 +534,9 @@ class PackageDeleteViewTest(TestCase):
             "reimbursements.services.revoke_package_access",
             side_effect=RuntimeError("boom"),
         ):
-            response = self.client.post(self.url, headers={"x-requested-with": "XMLHttpRequest"})
+            response = self.client.post(
+                self.url, headers={"x-requested-with": "XMLHttpRequest"}
+            )
         self.assertEqual(response.status_code, 502)
         self.assertIn("error", response.json())
         self.pkg.refresh_from_db()

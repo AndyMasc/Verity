@@ -13,7 +13,9 @@ from ._helpers import make_plaid_record, make_doc_record
 
 class MergeLogModelTest(TestCase):
     def setUp(self):
-        self.user = User.objects.create_user(username="merge_log_model", password="pass")
+        self.user = User.objects.create_user(
+            username="merge_log_model", password="pass"
+        )
         self.plaid = make_plaid_record(self.user, "Model Test")
         self.doc = make_doc_record(self.user, "Model Test")
         self.log = MergeLog.objects.create(
@@ -70,17 +72,23 @@ class AutoMatchSignalTest(TestCase):
         )
 
     def test_skip_on_inactive(self):
-        record = Record.objects.create(user=self.user, title="Test", record_type="expense_receipt")
+        record = Record.objects.create(
+            user=self.user, title="Test", record_type="expense_receipt"
+        )
         record.is_active = False
         self._assert_on_commit_not_called(lambda: record.save())
 
     def test_skip_on_skip_flag(self):
-        record = Record.objects.create(user=self.user, title="Test", record_type="expense_receipt")
+        record = Record.objects.create(
+            user=self.user, title="Test", record_type="expense_receipt"
+        )
         record._skip_auto_match = True
         self._assert_on_commit_not_called(lambda: record.save())
 
     def test_runs_on_update(self):
-        record = Record.objects.create(user=self.user, title="Test", record_type="expense_receipt")
+        record = Record.objects.create(
+            user=self.user, title="Test", record_type="expense_receipt"
+        )
         record.title = "Updated"
         self._assert_on_commit_called(lambda: record.save())
 

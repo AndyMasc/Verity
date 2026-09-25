@@ -68,8 +68,12 @@ class RecordModelTest(TestCase):
         self.assertTrue(self.record.is_active)
 
     def test_ordering_by_last_edited_desc(self):
-        r1 = Record.objects.create(user=self.user, title="First", record_type="expense_receipt")
-        r2 = Record.objects.create(user=self.user, title="Second", record_type="voucher")
+        r1 = Record.objects.create(
+            user=self.user, title="First", record_type="expense_receipt"
+        )
+        r2 = Record.objects.create(
+            user=self.user, title="Second", record_type="voucher"
+        )
         qs = Record.objects.all()
         self.assertEqual(qs.first(), r2)
 
@@ -316,7 +320,9 @@ class RecordModelExpiryNotificationTest(TestCase):
         self.user = User.objects.create_user(username="testuser", password="pass")
 
     def test_expiry_notification_sent_default(self):
-        record = Record.objects.create(user=self.user, title="Test", record_type="expense_receipt")
+        record = Record.objects.create(
+            user=self.user, title="Test", record_type="expense_receipt"
+        )
         self.assertFalse(record.expiry_notification_sent)
 
 

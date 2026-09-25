@@ -33,7 +33,9 @@ class ArchiveRecord(LoginRequiredMixin, View):
 
     @method_decorator(ratelimit(key="user", rate="30/m", method="POST", block=True))
     def post(self, request: HttpRequest, record_id: int) -> HttpResponse:
-        record = get_object_or_404(Record, id=record_id, user=request.user, is_active=True)
+        record = get_object_or_404(
+            Record, id=record_id, user=request.user, is_active=True
+        )
         archive_record(request.user, record)
         if request.headers.get("HX-Request") == "true":
             response = HttpResponse(status=204)
@@ -48,7 +50,9 @@ class UnarchiveRecord(LoginRequiredMixin, View):
 
     @method_decorator(ratelimit(key="user", rate="30/m", method="POST", block=True))
     def post(self, request: HttpRequest, record_id: int) -> HttpResponse:
-        record = get_object_or_404(Record, id=record_id, user=request.user, is_active=False)
+        record = get_object_or_404(
+            Record, id=record_id, user=request.user, is_active=False
+        )
         unarchive_record(request.user, record)
         if request.headers.get("HX-Request") == "true":
             response = HttpResponse(status=200)

@@ -117,7 +117,9 @@ class PricingContextTests(TestCase):
         archived.save(update_fields=["stripe_data"])
 
         context = services.pricing_context(self._user())
-        pro_card = next(p for p in context["base_plans"] if p.id == metadata.VERITY_PRO.stripe_id)
+        pro_card = next(
+            p for p in context["base_plans"] if p.id == metadata.VERITY_PRO.stripe_id
+        )
         self.assertEqual(pro_card.checkout_price_id, "price_keep")
 
 
@@ -179,7 +181,9 @@ class AlreadyActiveTests(TestCase):
 
     def _card(self, context, meta):
         return next(
-            p for p in context["base_plans"] + context["storage_plans"] if p.id == meta.stripe_id
+            p
+            for p in context["base_plans"] + context["storage_plans"]
+            if p.id == meta.stripe_id
         )
 
     def test_free_user_has_no_active_plan(self):
@@ -192,7 +196,9 @@ class AlreadyActiveTests(TestCase):
         self._subscribe(metadata.VERITY_PRO)
         context = services.pricing_context(self.user)
         self.assertTrue(self._card(context, metadata.VERITY_PRO).already_active)
-        self.assertFalse(self._card(context, metadata.STORAGE_UPGRADE_10).already_active)
+        self.assertFalse(
+            self._card(context, metadata.STORAGE_UPGRADE_10).already_active
+        )
 
     def test_held_storage_plan_is_marked_active(self):
         self._product(metadata.VERITY_PRO)

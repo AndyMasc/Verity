@@ -137,11 +137,15 @@ def _txn_to_record_defaults(
     primary_category = categories[0] if categories else ""
     user = plaid_item.user
 
-    auto_create_enabled = getattr(user.settings, "auto_create_and_organize_folders", True)
+    auto_create_enabled = getattr(
+        user.settings, "auto_create_and_organize_folders", True
+    )
 
     matched_folder = None
     if auto_create_enabled:
-        matched_folder = choose_folder(user, primary_category, folder_cache=folder_cache)
+        matched_folder = choose_folder(
+            user, primary_category, folder_cache=folder_cache
+        )
 
     raw_date = txn.get("authorized_date") or txn["date"]
     if isinstance(raw_date, str):
@@ -162,16 +166,18 @@ def _txn_to_record_defaults(
         "notes": primary_category,
         "folder": matched_folder,
     }
-    defaults["payment_method"] = _get_payment_method(plaid_item, txn.get("account_id", ""))
+    defaults["payment_method"] = _get_payment_method(
+        plaid_item, txn.get("account_id", "")
+    )
     return defaults
 
 
 def _process_removed_transactions(data: dict[str, Any], stats: dict[str, int]) -> None:
     """Process removed transactions and update stats."""
     for txn in data.get("removed", []):
-        archived = Record.objects.filter(plaid_transaction_id=txn["transaction_id"]).update(
-            is_active=False, last_edited=timezone.now()
-        )
+        archived = Record.objects.filter(
+            plaid_transaction_id=txn["transaction_id"]
+        ).update(is_active=False, last_edited=timezone.now())
         stats["removed"] += archived
 
 
@@ -200,7 +206,9 @@ def _process_added_modified_transactions(
     return to_create, to_update
 
 
-def _bulk_create_update_records(to_create: list[Record], to_update: list[Record]) -> None:
+def _bulk_create_update_records(
+    to_create: list[Record], to_update: list[Record]
+) -> None:
     """Bulk create and update records."""
     if to_create:
         Record.objects.bulk_create(to_create)
@@ -226,7 +234,9 @@ def _bulk_create_update_records(to_create: list[Record], to_update: list[Record]
         )
 
 
-def _match_records_to_documents(plaid_item: PlaidItem, plaid_item_id: int | str) -> None:
+def _match_records_to_documents(
+    plaid_item: PlaidItem, plaid_item_id: int | str
+) -> None:
     """Match synced records to existing uploaded documents."""
     try:
         from records.matching import try_match_plaid_record
@@ -238,7 +248,9 @@ def _match_records_to_documents(plaid_item: PlaidItem, plaid_item_id: int | str)
         ):
             try_match_plaid_record(plaid_record)
     except Exception:
-        logger.exception("Error matching plaid records to documents for item %s", plaid_item_id)
+        logger.exception(
+            "Error matching plaid records to documents for item %s", plaid_item_id
+        )
 
 
 def _fetch_sync_page(plaid_item: PlaidItem, cursor: str) -> dict[str, Any] | None:
@@ -307,7 +319,9 @@ def sync_and_convert_for_item_task(plaid_item_id: int | str) -> dict[str, Any]:
     existing uploaded documents. Retries with exponential backoff on API errors.
     """
     try:
-        plaid_item: PlaidItem = PlaidItem.objects.select_related("user").get(id=plaid_item_id)
+        plaid_item: PlaidItem = PlaidItem.objects.select_related("user").get(
+            id=plaid_item_id
+        )
     except PlaidItem.DoesNotExist:
         return {"error": f"PlaidItem {plaid_item_id} not found"}
 

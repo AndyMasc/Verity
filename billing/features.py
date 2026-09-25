@@ -22,7 +22,9 @@ FREE_STORAGE_LIMIT = f"{FREE_STORAGE_LIMIT_GB * 1000} MB cloud storage"
 
 # Storage upgrade tiers
 STORAGE_ADDITIONAL_GB_1 = 1  # $2/mo - available to everyone (free or paid)
-STORAGE_UPGRADE_GB_1 = f"{STORAGE_ADDITIONAL_GB_1} GB cloud storage (available to all plans)"
+STORAGE_UPGRADE_GB_1 = (
+    f"{STORAGE_ADDITIONAL_GB_1} GB cloud storage (available to all plans)"
+)
 
 STORAGE_ADDITIONAL_GB_5 = 5  # $4/mo - Pro only
 STORAGE_UPGRADE_GB_5 = f"{STORAGE_ADDITIONAL_GB_5} GB cloud storage (Pro users only)"

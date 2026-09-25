@@ -141,7 +141,9 @@ class TestExtract:
     @patch("documents.services.ocr.validate_uploaded_bytes", return_value=None)
     @patch("documents.services.ocr.process_image")
     @patch("documents.services.ocr.call_gemini", return_value={"title": "Receipt"})
-    def test_full_pipeline_success(self, mock_gemini, mock_process, mock_validate, mock_r2, user):
+    def test_full_pipeline_success(
+        self, mock_gemini, mock_process, mock_validate, mock_r2, user
+    ):
         mock_part = MagicMock()
         mock_process.return_value = mock_part
         doc = DocumentData.objects.create(
@@ -167,7 +169,9 @@ class TestExtract:
         )
         result = extract(doc.id)
         assert "error" in result
-        assert "Unable to validate" in result["error"] or "not allowed" in result["error"]
+        assert (
+            "Unable to validate" in result["error"] or "not allowed" in result["error"]
+        )
         mock_gemini.assert_not_called()
         doc.refresh_from_db()
         assert doc.status == DocumentStatus.ERROR
@@ -190,7 +194,9 @@ class TestExtract:
         "documents.services.ocr.CurrentMessage.get_current_message",
         return_value=_retry_message(retries=0),
     )
-    def test_retryable_failure_reraises_without_marking_error(self, mock_msg, mock_r2, user):
+    def test_retryable_failure_reraises_without_marking_error(
+        self, mock_msg, mock_r2, user
+    ):
         doc = DocumentData.objects.create(
             user=user,
             filepath="users/1/doc.pdf",

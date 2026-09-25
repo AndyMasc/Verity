@@ -83,7 +83,9 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "plaid_transaction_id",
-                    models.CharField(blank=True, db_index=True, max_length=255, null=True),
+                    models.CharField(
+                        blank=True, db_index=True, max_length=255, null=True
+                    ),
                 ),
                 ("history_id", models.AutoField(primary_key=True, serialize=False)),
                 ("history_date", models.DateTimeField(db_index=True)),

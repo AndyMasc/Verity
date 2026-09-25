@@ -40,7 +40,9 @@ class CalculateMatchScoreTest(TestCase):
         self.assertLess(score, MERGE_SCORE_THRESHOLD)
 
     def test_balance_only_match(self):
-        doc = make_doc_record(self.user, "Unrelated", merchant="", transaction_date=None)
+        doc = make_doc_record(
+            self.user, "Unrelated", merchant="", transaction_date=None
+        )
         score = calculate_match_score(self.plaid, doc)
         self.assertGreaterEqual(score, 40)
         self.assertLess(score, 50)
@@ -63,7 +65,9 @@ class CalculateMatchScoreTest(TestCase):
         self.assertEqual(score, 10)
 
     def test_title_partial_match(self):
-        doc = make_doc_record(self.user, "amazon", merchant="", balance=None, transaction_date=None)
+        doc = make_doc_record(
+            self.user, "amazon", merchant="", balance=None, transaction_date=None
+        )
         score = calculate_match_score(self.plaid, doc)
         self.assertEqual(score, 8)
 
@@ -73,12 +77,16 @@ class CalculateMatchScoreTest(TestCase):
         self.assertEqual(score, 110)
 
     def test_date_one_day_off(self):
-        doc = make_doc_record(self.user, "Amazon Purchase", transaction_date=date(2024, 6, 16))
+        doc = make_doc_record(
+            self.user, "Amazon Purchase", transaction_date=date(2024, 6, 16)
+        )
         score = calculate_match_score(self.plaid, doc)
         self.assertEqual(score, 110)
 
     def test_both_none_balance_and_date(self):
-        doc = make_doc_record(self.user, "Amazon Purchase", balance=None, transaction_date=None)
+        doc = make_doc_record(
+            self.user, "Amazon Purchase", balance=None, transaction_date=None
+        )
         score = calculate_match_score(self.plaid, doc)
         self.assertGreaterEqual(score, 50)
 
@@ -170,7 +178,9 @@ class FindDocumentMatchesForPlaidTest(TestCase):
         self.assertEqual(matches[0][0].pk, doc.pk)
 
     def test_returns_empty_when_no_match(self):
-        make_doc_record(self.user, "Not Matching", balance=Decimal("999.99"), merchant="Different")
+        make_doc_record(
+            self.user, "Not Matching", balance=Decimal("999.99"), merchant="Different"
+        )
         matches = find_document_matches_for_plaid(self.plaid)
         self.assertEqual(matches, [])
 

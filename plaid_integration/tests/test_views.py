@@ -55,11 +55,15 @@ class PlaidViewsTest(TestCase):
     @patch("plaid_integration.views.link.client")
     def test_create_update_link_token(self, mock_client):
         mock_client.link_token_create.return_value = {"link_token": "link-update"}
-        response = self.client.post(reverse("plaid:create_update_link_token", args=["item-123"]))
+        response = self.client.post(
+            reverse("plaid:create_update_link_token", args=["item-123"])
+        )
         self.assertEqual(response.status_code, 200)
 
     def test_create_update_link_token_not_found(self):
-        response = self.client.post(reverse("plaid:create_update_link_token", args=["nonexistent"]))
+        response = self.client.post(
+            reverse("plaid:create_update_link_token", args=["nonexistent"])
+        )
         self.assertEqual(response.status_code, 404)
 
     def test_plaid_status_connected(self):
@@ -94,7 +98,9 @@ class PlaidViewsTest(TestCase):
     def test_disconnect_bank_plaid_failure_keeps_item(self, mock_client):
         import plaid
 
-        mock_client.item_remove.side_effect = plaid.ApiException(status=502, reason="Bad Gateway")
+        mock_client.item_remove.side_effect = plaid.ApiException(
+            status=502, reason="Bad Gateway"
+        )
         response = self.client.post(reverse("plaid:disconnect", args=["item-123"]))
         self.assertEqual(response.status_code, 502)
         self.assertIn("error", response.json())

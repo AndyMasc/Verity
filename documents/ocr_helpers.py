@@ -38,7 +38,8 @@ def ocr_data_to_form_initial(data: dict | None) -> dict:
 
     if isinstance(products_data, list):
         processed_products = [
-            json.dumps(p) if isinstance(p, (dict, list)) else str(p).strip() for p in products_data
+            json.dumps(p) if isinstance(p, (dict, list)) else str(p).strip()
+            for p in products_data
         ]
         products_value = "\n".join(processed_products).strip()
     else:
@@ -120,7 +121,9 @@ def _resize_image(img: np.ndarray) -> np.ndarray:
     h, w = img.shape[:2]
     if max(h, w) > MAX_DIMENSION:
         scale = MAX_DIMENSION / max(h, w)
-        img = cv2.resize(img, (int(w * scale), int(h * scale)), interpolation=cv2.INTER_AREA)
+        img = cv2.resize(
+            img, (int(w * scale), int(h * scale)), interpolation=cv2.INTER_AREA
+        )
     return img
 
 

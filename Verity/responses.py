@@ -29,8 +29,12 @@ def api_error(
         body["error"]["details"] = details
 
     if request.headers.get("HX-Request") == "true":
-        response = HttpResponse(json.dumps(body), status=status, content_type="application/json")
-        response["HX-Trigger"] = json.dumps({"showToast": {"text": message, "tags": "error"}})
+        response = HttpResponse(
+            json.dumps(body), status=status, content_type="application/json"
+        )
+        response["HX-Trigger"] = json.dumps(
+            {"showToast": {"text": message, "tags": "error"}}
+        )
         return response
 
     return JsonResponse(body, status=status)

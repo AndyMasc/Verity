@@ -61,7 +61,9 @@ class RequestVerificationCodeForm(forms.Form):
                 code="turnstile_missing",
             )
 
-        result = verify_turnstile_token(token, ACTION_REQUEST_VERIFICATION, self.request)
+        result = verify_turnstile_token(
+            token, ACTION_REQUEST_VERIFICATION, self.request
+        )
 
         if not result.get("success"):
             logger.warning("Turnstile verification failed on code request: %s", result)

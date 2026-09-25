@@ -124,7 +124,11 @@ def _check_completed_payments() -> list[Drift]:
                     },
                 )
             )
-        if currency and payment.payer_currency and currency != payment.payer_currency.lower():
+        if (
+            currency
+            and payment.payer_currency
+            and currency != payment.payer_currency.lower()
+        ):
             drifts.append(
                 Drift(
                     kind="settled_currency_mismatch",

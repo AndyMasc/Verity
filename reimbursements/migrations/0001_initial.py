@@ -59,7 +59,9 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "records",
-                    models.ManyToManyField(related_name="packages", to="records.record"),
+                    models.ManyToManyField(
+                        related_name="packages", to="records.record"
+                    ),
                 ),
             ],
             options={

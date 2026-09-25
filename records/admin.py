@@ -70,7 +70,9 @@ class RecordAdmin(admin.ModelAdmin):
                 obj.delete()
 
     def get_deleted_objects(self, queryset, request):
-        deleted, protected, perms_needed, view_only = super().get_deleted_objects(queryset, request)
+        deleted, protected, perms_needed, view_only = super().get_deleted_objects(
+            queryset, request
+        )
         return deleted, protected, perms_needed, view_only
 
     def has_delete_permission(self, request, obj=None):  # noqa: ARG002

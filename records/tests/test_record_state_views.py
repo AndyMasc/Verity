@@ -272,7 +272,9 @@ class BulkArchiveViewTest(TestCase):
 
     def test_post_not_allowed_without_json(self):
         self.client.force_login(self.user)
-        response = self.client.post(self.url, data="not json", content_type="text/plain")
+        response = self.client.post(
+            self.url, data="not json", content_type="text/plain"
+        )
         self.assertEqual(response.status_code, 400)
 
     def test_bulk_archive_archives_records(self):
@@ -287,7 +289,9 @@ class BulkArchiveViewTest(TestCase):
         self.assertEqual(response.status_code, 200)
         for r in Record.objects.filter(pk__in=ids):
             self.assertFalse(r.is_active)
-        self.assertTrue(Record.objects.filter(pk=self.records[2].pk, is_active=True).exists())
+        self.assertTrue(
+            Record.objects.filter(pk=self.records[2].pk, is_active=True).exists()
+        )
 
     def test_bulk_archive_creates_audit_logs(self):
         self.client.force_login(self.user)

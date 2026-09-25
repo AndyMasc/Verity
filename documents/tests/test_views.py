@@ -190,7 +190,9 @@ class ConfirmUploadViewTest(TestCase):
 
     def test_confirm_not_found(self):
         self.client.force_login(self.user)
-        response = self.client.post(self.url, {"document_id": 99999, "key": "nonexistent"})
+        response = self.client.post(
+            self.url, {"document_id": 99999, "key": "nonexistent"}
+        )
         self.assertEqual(response.status_code, 404)
 
     def test_confirm_no_id(self):

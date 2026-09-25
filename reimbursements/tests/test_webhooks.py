@@ -78,7 +78,9 @@ class StripeWebhookTest(TestCase):
         self.assertEqual(pkg.status, ReimbursementPackage.Status.OPEN)
 
     @patch("reimbursements.services.retrieve_checkout_session")
-    def test_checkout_session_missing_payment_raises_on_transient_error(self, mock_retrieve):
+    def test_checkout_session_missing_payment_raises_on_transient_error(
+        self, mock_retrieve
+    ):
         mock_retrieve.side_effect = stripe.error.StripeError("Network error")
 
         with self.assertRaises(PackagePayment.DoesNotExist):
@@ -88,7 +90,9 @@ class StripeWebhookTest(TestCase):
                     {
                         "id": "cs_nonexistent",
                         "payment_status": "paid",
-                        "metadata": {"package_uuid": "00000000-0000-0000-0000-000000000000"},
+                        "metadata": {
+                            "package_uuid": "00000000-0000-0000-0000-000000000000"
+                        },
                     },
                 )
             )
@@ -105,7 +109,9 @@ class StripeWebhookTest(TestCase):
                 {
                     "id": "cs_nonexistent",
                     "payment_status": "paid",
-                    "metadata": {"package_uuid": "00000000-0000-0000-0000-000000000000"},
+                    "metadata": {
+                        "package_uuid": "00000000-0000-0000-0000-000000000000"
+                    },
                 },
             )
         )
@@ -135,7 +141,9 @@ class StripeWebhookTest(TestCase):
         process_stripe_event(event)
         process_stripe_event(event)
 
-        self.assertEqual(AuditLog.objects.filter(details__event="package_paid").count(), 1)
+        self.assertEqual(
+            AuditLog.objects.filter(details__event="package_paid").count(), 1
+        )
 
     def test_async_payment_succeeded(self):
         creator = _user("creator@test.com")
@@ -257,7 +265,9 @@ class StripeWebhookTest(TestCase):
 
     @patch("reimbursements.services.create_refund")
     @patch("reimbursements.services.retrieve_charge")
-    def test_transfer_failed_resolves_via_source_charge(self, mock_retrieve, mock_refund):
+    def test_transfer_failed_resolves_via_source_charge(
+        self, mock_retrieve, mock_refund
+    ):
         creator = _user("creator@test.com")
         payer = _user("payer@test.com")
         pkg = _package(creator, payer)
@@ -288,7 +298,9 @@ class StripeWebhookTest(TestCase):
         )
 
         mock_retrieve.assert_called_once_with("ch_transfer_test")
-        payment = PackagePayment.objects.get(stripe_checkout_session_id="cs_transfer_test")
+        payment = PackagePayment.objects.get(
+            stripe_checkout_session_id="cs_transfer_test"
+        )
         self.assertFalse(payment.is_completed)
         pkg.refresh_from_db()
         self.assertEqual(pkg.status, ReimbursementPackage.Status.OPEN)
@@ -301,7 +313,9 @@ class StripeWebhookTest(TestCase):
         pkg.refresh_from_db()
 
         process_stripe_event(
-            self._event("transfer.failed", {"id": "tr_unknown", "failure_message": "unknown"})
+            self._event(
+                "transfer.failed", {"id": "tr_unknown", "failure_message": "unknown"}
+            )
         )
 
         pkg.refresh_from_db()
@@ -374,7 +388,9 @@ class StripeWebhookTest(TestCase):
             )
         )
 
-        payment = PackagePayment.objects.get(stripe_checkout_session_id="cs_refund_race")
+        payment = PackagePayment.objects.get(
+            stripe_checkout_session_id="cs_refund_race"
+        )
         self.assertFalse(payment.is_completed)
         self.assertEqual(payment.stripe_payment_intent_id, "pi_refund_race")
         pkg.refresh_from_db()
@@ -382,7 +398,9 @@ class StripeWebhookTest(TestCase):
 
     @patch("reimbursements.services.create_refund")
     @patch("reimbursements.services.retrieve_payment_intent")
-    def test_charge_failed_resolves_via_payment_intent_metadata(self, mock_pi, mock_refund):
+    def test_charge_failed_resolves_via_payment_intent_metadata(
+        self, mock_pi, mock_refund
+    ):
         creator = _user("creator@test.com")
         payer = _user("payer@test.com")
         pkg = _package(creator, payer)
@@ -535,7 +553,9 @@ class StripeWebhookTest(TestCase):
         pkg.refresh_from_db()
         self.assertTrue(payment.is_completed)
         self.assertEqual(pkg.status, ReimbursementPackage.Status.PAID)
-        self.assertEqual(AuditLog.objects.filter(details__event="charge_dispute_won").count(), 1)
+        self.assertEqual(
+            AuditLog.objects.filter(details__event="charge_dispute_won").count(), 1
+        )
 
     @patch("reimbursements.services.retrieve_charge")
     def test_dispute_unknown_charge_is_noop(self, mock_charge):
@@ -616,18 +636,24 @@ class ApplyPaidSessionTest(TestCase):
             "amount_total": 5000,
             "currency": "usd",
         }
-        self.assertTrue(apply_paid_session(self.payment, session, source="payment_synced"))
+        self.assertTrue(
+            apply_paid_session(self.payment, session, source="payment_synced")
+        )
         self.payment.refresh_from_db()
         self.pkg.refresh_from_db()
         self.assertTrue(self.payment.is_completed)
         self.assertEqual(self.payment.stripe_payment_intent_id, "pi_apply")
         self.assertEqual(self.pkg.status, ReimbursementPackage.Status.PAID)
-        self.assertEqual(AuditLog.objects.filter(details__event="payment_synced").count(), 1)
+        self.assertEqual(
+            AuditLog.objects.filter(details__event="payment_synced").count(), 1
+        )
         mock_notify.assert_called_once_with(self.pkg.pk, self.payer.pk)
 
     def test_amount_mismatch_is_noop(self):
         session = {"id": "cs_apply", "amount_total": 9000, "currency": "usd"}
-        self.assertFalse(apply_paid_session(self.payment, session, source="payment_synced"))
+        self.assertFalse(
+            apply_paid_session(self.payment, session, source="payment_synced")
+        )
         self.payment.refresh_from_db()
         self.pkg.refresh_from_db()
         self.assertFalse(self.payment.is_completed)
@@ -640,7 +666,9 @@ class ApplyPaidSessionTest(TestCase):
             amount_total=5000,
             currency="usd",
         )
-        self.assertTrue(apply_paid_session(self.payment, session, source="payment_synced"))
+        self.assertTrue(
+            apply_paid_session(self.payment, session, source="payment_synced")
+        )
         self.payment.refresh_from_db()
         self.assertTrue(self.payment.is_completed)
         self.assertEqual(self.payment.stripe_payment_intent_id, "pi_obj")
@@ -654,6 +682,10 @@ class ApplyPaidSessionTest(TestCase):
         self.pkg.refresh_from_db()
 
         session = {"id": "cs_apply", "amount_total": 5000, "currency": "usd"}
-        self.assertTrue(apply_paid_session(self.payment, session, source="payment_synced"))
-        self.assertEqual(AuditLog.objects.filter(details__event="payment_synced").count(), 0)
+        self.assertTrue(
+            apply_paid_session(self.payment, session, source="payment_synced")
+        )
+        self.assertEqual(
+            AuditLog.objects.filter(details__event="payment_synced").count(), 0
+        )
         mock_notify.assert_not_called()

@@ -79,6 +79,24 @@ LOGGING = {
             "level": "WARNING",
             "propagate": False,
         },
+        # Dramatiq's AMQP (pika) broker drops idle connections; dramatiq
+        # reconnects and retries, but pika logs the recovered drops at ERROR
+        # level which would flood error tracking (LoggingIntegration).
+        "pika.adapters.blocking_connection": {
+            "handlers": [],
+            "level": "CRITICAL",
+            "propagate": False,
+        },
+        "pika.adapters.base_connection": {
+            "handlers": [],
+            "level": "CRITICAL",
+            "propagate": False,
+        },
+        "pika.adapters.utils.io_services_utils": {
+            "handlers": [],
+            "level": "CRITICAL",
+            "propagate": False,
+        },
         "documents": {
             "handlers": ["console"],
             "level": "INFO",

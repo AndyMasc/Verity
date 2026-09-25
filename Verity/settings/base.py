@@ -30,34 +30,38 @@ database_config = env.db("DATABASE_URL", default="sqlite:///db.sqlite3")
 if "sqlite" in database_config["ENGINE"]:
     database_config.setdefault("OPTIONS", {})["timeout"] = 30
 else:
-    database_config.setdefault("OPTIONS", {})["sslmode"] = env("DB_SSLMODE", default="require")
+    database_config.setdefault("OPTIONS", {})["sslmode"] = env(
+        "DB_SSLMODE", default="require"
+    )
+    database_config.setdefault("OPTIONS", {})["connect_timeout"] = env.int(
+        "DB_CONNECT_TIMEOUT", default=15
+    )
     database_config["DISABLE_SERVER_SIDE_CURSORS"] = True
+
+# Neon Postgres suspends idle computes and its pooled endpoint recycles
+# connections, so long-lived app-side connections come back dead ("SSL
+# connection has been closed unexpectedly"). Treat Neon as connectionless:
+# open fresh per request and let the pooler multiplex, and use a backend that
+# retries the transient mid-handshake drops.
+_db_host = database_config.get("HOST", "")
+_is_neon = bool(_db_host) and ".neon.tech" in _db_host
+if _is_neon:
+    database_config["ENGINE"] = "Verity.db.backends.postgresql"
+
 DATABASES = {"default": database_config}
-DATABASES["default"].setdefault("CONN_MAX_AGE", env.int("DB_CONN_MAX_AGE", default=600))
-DATABASES["default"]["CONN_HEALTH_CHECKS"] = env.bool("DB_CONN_HEALTH_CHECKS", default=True)
-
-if "postgres" in database_config["ENGINE"] and env.bool("DB_PREFER_IPV4", default=False):
-    import socket
-
-    host = database_config.get("HOST")
-    try:
-        socket.inet_aton(host or "")
-    except OSError:
-        if host and ":" not in host:
-            try:
-                infos = socket.getaddrinfo(host, None, socket.AF_INET, socket.SOCK_STREAM)
-            except socket.gaierror:
-                infos = []
-            if infos:
-                database_config.setdefault("OPTIONS", {})["hostaddr"] = infos[0][4][0]
+DATABASES["default"].setdefault(
+    "CONN_MAX_AGE",
+    env.int("DB_CONN_MAX_AGE", default=0 if _is_neon else 600),
+)
+DATABASES["default"]["CONN_HEALTH_CHECKS"] = env.bool(
+    "DB_CONN_HEALTH_CHECKS", default=True
+)
 
 # Apps
 INSTALLED_APPS = [
     # Dramatiq
     "django_dramatiq",
     "django_periodiq",
-    # Cachalot
-    "cachalot",
     # Admin apps
     "django.contrib.admin",
     "django.contrib.auth",
@@ -227,7 +231,9 @@ AUTH_USER_MODEL = "billing.CustomUser"
 # Turnstile (Cloudflare CAPTCHA)
 TURNSTILE_SITEKEY = env("TURNSTILE_SITEKEY", default="0x4AAAAAAE-iMWMy2QJlviQc")
 TURNSTILE_SECRET = env("TURNSTILE_SECRET", default="")
-TURNSTILE_HOSTNAMES = env.list("TURNSTILE_HOSTNAMES", default=["localhost", "127.0.0.1"])
+TURNSTILE_HOSTNAMES = env.list(
+    "TURNSTILE_HOSTNAMES", default=["localhost", "127.0.0.1"]
+)
 TURNSTILE_ENABLED = env.bool("TURNSTILE_ENABLED", default=True)
 
 # Compressor
@@ -287,9 +293,13 @@ SESSION_COOKIE_AGE = 60 * 60 * 24 * 7
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
 # Email
-EMAIL_BACKEND = "core.backends.DramatiqEmailBackend"  # Queue email sends as background tasks
+EMAIL_BACKEND = (
+    "core.backends.DramatiqEmailBackend"  # Queue email sends as background tasks
+)
 ANYMAIL = {"RESEND_API_KEY": env("RESEND_API_KEY")}
-DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="Verity <notifications@veritypay.app>")
+DEFAULT_FROM_EMAIL = env(
+    "DEFAULT_FROM_EMAIL", default="Verity <notifications@veritypay.app>"
+)
 
 # Storage (S3/R2) - Uploads use signed urls in Cloudflare R2
 R2_ACCESS_KEY_ID = env("R2_ACCESS_KEY_ID")
@@ -396,6 +406,25 @@ LOGGING = {
             "level": "WARNING",
             "propagate": False,
         },
+        # Dramatiq's AMQP (pika) connections get dropped by the broker when
+        # idle for too long; dramatiq reconnects and retries so the send still
+        # succeeds, but pika logs the drops at ERROR level which would flood
+        # error tracking (Sentry/PostHog LoggingIntegration event_level).
+        "pika.adapters.blocking_connection": {
+            "handlers": [],
+            "level": "CRITICAL",
+            "propagate": False,
+        },
+        "pika.adapters.base_connection": {
+            "handlers": [],
+            "level": "CRITICAL",
+            "propagate": False,
+        },
+        "pika.adapters.utils.io_services_utils": {
+            "handlers": [],
+            "level": "CRITICAL",
+            "propagate": False,
+        },
         "documents": {
             "handlers": ["console"],
             "level": "INFO",
@@ -450,11 +479,7 @@ if _sentry_dsn:
             environment=env("SENTRY_ENVIRONMENT", default="production"),
             integrations=[
                 DjangoIntegration(),
-                # Project-wide server-side tracking: every WARNING+ log record
-                # becomes a Sentry/GlitchTip event, and INFO+ records attach as
-                # breadcrumbs. Notably captures handled failures such as the
-                # Turnstile "Action mismatch" rejections (logged as warnings in
-                # core.turnstile) that never raise a 5xx.
+                # Project-wide server-side tracking
                 LoggingIntegration(
                     level=logging.INFO,
                     event_level=logging.WARNING,

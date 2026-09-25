@@ -215,7 +215,9 @@ class SyncAndConvertTaskTest(TestCase):
         self.assertEqual(result, {"error": "ITEM_LOGIN_REQUIRED"})
         self.plaid_item.refresh_from_db()
         self.assertEqual(self.plaid_item.last_error_code, "ITEM_LOGIN_REQUIRED")
-        self.assertEqual(self.plaid_item.last_error_message, "A user login is required.")
+        self.assertEqual(
+            self.plaid_item.last_error_message, "A user login is required."
+        )
 
     @patch("records.matching.try_match_plaid_record")
     @patch("plaid_integration.tasks.client")

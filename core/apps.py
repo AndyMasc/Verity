@@ -23,7 +23,9 @@ class CoreConfig(AppConfig):
 
         if not project_token or not host:
             if settings.DEBUG:
-                missing_variable = "POSTHOG_PROJECT_TOKEN" if not project_token else "POSTHOG_HOST"
+                missing_variable = (
+                    "POSTHOG_PROJECT_TOKEN" if not project_token else "POSTHOG_HOST"
+                )
                 raise ImproperlyConfigured(
                     f"{missing_variable} variable required by PostHog is missing or un-configured, "
                     f"this causes events to be silently missed. This error stops appearing once "

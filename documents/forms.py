@@ -60,7 +60,9 @@ class DocumentUpdateForm(forms.ModelForm):
         model = DocumentData
         fields: ClassVar[list[str]] = ["title", "notes", "associated_record"]
         widgets: ClassVar[dict[str, object]] = {
-            "title": forms.TextInput(attrs={"maxlength": "200", "data-maxlength": "200"}),
+            "title": forms.TextInput(
+                attrs={"maxlength": "200", "data-maxlength": "200"}
+            ),
         }
 
     def __init__(self, *args, **kwargs):

@@ -20,7 +20,9 @@ from conftest import DocumentDataFactory
 
 def _counter(user) -> int:
     return (
-        CustomUser.objects.filter(pk=user.pk).values_list("storage_used_bytes", flat=True).first()
+        CustomUser.objects.filter(pk=user.pk)
+        .values_list("storage_used_bytes", flat=True)
+        .first()
     )
 
 

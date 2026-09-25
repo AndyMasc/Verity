@@ -183,7 +183,11 @@ def to_stripe_amount(amount: Decimal, currency: str) -> int:
     """Converts major currency units (e.g. 8.17 SGD) to Stripe minor units (cents/pesos/fils)."""
     decimals = get_currency_decimals(currency)
     multiplier = Decimal(10**decimals)
-    return int((Decimal(str(amount)) * multiplier).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+    return int(
+        (Decimal(str(amount)) * multiplier).quantize(
+            Decimal("1"), rounding=ROUND_HALF_UP
+        )
+    )
 
 
 def from_stripe_amount(amount_cents: int, currency: str) -> Decimal:

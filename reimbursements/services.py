@@ -70,7 +70,9 @@ def create_stripe_account(email: str, user_id: int) -> stripe.Account:
     )
 
 
-def create_account_link(account_id: str, refresh_url: str, return_url: str) -> stripe.AccountLink:
+def create_account_link(
+    account_id: str, refresh_url: str, return_url: str
+) -> stripe.AccountLink:
     """Create an account-onboarding AccountLink for the given Connect account."""
     _configure()
     return stripe.AccountLink.create(
@@ -138,7 +140,9 @@ def get_payment_success_package(user, package_uuid: str) -> ReimbursementPackage
         return None
 
     if package.status == ReimbursementPackage.Status.OPEN:
-        payment = package.payments.filter(is_completed=False).order_by("-created_at").first()
+        payment = (
+            package.payments.filter(is_completed=False).order_by("-created_at").first()
+        )
         if payment:
             from .tasks import sync_payment_status
 
@@ -180,14 +184,23 @@ def create_package_checkout(
         with transaction.atomic():
             locked = package.lock_for_payment()
             if locked is None:
-                return CheckoutOutcome(error="This package is no longer available for payment.")
+                return CheckoutOutcome(
+                    error="This package is no longer available for payment."
+                )
 
             latest_incomplete = (
-                locked.payments.filter(is_completed=False).order_by("-created_at").first()
+                locked.payments.filter(is_completed=False)
+                .order_by("-created_at")
+                .first()
             )
             if latest_incomplete is not None:
-                if latest_incomplete.stripe_checkout_session_id.startswith(PENDING_SESSION_PREFIX):
-                    if timezone.now() - latest_incomplete.created_at < PENDING_SESSION_STALENESS:
+                if latest_incomplete.stripe_checkout_session_id.startswith(
+                    PENDING_SESSION_PREFIX
+                ):
+                    if (
+                        timezone.now() - latest_incomplete.created_at
+                        < PENDING_SESSION_STALENESS
+                    ):
                         return CheckoutOutcome(
                             error=(
                                 "A checkout is already being prepared for this package. "
@@ -254,9 +267,13 @@ def create_package_checkout(
     idempotency_key = hashlib.sha256(f"checkout:{payment.pk}".encode()).hexdigest()
 
     try:
-        checkout_session = create_checkout_session(**checkout_args, idempotency_key=idempotency_key)
+        checkout_session = create_checkout_session(
+            **checkout_args, idempotency_key=idempotency_key
+        )
     except stripe.error.StripeError:
-        logger.exception("Failed to create Stripe Checkout Session for package %s", package.uuid)
+        logger.exception(
+            "Failed to create Stripe Checkout Session for package %s", package.uuid
+        )
         # Remove the claim so the next attempt starts clean; nothing financial
         # was recorded yet.
         payment.delete()

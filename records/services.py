@@ -27,7 +27,9 @@ def archive_record(user: User, record: Record) -> None:
     with transaction.atomic():
         record.is_active = False
         record.save(update_fields=["is_active"])
-        AuditLog.objects.create(user=user, action=AuditLog.Action.ARCHIVE, record=record)
+        AuditLog.objects.create(
+            user=user, action=AuditLog.Action.ARCHIVE, record=record
+        )
 
 
 def unarchive_record(user: User, record: Record) -> None:
@@ -35,14 +37,18 @@ def unarchive_record(user: User, record: Record) -> None:
     with transaction.atomic():
         record.is_active = True
         record.save(update_fields=["is_active"])
-        AuditLog.objects.create(user=user, action=AuditLog.Action.UNARCHIVE, record=record)
+        AuditLog.objects.create(
+            user=user, action=AuditLog.Action.UNARCHIVE, record=record
+        )
 
 
 def soft_delete_record(user: User, record: Record) -> None:
     """Soft-delete *record* and log the action."""
     with transaction.atomic():
         record.delete()
-        AuditLog.objects.create(user=user, action=AuditLog.Action.SOFT_DELETE, record=record)
+        AuditLog.objects.create(
+            user=user, action=AuditLog.Action.SOFT_DELETE, record=record
+        )
 
 
 def hard_delete_record(user: User, record: Record) -> None:
@@ -90,7 +96,9 @@ def kickoff_ocr_scan(user: User, document) -> str | None:
             "unlimited Quick Scans, or enter the details manually."
         )
         cache.set(cache_key, {"error": message}, timeout=600)
-        set_document_status(document.id, DocumentStatus.ERROR, ocr_error="scan_limit_reached")
+        set_document_status(
+            document.id, DocumentStatus.ERROR, ocr_error="scan_limit_reached"
+        )
         return message
 
     if document.did_ocr:
@@ -147,7 +155,9 @@ def create_record_from_ocr(document_id: int) -> Record | None:
     from documents.ocr_helpers import ocr_data_to_form_initial
 
     with cachalot_disabled():
-        document = DocumentData.objects.select_related("user").filter(id=document_id).first()
+        document = (
+            DocumentData.objects.select_related("user").filter(id=document_id).first()
+        )
     if document is None:
         return None
     if document.associated_record_id:

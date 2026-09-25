@@ -14,7 +14,9 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="reimbursementpackage",
             name="recipient_email",
-            field=models.EmailField(blank=True, db_index=True, max_length=254, null=True),
+            field=models.EmailField(
+                blank=True, db_index=True, max_length=254, null=True
+            ),
         ),
         migrations.AlterField(
             model_name="reimbursementpackage",

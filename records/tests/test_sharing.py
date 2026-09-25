@@ -47,7 +47,9 @@ class SharingTestCase(TestCase):
 
     def _detail_post(self, user, data):
         self.client.force_login(user)
-        return self.client.post(reverse("records:record_detail", args=[self.record.pk]), data)
+        return self.client.post(
+            reverse("records:record_detail", args=[self.record.pk]), data
+        )
 
 
 class TestQuerysetScoping(SharingTestCase):
@@ -56,10 +58,12 @@ class TestQuerysetScoping(SharingTestCase):
         assert self.record.pk in Record.objects.visible_to(self.recipient).values_list(
             "pk", flat=True
         )
-        assert self.record.pk in Record.objects.visible_to(self.owner).values_list("pk", flat=True)
-        assert self.record.pk not in Record.objects.visible_to(self.stranger).values_list(
+        assert self.record.pk in Record.objects.visible_to(self.owner).values_list(
             "pk", flat=True
         )
+        assert self.record.pk not in Record.objects.visible_to(
+            self.stranger
+        ).values_list("pk", flat=True)
 
     def test_shared_with_me_excludes_own(self):
         self._share([self.recipient.email])
@@ -68,7 +72,9 @@ class TestQuerysetScoping(SharingTestCase):
 
     def test_visible_to_no_duplicates(self):
         self._share([self.recipient.email])
-        assert Record.objects.visible_to(self.owner).filter(pk=self.record.pk).count() == 1
+        assert (
+            Record.objects.visible_to(self.owner).filter(pk=self.record.pk).count() == 1
+        )
 
 
 class TestShareService(SharingTestCase):
@@ -78,7 +84,9 @@ class TestShareService(SharingTestCase):
         share = shares[0]
         assert share.user == self.recipient
         assert share.shared_by == self.owner
-        audit = AuditLog.objects.filter(record=self.record, action=AuditLog.Action.SHARE).first()
+        audit = AuditLog.objects.filter(
+            record=self.record, action=AuditLog.Action.SHARE
+        ).first()
         assert audit is not None and audit.user == self.owner
         assert audit.details == {
             "user": self.recipient.email,
@@ -92,7 +100,10 @@ class TestShareService(SharingTestCase):
         self._share([self.recipient.email])
         second, _ = self._share([self.recipient.email])
         assert second == []
-        assert RecordShare.objects.filter(record=self.record, user=self.recipient).count() == 1
+        assert (
+            RecordShare.objects.filter(record=self.record, user=self.recipient).count()
+            == 1
+        )
 
     def test_self_share_rejected(self):
         with self.assertRaises(share_services.SelfShareError):
@@ -120,9 +131,9 @@ class TestShareService(SharingTestCase):
         share.refresh_from_db()
         assert share.revoked_at is not None  # row kept for the audit trail
         assert not share.is_active
-        assert self.record.pk not in Record.objects.visible_to(self.recipient).values_list(
-            "pk", flat=True
-        )
+        assert self.record.pk not in Record.objects.visible_to(
+            self.recipient
+        ).values_list("pk", flat=True)
         audit = AuditLog.objects.filter(
             record=self.record, action=AuditLog.Action.REVOKE_SHARE
         ).first()
@@ -130,7 +141,9 @@ class TestShareService(SharingTestCase):
 
     def test_share_idempotent_across_revocation(self):
         shares, _ = self._share([self.recipient.email])
-        share_services.revoke_share(record=self.record, actor=self.owner, share=shares[0])
+        share_services.revoke_share(
+            record=self.record, actor=self.owner, share=shares[0]
+        )
         renewed, _ = self._share([self.recipient.email])
         assert len(renewed) == 1  # re-grant reactivates the row
         share = RecordShare.objects.get(record=self.record, user=self.recipient)
@@ -178,9 +191,9 @@ class TestShareService(SharingTestCase):
             ),
         )[0]
         assert not from_share.is_active
-        assert self.record.pk not in Record.objects.visible_to(self.recipient).values_list(
-            "pk", flat=True
-        )
+        assert self.record.pk not in Record.objects.visible_to(
+            self.recipient
+        ).values_list("pk", flat=True)
         # The row remains for audit purposes.
         assert RecordShare.objects.filter(pk=from_share.pk).exists()
 
@@ -189,24 +202,32 @@ class TestRecordDetailAccess(SharingTestCase):
     def test_recipient_sees_shared_detail(self):
         self._share([self.recipient.email])
         self.client.force_login(self.recipient)
-        response = self.client.get(reverse("records:record_detail", args=[self.record.pk]))
+        response = self.client.get(
+            reverse("records:record_detail", args=[self.record.pk])
+        )
         assert response.status_code == 200
         assert b"Acme invoice" in response.content
 
     def test_stranger_gets_404(self):
         self.client.force_login(self.stranger)
-        response = self.client.get(reverse("records:record_detail", args=[self.record.pk]))
+        response = self.client.get(
+            reverse("records:record_detail", args=[self.record.pk])
+        )
         assert response.status_code == 404
 
     def test_history_visible_to_recipient(self):
         self._share([self.recipient.email])
         self.client.force_login(self.recipient)
-        response = self.client.get(reverse("records:record_history", args=[self.record.pk]))
+        response = self.client.get(
+            reverse("records:record_history", args=[self.record.pk])
+        )
         assert response.status_code == 200
 
     def test_history_404_for_stranger(self):
         self.client.force_login(self.stranger)
-        response = self.client.get(reverse("records:record_history", args=[self.record.pk]))
+        response = self.client.get(
+            reverse("records:record_history", args=[self.record.pk])
+        )
         assert response.status_code == 404
 
 
@@ -276,7 +297,9 @@ class TestShareViews(SharingTestCase):
             {"emails": self.recipient.email},
         )
         assert response.status_code == 302
-        assert RecordShare.objects.filter(record=self.record, user=self.recipient).exists()
+        assert RecordShare.objects.filter(
+            record=self.record, user=self.recipient
+        ).exists()
 
     def test_revoke_owner_only(self):
         give_pro_subscription(self.owner)
@@ -292,7 +315,9 @@ class TestShareViews(SharingTestCase):
     def test_panel_shows_sharees_to_owner(self):
         self._share([self.recipient.email])
         self.client.force_login(self.owner)
-        response = self.client.get(reverse("records:record_shares_panel", args=[self.record.pk]))
+        response = self.client.get(
+            reverse("records:record_shares_panel", args=[self.record.pk])
+        )
         assert response.status_code == 200
         assert self.recipient.email.encode() in response.content
 
@@ -345,7 +370,9 @@ class TestShareNotifications(SharingTestCase):
     @mock.patch("records.notifications.send_record_shared_notification")
     def test_share_notifies_recipient_once(self, mock_notify):
         shares, _ = self._share([self.recipient.email])
-        mock_notify.assert_called_once_with(record=self.record, share=shares[0], actor=self.owner)
+        mock_notify.assert_called_once_with(
+            record=self.record, share=shares[0], actor=self.owner
+        )
 
     @mock.patch("records.notifications.send_record_shared_notification")
     def test_duplicate_share_does_not_re_notify(self, mock_notify):
@@ -356,7 +383,9 @@ class TestShareNotifications(SharingTestCase):
 
     @mock.patch("records.notifications.send_record_shared_notification")
     def test_multi_recipient_notifies_each(self, mock_notify):
-        stranger = User.objects.create_user(username="tom", email="tom@acme.com", password="pass")
+        stranger = User.objects.create_user(
+            username="tom", email="tom@acme.com", password="pass"
+        )
         shares, _ = self._share([self.recipient.email, stranger.email])
         assert mock_notify.call_count == 2
         notified = {c.kwargs["share"].user for c in mock_notify.call_args_list}
@@ -369,8 +398,12 @@ class TestShareNotifications(SharingTestCase):
     def test_notification_failure_never_fails_the_grant(self, mock_notify):
         shares, unknown = self._share([self.recipient.email])
         assert len(shares) == 1 and unknown == []
-        assert RecordShare.objects.filter(record=self.record, user=self.recipient).exists()
-        assert AuditLog.objects.filter(record=self.record, action=AuditLog.Action.SHARE).exists()
+        assert RecordShare.objects.filter(
+            record=self.record, user=self.recipient
+        ).exists()
+        assert AuditLog.objects.filter(
+            record=self.record, action=AuditLog.Action.SHARE
+        ).exists()
 
 
 class TestShareNotificationPayload(SharingTestCase):
@@ -379,7 +412,9 @@ class TestShareNotificationPayload(SharingTestCase):
     @mock.patch("core.services.notifications.send_multi_channel_notification")
     def test_payload_channels_subject_and_message(self, mock_send):
         shares, _ = self._share([self.recipient.email])
-        send_record_shared_notification(record=self.record, share=shares[0], actor=self.owner)
+        send_record_shared_notification(
+            record=self.record, share=shares[0], actor=self.owner
+        )
 
         call = mock_send.call_args
         kwargs = call.kwargs
@@ -410,7 +445,9 @@ class TestSharedDocuments(SharingTestCase):
     def test_sharee_can_view_shared_document(self):
         self._share([self.recipient.email])
         self.client.force_login(self.recipient)
-        response = self.client.get(reverse("documents:view_document", args=[self.doc.pk]))
+        response = self.client.get(
+            reverse("documents:view_document", args=[self.doc.pk])
+        )
         assert response.status_code == 200
 
     def test_sharee_cannot_edit_shared_document(self):
@@ -427,7 +464,9 @@ class TestSharedDocuments(SharingTestCase):
     def test_stranger_cannot_view_shared_document(self):
         self._share([self.recipient.email])
         self.client.force_login(self.stranger)
-        response = self.client.get(reverse("documents:view_document", args=[self.doc.pk]))
+        response = self.client.get(
+            reverse("documents:view_document", args=[self.doc.pk])
+        )
         assert response.status_code == 404
 
     def test_share_without_documents_hides_attachments(self):
@@ -438,7 +477,9 @@ class TestSharedDocuments(SharingTestCase):
             config=share_services.ShareConfig(include_documents=False),
         )
         self.client.force_login(self.recipient)
-        response = self.client.get(reverse("documents:view_document", args=[self.doc.pk]))
+        response = self.client.get(
+            reverse("documents:view_document", args=[self.doc.pk])
+        )
         assert response.status_code == 404
 
     def test_share_with_documents_can_view_attachments(self):
@@ -449,7 +490,9 @@ class TestSharedDocuments(SharingTestCase):
             config=share_services.ShareConfig(include_documents=True),
         )
         self.client.force_login(self.recipient)
-        response = self.client.get(reverse("documents:view_document", args=[self.doc.pk]))
+        response = self.client.get(
+            reverse("documents:view_document", args=[self.doc.pk])
+        )
         assert response.status_code == 200
 
     def test_record_detail_hides_documents_when_not_included(self):
@@ -462,7 +505,9 @@ class TestSharedDocuments(SharingTestCase):
             config=share_services.ShareConfig(include_documents=False),
         )
         self.client.force_login(self.recipient)
-        response = self.client.get(reverse("records:record_detail", args=[self.record.pk]))
+        response = self.client.get(
+            reverse("records:record_detail", args=[self.record.pk])
+        )
         assert response.status_code == 200
         assert b"Shared Receipt PDF" not in response.content
 
@@ -471,7 +516,9 @@ class TestShareeUI(SharingTestCase):
     def test_sharee_has_no_owner_actions_on_detail(self):
         self._share([self.recipient.email])
         self.client.force_login(self.recipient)
-        response = self.client.get(reverse("records:record_detail", args=[self.record.pk]))
+        response = self.client.get(
+            reverse("records:record_detail", args=[self.record.pk])
+        )
         assert b"Delete Permanently" not in response.content
         assert (
             reverse("documents:add_support_docs", args=[self.record.pk]).encode()
@@ -481,12 +528,16 @@ class TestShareeUI(SharingTestCase):
     def test_search_finds_shared_record(self):
         self._share([self.recipient.email])
         self.client.force_login(self.recipient)
-        response = self.client.get(reverse("records:view_all_records"), {"search": "Office"})
+        response = self.client.get(
+            reverse("records:view_all_records"), {"search": "Office"}
+        )
         assert response.status_code == 200
         assert b"Acme invoice" in response.content
 
     def test_list_does_not_leak_to_stranger(self):
         self.client.force_login(self.stranger)
-        response = self.client.get(reverse("records:view_all_records"), {"search": "Office"})
+        response = self.client.get(
+            reverse("records:view_all_records"), {"search": "Office"}
+        )
         assert response.status_code == 200
         assert b"Acme invoice" not in response.content

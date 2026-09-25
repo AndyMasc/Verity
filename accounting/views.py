@@ -52,7 +52,9 @@ def ExportSelectedExcel(request: HttpRequest) -> HttpResponse:
             )
         excel_data = export_records_to_excel(queryset=queryset)
     except Exception:
-        logger.exception("Failed to export selected records for user %s", request.user.pk)
+        logger.exception(
+            "Failed to export selected records for user %s", request.user.pk
+        )
         return HttpResponse("Export failed. Please try again later.", status=500)
 
     response = HttpResponse(

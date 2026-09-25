@@ -16,7 +16,9 @@ class SyncPaymentStatusTest(TestCase):
     @patch("reimbursements.tasks.services.retrieve_checkout_session")
     @patch("reimbursements.webhooks.transaction.on_commit", side_effect=lambda fn: fn())
     @patch("reimbursements.webhooks._notify_package_paid")
-    def test_sync_marks_paid_with_audit(self, mock_notify, mock_on_commit, mock_retrieve):
+    def test_sync_marks_paid_with_audit(
+        self, mock_notify, mock_on_commit, mock_retrieve
+    ):
         from reimbursements.tasks import sync_payment_status
 
         creator = _user("creator@test.com")
@@ -42,7 +44,9 @@ class SyncPaymentStatusTest(TestCase):
         pkg.refresh_from_db()
         self.assertTrue(payment.is_completed)
         self.assertEqual(pkg.status, ReimbursementPackage.Status.PAID)
-        self.assertEqual(AuditLog.objects.filter(details__event="payment_synced").count(), 1)
+        self.assertEqual(
+            AuditLog.objects.filter(details__event="payment_synced").count(), 1
+        )
         mock_notify.assert_called_once_with(pkg.pk, payer.pk)
 
     @patch("reimbursements.tasks.services.retrieve_checkout_session")
@@ -71,7 +75,9 @@ class SyncPaymentStatusTest(TestCase):
         pkg.refresh_from_db()
         self.assertFalse(payment.is_completed)
         self.assertEqual(pkg.status, ReimbursementPackage.Status.OPEN)
-        self.assertEqual(AuditLog.objects.filter(details__event="payment_synced").count(), 0)
+        self.assertEqual(
+            AuditLog.objects.filter(details__event="payment_synced").count(), 0
+        )
 
     @patch("reimbursements.tasks.services.retrieve_checkout_session")
     def test_sync_skips_unpaid_session(self, mock_retrieve):
@@ -127,7 +133,9 @@ class ReconcilePendingPaymentsTaskTest(TestCase):
 
         pkg.refresh_from_db()
         self.assertEqual(pkg.status, ReimbursementPackage.Status.PAID)
-        self.assertEqual(AuditLog.objects.filter(details__event="payment_synced").count(), 1)
+        self.assertEqual(
+            AuditLog.objects.filter(details__event="payment_synced").count(), 1
+        )
         mock_notify.assert_called_once_with(pkg.pk, payer.pk)
 
     @patch("reimbursements.tasks.services.retrieve_checkout_session")

@@ -29,7 +29,9 @@ def validate_recipient_email(request: HttpRequest) -> JsonResponse:
         return JsonResponse({"valid": False, "error": "Email is required."}, status=400)
 
     if email.lower() == request.user.email.lower():
-        return JsonResponse({"valid": False, "error": "You cannot send a package to yourself."})
+        return JsonResponse(
+            {"valid": False, "error": "You cannot send a package to yourself."}
+        )
 
     user_model = get_user_model()
     recipient = user_model.objects.filter(email__iexact=email).exists()

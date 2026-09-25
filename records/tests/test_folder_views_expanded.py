@@ -24,14 +24,18 @@ class FolderCreateEdgeCasesTest(TestCase):
 
     def test_empty_name_rejected(self):
         self.client.force_login(self.user)
-        response = self.client.post(self.url, {"name": ""}, headers={"hx-request": "true"})
+        response = self.client.post(
+            self.url, {"name": ""}, headers={"hx-request": "true"}
+        )
         self.assertIn(response.status_code, [200, 422])
         self.assertEqual(Folder.objects.filter(user=self.user).count(), 0)
 
     def test_duplicate_name_allowed(self):
         self.client.force_login(self.user)
         Folder.objects.create(user=self.user, name="Taxes")
-        response = self.client.post(self.url, {"name": "Taxes"}, headers={"hx-request": "true"})
+        response = self.client.post(
+            self.url, {"name": "Taxes"}, headers={"hx-request": "true"}
+        )
         self.assertIn(response.status_code, [200, 302])
 
 
@@ -95,7 +99,9 @@ class FolderUpdateEdgeCasesTest(TestCase):
         other = User.objects.create_user(username="otherupdfold", password="pass")
         self.client.force_login(other)
         url = reverse("records:edit_folder", args=[self.folder.id])
-        response = self.client.post(url, {"name": "Hacked"}, headers={"hx-request": "true"})
+        response = self.client.post(
+            url, {"name": "Hacked"}, headers={"hx-request": "true"}
+        )
         self.assertEqual(response.status_code, 404)
         self.folder.refresh_from_db()
         self.assertEqual(self.folder.name, "Original")

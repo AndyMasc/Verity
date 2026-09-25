@@ -55,7 +55,9 @@ class AddRecordViewTest(TestCase):
             },
         )
         self.assertIn(response.status_code, [200, 302])
-        self.assertTrue(Record.objects.filter(title="New Record", user=self.user).exists())
+        self.assertTrue(
+            Record.objects.filter(title="New Record", user=self.user).exists()
+        )
 
     def test_post_with_document_id_creates_record(self):
         doc = DocumentData.objects.create(

@@ -85,7 +85,9 @@ class DashboardCacheInvalidationTest(TestCase):
 
     def test_reimbursement_package_invalidates_creator_and_recipient(self):
         creator = User.objects.create_user(username="signalcreator", password="pass")
-        recipient = User.objects.create_user(username="signalrecipient", password="pass")
+        recipient = User.objects.create_user(
+            username="signalrecipient", password="pass"
+        )
         _prime_cache(creator.id)
         _prime_cache(recipient.id)
         ReimbursementPackage.objects.create(
@@ -98,7 +100,9 @@ class DashboardCacheInvalidationTest(TestCase):
 
     def test_package_payment_invalidates_package_users(self):
         creator = User.objects.create_user(username="signalpaycreator", password="pass")
-        recipient = User.objects.create_user(username="signalpayrecipient", password="pass")
+        recipient = User.objects.create_user(
+            username="signalpayrecipient", password="pass"
+        )
         package = ReimbursementPackage.objects.create(
             creator=creator,
             recipient=recipient,
