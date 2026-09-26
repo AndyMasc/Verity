@@ -81,6 +81,7 @@
                 defaults: '2026-05-30',
                 person_profiles: 'identified_only',
                 persistence: verityCookieConsent === 'allowed' ? 'localStorage+cookie' : 'memory',
+                tracing_headers: ['veritypay.app'],
             })
             // The browser SDK is the only thing that knows the PostHog session id.
             // Mirror it into a first-party cookie so backend captures (login,
