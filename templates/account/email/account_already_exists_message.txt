@@ -8,6 +8,5 @@ account using email address:
 
 However, an account using that email address already exists. In case you have
 forgotten about this, you can sign in directly by requesting a secure login link
-on our sign-in page:
-
-{{ login_url }}{% endblocktrans %}{% endautoescape %}{% endblock content %}
+on our sign-in page.
+{% endblocktrans %}{% endautoescape %}{% endblock content %}

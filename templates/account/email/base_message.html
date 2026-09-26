@@ -47,35 +47,14 @@
                                     <h2 style="margin: 0 0 24px 0;
                                                font-size: 20px;
                                                font-weight: 700;
-                                               tracking: -0.025em;
+                                               letter-spacing: -0.025em;
                                                color: #18181b">
-                                        {% blocktrans with site_name=current_site.name %}Hello from {{ site_name }}!{% endblocktrans %}
+                                        {% blocktrans with site_name=current_site.name %}Hello from {{ site_name }}.{% endblocktrans %}
                                     </h2>
                                     <div style="font-size: 14px; line-height: 1.6; color: #52525b;">
                                         {% block content %}
                                         {% endblock content %}
                                     </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td style="padding: 24px 32px;
-                                           background-color: #fafafa;
-                                           border-top: 1px solid #f4f4f5;
-                                           text-align: center">
-                                    <p style="margin: 0;
-                                              font-size: 11px;
-                                              font-weight: 500;
-                                              color: #a1a1aa;
-                                              text-transform: uppercase;
-                                              tracking: 0.05em">
-                                        {% blocktrans with site_name=current_site.name %}Thank you for using {{ site_name }}!{% endblocktrans %}
-                                    </p>
-                                    <p style="margin: 4px 0 0 0; font-size: 12px; color: #71717a;">
-                                        <a href="https://{{ current_site.domain }}"
-                                           style="color: #18181b;
-                                                  text-decoration: underline;
-                                                  font-weight: 500">{{ current_site.domain }}</a>
-                                    </p>
                                 </td>
                             </tr>
                         </table>
