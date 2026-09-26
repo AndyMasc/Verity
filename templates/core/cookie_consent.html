@@ -71,6 +71,8 @@
                     if (window.posthog && typeof window.posthog.opt_out_capturing === 'function') {
                         window.posthog.opt_out_capturing();
                     }
+                    // Stop handing the PostHog session id to the backend.
+                    document.cookie = 'verity_ph_session=; path=/; max-age=0; samesite=lax';
                     dismiss();
                 } else {
                     dismiss();

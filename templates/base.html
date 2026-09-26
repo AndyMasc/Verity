@@ -82,6 +82,15 @@
                 person_profiles: 'identified_only',
                 persistence: verityCookieConsent === 'allowed' ? 'localStorage+cookie' : 'memory',
             })
+            // The browser SDK is the only thing that knows the PostHog session id.
+            // Mirror it into a first-party cookie so backend captures (login,
+            // view events) can be linked to this session recording.
+            posthog.onSessionId(function (sessionId) {
+                if (!sessionId) return;
+                document.cookie = 'verity_ph_session=' + encodeURIComponent(sessionId) +
+                    '; path=/; max-age=1800; samesite=lax' +
+                    (window.location.protocol === 'https:' ? '; secure' : '');
+            });
         </script>
         {% if user.is_authenticated %}
             <script>
