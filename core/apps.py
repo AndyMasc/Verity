@@ -1,5 +1,6 @@
 import atexit
 import os
+import sys
 
 from django.apps import AppConfig
 from django.conf import settings
@@ -7,6 +8,15 @@ from django.core.exceptions import ImproperlyConfigured
 from posthog import Posthog
 
 posthog_client: Posthog | None = None
+
+_NON_SERVING_COMMANDS = {"shell", "shell_plus", "test"}
+
+
+def _skip_posthog() -> bool:
+    """True for pytest runs and interactive shells, which must not report to PostHog."""
+    if "pytest" in sys.modules:
+        return True
+    return len(sys.argv) > 1 and sys.argv[1] in _NON_SERVING_COMMANDS
 
 
 class CoreConfig(AppConfig):
@@ -17,6 +27,9 @@ class CoreConfig(AppConfig):
         global posthog_client
 
         import core.signals  # noqa: F401
+
+        if _skip_posthog():
+            return
 
         project_token = os.environ.get("POSTHOG_PROJECT_TOKEN")
         host = os.environ.get("POSTHOG_HOST")
