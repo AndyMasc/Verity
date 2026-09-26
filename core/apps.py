@@ -1,5 +1,6 @@
 import atexit
 import os
+import sys
 
 from django.apps import AppConfig
 from django.conf import settings
@@ -7,6 +8,14 @@ from django.core.exceptions import ImproperlyConfigured
 from posthog import Posthog
 
 posthog_client: Posthog | None = None
+
+LOCAL_ONLY_COMMANDS = {"test", "shell"}
+
+
+def is_local_only_process() -> bool:
+    """Return True for test runs and shells, whose exceptions are not user facing."""
+    command = sys.argv[1] if len(sys.argv) > 1 else ""
+    return "pytest" in sys.modules or command in LOCAL_ONLY_COMMANDS
 
 
 class CoreConfig(AppConfig):
@@ -36,7 +45,7 @@ class CoreConfig(AppConfig):
         posthog_client = Posthog(
             project_api_key=project_token,
             host=host,
-            enable_exception_autocapture=True,
+            enable_exception_autocapture=not is_local_only_process(),
             privacy_mode=False,
         )
         atexit.register(posthog_client.shutdown)
