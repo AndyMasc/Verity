@@ -31,6 +31,57 @@ def report_webhook_processing_error(**kwargs: Any) -> None:
     )
 
 
+def _event_object(event: Any) -> dict[str, Any]:
+    """Return the Stripe object carried by a webhook event as a plain dict."""
+    return (getattr(event, "data", None) or {}).get("object") or {}
+
+
+def _subscriber_pk(
+    customer_id: str | None, client_reference_id: str | None = None
+) -> str | None:
+    """Resolve the local user behind a Stripe event, or None when unlinked.
+
+    ``client_reference_id`` is the id we stamp on our own checkout sessions, so
+    it is the most reliable link; the customer's ``subscriber`` covers events
+    that carry no session (invoices, payment intents).
+    """
+    if client_reference_id and str(client_reference_id).isdigit():
+        from .models import CustomUser
+
+        if CustomUser.objects.filter(pk=int(client_reference_id)).exists():
+            return str(int(client_reference_id))
+
+    if not customer_id:
+        return None
+
+    subscriber_id = (
+        Customer.objects.filter(id=customer_id)
+        .values_list("subscriber_id", flat=True)
+        .first()
+    )
+    return str(subscriber_id) if subscriber_id else None
+
+
+def _capture(event: str, distinct_id: str | None, properties: dict[str, Any]) -> None:
+    """Capture a PostHog event from a Stripe webhook.
+
+    Webhooks arrive server-to-server with no request context, so the distinct ID
+    is passed explicitly and omitted when the event cannot be tied to a user.
+    """
+    if posthog_client is None:
+        return
+
+    if distinct_id:
+        posthog_client.capture(event, distinct_id=distinct_id, properties=properties)
+    else:
+        posthog_client.capture(event, properties=properties)
+
+
+def _failure_reason(failure: dict[str, Any]) -> str:
+    """Return a human-readable reason for a failed payment."""
+    return failure.get("message") or failure.get("code") or "unknown"
+
+
 def _subscription_categories(stripe_sub: dict) -> set[str]:
     """Return the pricing categories covered by a Stripe subscription payload."""
     categories: set[str] = set()
@@ -198,42 +249,116 @@ def _capture_subscription_cancelled(
             (timezone.now() - sub.created).days / 30.44, 1
         )
 
-    capture_opts: dict = {"properties": properties}
-    if user is not None:
-        capture_opts["distinct_id"] = str(user.pk)
-    posthog_client.capture("subscription_cancelled", **capture_opts)
+    _capture(
+        "subscription_cancelled",
+        str(user.pk) if user is not None else None,
+        properties,
+    )
+
+
+@djstripe_receiver("checkout.session.completed")
+@djstripe_receiver("checkout.session.async_payment_succeeded")
+def handle_checkout_settled(**kwargs: Any) -> None:
+    """Track subscription checkouts Stripe actually settled.
+
+    Closes the gap between ``subscription_checkout_started`` (pricing view) and
+    ``subscription_activated`` (success view): anyone who finishes checkout
+    without reaching the success URL is still counted. Delayed payment methods
+    settle later via ``checkout.session.async_payment_succeeded``, so their
+    ``checkout.session.completed`` (sent unpaid) is skipped here.
+    """
+    session = _event_object(kwargs.get("event"))
+    # Package purchases are one-off payments with their own funnel
+    # (reimbursement_paid); keep them out of the subscription metrics.
+    if session.get("mode") != "subscription":
+        return
+    # "no_payment_required" covers fully discounted checkouts.
+    if session.get("payment_status") not in ("paid", "no_payment_required"):
+        return
+
+    _capture(
+        "subscription_checkout_completed",
+        _subscriber_pk(session.get("customer"), session.get("client_reference_id")),
+        {
+            "amount": (session.get("amount_total") or 0) / 100,
+            "currency": session.get("currency"),
+        },
+    )
+
+
+@djstripe_receiver("checkout.session.expired")
+def handle_checkout_expired(**kwargs: Any) -> None:
+    """Track abandoned subscription checkouts to complete the funnel."""
+    session = _event_object(kwargs.get("event"))
+    if session.get("mode") != "subscription":
+        return
+
+    _capture(
+        "subscription_checkout_expired",
+        _subscriber_pk(session.get("customer"), session.get("client_reference_id")),
+        {
+            "amount": (session.get("amount_total") or 0) / 100,
+            "currency": session.get("currency"),
+        },
+    )
+
+
+@djstripe_receiver("invoice.payment_succeeded")
+def handle_payment_succeeded(**kwargs: Any) -> None:
+    """Track settled subscription invoices, both first payments and renewals."""
+    invoice = _event_object(kwargs.get("event"))
+
+    _capture(
+        "payment_succeeded",
+        _subscriber_pk(invoice.get("customer")),
+        {
+            "amount": (invoice.get("amount_paid") or 0) / 100,
+            "currency": invoice.get("currency"),
+            "billing_reason": invoice.get("billing_reason"),
+        },
+    )
+
+
+@djstripe_receiver("payment_intent.payment_failed")
+def handle_checkout_payment_failed(**kwargs: Any) -> None:
+    """Track declined checkout payments, the main cause of checkout abandonment."""
+    payment_intent = _event_object(kwargs.get("event"))
+    if payment_intent.get("invoice"):
+        # Renewal decline: invoice.payment_failed already reports it.
+        return
+    if (payment_intent.get("metadata") or {}).get("package_uuid"):
+        # Package purchase decline: owned by the reimbursements pipeline.
+        return
+
+    _capture(
+        "checkout_payment_failed",
+        _subscriber_pk(payment_intent.get("customer")),
+        {
+            "amount": (payment_intent.get("amount") or 0) / 100,
+            "currency": payment_intent.get("currency"),
+            "failure_reason": _failure_reason(
+                payment_intent.get("last_payment_error") or {}
+            ),
+        },
+    )
 
 
 @djstripe_receiver("invoice.payment_failed")
 def handle_payment_failed(**kwargs: Any) -> None:
     """Track failed subscription payments for churn and recovery flows."""
-    event = kwargs.get("event")
-    if not event:
-        return
-
-    invoice = event.data.get("object", {})
-    customer_id = invoice.get("customer")
-    if not customer_id or posthog_client is None:
-        return
-
-    customer = (
-        Customer.objects.filter(id=customer_id, subscriber__isnull=False)
-        .select_related("subscriber")
-        .first()
-    )
-    if customer is None or customer.subscriber is None:
+    invoice = _event_object(kwargs.get("event"))
+    distinct_id = _subscriber_pk(invoice.get("customer"))
+    if not distinct_id:
         return
 
     amount_due = invoice.get("amount_due") or invoice.get("amount") or 0
-    failure = invoice.get("last_payment_error") or {}
-    error_message = failure.get("message") or failure.get("code") or "unknown"
 
-    posthog_client.capture(
+    _capture(
         "payment_failed",
-        distinct_id=str(customer.subscriber.pk),
-        properties={
+        distinct_id,
+        {
             "amount": amount_due / 100,
             "currency": invoice.get("currency", "usd"),
-            "failure_reason": error_message,
+            "failure_reason": _failure_reason(invoice.get("last_payment_error") or {}),
         },
     )

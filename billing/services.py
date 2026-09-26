@@ -37,6 +37,7 @@ def create_checkout_session(
     line_items: list[dict],
     success_url: str,
     cancel_url: str,
+    client_reference_id: str | None = None,
     idempotency_key: str | None = None,
 ) -> stripe.checkout.Session:
     """Create a Stripe subscription checkout session."""
@@ -48,6 +49,10 @@ def create_checkout_session(
         "success_url": success_url,
         "cancel_url": cancel_url,
     }
+    # Identifies the buyer on the session so webhooks can attribute the event
+    # back to a user even when the customer row is not linked yet.
+    if client_reference_id is not None:
+        kwargs["client_reference_id"] = client_reference_id
     if idempotency_key is not None:
         kwargs["idempotency_key"] = idempotency_key
     return stripe.checkout.Session.create(**kwargs)

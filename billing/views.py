@@ -191,6 +191,7 @@ def create_checkout_session(request: HttpRequest) -> HttpResponse:
         checkout_session = services.create_checkout_session(
             customer=customer.id,
             line_items=line_items,
+            client_reference_id=str(user.pk),
             success_url=request.build_absolute_uri(reverse("subscription_confirm"))
             + "?session_id={CHECKOUT_SESSION_ID}",
             cancel_url=request.build_absolute_uri(reverse("pricing_page")),

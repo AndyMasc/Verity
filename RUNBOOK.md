@@ -244,10 +244,11 @@ scheduler as separate containers/services, or use a process manager.
    the row (`djstripe_validation_method="verify_signature"`).
 2. Enable events (from `billing/webhooks.py` + `reimbursements/webhooks.py`):
    `customer.subscription.created/updated/deleted`, `invoice.paid`,
-   `invoice.payment_failed`, `checkout.session.completed`,
+   `invoice.payment_succeeded`, `invoice.payment_failed`,
+   `checkout.session.completed`, `checkout.session.expired`,
    `checkout.session.async_payment_succeeded`,
-   `checkout.session.async_payment_failed`, `account.updated`,
-   `transfer.failed`, `charge.failed`, `charge.refunded`.
+   `checkout.session.async_payment_failed`, `payment_intent.payment_failed`,
+   `account.updated`, `transfer.failed`, `charge.failed`, `charge.refunded`.
 3. After deploy:
    ```bash
    python manage.py djstripe_init_customers
