@@ -15,6 +15,7 @@ from django.views import View
 from django.views.decorators.http import require_POST
 from django_ratelimit.decorators import ratelimit
 
+from core.apps import posthog_client
 from core.services.dashboard import invalidate_dashboard_cache
 from Verity.views import parse_record_ids
 
@@ -37,6 +38,11 @@ class ArchiveRecord(LoginRequiredMixin, View):
             Record, id=record_id, user=request.user, is_active=True
         )
         archive_record(request.user, record)
+        if posthog_client is not None:
+            posthog_client.capture(
+                "record_archived",
+                properties={"via": "archive", "bulk": False},
+            )
         if request.headers.get("HX-Request") == "true":
             response = HttpResponse(status=204)
             response["HX-Trigger"] = json.dumps({"recordChanged": {}})
@@ -54,6 +60,11 @@ class UnarchiveRecord(LoginRequiredMixin, View):
             Record, id=record_id, user=request.user, is_active=False
         )
         unarchive_record(request.user, record)
+        if posthog_client is not None:
+            posthog_client.capture(
+                "record_unarchived",
+                properties={"bulk": False},
+            )
         if request.headers.get("HX-Request") == "true":
             response = HttpResponse(status=200)
             response["HX-Trigger"] = json.dumps({"recordChanged": {}})
@@ -67,6 +78,10 @@ class DeleteRecordView(LoginRequiredMixin, View):
     def post(self, request: HttpRequest, record_id: int) -> HttpResponse:
         record = get_object_or_404(Record, id=record_id, user=request.user)
         soft_delete_record(request.user, record)
+        if posthog_client is not None:
+            posthog_client.capture(
+                "record_archived", properties={"via": "delete", "bulk": False}
+            )
         if request.headers.get("HX-Request") == "true":
             response = HttpResponse(status=200)
             response["HX-Trigger"] = json.dumps({"recordChanged": {}})
@@ -127,6 +142,11 @@ def BulkArchiveView(request: HttpRequest) -> HttpResponse:
         )
 
     invalidate_dashboard_cache(request.user.id)
+    if posthog_client is not None and count:
+        posthog_client.capture(
+            "record_archived",
+            properties={"via": "bulk", "bulk": True, "record_count": count},
+        )
     return _bulk_response(request, count, verb="archived")
 
 
@@ -151,4 +171,8 @@ def BulkUnarchiveView(request: HttpRequest) -> HttpResponse:
         )
 
     invalidate_dashboard_cache(request.user.id)
+    if posthog_client is not None and count:
+        posthog_client.capture(
+            "record_unarchived", properties={"bulk": True, "record_count": count}
+        )
     return _bulk_response(request, count, verb="restored")

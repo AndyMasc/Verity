@@ -18,6 +18,7 @@ from django.views.generic.base import View
 from django.views.generic.edit import FormView
 from django_ratelimit.decorators import ratelimit
 
+from core.apps import posthog_client
 from documents.models import DocumentData
 from Verity.responses import api_error
 from Verity.views import create_audit_log
@@ -128,6 +129,14 @@ class ManualMergeView(LoginRequiredMixin, FormView):
                 merge_log=merge_log,
                 details={"document_record_id": document_record.pk},
             )
+            if posthog_client is not None:
+                posthog_client.capture(
+                    "record_merged",
+                    properties={
+                        "merge_mode": "doc_into_plaid",
+                        "document_record_id": document_record.pk,
+                    },
+                )
             if self.request.headers.get("HX-Request") == "true":
                 response = HttpResponse(status=204)
                 response["HX-Trigger"] = json.dumps(

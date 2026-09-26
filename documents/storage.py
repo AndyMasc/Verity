@@ -59,9 +59,7 @@ def generate_upload_key(user_id: int, extension: str) -> str:
     return f"users/{user_id}/{uuid.uuid4()}.{safe_ext}"
 
 
-def generate_presigned_post(
-    user_id: int, key: str, content_type: str
-) -> str:  # noqa: ARG001
+def generate_presigned_post(user_id: int, key: str, content_type: str) -> str:
     """Generate a presigned PUT URL for uploading a file to R2 (15-minute expiry)."""
     s3 = get_s3_client()
     return s3.generate_presigned_url(

@@ -42,33 +42,6 @@ def _subscription_categories(stripe_sub: dict) -> set[str]:
     return categories
 
 
-def _base_plan_is_ending(stripe_sub: dict) -> bool:
-    """True when a base plan is being canceled or scheduled for cancellation."""
-    if not stripe_sub:
-        return False
-    status = stripe_sub.get("status")
-    if status in {"canceled", "unpaid", "incomplete_expired"}:
-        return True
-    return bool(stripe_sub.get("cancel_at_period_end"))
-
-
-def _subscription_cancelled_now(stripe_sub: dict) -> bool:
-    """True only at the single moment a subscription is cancelled.
-
-    Stripe reports a scheduled cancel twice: once when cancel_at_period_end is
-    set (status still active) and again when the plan lapses (status=canceled
-    with cancel_at_period_end still true). Only the first is a cancellation
-    decision; the terminal update must not emit duplicate events. Immediate
-    cancels and failed payments report on their terminal status.
-    """
-    if not stripe_sub:
-        return False
-    status = stripe_sub.get("status")
-    if stripe_sub.get("cancel_at_period_end"):
-        return status in {"active", "trialing"}
-    return status in {"canceled", "unpaid", "incomplete_expired"}
-
-
 def _has_active_pro_storage(sub: Subscription) -> bool:
     """Return whether an active subscription contains a Pro-only storage pack."""
     if (sub.stripe_data or {}).get("status") not in {"active", "trialing"}:
@@ -135,6 +108,7 @@ def handle_subscription_deleted(**kwargs: Any) -> None:
 
     _invalidate_subscription_caches_for_event(stripe_sub)
     if "base_plan" in _subscription_categories(stripe_sub):
+        _capture_subscription_cancelled(sub_id, stripe_sub)
         _cancel_pro_only_storage_for_customer(
             stripe_sub.get("customer"), base_subscription_id=sub_id
         )
@@ -183,16 +157,15 @@ def handle_subscription_changed(**kwargs: Any) -> None:
 
     _invalidate_subscription_caches_for_event(stripe_sub)
 
-    if _base_plan_is_ending(stripe_sub):
-        if _subscription_cancelled_now(stripe_sub):
-            _capture_subscription_cancelled(stripe_sub.get("id"))
-        if "base_plan" in _subscription_categories(stripe_sub):
-            _cancel_pro_only_storage_for_customer(
-                stripe_sub.get("customer"), base_subscription_id=stripe_sub.get("id")
-            )
+    if "base_plan" in _subscription_categories(stripe_sub):
+        _cancel_pro_only_storage_for_customer(
+            stripe_sub.get("customer"), base_subscription_id=stripe_sub.get("id")
+        )
 
 
-def _capture_subscription_cancelled(sub_id: str) -> None:
+def _capture_subscription_cancelled(
+    sub_id: str, stripe_sub: dict | None = None
+) -> None:
     """Track a base-plan cancellation for churn analysis."""
     if posthog_client is None:
         return
@@ -202,24 +175,33 @@ def _capture_subscription_cancelled(sub_id: str) -> None:
         .select_related("customer__subscriber")
         .first()
     )
-    user = getattr(getattr(sub, "customer", None), "subscriber", None)
-    if sub is None or user is None:
+    if sub is None:
         return
 
+    user = getattr(getattr(sub, "customer", None), "subscriber", None)
+    properties = {
+        "plan": None,
+        "months_active": None,
+        "cancel_type": (
+            "period_end"
+            if (stripe_sub or {}).get("cancel_at_period_end")
+            else "immediate"
+        ),
+    }
+
     item = sub.items.select_related("price__product").first()
-    plan_name = (
-        item.price.product.name if item and item.price and item.price.product else None
-    )
+    if item and item.price and item.price.product:
+        properties["plan"] = item.price.product.name
 
-    months_active = None
     if sub.created:
-        months_active = round((timezone.now() - sub.created).days / 30.44, 1)
+        properties["months_active"] = round(
+            (timezone.now() - sub.created).days / 30.44, 1
+        )
 
-    posthog_client.capture(
-        "subscription_cancelled",
-        distinct_id=str(user.pk),
-        properties={"plan": plan_name, "months_active": months_active},
-    )
+    capture_opts: dict = {"properties": properties}
+    if user is not None:
+        capture_opts["distinct_id"] = str(user.pk)
+    posthog_client.capture("subscription_cancelled", **capture_opts)
 
 
 @djstripe_receiver("invoice.payment_failed")

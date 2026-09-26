@@ -323,6 +323,20 @@ class ReimbursementPackage(models.Model):
                     payment_method="Verity reimbursement transfer",
                     notes=notes,
                 )
+        from core.apps import posthog_client
+
+        if self.status == self.Status.PAID and posthog_client is not None:
+            posthog_client.capture(
+                "reimbursement_paid",
+                distinct_id=str(self.creator_id),
+                properties={
+                    "currency": record_currency,
+                    "total_amount": float(converted),
+                    "record_count": self.records.filter(is_active=True).count(),
+                    "payer_is_registered": payer is not None,
+                },
+            )
+
         # Access expires when the workflow ends: the recipient no longer needs
         # to review the records once the package is paid.
         try:
@@ -374,6 +388,18 @@ class ReimbursementPackage(models.Model):
                 ).update(
                     notes=Concat("notes", models.Value(" [REFUNDED]"))
                 )
+        from core.apps import posthog_client
+
+        if self.status == self.Status.OPEN and posthog_client is not None:
+            posthog_client.capture(
+                "reimbursement_refunded",
+                distinct_id=str(self.creator_id),
+                properties={
+                    "currency": self.currency,
+                    "total_amount": float(self.total_amount),
+                },
+            )
+
         # Refunds reopen the workflow, so restore the recipient's access.
         try:
             from .services import _grant_package_access

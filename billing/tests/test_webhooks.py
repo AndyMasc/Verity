@@ -11,6 +11,7 @@ from reimbursements.webhooks import (
 )
 
 from .. import metadata
+from .. import webhooks
 from ..webhooks import (
     handle_subscription_changed,
     handle_subscription_deleted,
@@ -153,6 +154,123 @@ class HandleSubscriptionChangedTests(TestCase):
             )
 
         cancel_mock.assert_called_once_with(storage_sub.id)
+
+
+class HandleSubscriptionCancellationTrackingTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(
+            username="cancel_user",
+            email="cancel@example.com",
+            password="password",
+        )
+        self.customer = Customer.objects.create(
+            id="cus_cancel_track", livemode=False, created=timezone.now()
+        )
+        self.customer.subscriber = self.user
+        self.customer.save()
+        product = Product.objects.create(
+            id=metadata.VERITY_PRO.stripe_id,
+            livemode=False,
+            active=True,
+            name="Verity Pro",
+        )
+        price = Price.objects.create(
+            id="price_cancel_track",
+            livemode=False,
+            active=True,
+            product=product,
+            currency="usd",
+        )
+        self.subscription = Subscription.objects.create(
+            id="sub_cancel_track",
+            livemode=False,
+            created=timezone.now(),
+            customer=self.customer,
+            stripe_data={"status": "active"},
+        )
+        SubscriptionItem.objects.create(
+            id="si_cancel_track",
+            livemode=False,
+            created=timezone.now(),
+            subscription=self.subscription,
+            price=price,
+        )
+        self.captured = []
+        self.client_patch = mock.patch.object(
+            webhooks,
+            "posthog_client",
+            mock.Mock(capture=lambda *a, **k: self.captured.append((a, k))),
+        )
+        self.client_patch.start()
+        self.addCleanup(self.client_patch.stop)
+
+    def _deleted_event(self, cancel_at_period_end):
+        return mock.Mock(
+            data={
+                "object": {
+                    "id": self.subscription.id,
+                    "customer": self.customer.id,
+                    "cancel_at_period_end": cancel_at_period_end,
+                    "items": {
+                        "data": [{"price": {"product": metadata.VERITY_PRO.stripe_id}}]
+                    },
+                }
+            }
+        )
+
+    def _handle_deleted(self, cancel_at_period_end):
+        with (
+            self.captureOnCommitCallbacks(execute=True),
+            mock.patch("billing.webhooks._cancel_pro_only_storage_for_customer"),
+        ):
+            webhooks.handle_subscription_deleted(
+                event=self._deleted_event(cancel_at_period_end)
+            )
+
+    def test_immediate_cancel_tracked_once(self):
+        self._handle_deleted(cancel_at_period_end=False)
+        self.assertEqual(len(self.captured), 1)
+        name, kwargs = self.captured[0]
+        self.assertEqual(name, ("subscription_cancelled",))
+        self.assertEqual(kwargs["distinct_id"], str(self.user.pk))
+        self.assertEqual(kwargs["properties"]["plan"], "Verity Pro")
+        self.assertEqual(kwargs["properties"]["cancel_type"], "immediate")
+
+    def test_period_end_cancel_tracked_once(self):
+        self._handle_deleted(cancel_at_period_end=True)
+        self.assertEqual(len(self.captured), 1)
+        self.assertEqual(self.captured[0][1]["properties"]["cancel_type"], "period_end")
+
+    def test_personless_when_customer_unlinked(self):
+        self.customer.subscriber = None
+        self.customer.save()
+        self._handle_deleted(cancel_at_period_end=False)
+        self.assertEqual(len(self.captured), 1)
+        self.assertNotIn("distinct_id", self.captured[0][1])
+
+    def test_changed_event_does_not_track_cancellation(self):
+        with mock.patch("billing.webhooks._cancel_pro_only_storage_for_customer"):
+            webhooks.handle_subscription_changed(
+                event=mock.Mock(
+                    data={
+                        "object": {
+                            "id": self.subscription.id,
+                            "status": "canceled",
+                            "cancel_at_period_end": False,
+                            "items": {
+                                "data": [
+                                    {
+                                        "price": {
+                                            "product": metadata.VERITY_PRO.stripe_id
+                                        }
+                                    }
+                                ]
+                            },
+                        }
+                    }
+                )
+            )
+        self.assertEqual(self.captured, [])
 
 
 class EnqueueReimbursementProcessingTests(TestCase):

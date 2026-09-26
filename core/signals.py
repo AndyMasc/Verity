@@ -11,13 +11,14 @@ from allauth.account.signals import (
 )
 from allauth.account.signals import user_signed_up
 from django.conf import settings
-from django.contrib.auth.signals import user_logged_in
+from django.contrib.auth.signals import user_logged_in, user_logged_out
 from django.core.cache import cache
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 from posthog import identify_context
 
 from core import apps
+import posthog
 from core.services.dashboard import invalidate_dashboard_cache
 from Verity.utils import bump_paginator_count_version
 
@@ -69,6 +70,18 @@ def identify_posthog_user(sender, request, user, **kwargs):  # noqa: ARG001
             "login_method": sociallogin.account.provider if sociallogin else "email",
         },
     )
+
+
+@receiver(user_logged_out)
+def track_user_logged_out(sender, request, user, **kwargs):  # noqa: ARG001
+    """Track authenticated logouts."""
+    if user is None or apps.posthog_client is None:
+        return
+    apps.posthog_client.capture(
+        "user_logged_out",
+        distinct_id=str(user.pk),
+    )
+    posthog.flush()  # Clear the PostHog context for this request/session
 
 
 def _invalidate_webpush_count_cache(user_id):

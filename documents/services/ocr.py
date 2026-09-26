@@ -133,6 +133,19 @@ def mark_ocr_failed(document_id: int, error: str) -> None:
         ocr_raw_data=error_payload,
     )
 
+    if core_apps.posthog_client is not None:
+        user_id = (
+            DocumentData.objects.filter(id=document_id)
+            .values_list("user_id", flat=True)
+            .first()
+        )
+        if user_id is not None:
+            core_apps.posthog_client.capture(
+                "ocr_failed",
+                distinct_id=str(user_id),
+                properties={"error_type": error.strip()[:300]},
+            )
+
 
 def fetch_from_r2(filepath: str) -> bytes:
     """Download the full file content from R2 for the given key."""
@@ -273,6 +286,12 @@ def extract(document_id: int) -> dict[str, Any]:
             did_ocr=True,
             ocr_raw_data=final_data,
         )
+        if core_apps.posthog_client is not None:
+            core_apps.posthog_client.capture(
+                "ocr_completed",
+                distinct_id=str(document.user_id),
+                properties={"has_extracted_data": bool(final_data)},
+            )
         return final_data
 
     except Exception as exc:
