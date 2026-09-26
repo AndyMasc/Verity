@@ -4,18 +4,22 @@ Keeps archive/unarchive logic out of views so it can be reused from
 signals, tasks, or management commands without duplicating business rules.
 """
 
+import logging
 from datetime import date as _date
 
 from django.db import transaction
 from django.utils.dateparse import parse_date, parse_datetime
 
 from billing.models import CustomUser as User
+from core.apps import posthog_client
 from core.currencies import CURRENCY_CHOICES, DEFAULT_CURRENCY
 
 from .matching import try_match_document_record
 from .models import AuditLog, Record
 
 BULK_LIMIT = 200
+posthog_log_logger = logging.getLogger("posthog.export")
+posthog_log_logger.propagate = False
 
 
 class BulkLimitExceededError(Exception):
@@ -204,10 +208,24 @@ def create_record_from_ocr(document_id: int) -> Record | None:
         locked.save(update_fields=["associated_record"])
 
     merged = try_match_document_record(record, locked)
-    if merged is not None:
-        return merged
+    properties = {
+        "creation_source": "ocr",
+        "merged_with_transaction": merged is not None,
+    }
 
-    return record
+    if posthog_client is not None:
+        # No request context here: this also runs from the OCR worker.
+        posthog_client.capture(
+            "record_created",
+            distinct_id=str(record.user_id),
+            properties=properties,
+        )
+    posthog_log_logger.info(
+        "Record creation completed",
+        extra={"event": "record_created", **properties},
+    )
+
+    return merged if merged is not None else record
 
 
 def bulk_toggle_archive(

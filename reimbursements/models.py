@@ -288,6 +288,7 @@ class ReimbursementPackage(models.Model):
         """
         record_currency = payer_currency or self.currency
         converted = self.converted_total(record_currency)
+        payer_record: Record | None = None
 
         with transaction.atomic():
             locked = (
@@ -312,7 +313,7 @@ class ReimbursementPackage(models.Model):
                     f"Date: {locked.paid_at.strftime('%Y-%m-%d')}. "
                     f"(package {self.uuid})"
                 )
-                Record.objects.create(
+                payer_record = Record.objects.create(
                     user=payer,
                     title=f"Reimbursement: {self.title}",
                     transaction_date=locked.paid_at.strftime("%Y-%m-%d"),
@@ -335,6 +336,15 @@ class ReimbursementPackage(models.Model):
                     "record_count": self.records.filter(is_active=True).count(),
                     "payer_is_registered": payer is not None,
                 },
+            )
+
+        if payer_record is not None and posthog_client is not None:
+            # System-generated, not something the payer asked for, so it counts
+            # as imported rather than created.
+            posthog_client.capture(
+                "record_imported",
+                distinct_id=str(payer_record.user_id),
+                properties={"import_source": "reimbursement", "record_count": 1},
             )
 
         # Access expires when the workflow ends: the recipient no longer needs

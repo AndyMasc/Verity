@@ -20,6 +20,7 @@ from periodiq import cron
 from plaid.model.transactions_sync_request import TransactionsSyncRequest
 
 from billing.models import CustomUser as User
+from core.apps import posthog_client
 from records.models import Folder, Record
 
 from .models import PlaidItem
@@ -337,6 +338,20 @@ def sync_and_convert_for_item_task(plaid_item_id: int | str) -> dict[str, Any]:
         cursor, has_more = _process_sync_page(data, plaid_item, folder_cache, stats)
 
     _match_records_to_documents(plaid_item, plaid_item_id)
+
+    # One event per sync rather than per transaction: a single sync can import
+    # hundreds of rows, and the hourly fallback task syncs items with no
+    # changes at all.
+    if stats["added"] and posthog_client is not None:
+        posthog_client.capture(
+            "record_imported",
+            distinct_id=str(plaid_item.user_id),
+            properties={
+                "import_source": "plaid_sync",
+                "record_count": stats["added"],
+            },
+        )
+
     return {"status": "synced", **stats}
 
 
