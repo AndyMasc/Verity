@@ -11,7 +11,7 @@
           hx-select="#dashboard-content"
           hx-swap="outerHTML">
         <div class="my-auto w-full space-y-4">
-            <header class="flex justify-end gap-4 md:flex-row md:items-center md:justify-between">
+            <header class="flex w-full justify-end gap-4 md:flex-row md:items-center md:justify-between">
                 <div class="hidden md:block">
                     <a href="{% url 'core:profile_page' %}" class="group inline-block">
                         <div class="shadow-2xs inline-flex items-center gap-2 rounded-full border border-zinc-200/80 bg-white px-3 py-1.5 transition-all duration-200 dark:border-white/[0.06] dark:bg-zinc-900/60">
@@ -27,7 +27,7 @@
                         </div>
                     </a>
                 </div>
-                <div class="flex items-center gap-2">
+                <div class="flex items-center justify-between gap-2">
                     <a href="{% url 'records:view_all_records' %}"
                        class="flex flex-row items-center justify-center gap-2 rounded-full border border-zinc-300/60 bg-white px-3 py-1.5 text-xs font-medium text-black transition-all hover:bg-zinc-200/70 active:scale-[0.98] dark:border-zinc-800/30 dark:bg-zinc-800/40 dark:text-zinc-300 dark:hover:bg-zinc-900/60">
                         <svg xmlns="http://www.w3.org/2000/svg"
