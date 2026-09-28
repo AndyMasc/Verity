@@ -1,0 +1,34 @@
+{# Selection checkbox for a record row, shared by the desktop and mobile layouts.
+
+The tap target is deliberately larger than the 18px box it draws: the visible
+checkbox is centred inside a 36px area, and the negative margin keeps the
+visual layout exactly as before. That stops a near-miss on the checkbox from
+landing on the surrounding link and opening the record instead of selecting it.
+#}
+<div class="relative -m-2 flex h-9 w-9 shrink-0 items-center justify-center"
+     @click.stop>
+    {# Unselected dot, hidden once selected. #}
+    <span class="absolute inset-0 flex items-center justify-center transition-opacity duration-150"
+          :class="selectedIds.includes('{{ select_id }}') ? 'opacity-0' : 'opacity-100'">
+        <span class="size-2 rounded-full {% if not record.is_active %}bg-zinc-400 dark:bg-zinc-600{% elif record.expiry_date %}bg-amber-500 dark:bg-amber-600{% else %}bg-zinc-900 dark:bg-zinc-100{% endif %}"></span>
+    </span>
+    {# Label spans the whole 36px area, so the whole zone toggles selection. #}
+    <label class="absolute inset-0 flex cursor-pointer items-center justify-center"
+           :class="selectedIds.includes('{{ select_id }}') ? 'opacity-100' : 'opacity-0 hover:opacity-100'">
+        <input type="checkbox"
+               value="{{ select_id }}"
+               :checked="selectedIds.includes('{{ select_id }}')"
+               @change="toggleSelect('{{ select_id }}')"
+               class="sr-only">
+        <span class="flex h-4.5 w-4.5 items-center justify-center rounded-md border shadow-xs transition-colors"
+              :class="selectedIds.includes('{{ select_id }}') ? 'border-zinc-900 bg-zinc-900 dark:border-white dark:bg-white' : 'border-zinc-400 bg-white dark:border-zinc-600 dark:bg-zinc-900'">
+            <svg class="h-3 w-3 text-white dark:text-zinc-950"
+                 fill="none"
+                 viewBox="0 0 24 24"
+                 stroke-width="3"
+                 stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+            </svg>
+        </span>
+    </label>
+</div>
