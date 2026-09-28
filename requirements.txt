@@ -21,7 +21,7 @@ boto3==1.43.36
 botocore==1.43.36
 brotli==1.2.0
 CacheControl==0.14.4
-camel-converter==5.1.0
+camel-converter==5.1.1
 cattrs==26.2.0
 certifi==2026.5.20
 cffi==2.0.0
