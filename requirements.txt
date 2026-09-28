@@ -68,7 +68,7 @@ django-stubs==6.0.7
 django-stubs-ext==6.1.1
 django-tailwind==4.5.0
 django-tailwind-cli==4.8.0
-django-upgrade==1.31.1
+django-upgrade==1.32.0
 django-webpush==0.3.6
 django-widget-tweaks==1.5.1
 django_compressor==4.6.0
