@@ -196,7 +196,7 @@ pydantic_core==2.46.4
 pygls==2.1.1
 Pygments==2.20.0
 PyJWT==2.13.0
-pyparsing==3.3.2
+pyparsing==3.3.3
 pypdfium2==5.13.0
 pytailwindcss==0.3.1
 pytest==9.1.1
