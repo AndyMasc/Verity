@@ -14,7 +14,6 @@ from django.conf import settings
 from django.db import models
 from django.db.models import Q
 from django.utils import timezone
-from django.utils.functional import cached_property
 from simple_history.models import HistoricalRecords
 
 if TYPE_CHECKING:
@@ -177,14 +176,6 @@ class DocumentData(models.Model):
                 self.file_extension = normalized
         super().save(*args, **kwargs)
 
-    def delete(self, using=None, keep_parents=False):
-        """Permanently remove the database record and queue R2 cleanup via signals."""
-        super().delete(using=using, keep_parents=keep_parents)
-
-    def hard_delete(self, using=None, keep_parents=False):
-        """Permanently remove the database record regardless of OCR status."""
-        super().delete(using=using, keep_parents=keep_parents)
-
     @property
     def is_processing(self) -> bool:
         """True when the document is still in the upload or OCR pipeline."""
@@ -198,10 +189,3 @@ class DocumentData(models.Model):
     def is_terminal(self) -> bool:
         """True when the document has reached a final state (completed or error)."""
         return self.status in (DocumentStatus.COMPLETED, DocumentStatus.ERROR)
-
-    @cached_property
-    def presigned_view_url(self) -> str:
-        """Generate a temporary S3 presigned URL for viewing the document."""
-        from .storage import generate_read_presigned_url
-
-        return generate_read_presigned_url(self.filepath)

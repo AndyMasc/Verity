@@ -362,6 +362,51 @@ class TestShareViews(SharingTestCase):
         assert data["shared"] == 0
         assert data["self_skipped"] == 1
 
+    def test_bulk_share_still_reaches_others_when_owner_is_in_the_list(self):
+        """A self-addressed entry must not abort the whole batch."""
+        give_pro_subscription(self.owner)
+        self.client.force_login(self.owner)
+        response = self.client.post(
+            reverse("records:bulk_share"),
+            data=json.dumps(
+                {
+                    "record_ids": [self.record.pk],
+                    "emails": f"{self.owner.email}, {self.recipient.email}",
+                }
+            ),
+            content_type="application/json",
+        )
+        assert response.status_code == 200, response.content
+        data = response.json()
+        assert data["shared"] == 1
+        assert data["recipients"] == 1
+        assert data["self_skipped"] == 1
+        assert RecordShare.objects.filter(
+            record=self.record, user=self.recipient
+        ).exists()
+
+    def test_bulk_share_ignores_records_they_do_not_own(self):
+        give_pro_subscription(self.owner)
+        stranger_record = Record.objects.create(
+            user=self.stranger, title="Not yours", record_type="expense_receipt"
+        )
+        self.client.force_login(self.owner)
+        response = self.client.post(
+            reverse("records:bulk_share"),
+            data=json.dumps(
+                {
+                    "record_ids": [self.record.pk, stranger_record.pk],
+                    "emails": self.recipient.email,
+                }
+            ),
+            content_type="application/json",
+        )
+        assert response.status_code == 200, response.content
+        data = response.json()
+        assert data["shared"] == 1
+        assert data["records"] == 1
+        assert not RecordShare.objects.filter(record=stranger_record).exists()
+
 
 class TestShareNotifications(SharingTestCase):
     """The share service must notify only for new grants, never for duplicates,

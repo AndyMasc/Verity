@@ -9,6 +9,7 @@ state; "ReimbursementPackage" delegates to these functions.
 from dataclasses import dataclass, field
 from decimal import Decimal
 
+import core.exchange_rates
 from core.currencies import to_stripe_amount
 from core.exchange_rates import convert_strict as convert_currency
 from core.exchange_rates import get_rates
@@ -42,7 +43,7 @@ def converted_total(package, to_currency: str | None = None) -> Decimal:
     items = CurrencyConverter.get_active_record_items(cache, package.records)
     if not items:
         return Decimal("0.00")
-    return CurrencyConverter.convert_batch(items, target)
+    return core.exchange_rates.convert_batch(items, target)
 
 
 def converted_total_cents(package, to_currency: str | None = None) -> int:

@@ -13,7 +13,7 @@ def hard_delete_documents(modeladmin, request, queryset):  # noqa: ARG001
         return
     count = queryset.count()
     for doc in queryset:
-        doc.hard_delete()
+        doc.delete()
     messages.success(request, f"Permanently deleted {count} document(s).")
 
 
@@ -31,19 +31,14 @@ class DocumentDataAdmin(admin.ModelAdmin):
             del actions["delete_selected"]
         return actions
 
-    def delete_model(self, request, obj):
-        if request.user.is_superuser:
-            obj.hard_delete()
-        else:
-            obj.delete()
+    def delete_model(self, request, obj):  # noqa: ARG002
+        # Documents have no soft-delete path, so this is the same for everyone;
+        # the superuser restriction lives in get_actions above.
+        obj.delete()
 
-    def delete_queryset(self, request, queryset):
-        if request.user.is_superuser:
-            for obj in queryset:
-                obj.hard_delete()
-        else:
-            for obj in queryset:
-                obj.delete()
+    def delete_queryset(self, request, queryset):  # noqa: ARG002
+        for obj in queryset:
+            obj.delete()
 
     def has_delete_permission(self, request, obj=None):  # noqa: ARG002
         return request.user.is_superuser

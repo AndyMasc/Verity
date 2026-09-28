@@ -36,6 +36,20 @@ from ..services import (
 logger: logging.Logger = logging.getLogger(__name__)
 
 
+def _link_token_request(user_id: int, access_token: str | None = None):
+    """Build a Plaid Link token request, in update mode when an access token is given."""
+    kwargs = {"access_token": access_token} if access_token else {}
+    return LinkTokenCreateRequest(
+        user=LinkTokenCreateRequestUser(client_user_id=str(user_id)),
+        client_name="Verity",
+        products=[Products("transactions")],
+        country_codes=[CountryCode("US")],
+        language="en",
+        webhook=settings.PLAID_WEBHOOK_URL,
+        **kwargs,
+    )
+
+
 @api_view(["GET"])
 @permission_classes([permissions.IsAuthenticated])
 def plaid_connect_page(request: Request) -> HttpResponse:
@@ -62,15 +76,7 @@ class CreateLinkTokenView(FeatureRequiredMixin, APIView):
     def post(self, request: Request) -> Response:
         """Issue a new link token for the requesting user."""
         try:
-            request_obj = LinkTokenCreateRequest(
-                user=LinkTokenCreateRequestUser(client_user_id=str(request.user.id)),
-                client_name="Verity",
-                products=[Products("transactions")],
-                country_codes=[CountryCode("US")],
-                language="en",
-                webhook=settings.PLAID_WEBHOOK_URL,
-            )
-            response = client.link_token_create(request_obj)
+            response = client.link_token_create(_link_token_request(request.user.id))
             return Response({"link_token": response["link_token"]})
         except plaid.ApiException:
             logger.exception("Link token creation failed for user %s", request.user.id)
@@ -94,16 +100,9 @@ class CreateUpdateLinkTokenView(FeatureRequiredMixin, APIView):
             return Response({"error": "Bank connection not found"}, status=404)
 
         try:
-            request_obj = LinkTokenCreateRequest(
-                user=LinkTokenCreateRequestUser(client_user_id=str(request.user.id)),
-                client_name="Verity",
-                products=[Products("transactions")],
-                country_codes=[CountryCode("US")],
-                language="en",
-                webhook=settings.PLAID_WEBHOOK_URL,
-                access_token=plaid_item.access_token,
+            response = client.link_token_create(
+                _link_token_request(request.user.id, plaid_item.access_token)
             )
-            response = client.link_token_create(request_obj)
             return Response({"link_token": response["link_token"]})
         except plaid.ApiException:
             logger.exception("Update link token creation failed for item %s", item_id)

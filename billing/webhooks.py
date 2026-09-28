@@ -19,10 +19,8 @@ logger = logging.getLogger(__name__)
 @receiver(djstripe_signals.webhook_processing_error)
 def report_webhook_processing_error(**kwargs: Any) -> None:
     """Logs djstripe webhook processing failures."""
-    trigger = kwargs.get(
-        "instance"
-    )  # which specific endpoint or webhook transmission attempt failed.
-    exception = kwargs.get("exception")  # python traceback and error message
+    trigger = kwargs.get("instance")
+    exception = kwargs.get("exception")
     logger.error(
         "djstripe webhook processing failed (trigger=%s): %s",
         trigger,

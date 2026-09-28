@@ -1,6 +1,6 @@
 """Tests for the DocumentDeletionService.
 
-Covers soft_delete and hard_delete, both of which permanently remove documents.
+Covers delete(), which permanently removes a document and its R2 file.
 """
 
 import hashlib
@@ -28,7 +28,7 @@ class TestSoftDelete:
             filepath="users/1/doc.pdf",
             file_hash=_make_hash(),
         )
-        result = DocumentDeletionService.soft_delete(doc)
+        result = DocumentDeletionService.delete(doc)
         assert result.success is True
         assert result.message_tag == "success"
         assert not DocumentData.objects.filter(id=doc.id).exists()
@@ -41,20 +41,20 @@ class TestSoftDelete:
             did_ocr=True,
             ocr_raw_data={"title": "Receipt"},
         )
-        result = DocumentDeletionService.soft_delete(doc)
+        result = DocumentDeletionService.delete(doc)
         assert result.success is True
         assert not DocumentData.objects.filter(id=doc.id).exists()
 
-    def test_soft_delete_returns_filepath(self, user):
+    def test_delete_returns_filepath(self, user):
         doc = DocumentData.objects.create(
             user=user,
             filepath="users/1/doc.pdf",
             file_hash=_make_hash(),
         )
-        result = DocumentDeletionService.soft_delete(doc)
+        result = DocumentDeletionService.delete(doc)
         assert result.filepath == "users/1/doc.pdf"
 
-    def test_soft_delete_returns_record_id(self, user):
+    def test_delete_returns_record_id(self, user):
         from records.models import Record
 
         record = Record.objects.create(
@@ -69,17 +69,17 @@ class TestSoftDelete:
             file_hash=_make_hash(),
             associated_record=record,
         )
-        result = DocumentDeletionService.soft_delete(doc)
+        result = DocumentDeletionService.delete(doc)
         assert result.record_id == record.id
 
-    def test_soft_delete_handles_exception(self, user):
+    def test_delete_handles_exception(self, user):
         doc = DocumentData.objects.create(
             user=user,
             filepath="users/1/doc.pdf",
             file_hash=_make_hash(),
         )
         with patch.object(DocumentData, "delete", side_effect=Exception("DB down")):
-            result = DocumentDeletionService.soft_delete(doc)
+            result = DocumentDeletionService.delete(doc)
             assert result.success is False
             assert "system error" in result.error.lower()
 
@@ -92,7 +92,7 @@ class TestHardDelete:
             filepath="users/1/doc.pdf",
             file_hash=_make_hash(),
         )
-        result = DocumentDeletionService.hard_delete(doc)
+        result = DocumentDeletionService.delete(doc)
         assert result.success is True
         assert result.filepath == "users/1/doc.pdf"
         assert not DocumentData.objects.filter(id=doc.id).exists()

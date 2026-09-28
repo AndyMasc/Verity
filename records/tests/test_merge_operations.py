@@ -104,6 +104,14 @@ class MergeDocumentIntoPlaidTest(TestCase):
             DocumentData.objects.filter(associated_record=self.doc_with_docref).exists()
         )
 
+    def test_merge_returns_none_when_a_record_vanished(self):
+        """A record hard-deleted between matching and merging must not raise."""
+        for record in (self.plaid, self.doc):
+            record.hard_delete()
+
+        result = merge_document_into_plaid(self.plaid, self.doc)
+        self.assertIsNone(result)
+
     def test_merge_snapshot_tracks_document_ids(self):
         import hashlib
         from documents.models import DocumentData

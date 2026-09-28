@@ -45,9 +45,7 @@ def index(request: HttpRequest) -> HttpResponse:
 
 
 def privacy_policy(_request: HttpRequest) -> HttpResponse:
-    """Render the static privacy policy page via docs app."""
-    from django.shortcuts import redirect
-
+    """Redirect to the static privacy policy page served by the docs app."""
     return redirect("docs:privacy_policy", permanent=True)
 
 
@@ -125,11 +123,7 @@ def safe_webpush_save_info(request: HttpRequest) -> HttpResponse:
 
 
 class DashboardView(LoginRequiredMixin, TemplateView):
-    """Main dashboard displaying record summaries, expenses, and alerts.
-
-    Aggregates data asynchronously and caches the result per user for
-    "DASHBOARD_CACHE_TTL" seconds to keep page loads fast.
-    """
+    """Dashboard of record summaries, expenses, and alerts (cached per user)."""
 
     template_name = "core/dashboard.html"
 
@@ -225,6 +219,7 @@ class ProfilePageView(LoginRequiredMixin, UpdateView):
 
 
 @require_GET
+@login_required
 @ratelimit(key="user", rate="30/m", method="GET", block=True)
 def expense_chart_data(request: HttpRequest) -> JsonResponse:
     """Return monthly expense aggregates for the expense chart.
@@ -263,6 +258,7 @@ class NotificationListView(LoginRequiredMixin, ListView):
 
 
 @require_POST
+@login_required
 def notification_delete(request: HttpRequest, notification_id: int) -> HttpResponse:
     """Delete a single notification. Only the recipient may delete."""
     notification = get_object_or_404(
@@ -275,6 +271,7 @@ def notification_delete(request: HttpRequest, notification_id: int) -> HttpRespo
 
 
 @require_POST
+@login_required
 def notification_mark_read(request: HttpRequest, notification_id: int) -> HttpResponse:
     """Toggle read/unread on a single notification."""
     notification = get_object_or_404(
@@ -292,6 +289,7 @@ def notification_mark_read(request: HttpRequest, notification_id: int) -> HttpRe
 
 
 @require_POST
+@login_required
 def notification_mark_all_read(request: HttpRequest) -> HttpResponse:
     """Mark all unread notifications as read."""
     count = Notification.objects.filter(recipient=request.user, is_read=False).update(

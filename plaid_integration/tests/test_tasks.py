@@ -1,21 +1,30 @@
+import base64
 import hashlib
 import json
-from datetime import date, timedelta
-from unittest.mock import MagicMock, patch
+from datetime import UTC, date, datetime, timedelta
+from unittest.mock import patch
 
+import jwt as pyjwt
 import plaid
+from cryptography.hazmat.primitives.asymmetric import rsa
 from django.contrib.auth import get_user_model
-
-User = get_user_model()
-from django.core.cache import cache
 from django.test import TestCase
-from django.utils import timezone
+from jwt import PyJWK
+from jwt.exceptions import PyJWKClientConnectionError, PyJWKClientError
 
 from plaid_integration.models import PlaidItem
 from plaid_integration.services import public_token_exchange
 from plaid_integration.tasks import sync_and_convert_for_item_task
 from plaid_integration.views import verify_plaid_webhook
 from records.models import Record
+
+User = get_user_model()
+
+
+def _int_to_base64url(n: int) -> str:
+    """Encode an RSA modulus/exponent as base64url, as JWK requires."""
+    length = (n.bit_length() + 7) // 8
+    return base64.urlsafe_b64encode(n.to_bytes(length, "big")).rstrip(b"=").decode()
 
 
 class PublicTokenExchangeTest(TestCase):
@@ -53,69 +62,71 @@ class PublicTokenExchangeTest(TestCase):
 class WebhookVerificationTest(TestCase):
     """Tests for Plaid webhook signature verification."""
 
+    def setUp(self):
+        self.private_key = rsa.generate_private_key(
+            public_exponent=65537, key_size=2048
+        )
+        numbers = self.private_key.public_key().public_numbers()
+        self.jwk = {
+            "kty": "RSA",
+            "n": _int_to_base64url(numbers.n),
+            "e": _int_to_base64url(numbers.e),
+            "kid": "test-kid",
+        }
+        self.signing_key = PyJWK.from_dict(self.jwk)
+
+    def _token(self, body: bytes, **claims) -> str:
+        payload = {
+            "request_body_sha256": hashlib.sha256(body).hexdigest(),
+            "exp": (datetime.now(UTC) + timedelta(days=1)).timestamp(),
+            **claims,
+        }
+        return pyjwt.encode(
+            payload, self.private_key, algorithm="RS256", headers={"kid": "test-kid"}
+        )
+
     def test_missing_verification_header(self):
         self.assertFalse(verify_plaid_webhook(b"body", None))
         self.assertFalse(verify_plaid_webhook(b"body", ""))
 
-    @patch("plaid_integration.views.webhook._get_plaid_jwk")
-    def test_invalid_jwt_returns_false(self, mock_jwk):
-        result = verify_plaid_webhook(b"body", "not-a-valid-jwt")
-        self.assertFalse(result)
-        mock_jwk.assert_not_called()
+    @patch.object(pyjwt.PyJWKClient, "fetch_data")
+    def test_invalid_jwt_returns_false_without_network_call(self, mock_fetch):
+        self.assertFalse(verify_plaid_webhook(b"body", "not-a-valid-jwt"))
+        mock_fetch.assert_not_called()
 
-    @patch("plaid_integration.views.webhook._get_plaid_jwk")
-    def test_no_jwk_found_returns_false(self, mock_jwk):
-        mock_jwk.return_value = None
-        import jwt as pyjwt
-        from datetime import UTC, datetime
-
-        token = pyjwt.encode(
-            {"kid": "unknown-kid", "exp": datetime.max.replace(tzinfo=UTC).timestamp()},
-            "secret",
-            algorithm="HS256",
+    @patch("plaid_integration.views.webhook.jwks_client")
+    def test_unknown_kid_returns_false(self, mock_client):
+        mock_client.get_signing_key_from_jwt.side_effect = PyJWKClientError(
+            "no such kid"
         )
-        result = verify_plaid_webhook(b"body", token)
-        self.assertFalse(result)
+        token = self._token(b"body")
+        self.assertFalse(verify_plaid_webhook(b"body", token))
 
-    def test_body_hash_mismatch_returns_false(self):
-        import jwt as pyjwt
-        from cryptography.hazmat.primitives.asymmetric import rsa
-        from datetime import UTC, datetime
-        import base64
-
-        def _int_to_base64url(n):
-            byte_length = (n.bit_length() + 7) // 8
-            return (
-                base64.urlsafe_b64encode(n.to_bytes(byte_length, byteorder="big"))
-                .rstrip(b"=")
-                .decode()
-            )
-
-        private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-        public_key = private_key.public_key()
-
-        body_hash = hashlib.sha256(b"original body").hexdigest()
-        token = pyjwt.encode(
-            {
-                "kid": "test-kid",
-                "request_body_sha256": body_hash,
-                "exp": datetime.max.replace(tzinfo=UTC).timestamp(),
-            },
-            private_key,
-            algorithm="RS256",
+    @patch("plaid_integration.views.webhook.jwks_client")
+    def test_jwks_fetch_failure_returns_false(self, mock_client):
+        mock_client.get_signing_key_from_jwt.side_effect = PyJWKClientConnectionError(
+            "unreachable"
         )
+        token = self._token(b"body")
+        self.assertFalse(verify_plaid_webhook(b"body", token))
 
-        with patch("plaid_integration.views.webhook._get_plaid_jwk") as mock_jwk:
-            pub_numbers = public_key.public_numbers()
-            public_jwk = {
-                "kty": "RSA",
-                "n": _int_to_base64url(pub_numbers.n),
-                "e": _int_to_base64url(pub_numbers.e),
-                "kid": "test-kid",
-            }
-            mock_jwk.return_value = public_jwk
-            result = verify_plaid_webhook(b"different body", token)
-            self.assertFalse(result)
+    @patch("plaid_integration.views.webhook.jwks_client")
+    def test_valid_token_returns_true(self, mock_client):
+        mock_client.get_signing_key_from_jwt.return_value = self.signing_key
+        token = self._token(b"body")
+        self.assertTrue(verify_plaid_webhook(b"body", token))
+
+    @patch("plaid_integration.views.webhook.jwks_client")
+    def test_body_hash_mismatch_returns_false(self, mock_client):
+        mock_client.get_signing_key_from_jwt.return_value = self.signing_key
+        token = self._token(b"original body")
+        self.assertFalse(verify_plaid_webhook(b"different body", token))
+
+    @patch("plaid_integration.views.webhook.jwks_client")
+    def test_expired_token_returns_false(self, mock_client):
+        mock_client.get_signing_key_from_jwt.return_value = self.signing_key
+        token = self._token(b"body", exp=datetime.min.replace(tzinfo=UTC).timestamp())
+        self.assertFalse(verify_plaid_webhook(b"body", token))
 
 
 class SyncAndConvertTaskTest(TestCase):
@@ -129,7 +140,7 @@ class SyncAndConvertTaskTest(TestCase):
             access_token="access-1",
         )
 
-    @patch("records.matching.try_match_plaid_record")
+    @patch("plaid_integration.tasks.try_match_plaid_record")
     @patch("plaid_integration.tasks.client")
     def test_sync_creates_records(self, mock_client, mock_match):
         mock_response = {
@@ -156,7 +167,7 @@ class SyncAndConvertTaskTest(TestCase):
         self.assertEqual(result["removed"], 0)
         self.assertTrue(Record.objects.filter(plaid_transaction_id="txn-001").exists())
 
-    @patch("records.matching.try_match_plaid_record")
+    @patch("plaid_integration.tasks.try_match_plaid_record")
     @patch("plaid_integration.tasks.client")
     def test_sync_removes_deactivated_records(self, mock_client, mock_match):
         record = Record.objects.create(
@@ -219,7 +230,7 @@ class SyncAndConvertTaskTest(TestCase):
             self.plaid_item.last_error_message, "A user login is required."
         )
 
-    @patch("records.matching.try_match_plaid_record")
+    @patch("plaid_integration.tasks.try_match_plaid_record")
     @patch("plaid_integration.tasks.client")
     def test_sync_updates_cursor(self, mock_client, mock_match):
         mock_response = {
@@ -235,7 +246,7 @@ class SyncAndConvertTaskTest(TestCase):
         self.plaid_item.refresh_from_db()
         self.assertEqual(self.plaid_item.next_cursor, "new-cursor-123")
 
-    @patch("records.matching.try_match_plaid_record")
+    @patch("plaid_integration.tasks.try_match_plaid_record")
     @patch("plaid_integration.tasks.client")
     def test_sync_handles_pagination(self, mock_client, mock_match):
         page1 = {
@@ -273,7 +284,7 @@ class SyncAndConvertTaskTest(TestCase):
         result = sync_and_convert_for_item_task(self.plaid_item.id)
         self.assertEqual(result["added"], 2)
 
-    @patch("records.matching.try_match_plaid_record")
+    @patch("plaid_integration.tasks.try_match_plaid_record")
     @patch("plaid_integration.tasks.client")
     def test_nonexistent_plaid_item_returns_error(self, mock_client, mock_match):
         result = sync_and_convert_for_item_task(99999)

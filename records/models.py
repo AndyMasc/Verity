@@ -8,6 +8,7 @@ and an audit log that captures every significant mutation.
 from __future__ import annotations
 
 import calendar
+import contextlib
 import datetime
 import re
 from decimal import Decimal, InvalidOperation
@@ -146,12 +147,11 @@ class RecordQuerySet(models.QuerySet):
         return self.active().filter(expiry_date__lt=timezone.now().date())
 
     def smart_search(self, search_query: str) -> RecordQuerySet:
-        """Search across text, numeric, and date fields with natural-language heuristics.
+        """Free-text search over text, numbers, and dates.
 
-        Accepts free-text queries that are matched against titles, merchants,
-        products, notes, record types, balances, and dates (including relative
-        terms like "today" or month names). Returns an empty queryset when the
-        query is blank after stripping.
+        Matches titles, merchants, products, notes, record types, balances and
+        dates (including relative terms like "today" or month names). A blank
+        query returns the queryset unfiltered.
         """
         if not (search_query := search_query.strip()):
             return self
@@ -196,12 +196,10 @@ class RecordQuerySet(models.QuerySet):
             start, end = _month_range(timezone.now().date().year, _MONTH_MAP[lower])
 
         elif _ISO_DATE_RE.match(search_query):
-            try:
+            with contextlib.suppress(ValueError):
                 start = end = datetime.date.fromisoformat(search_query)
-            except ValueError:
-                start = end = None
 
-        if start is not None and end is not None:
+        if start is not None:
             conditions |= reduce(
                 or_,
                 (Q(**{f"{f}__range": (start, end)}) for f in _DATE_FIELDS),

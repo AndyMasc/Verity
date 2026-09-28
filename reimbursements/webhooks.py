@@ -127,6 +127,8 @@ def _payment_for_checkout_session(session_id: str) -> PackagePayment | None:
             )
             return None
         except stripe.error.StripeError:
+            # Transient Stripe failure. Fall through so the original
+            # DoesNotExist is re-raised and the task is retried later.
             pass
         logger.error("No PackagePayment for session %s — raising for retry", session_id)
         raise

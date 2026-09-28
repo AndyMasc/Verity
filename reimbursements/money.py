@@ -62,16 +62,7 @@ def _converted_units(usd_amount: Decimal, payer_currency: str, rates) -> int:
 
 
 class CurrencyConverter:
-    """Thin wrapper around the exchange-rate service for batch conversion."""
-
-    @staticmethod
-    def convert_batch(
-        items: list[tuple[Decimal, str]], target_currency: str
-    ) -> Decimal:
-        """Convert a batch of (amount, currency) tuples to target currency."""
-        from core.exchange_rates import convert_batch
-
-        return convert_batch(items, target_currency)
+    """Helpers for turning a package's records into a payer-currency total."""
 
     @staticmethod
     def get_active_record_items(

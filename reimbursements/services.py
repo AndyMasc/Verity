@@ -162,19 +162,16 @@ def create_package_checkout(
     """Create a Stripe Checkout Session for "package" and record the payment.
 
     Concurrency: the package row is locked while an attempt is claimed and a
-    PackagePayment row (with a "pending:" placeholder session id) is inserted.
-    A concurrent checkout therefore sees the in-flight attempt instead of
-    racing ahead to create a second session — previously two simultaneous
-    payers could both be charged with transfers on both PaymentIntents.
+    PackagePayment row (with a "pending:" placeholder session id) is inserted,
+    so a concurrent checkout sees the in-flight attempt instead of creating a
+    second session that would both charge and transfer.
 
-    Idempotency: the Stripe key is derived from the payment row's primary key,
-    so a lost response retried by Dramatiq resolves to the SAME session at
-    Stripe rather than minting a duplicate. (Timestamp-salted keys were unique
-    per attempt and deduplicated nothing.)
+    Idempotency: the Stripe key derives from the payment row's primary key, so
+    a retry resolves to the same session at Stripe rather than minting a
+    duplicate.
 
-    Returns the Stripe-hosted checkout URL on success, or a user-facing error
-    message when the package is no longer payable, rates are unavailable, or
-    Stripe rejects the session.
+    Returns the Stripe-hosted checkout URL, or an error when the package is no
+    longer payable, rates are unavailable, or Stripe rejects the session.
     """
     ok, error = package.can_be_paid_by(payer)
     if not ok:
@@ -338,14 +335,6 @@ def create_reimbursement_package(
     if recipient is not None:
         _grant_package_access(package)
     return package, None
-
-
-def activate_queued_package(package: ReimbursementPackage) -> bool:
-    """Open a queued package for payment once the external payer arrives.
-
-    Returns True when the package transitioned from queued to open.
-    """
-    return package.activate()
 
 
 def _grant_package_access(package: ReimbursementPackage) -> None:

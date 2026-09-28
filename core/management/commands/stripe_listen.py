@@ -23,33 +23,20 @@ class Command(BaseCommand):
             )
             return
 
-        # Flush old dev endpoints to prevent cluttering
         WebhookEndpoint.objects.filter(url__contains="localhost:8000").delete()
 
-        # Create the automated database configurations
+        # One endpoint each for the platform account and the Connect account.
         u_account, u_connect = uuid.uuid4(), uuid.uuid4()
-
-        # Row 1: Standard Billing
-        WebhookEndpoint.objects.create(
-            id=f"we_dev_{u_account.hex[:8]}",
-            url=f"http://localhost:8000/stripe/webhook/{u_account}/",
-            djstripe_uuid=u_account,
-            secret=secret,
-            livemode=False,
-            status="enabled",
-            enabled_events=["*"],
-        )
-
-        # Row 2: Connect Marketplace
-        WebhookEndpoint.objects.create(
-            id=f"we_dev_{u_connect.hex[:8]}",
-            url=f"http://localhost:8000/stripe/webhook/{u_connect}/",
-            djstripe_uuid=u_connect,
-            secret=secret,
-            livemode=False,
-            status="enabled",
-            enabled_events=["*"],
-        )
+        for endpoint_uuid in (u_account, u_connect):
+            WebhookEndpoint.objects.create(
+                id=f"we_dev_{endpoint_uuid.hex[:8]}",
+                url=f"http://localhost:8000/stripe/webhook/{endpoint_uuid}/",
+                djstripe_uuid=endpoint_uuid,
+                secret=secret,
+                livemode=False,
+                status="enabled",
+                enabled_events=["*"],
+            )
 
         self.stdout.write(
             self.style.SUCCESS(
@@ -57,7 +44,6 @@ class Command(BaseCommand):
             )
         )
 
-        # Trigger the multi-forwarding listener process
         subprocess.run(  # noqa: S603  # nosec B603, B607 - local dev helper wrapping the Stripe CLI
             [  # noqa: S607
                 "stripe",

@@ -84,7 +84,7 @@ class PackagePayView(View):
                 request, package, state="verify", verify_step=step, email=email
             )
 
-        services.activate_queued_package(package)
+        package.activate()
         package.refresh_from_db()
         if package.status == ReimbursementPackage.Status.PAID:
             return self._render(request, package, state="paid")
@@ -224,7 +224,7 @@ class PayPackageCheckoutView(View):
             payer = None
             payer_currency = package.currency
 
-        services.activate_queued_package(package)
+        package.activate()
 
         outcome = services.create_package_checkout(
             package=package,

@@ -12,7 +12,13 @@ network call.
 """
 
 from django.utils import timezone
-from djstripe.models import Customer, Price, Product, Subscription, SubscriptionItem
+from djstripe.models import (
+    Customer,
+    Price,
+    Product,
+    Subscription,
+    SubscriptionItem,
+)
 
 from .. import metadata
 
@@ -81,3 +87,39 @@ def give_pro_subscription(user) -> Subscription:
         price=price,
     )
     return subscription
+
+
+def add_subscription(user, customer, status="active", product_id=None):
+    """Attach a djstripe Subscription to a user, optionally with a product.
+
+    Returns the subscription. ``product_id`` creates the Product / Price /
+    SubscriptionItem rows the entitlement layer reads.
+    """
+    sub = Subscription.objects.create(
+        id=f"sub_{user.pk}_{status}",
+        livemode=False,
+        created=timezone.now(),
+        customer=customer,
+        stripe_data={"status": status},
+    )
+    if product_id is not None:
+        product = Product.objects.create(
+            id=product_id, livemode=False, active=True, name="Test"
+        )
+        price = Price.objects.create(
+            id=f"price_{product_id}",
+            livemode=False,
+            active=True,
+            product=product,
+            currency="usd",
+        )
+        SubscriptionItem.objects.create(
+            id=f"si_{product_id}",
+            livemode=False,
+            created=timezone.now(),
+            subscription=sub,
+            price=price,
+        )
+    user.subscription = sub
+    user.save()
+    return sub

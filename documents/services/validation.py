@@ -69,6 +69,15 @@ class DocumentUploadService:
         When *transition* is True, a successful validation also sets the
         document status to UPLOADED.
         """
+
+        def reject(note: str, error: str, status_code: int) -> UploadResult:
+            """Mark the document ERROR, record why, and return the failure."""
+            self.document.status = DocumentStatus.ERROR
+            self.document.notes = ((self.document.notes or "") + f"\n{note}").strip()
+            self.document.save(update_fields=["status", "notes"])
+            logger.warning("Upload rejected for doc %s: %s", self.document.id, note)
+            return UploadResult(valid=False, error=error, status_code=status_code)
+
         if self.document.filepath != self.key:
             logger.warning(
                 "Key mismatch for doc %s: expected=%s, received=%s",
@@ -76,6 +85,8 @@ class DocumentUploadService:
                 self.document.filepath,
                 self.key,
             )
+            self.document.status = DocumentStatus.ERROR
+            self.document.save(update_fields=["status"])
             return UploadResult(valid=False, error="Key mismatch.", status_code=400)
 
         head = get_r2_object_head(self.key)
@@ -87,38 +98,22 @@ class DocumentUploadService:
             )
 
         file_size = head.get("ContentLength")
+        mime_type = (head.get("ContentType") or "").split(";")[0].strip()
 
         if file_size == 0:
-            self.document.status = DocumentStatus.ERROR
-            self.document.notes = (
-                (self.document.notes or "") + "\n[Gatekeeper] Empty file rejected."
-            ).strip()
-            self.document.save(update_fields=["status", "notes"])
-            logger.warning("Gatekeeper rejected doc %s: empty file", self.document.id)
-            return UploadResult(
-                valid=False, error="Empty file rejected.", status_code=422
+            return reject(
+                "[Gatekeeper] Empty file rejected.",
+                "Empty file rejected.",
+                422,
             )
 
         if file_size is not None and file_size > MAX_FILE_SIZE:
             limit_mb = MAX_FILE_SIZE / 1024 / 1024
-            self.document.status = DocumentStatus.ERROR
-            self.document.notes = (
-                (self.document.notes or "")
-                + f"\n[Gatekeeper] File exceeds {limit_mb}MB limit."
-            ).strip()
-            self.document.save(update_fields=["status", "notes"])
-            logger.warning(
-                "Gatekeeper rejected doc %s: file too large", self.document.id
+            return reject(
+                f"[Gatekeeper] File exceeds {limit_mb}MB limit.",
+                f"File exceeds {limit_mb}MB limit.",
+                422,
             )
-            return UploadResult(
-                valid=False,
-                error=f"File exceeds {limit_mb}MB limit.",
-                status_code=422,
-            )
-
-        mime_type = (
-            (head.get("ContentType") or "").split(";")[0].strip() if head else ""
-        )
 
         if (
             transition
@@ -126,21 +121,10 @@ class DocumentUploadService:
             and not can_add_storage(self.document.user, file_size)
         ):
             limit_gb = get_storage_limit(self.document.user)
-            self.document.status = DocumentStatus.ERROR
-            self.document.notes = (
-                (self.document.notes or "")
-                + f"\n[Storage] Upload rejected: storage limit ({limit_gb} GB) reached."
-            ).strip()
-            self.document.save(update_fields=["status", "notes"])
-            logger.warning(
-                "Storage limit exceeded for doc %s (%s bytes)",
-                self.document.id,
-                file_size,
-            )
-            return UploadResult(
-                valid=False,
-                error=f"Storage limit ({limit_gb} GB) reached.",
-                status_code=422,
+            return reject(
+                f"[Storage] Upload rejected: storage limit ({limit_gb} GB) reached.",
+                f"Storage limit ({limit_gb} GB) reached.",
+                422,
             )
 
         if transition:

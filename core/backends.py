@@ -26,11 +26,14 @@ class DramatiqEmailBackend(BaseEmailBackend):
 
         sent_count = 0
         for message in email_messages:
-            html_message = None
-            if hasattr(message, "alternatives") and message.alternatives:
-                for content, mimetype in message.alternatives:
-                    if mimetype == "text/html":
-                        html_message = content
+            html_message = next(
+                (
+                    content
+                    for content, mimetype in message.alternatives
+                    if mimetype == "text/html"
+                ),
+                None,
+            )
 
             send_background_email.send(
                 EmailTaskPayload(

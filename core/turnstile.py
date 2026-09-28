@@ -77,7 +77,7 @@ def verify_turnstile_token(
         return _failure("Invalid token format", {})
 
     if not settings.TURNSTILE_SECRET:
-        if _test_env() or getattr(settings, "RATELIMIT_ENABLE", True) is False:
+        if _test_env():
             return _stub_result(action)
         logger.error("TURNSTILE_SECRET not configured")
         return _failure("Turnstile not configured", {})
@@ -159,6 +159,5 @@ def get_client_ip(request: HttpRequest) -> str:
     """
     x_forwarded_for = request.headers.get("x-forwarded-for")
     if x_forwarded_for:
-        ip = x_forwarded_for.split(",")[0].strip()
-        return ip
+        return x_forwarded_for.split(",")[0].strip()
     return request.META.get("REMOTE_ADDR", "")

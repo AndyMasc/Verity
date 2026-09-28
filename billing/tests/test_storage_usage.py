@@ -64,7 +64,7 @@ def test_hard_delete_deducts_usage(user):
 
 def test_hard_delete_method_deducts_usage(user):
     doc = DocumentDataFactory(user=user, file_size=4096, did_ocr=True)
-    doc.hard_delete()
+    doc.delete()
     assert _counter(user) == 0
 
 

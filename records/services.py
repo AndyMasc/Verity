@@ -47,7 +47,7 @@ def unarchive_record(user: User, record: Record) -> None:
 
 
 def soft_delete_record(user: User, record: Record) -> None:
-    """Soft-delete *record* and log the action."""
+    """Soft-delete record and log the action."""
     with transaction.atomic():
         record.delete()
         AuditLog.objects.create(
@@ -66,7 +66,7 @@ def hard_delete_record(user: User, record: Record) -> None:
 
     with transaction.atomic():
         for doc in DocumentData.objects.filter(associated_record=record):
-            doc.hard_delete()
+            doc.delete()
         AuditLog.objects.create(
             user=user,
             action=AuditLog.Action.HARD_DELETE,
@@ -234,21 +234,11 @@ def bulk_toggle_archive(
     *,
     archive: bool,
 ) -> int:
-    """Bulk archive or unarchive records for "user".
+    """Bulk archive/unarchive for "user"; returns how many actually changed.
 
-    Uses "QuerySet.update()" and "bulk_create()" to avoid N+1 queries.
-    Wraps everything in a single transaction so partial failures roll back.
-
-    Args:
-        record_ids: List of record IDs to toggle.
-        user: The owning user (scoped for safety).
-        archive: "True" to archive, "False" to unarchive.
-
-    Returns:
-        Number of records affected.
-
-    Raises:
-        BulkLimitExceededError: If "record_ids" contains more than "BULK_LIMIT" IDs.
+    Uses "QuerySet.update()" and "bulk_create()" to avoid N+1 queries, in one
+    transaction so partial failures roll back. Raises BulkLimitExceededError
+    above BULK_LIMIT ids.
     """
     if len(record_ids) > BULK_LIMIT:
         raise BulkLimitExceededError(
@@ -268,8 +258,10 @@ def bulk_toggle_archive(
         if not records:
             return 0
 
-        record_ids_found = [r.id for r in records]
-        Record.objects.filter(id__in=record_ids_found).update(is_active=not archive)
+        # Scope the update to this user's records, not the raw requested ids.
+        Record.objects.filter(id__in=[r.id for r in records]).update(
+            is_active=not archive
+        )
 
         AuditLog.objects.bulk_create(
             [AuditLog(user=user, action=action, record=record) for record in records]

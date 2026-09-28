@@ -10,7 +10,7 @@ from typing import Any
 
 import plaid
 from django.conf import settings
-from django.db import models
+from django.db.models import Q
 from django.utils import timezone as tz
 from plaid.model.accounts_get_request import AccountsGetRequest
 from plaid.model.country_code import CountryCode
@@ -48,26 +48,14 @@ def _record_item_error(plaid_item: PlaidItem, code: str, message: str) -> None:
 
 
 def public_token_exchange(public_token: str) -> tuple[str, str]:
-    """Exchange a Plaid public token for a long-lived access token and item ID.
-
-    This is the final step of the bank linking flow. The returned access
-    token is used for all subsequent Plaid API calls for this bank item.
-    """
+    """Exchange a Plaid public token for a long-lived access token and item ID."""
     try:
         request = ItemPublicTokenExchangeRequest(public_token=public_token)
         response = _plaid_dict(plaid_client.item_public_token_exchange(request))
-
-        access_token = response["access_token"]
-        item_id = response["item_id"]
-
-        return access_token, item_id
-
-    except plaid.ApiException as e:
-        logger.error("Plaid API error during exchange: %s", e)
+    except plaid.ApiException:
+        logger.exception("Plaid rejected the public token exchange")
         raise
-    except Exception:
-        logger.exception("Unexpected error in public_token_exchange")
-        raise
+    return response["access_token"], response["item_id"]
 
 
 def fetch_institution_name(access_token: str, item_id: str) -> str:
@@ -148,8 +136,7 @@ def dispatch_sync(plaid_item: PlaidItem) -> bool:
     updated_count = (
         PlaidItem.objects.filter(id=plaid_item.id)
         .filter(
-            models.Q(last_synced_at__isnull=True)
-            | models.Q(last_synced_at__lt=cooldown_threshold)
+            Q(last_synced_at__isnull=True) | Q(last_synced_at__lt=cooldown_threshold)
         )
         .update(last_synced_at=now)
     )

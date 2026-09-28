@@ -55,7 +55,7 @@ class DocumentPermanentDeleteEdgeCasesTest(TestCase):
             did_ocr=True,
         )
         pk = doc.id
-        doc.hard_delete()
+        doc.delete()
         self.assertFalse(DocumentData.objects.filter(id=pk).exists())
 
 

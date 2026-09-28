@@ -103,8 +103,6 @@ def _checkout_price_id(product: Product) -> str | None:
     dj-stripe Prices have no default ordering, so it can select an archived
     price that the checkout validation (_validated_price) rejects.
     """
-    # "active" and the mode are also applied by the prefetch in
-    # "pricing_context"; re-checking here keeps this correct for any caller.
     candidates = [
         price
         for price in product.prices.all()

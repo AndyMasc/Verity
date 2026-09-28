@@ -29,14 +29,9 @@ class DocumentDeletionService:
     """Handles document deletion business logic."""
 
     @staticmethod
-    def soft_delete(document: DocumentData) -> DeletionResult:
-        """Permanently delete a document from the database and queue R2 cleanup.
-
-        Retained for API stability; every document delete is now permanent.
-        """
-        record_id = (
-            document.associated_record_id if document.associated_record else None
-        )
+    def delete(document: DocumentData) -> DeletionResult:
+        """Delete a document from the database and queue R2 cleanup."""
+        record_id = document.associated_record_id
         filepath = document.filepath
 
         try:
@@ -61,12 +56,3 @@ class DocumentDeletionService:
             record_id=record_id,
             filepath=filepath,
         )
-
-    @staticmethod
-    def hard_delete(document: DocumentData) -> DeletionResult:
-        """Permanently delete a document from the database and queue R2 cleanup.
-
-        Identical to soft_delete; kept as a thin alias for callers that
-        explicitly want a permanent delete.
-        """
-        return DocumentDeletionService.soft_delete(document)

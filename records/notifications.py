@@ -4,7 +4,7 @@ Funnels through "core.services.notifications.send_multi_channel_notification"
 so delivery respects each user's push/email preferences (set in settings) and
 runs asynchronously on the background broker.
 
-All sending is fire-and-forget: callers mustnever let a notification failure
+All sending is fire-and-forget: callers must never let a notification failure
 block the share grant itself.
 """
 
@@ -18,6 +18,7 @@ from django.template.loader import render_to_string
 from django.utils.html import escape
 
 from core.currencies import format_currency
+from core.services.notifications import build_site_context
 
 if TYPE_CHECKING:
     from records.models import Record, RecordShare
@@ -64,7 +65,7 @@ def send_record_shared_notification(
         "currency": currency,
         "record_url": record_url,
         "record": record,
-        **_site_context(),
+        **build_site_context(),
     }
 
     html_body = render_to_string(

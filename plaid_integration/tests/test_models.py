@@ -11,7 +11,7 @@ from plaid_integration.models import PlaidItem
 from plaid_integration.tasks import (
     choose_folder,
     _get_payment_method,
-    _txn_to_record_defaults,
+    _txn_to_record,
 )
 from records.models import Record, Folder
 
@@ -163,8 +163,8 @@ class GetPaymentMethodTest(TestCase):
         self.assertEqual(result, "")
 
 
-class TxnToRecordDefaultsTest(TestCase):
-    """Tests for the _txn_to_record_defaults helper."""
+class TxnToRecordTest(TestCase):
+    """Tests for the _txn_to_record helper."""
 
     def setUp(self):
         self.user = User.objects.create_user(username="testuser", password="pass")
@@ -187,7 +187,7 @@ class TxnToRecordDefaultsTest(TestCase):
             "account_id": "acc1",
             "category": ["Shopping", "Online"],
         }
-        defaults = _txn_to_record_defaults(txn, self.plaid_item)
+        defaults = _txn_to_record(txn, self.plaid_item)
         self.assertEqual(defaults["title"], "Amazon Purchase")
         self.assertEqual(defaults["merchant"], "Amazon")
         self.assertEqual(defaults["balance"], 49.99)
@@ -202,7 +202,7 @@ class TxnToRecordDefaultsTest(TestCase):
             "account_id": "acc1",
             "category": [],
         }
-        defaults = _txn_to_record_defaults(txn, self.plaid_item)
+        defaults = _txn_to_record(txn, self.plaid_item)
         self.assertEqual(defaults["merchant"], "Walmart")
 
     def test_falls_back_to_date_when_no_authorized_date(self):
@@ -212,7 +212,7 @@ class TxnToRecordDefaultsTest(TestCase):
             "date": "2024-06-15",
             "account_id": "acc1",
         }
-        defaults = _txn_to_record_defaults(txn, self.plaid_item)
+        defaults = _txn_to_record(txn, self.plaid_item)
         self.assertEqual(defaults["transaction_date"], date(2024, 6, 15))
 
     def test_auto_folder_creation_enabled(self):
@@ -225,7 +225,7 @@ class TxnToRecordDefaultsTest(TestCase):
             "account_id": "acc1",
             "category": ["Groceries"],
         }
-        defaults = _txn_to_record_defaults(txn, self.plaid_item)
+        defaults = _txn_to_record(txn, self.plaid_item)
         self.assertIsNotNone(defaults["folder"])
 
     def test_payment_method_populated(self):
@@ -235,5 +235,5 @@ class TxnToRecordDefaultsTest(TestCase):
             "date": "2024-06-15",
             "account_id": "acc1",
         }
-        defaults = _txn_to_record_defaults(txn, self.plaid_item)
+        defaults = _txn_to_record(txn, self.plaid_item)
         self.assertIn("Checking", defaults["payment_method"])

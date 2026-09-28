@@ -4,69 +4,28 @@ Extends django-allauth signup and login forms to support a passwordless
 authentication flow, and provides a ModelForm for UserSettings preferences.
 """
 
-import logging
 from typing import ClassVar
 
 from allauth.account.forms import LoginForm, SignupForm
 from django import forms
 
 from .models import UserSettings
-from .turnstile import (
-    ACTION_LOGIN,
-    ACTION_SIGNUP,
-    turnstile_enabled,
-    verify_turnstile_token,
-)
-
-logger = logging.getLogger(__name__)
+from .turnstile import ACTION_LOGIN, ACTION_SIGNUP
+from .turnstile_forms import TurnstileProtectedForm
 
 
-class PasswordlessSignupForm(SignupForm):
-    """Signup form that omits password fields and sets an unusable password.
+class PasswordlessSignupForm(TurnstileProtectedForm, SignupForm):
+    """Passwordless signup: no password fields, an unusable password afterwards."""
 
-    Used alongside the passwordless login flow so users authenticate via
-    magic link rather than a traditional credential.
-    Includes Turnstile CAPTCHA verification.
-    """
-
-    cf_turnstile_response = forms.CharField(
-        widget=forms.HiddenInput(),
-        required=False,
-        label="",
-    )
+    turnstile_action = ACTION_SIGNUP
 
     def __init__(self, *args, **kwargs):
         # allauth's SignupForm does not pass/store the request; capture it here
         # (optional) so server-side siteverify can attach the client IP.
         self.request = kwargs.pop("request", None)
         super().__init__(*args, **kwargs)
-        self.fields["cf_turnstile_response"].required = turnstile_enabled()
         self.fields.pop("password1", None)
         self.fields.pop("password2", None)
-
-    def clean_cf_turnstile_response(self):
-        """Verify the Turnstile token on this field specifically."""
-        if not turnstile_enabled():
-            return self.cleaned_data.get("cf_turnstile_response", "")
-
-        token = self.cleaned_data.get("cf_turnstile_response", "").strip()
-
-        if not token:
-            raise forms.ValidationError(
-                "Bot verification required. Please refresh and try again.",
-                code="turnstile_missing",
-            )
-
-        result = verify_turnstile_token(token, ACTION_SIGNUP, self.request)
-
-        if not result.get("success"):
-            logger.warning("Turnstile signup verification failed: %s", result)
-            raise forms.ValidationError(
-                result.get("message", "Bot verification failed. Please try again."),
-                code="turnstile_failed",
-            )
-
-        return token
 
     def save(self, request):
         user = super().save(request)
@@ -75,49 +34,17 @@ class PasswordlessSignupForm(SignupForm):
         return user
 
 
-class PasswordlessLoginForm(LoginForm):
-    """Login form that removes the password field for magic-link-only auth.
+class PasswordlessLoginForm(TurnstileProtectedForm, LoginForm):
+    """Passwordless login: the password field is removed for magic-link auth."""
 
-    Includes Turnstile CAPTCHA verification.
-    """
-
-    cf_turnstile_response = forms.CharField(
-        widget=forms.HiddenInput(),
-        required=False,
-        label="",
-    )
+    turnstile_action = ACTION_LOGIN
 
     def __init__(self, *args, **kwargs):
         # allauth's LoginForm already pops "request" (default None); mirror it
         # here so server-side siteverify can attach the client IP when present.
         self.request = kwargs.get("request")
         super().__init__(*args, **kwargs)
-        self.fields["cf_turnstile_response"].required = turnstile_enabled()
         self.fields.pop("password", None)
-
-    def clean_cf_turnstile_response(self):
-        """Verify the Turnstile token on this field specifically."""
-        if not turnstile_enabled():
-            return self.cleaned_data.get("cf_turnstile_response", "")
-
-        token = self.cleaned_data.get("cf_turnstile_response", "").strip()
-
-        if not token:
-            raise forms.ValidationError(
-                "Bot verification required. Please refresh and try again.",
-                code="turnstile_missing",
-            )
-
-        result = verify_turnstile_token(token, ACTION_LOGIN, self.request)
-
-        if not result.get("success"):
-            logger.warning("Turnstile login verification failed: %s", result)
-            raise forms.ValidationError(
-                result.get("message", "Bot verification failed. Please try again."),
-                code="turnstile_failed",
-            )
-
-        return token
 
 
 class UpdateUserSettingsForm(forms.ModelForm):

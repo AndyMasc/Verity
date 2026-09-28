@@ -16,7 +16,7 @@ from core.apps import posthog_client
 from records.models import Record
 
 from ..models import DocumentData, DocumentStatus
-from ..services import ConfirmUploadService, UploadService
+from ..services import DocumentUploadService, UploadService
 
 logger = logging.getLogger(__name__)
 
@@ -112,7 +112,7 @@ class ConfirmUploadView(LoginRequiredMixin, View):
                     status=409,
                 )
 
-            service = ConfirmUploadService(document=document, key=key)
+            service = DocumentUploadService(document=document, key=key)
             try:
                 result = service.confirm()
             except Exception as exc:

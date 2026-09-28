@@ -217,18 +217,11 @@ class RecordUpdateForm(BaseRecordForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        instance = self.instance
-        if not instance or not instance.pk:
-            instance = None
-        user = getattr(instance, "user", None)
-        self.setup_folder_field(user)
+        instance = self.instance if self.instance.pk else None
+        self.setup_folder_field(getattr(instance, "user", None))
 
-        payment_field = self.fields.get("payment_method")
-        is_plaid_record = False
-        if instance:
-            is_plaid_record = getattr(instance, "is_plaid_record", False)
-        if is_plaid_record and payment_field:
-            payment_field.disabled = True
+        if instance and instance.is_plaid_record:
+            self.fields["payment_method"].disabled = True
 
 
 class ManualMergeForm(forms.Form):

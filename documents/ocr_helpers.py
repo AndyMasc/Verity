@@ -172,11 +172,12 @@ def prepare_image_for_gemini(image_bytes: bytes) -> bytes:
     Falls back to the original bytes if any step fails, ensuring OCR can
     still attempt extraction on unprocessed images.
     """
-    try:
-        img = _decode_image(image_bytes)
-        if img is None:
-            raise ValueError("Could not decode image bytes")
+    img = _decode_image(image_bytes)
+    if img is None:
+        logger.warning("Could not decode image bytes; returning original.")
+        return image_bytes
 
+    try:
         img = _deskew_image(img)
         img = _resize_image(img)
         return _encode_webp(img)

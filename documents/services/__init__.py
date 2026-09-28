@@ -17,10 +17,7 @@ from .detail import DocumentDetailService
 from .upload import UploadService
 from .validation import DocumentUploadService, UploadResult
 
-ConfirmUploadService = DocumentUploadService
-
 __all__ = [
-    "ConfirmUploadService",
     "DocumentDeletionService",
     "DocumentDetailService",
     "DocumentUploadService",
