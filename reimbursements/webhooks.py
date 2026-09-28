@@ -161,9 +161,6 @@ def apply_paid_session(payment, session, *, source: str) -> bool:
         )
         return False
 
-    # Defense in depth against a second concurrent checkout settling after the
-    # first: only the package's own OPEN→PAID transition may complete a
-    # not-yet-completed payment.
     if package.status == ReimbursementPackage.Status.PAID and not payment.is_completed:
         logger.error(
             "Package %s is already paid — refusing duplicate settlement of session %s",

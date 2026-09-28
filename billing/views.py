@@ -34,7 +34,8 @@ logger = logging.getLogger(__name__)
 def pricing_page(request: HttpRequest) -> HttpResponse:
     if request.GET.get("checkout") == "canceled":
         messages.info(
-            request, "Checkout canceled. You were not charged. Select a plan to try again."
+            request,
+            "Checkout canceled. You were not charged. Select a plan to try again.",
         )
     return render(
         request, "billing/pricing_page.html", services.pricing_context(request.user)

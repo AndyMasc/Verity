@@ -67,7 +67,6 @@ def extract_document(document_id: int) -> None:
     The record is created from the persisted "ocr_raw_data" so it survives
     even if the user closes the tab before the redirect. Merging with a Plaid
     match (when warranted) happens inside "create_record_from_ocr".
-    The task is set to retry on transient failures, and is rate-limited to avoid overloading the OCR service.
     """
     _wait_for_ocr_slot()
     result = _ocr_extract(document_id)

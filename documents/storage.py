@@ -61,26 +61,27 @@ def generate_upload_key(user_id: int, extension: str) -> str:
 
 def generate_presigned_post(key: str, content_type: str) -> str:
     """Generate a presigned PUT URL for uploading a file to R2 (15-minute expiry)."""
-    s3 = get_s3_client()
-    return s3.generate_presigned_url(
+    return _generate_presigned_url(
         "put_object",
-        Params={
-            "Bucket": BUCKET,
-            "Key": key,
-            "ContentType": content_type,
-        },
-        ExpiresIn=900,
+        key,
+        ContentType=content_type,
     )
 
 
 def generate_read_presigned_url(key: str) -> str:
     """Generate a presigned GET URL for viewing a file from R2 (15-minute expiry)."""
+    return _generate_presigned_url("get_object", key)
+
+
+def _generate_presigned_url(operation: str, key: str, **params: str) -> str:
+    """Generate a presigned URL for an R2 object operation."""
     s3 = get_s3_client()
     return s3.generate_presigned_url(
-        "get_object",
+        operation,
         Params={
             "Bucket": BUCKET,
             "Key": key,
+            **params,
         },
         ExpiresIn=900,
     )
@@ -110,12 +111,6 @@ def gatekeeper_validate_r2_object(key: str, head: dict | None = None) -> dict:
 
     Rejects files that exceed size limits, are empty, have disallowed MIME types,
     or contain images with excessively large pixel counts. Deletes invalid objects.
-
-    *head* may be a previously fetched HEAD response to avoid an extra R2
-    round trip when the caller already has one.
-
-    Returns:
-        Dict with 'valid' key (bool) and optional 'error' message.
     """
     s3 = get_s3_client()
     if head is None:
