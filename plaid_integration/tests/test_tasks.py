@@ -31,7 +31,9 @@ def plaid_jwk(private_key, kid: str = "test-kid") -> dict:
     numbers = private_key.public_key().public_numbers()
     return {
         "alg": "ES256",
+        "created_at": 1560466143,
         "crv": "P-256",
+        "expired_at": None,
         "kid": kid,
         "kty": "EC",
         "use": "sig",
@@ -116,7 +118,17 @@ class WebhookVerificationTest(TestCase):
 
         (url,) = post.call_args.args
         self.assertEqual(url, "https://sandbox.plaid.com/webhook_verification_key/get")
-        self.assertEqual(set(post.call_args.kwargs["json"]), {"client_id", "secret"})
+        self.assertEqual(
+            set(post.call_args.kwargs["json"]), {"client_id", "secret", "key_id"}
+        )
+
+    @patch("plaid_integration.views.webhook.requests.post")
+    def test_the_tokens_kid_is_sent_as_key_id(self, post):
+        """Plaid requires key_id; without it the endpoint answers 400."""
+        post.return_value.json.return_value = {"key": self.jwk}
+        verify_plaid_webhook(b"body", self._token(b"body", kid="abc-123"))
+
+        self.assertEqual(post.call_args.kwargs["json"]["key_id"], "abc-123")
 
     @patch("plaid_integration.views.webhook.requests.post")
     def test_key_is_cached_across_webhooks(self, post):
@@ -126,7 +138,7 @@ class WebhookVerificationTest(TestCase):
         self.assertEqual(post.call_count, 1)
 
     @patch("plaid_integration.views.webhook.requests.post")
-    def test_rotated_kid_triggers_a_refetch(self, post):
+    def test_rotated_kid_uses_its_own_cached_key(self, post):
         post.return_value.json.return_value = {"key": self.jwk}
         verify_plaid_webhook(b"body", self._token(b"body"))
 
@@ -138,6 +150,17 @@ class WebhookVerificationTest(TestCase):
             )
         )
         self.assertEqual(post.call_count, 2)
+
+        # Both keys stay cached, so a webhook from either side of the rotation
+        # verifies without another round trip.
+        with patch("plaid_integration.views.webhook.requests.post") as refetch:
+            self.assertTrue(verify_plaid_webhook(b"body", self._token(b"body")))
+            self.assertTrue(
+                verify_plaid_webhook(
+                    b"body", self._token(b"body", kid="kid-2", key=rotated)
+                )
+            )
+        self.assertEqual(refetch.call_count, 0)
 
     @patch("plaid_integration.views.webhook.requests.post")
     def test_body_hash_mismatch_returns_false(self, post):

@@ -24,11 +24,15 @@ logger: logging.Logger = logging.getLogger(__name__)
 
 WEBHOOK_MAX_BODY_SIZE = 1024 * 100
 KEY_CACHE_TTL = 3600
-_KEY_CACHE_NAME = "plaid:webhook_verification_key"
+_KEY_CACHE_PREFIX = "plaid:webhook_key:"
 
 
-def _fetch_signing_key() -> dict | None:
-    """Fetch Plaid's current webhook signing key. Plaid exposes the key via an authenticated POST."""
+def _fetch_signing_key(kid: str) -> dict | None:
+    """Fetch Plaid's signing key for "kid".
+
+    Plaid serves the key from an authenticated POST that requires the key id,
+    which is the "kid" carried in the webhook's JWT header.
+    """
     host = settings.PLAID_ENV.lower()
     try:
         response = requests.post(
@@ -36,6 +40,7 @@ def _fetch_signing_key() -> dict | None:
             json={
                 "client_id": settings.PLAID_CLIENT_ID,
                 "secret": settings.PLAID_SECRET,
+                "key_id": kid,
             },
             timeout=10,
         )
@@ -44,23 +49,26 @@ def _fetch_signing_key() -> dict | None:
     except (requests.RequestException, OSError, ValueError, KeyError) as exc:
         # Any failure to obtain a trusted key means we cannot verify, so this
         # fails closed and is never cached.
-        logger.error("Could not fetch Plaid webhook verification key: %s", exc)
+        logger.error("Could not fetch Plaid signing key for kid=%s: %s", kid, exc)
         return None
 
 
 def _signing_key(kid: str) -> dict | None:
-    """Return Plaid's signing key for "kid", refetching when Plaid rotates it.
+    """Return Plaid's signing key for "kid", cached per key id.
 
-    Failures are never cached, so a transient outage self-heals on the next
-    webhook instead of blocking verification for the full TTL.
+    Caching per kid means a rotation costs one extra fetch rather than
+    thrashing a single slot between the outgoing and incoming key. Failures
+    are never cached, so a transient outage self-heals on the next webhook
+    instead of blocking verification for the full TTL.
     """
-    cached = cache.get(_KEY_CACHE_NAME)
-    if cached and cached.get("kid") == kid:
+    cache_key = f"{_KEY_CACHE_PREFIX}{kid}"
+    cached = cache.get(cache_key)
+    if cached:
         return cached
 
-    jwk = _fetch_signing_key()
+    jwk = _fetch_signing_key(kid)
     if jwk:
-        cache.set(_KEY_CACHE_NAME, jwk, KEY_CACHE_TTL)
+        cache.set(cache_key, jwk, KEY_CACHE_TTL)
     return jwk
 
 
