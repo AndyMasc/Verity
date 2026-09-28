@@ -11,7 +11,7 @@ from typing import Any
 
 import djstripe.signals as djstripe_signals
 import stripe
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.db.models import Q
 from django.dispatch import receiver
 from django.utils import timezone
@@ -616,23 +616,30 @@ _EVENT_HANDLERS = {
 def process_stripe_event(event):
     """Applies a single Stripe webhook event to the reimbursements flow safely.
 
-    Idempotency: redelivered events (Stripe redelivers; Dramatiq retries on
-    failure) are skipped via the "ProcessedStripeEvent" marker, recorded
-    inside the same atomic block as the handler so a failed run retries whole.
+    Idempotency: the event id is claimed by inserting the ProcessedStripeEvent
+    row before any handler runs, rather than checking for it first. A check-then-act
+    race let two concurrent deliveries of the same event both run the handler --
+    the losing transaction's database work rolled back, but the email it had
+    already enqueued and the refund it had already asked Stripe for did not.
+
+    Claiming first closes that window: the unique primary key means exactly one
+    concurrent delivery proceeds and the rest return immediately. The claim
+    shares the handler's transaction, so a failure still rolls it back and the
+    event is retried whole.
     """
     event_data = _as_dict(event)
     event_id = event_data.get("id")
 
-    if event_id and ProcessedStripeEvent.objects.filter(event_id=event_id).exists():
-        logger.info("Stripe event %s already processed — skipping", event_id)
-        return
+    if event_id:
+        try:
+            ProcessedStripeEvent.objects.create(event_id=event_id)
+        except IntegrityError:
+            logger.info("Stripe event %s already processed — skipping", event_id)
+            return
 
     handler = _EVENT_HANDLERS.get(event_data.get("type"))
     if handler is not None:
         handler(event_data)
-
-    if event_id:
-        ProcessedStripeEvent.objects.create(event_id=event_id)
 
 
 def _notify_package_paid(package_pk: int, payer_pk: int | None) -> None:
