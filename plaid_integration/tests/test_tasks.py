@@ -6,11 +6,11 @@ from unittest.mock import patch
 
 import jwt as pyjwt
 import plaid
-from cryptography.hazmat.primitives.asymmetric import rsa
+import requests
+from cryptography.hazmat.primitives.asymmetric import ec
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from django.test import TestCase
-from jwt import PyJWK
-from jwt.exceptions import PyJWKClientConnectionError, PyJWKClientError
 
 from plaid_integration.models import PlaidItem
 from plaid_integration.services import public_token_exchange
@@ -21,10 +21,23 @@ from records.models import Record
 User = get_user_model()
 
 
-def _int_to_base64url(n: int) -> str:
-    """Encode an RSA modulus/exponent as base64url, as JWK requires."""
-    length = (n.bit_length() + 7) // 8
-    return base64.urlsafe_b64encode(n.to_bytes(length, "big")).rstrip(b"=").decode()
+def _b64(n: int) -> str:
+    """base64url-encode a 32-byte EC coordinate, as a Plaid-style JWK requires."""
+    return base64.urlsafe_b64encode(n.to_bytes(32, "big")).rstrip(b"=").decode()
+
+
+def plaid_jwk(private_key, kid: str = "test-kid") -> dict:
+    """Build the exact key shape Plaid's /webhook_verification_key/get returns."""
+    numbers = private_key.public_key().public_numbers()
+    return {
+        "alg": "ES256",
+        "crv": "P-256",
+        "kid": kid,
+        "kty": "EC",
+        "use": "sig",
+        "x": _b64(numbers.x),
+        "y": _b64(numbers.y),
+    }
 
 
 class PublicTokenExchangeTest(TestCase):
@@ -60,73 +73,109 @@ class PublicTokenExchangeTest(TestCase):
 
 
 class WebhookVerificationTest(TestCase):
-    """Tests for Plaid webhook signature verification."""
+    """Signature verification, exercised with Plaid's real ES256 key shape."""
 
     def setUp(self):
-        self.private_key = rsa.generate_private_key(
-            public_exponent=65537, key_size=2048
-        )
-        numbers = self.private_key.public_key().public_numbers()
-        self.jwk = {
-            "kty": "RSA",
-            "n": _int_to_base64url(numbers.n),
-            "e": _int_to_base64url(numbers.e),
-            "kid": "test-kid",
-        }
-        self.signing_key = PyJWK.from_dict(self.jwk)
+        self.private_key = ec.generate_private_key(ec.SECP256R1())
+        self.jwk = plaid_jwk(self.private_key)
+        cache.clear()
 
-    def _token(self, body: bytes, **claims) -> str:
+    def _token(self, body: bytes, kid: str = "test-kid", key=None, **claims) -> str:
         payload = {
             "request_body_sha256": hashlib.sha256(body).hexdigest(),
+            "iat": datetime.now(UTC).timestamp(),
             "exp": (datetime.now(UTC) + timedelta(days=1)).timestamp(),
             **claims,
         }
         return pyjwt.encode(
-            payload, self.private_key, algorithm="RS256", headers={"kid": "test-kid"}
+            payload,
+            key or self.private_key,
+            algorithm="ES256",
+            headers={"kid": kid},
         )
 
     def test_missing_verification_header(self):
         self.assertFalse(verify_plaid_webhook(b"body", None))
         self.assertFalse(verify_plaid_webhook(b"body", ""))
 
-    @patch.object(pyjwt.PyJWKClient, "fetch_data")
-    def test_invalid_jwt_returns_false_without_network_call(self, mock_fetch):
-        self.assertFalse(verify_plaid_webhook(b"body", "not-a-valid-jwt"))
-        mock_fetch.assert_not_called()
+    def test_malformed_token_makes_no_network_call(self):
+        with patch("plaid_integration.views.webhook.requests.post") as post:
+            self.assertFalse(verify_plaid_webhook(b"body", "not-a-valid-jwt"))
+        post.assert_not_called()
 
-    @patch("plaid_integration.views.webhook.jwks_client")
-    def test_unknown_kid_returns_false(self, mock_client):
-        mock_client.get_signing_key_from_jwt.side_effect = PyJWKClientError(
-            "no such kid"
+    @patch("plaid_integration.views.webhook.requests.post")
+    def test_valid_token_is_accepted(self, post):
+        post.return_value.json.return_value = {"key": self.jwk}
+
+        self.assertTrue(verify_plaid_webhook(b"body", self._token(b"body")))
+
+    @patch("plaid_integration.views.webhook.requests.post")
+    def test_key_is_fetched_from_the_documented_authenticated_endpoint(self, post):
+        post.return_value.json.return_value = {"key": self.jwk}
+        verify_plaid_webhook(b"body", self._token(b"body"))
+
+        (url,) = post.call_args.args
+        self.assertEqual(url, "https://sandbox.plaid.com/webhook_verification_key/get")
+        self.assertEqual(set(post.call_args.kwargs["json"]), {"client_id", "secret"})
+
+    @patch("plaid_integration.views.webhook.requests.post")
+    def test_key_is_cached_across_webhooks(self, post):
+        post.return_value.json.return_value = {"key": self.jwk}
+        for _ in range(3):
+            self.assertTrue(verify_plaid_webhook(b"body", self._token(b"body")))
+        self.assertEqual(post.call_count, 1)
+
+    @patch("plaid_integration.views.webhook.requests.post")
+    def test_rotated_kid_triggers_a_refetch(self, post):
+        post.return_value.json.return_value = {"key": self.jwk}
+        verify_plaid_webhook(b"body", self._token(b"body"))
+
+        rotated = ec.generate_private_key(ec.SECP256R1())
+        post.return_value.json.return_value = {"key": plaid_jwk(rotated, "kid-2")}
+        self.assertTrue(
+            verify_plaid_webhook(
+                b"body", self._token(b"body", kid="kid-2", key=rotated)
+            )
         )
-        token = self._token(b"body")
-        self.assertFalse(verify_plaid_webhook(b"body", token))
+        self.assertEqual(post.call_count, 2)
 
-    @patch("plaid_integration.views.webhook.jwks_client")
-    def test_jwks_fetch_failure_returns_false(self, mock_client):
-        mock_client.get_signing_key_from_jwt.side_effect = PyJWKClientConnectionError(
-            "unreachable"
-        )
-        token = self._token(b"body")
-        self.assertFalse(verify_plaid_webhook(b"body", token))
-
-    @patch("plaid_integration.views.webhook.jwks_client")
-    def test_valid_token_returns_true(self, mock_client):
-        mock_client.get_signing_key_from_jwt.return_value = self.signing_key
-        token = self._token(b"body")
-        self.assertTrue(verify_plaid_webhook(b"body", token))
-
-    @patch("plaid_integration.views.webhook.jwks_client")
-    def test_body_hash_mismatch_returns_false(self, mock_client):
-        mock_client.get_signing_key_from_jwt.return_value = self.signing_key
+    @patch("plaid_integration.views.webhook.requests.post")
+    def test_body_hash_mismatch_returns_false(self, post):
+        post.return_value.json.return_value = {"key": self.jwk}
         token = self._token(b"original body")
         self.assertFalse(verify_plaid_webhook(b"different body", token))
 
-    @patch("plaid_integration.views.webhook.jwks_client")
-    def test_expired_token_returns_false(self, mock_client):
-        mock_client.get_signing_key_from_jwt.return_value = self.signing_key
-        token = self._token(b"body", exp=datetime.min.replace(tzinfo=UTC).timestamp())
+    @patch("plaid_integration.views.webhook.requests.post")
+    def test_token_signed_by_untrusted_key_returns_false(self, post):
+        post.return_value.json.return_value = {"key": self.jwk}
+        impostor = ec.generate_private_key(ec.SECP256R1())
+        token = pyjwt.encode(
+            {"request_body_sha256": hashlib.sha256(b"body").hexdigest()},
+            impostor,
+            algorithm="ES256",
+            headers={"kid": "test-kid"},
+        )
         self.assertFalse(verify_plaid_webhook(b"body", token))
+
+    @patch("plaid_integration.views.webhook.requests.post")
+    def test_expired_token_returns_false(self, post):
+        post.return_value.json.return_value = {"key": self.jwk}
+        expired = self._token(b"body", exp=datetime.min.replace(tzinfo=UTC).timestamp())
+        self.assertFalse(verify_plaid_webhook(b"body", expired))
+
+    @patch(
+        "plaid_integration.views.webhook.requests.post",
+        side_effect=requests.ConnectionError("unreachable"),
+    )
+    def test_key_fetch_failure_returns_false_and_is_not_cached(self, post):
+        self.assertFalse(verify_plaid_webhook(b"body", self._token(b"body")))
+        # A failure must not poison the cache for the whole TTL.
+        self.assertIsNone(cache.get("plaid:webhook_verification_key"))
+
+    def test_alg_none_is_rejected(self):
+        """The token must never be able to pick its own algorithm."""
+        unsigned = pyjwt.encode({"request_body_sha256": "x"}, key="", algorithm="none")
+        self.assertFalse(verify_plaid_webhook(b"body", unsigned))
 
 
 class SyncAndConvertTaskTest(TestCase):

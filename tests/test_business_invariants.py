@@ -8,11 +8,18 @@ keep protecting the app across refactors:
 3. Reimbursement money movement to the creator, less the platform fee.
 """
 
+import base64
 import datetime
+import hashlib
 import json
+from datetime import UTC, timedelta
 from unittest.mock import patch
 
+import jwt as pyjwt
 import plaid
+import requests
+from cryptography.hazmat.primitives.asymmetric import ec
+from django.core.cache import cache
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
@@ -58,6 +65,11 @@ def aged_record(user, title, days_old, is_active=True):
     )
     record.refresh_from_db()
     return record
+
+
+def _b64(n: int) -> str:
+    """base64url-encode a 32-byte EC coordinate, as a Plaid JWK requires."""
+    return base64.urlsafe_b64encode(n.to_bytes(32, "big")).rstrip(b"=").decode()
 
 
 def plaid_error_response(body):
@@ -188,7 +200,12 @@ class RetentionAndHardDeleteTests(TestCase):
 
 
 class PlaidWebhookSyncTests(TestCase):
-    """A SYNC_UPDATES_AVAILABLE webhook results in a transaction sync."""
+    """A SYNC_UPDATES_AVAILABLE webhook results in a transaction sync.
+
+    Signatures are verified for real, using Plaid's ES256 key shape, rather
+    than stubbed out: a broken verifier silently turns every webhook into a
+    403, which is exactly how this broke in production.
+    """
 
     def setUp(self):
         self.user = CustomUser.objects.create_user(
@@ -197,34 +214,83 @@ class PlaidWebhookSyncTests(TestCase):
         self.item = PlaidItem.objects.create(
             user=self.user, item_id="item-1", access_token="access-1"
         )
-        # Verification itself is covered by plaid_integration's own tests; here
-        # we only care that a correctly signed webhook reaches the sync.
-        verifier = patch(
-            "plaid_integration.views.webhook.verify_plaid_webhook", return_value=True
-        )
-        verifier.start()
-        self.addCleanup(verifier.stop)
+        self.private_key = ec.generate_private_key(ec.SECP256R1())
+        numbers = self.private_key.public_key().public_numbers()
+        self.key_response = {
+            "key": {
+                "alg": "ES256",
+                "crv": "P-256",
+                "kid": "kid-1",
+                "kty": "EC",
+                "use": "sig",
+                "x": _b64(numbers.x),
+                "y": _b64(numbers.y),
+            }
+        }
+        cache.clear()
+        # Every test must never reach Plaid for real; individual tests
+        # reconfigure this to simulate outages or a different served key.
+        key_post = patch("plaid_integration.views.webhook.requests.post").start()
+        key_post.return_value.json.return_value = self.key_response
+        self.addCleanup(patch.stopall)
 
-    def post_webhook(self, code="SYNC_UPDATES_AVAILABLE", item_id="item-1"):
+    def sign(self, body: bytes) -> str:
+        """Sign a body the way Plaid does, so verification actually runs."""
+        now = datetime.datetime.now(UTC).timestamp()
+        return pyjwt.encode(
+            {
+                "request_body_sha256": hashlib.sha256(body).hexdigest(),
+                "iat": now,
+                "exp": now + 86400,
+            },
+            self.private_key,
+            algorithm="ES256",
+            headers={"kid": "kid-1"},
+        )
+
+    def post_webhook(
+        self, code="SYNC_UPDATES_AVAILABLE", item_id="item-1", verify=True
+    ):
+        body = json.dumps(
+            {
+                "webhook_type": "TRANSACTIONS",
+                "webhook_code": code,
+                "item_id": item_id,
+            }
+        ).encode()
         return self.client.post(
             reverse("plaid:webhook"),
-            data=json.dumps(
-                {
-                    "webhook_type": "TRANSACTIONS",
-                    "webhook_code": code,
-                    "item_id": item_id,
-                }
-            ),
+            data=body,
             content_type="application/json",
-            HTTP_PLAID_VERIFICATION="token",
+            HTTP_PLAID_VERIFICATION=self.sign(body) if verify else "bogus",
         )
 
-    def test_sync_webhook_enqueues_a_sync(self):
+    def test_a_genuinely_signed_webhook_is_accepted_and_triggers_a_sync(self):
         with patch("plaid_integration.services.dispatch_sync") as dispatch:
-            self.post_webhook()
+            response = self.post_webhook()
 
+        self.assertEqual(response.status_code, 200)
         dispatch.assert_called_once()
         self.assertEqual(dispatch.call_args.args[0].item_id, "item-1")
+
+    def test_forged_webhook_is_rejected(self):
+        with patch("plaid_integration.services.dispatch_sync") as dispatch:
+            response = self.post_webhook(verify=False)
+
+        self.assertEqual(response.status_code, 403)
+        dispatch.assert_not_called()
+
+    def test_webhook_fails_closed_when_the_key_is_unavailable(self):
+        """A Plaid outage must never open the door."""
+        with patch(
+            "plaid_integration.views.webhook.requests.post",
+            side_effect=requests.exceptions.ConnectionError("plaid unreachable"),
+        ):
+            with patch("plaid_integration.services.dispatch_sync") as dispatch:
+                response = self.post_webhook()
+
+        self.assertEqual(response.status_code, 403)
+        dispatch.assert_not_called()
 
     def test_sync_webhook_imports_transactions_end_to_end(self):
         """Webhook -> dispatch -> sync task -> Record rows."""
@@ -251,11 +317,9 @@ class PlaidWebhookSyncTests(TestCase):
 
             return sync_and_convert_for_item_task.fn(item.id)
 
-        with (
-            patch("plaid_integration.tasks.client") as client,
-            patch("plaid_integration.services.dispatch_sync", side_effect=run_sync_now),
-            patch("plaid_integration.tasks.try_match_plaid_record"),
-        ):
+        with patch("plaid_integration.tasks.client") as client, patch(
+            "plaid_integration.services.dispatch_sync", side_effect=run_sync_now
+        ), patch("plaid_integration.tasks.try_match_plaid_record"):
             client.transactions_sync.return_value = page
             self.post_webhook()
 
@@ -278,11 +342,9 @@ class PlaidWebhookSyncTests(TestCase):
 
             return sync_and_convert_for_item_task.fn(item.id)
 
-        with (
-            patch("plaid_integration.tasks.client") as client,
-            patch("plaid_integration.services.dispatch_sync", side_effect=run_sync_now),
-            patch("plaid_integration.tasks.try_match_plaid_record"),
-        ):
+        with patch("plaid_integration.tasks.client") as client, patch(
+            "plaid_integration.services.dispatch_sync", side_effect=run_sync_now
+        ), patch("plaid_integration.tasks.try_match_plaid_record"):
             client.transactions_sync.side_effect = plaid.ApiException(
                 status=400, reason="Bad Request", http_resp=plaid_error_response(body)
             )
