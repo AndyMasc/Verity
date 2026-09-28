@@ -101,6 +101,11 @@ urlpatterns = [
         name="bulk_archive",
     ),
     path(
+        "bulk-hard-delete/",
+        views.BulkHardDeleteView,
+        name="bulk_hard_delete",
+    ),
+    path(
         "bulk-unarchive/",
         views.BulkUnarchiveView,
         name="bulk_unarchive",

@@ -4,16 +4,19 @@ Keeps archive/unarchive logic out of views so it can be reused from
 signals, tasks, or management commands without duplicating business rules.
 """
 
+import datetime
 import logging
 from datetime import date as _date
 
 from django.db import transaction
+from django.utils import timezone
 from django.utils.dateparse import parse_date, parse_datetime
 
 from billing.models import CustomUser as User
 from core.apps import posthog_client
 from core.currencies import CURRENCY_CHOICES, DEFAULT_CURRENCY
 
+from .constants import RETENTION_YEARS
 from .matching import try_match_document_record
 from .models import AuditLog, Record
 
@@ -266,5 +269,38 @@ def bulk_toggle_archive(
         AuditLog.objects.bulk_create(
             [AuditLog(user=user, action=action, record=record) for record in records]
         )
+
+    return len(records)
+
+
+def bulk_hard_delete_record(
+    record_ids: list[int],
+    user: User,
+) -> int:
+    """Permanently delete the selected records that are old enough to destroy.
+
+    Records the user does not own, and records still inside the seven-year
+    retention window, are skipped rather than deleted. Returns the number
+    actually destroyed so the caller can report it honestly.
+    """
+    if len(record_ids) > BULK_LIMIT:
+        raise BulkLimitExceededError(
+            f"Bulk operations are limited to {BULK_LIMIT} records. "
+            f"Received {len(record_ids)}."
+        )
+
+    cutoff = timezone.now().date() - datetime.timedelta(days=365 * RETENTION_YEARS)
+    records = list(
+        Record.objects.filter(
+            id__in=record_ids,
+            user=user,
+            date_added__lte=cutoff,
+        )
+    )
+    if not records:
+        return 0
+
+    for record in records:
+        hard_delete_record(user, record)
 
     return len(records)

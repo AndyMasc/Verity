@@ -381,3 +381,98 @@ class BulkArchiveViewTest(TestCase):
         self.client.force_login(self.user)
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 405)
+
+
+def _make_record(user, title):
+    return Record.objects.create(
+        user=user,
+        title=title,
+        record_type="expense_receipt",
+        transaction_date=date(2024, 6, 15),
+    )
+
+
+def _age_record(record, days):
+    """Back-date date_added, which is auto_now_add and ignores kwargs."""
+    Record.objects.filter(pk=record.pk).update(
+        date_added=timezone.now().date() - timedelta(days=days)
+    )
+    record.refresh_from_db()
+    return record
+
+
+class BulkHardDeleteTests(TestCase):
+    """Bulk permanent delete only touches records past the retention window."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(username="bulkdel", password="pass")
+        self.other = User.objects.create_user(username="bulkother", password="pass")
+        self.client.force_login(self.user)
+
+        self.old = _age_record(_make_record(self.user, "Ancient"), 365 * 7 + 30)
+        self.recent = _make_record(self.user, "Recent")
+
+    def _post(self, ids, htmx=True):
+        headers = (
+            {"HX-Request": "true"} if htmx else {"x-requested-with": "XMLHttpRequest"}
+        )
+        return self.client.post(
+            reverse("records:bulk_hard_delete"),
+            data=json.dumps({"record_ids": ids}),
+            content_type="application/json",
+            headers=headers,
+        )
+
+    def test_only_old_enough_records_are_deleted(self):
+        response = self._post([self.old.pk, self.recent.pk])
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Record.objects.filter(pk=self.old.pk).exists())
+        self.assertTrue(Record.objects.filter(pk=self.recent.pk).exists())
+
+    def test_toast_reports_how_many_were_skipped(self):
+        response = self._post([self.old.pk, self.recent.pk])
+        toast = json.loads(response["HX-Trigger"])["showToast"]["text"]
+
+        self.assertIn("1 record permanently deleted", toast)
+        self.assertIn("1 skipped", toast)
+        self.assertIn("7-year", toast)
+
+    def test_json_reports_count_and_skipped(self):
+        data = self._post([self.old.pk, self.recent.pk], htmx=False).json()
+
+        self.assertEqual(data["count"], 1)
+        self.assertEqual(data["skipped"], 1)
+
+    def test_another_users_record_is_never_deleted(self):
+        theirs = _age_record(_make_record(self.other, "Not yours"), 365 * 8)
+
+        self._post([theirs.pk])
+
+        self.assertTrue(Record.objects.filter(pk=theirs.pk).exists())
+
+    def test_nothing_eligible_returns_a_clear_error(self):
+        response = self._post([self.recent.pk])
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("retention window", response.json()["error"])
+
+    def test_bulk_limit_is_enforced(self):
+        response = self._post(list(range(1, 500)))
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("limited", response.json()["error"])
+
+
+class CanHardDeletePropertyTests(TestCase):
+    """The retention gate is defined once, on the model."""
+
+    def test_recent_record_cannot_be_hard_deleted(self):
+        user = User.objects.create_user(username="propnew", password="pass")
+        self.assertFalse(_make_record(user, "New").can_hard_delete)
+
+    def test_seven_year_old_record_can_be_hard_deleted(self):
+        user = User.objects.create_user(username="propold", password="pass")
+        self.assertTrue(
+            _age_record(_make_record(user, "Old"), 365 * 7 + 1).can_hard_delete
+        )

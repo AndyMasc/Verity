@@ -24,7 +24,7 @@ from simple_history.models import HistoricalRecords
 
 from core.currencies import CURRENCY_CHOICES, DEFAULT_CURRENCY
 
-from .constants import RECORD_TYPE_COLOR_MAP
+from .constants import RECORD_TYPE_COLOR_MAP, RETENTION_YEARS
 
 if TYPE_CHECKING:
     from django.contrib.auth.models import AbstractUser
@@ -406,6 +406,19 @@ class Record(models.Model):
                 timezone.now().date() + datetime.timedelta(days=days)
             )
         return False
+
+    @property
+    def can_hard_delete(self) -> bool:
+        """True when this record is old enough to be permanently deleted.
+
+        The single definition of the seven-year retention rule: the detail
+        view, the bulk action, the list template and the nightly purge all
+        defer to this, so the gate cannot drift between them.
+        """
+        if self.date_added is None:
+            return False
+        cutoff = timezone.now().date() - datetime.timedelta(days=365 * RETENTION_YEARS)
+        return self.date_added <= cutoff
 
 
 class MergeLog(models.Model):

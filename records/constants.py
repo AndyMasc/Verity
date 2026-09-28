@@ -4,6 +4,11 @@ Separated from models.py to keep presentation-layer data (Tailwind CSS classes)
 out of the database layer.
 """
 
+# Records must be kept for this many years before they may be permanently
+# deleted. Shared by the detail view, the bulk action and the nightly purge so
+# there is a single definition of "old enough to destroy".
+RETENTION_YEARS = 7
+
 RECORD_TYPE_COLOR_MAP: dict[str, str] = {
     "expense_receipt": "bg-emerald-500/10 text-emerald-700 border border-emerald-500/20 backdrop-blur-md dark:bg-emerald-500/5 dark:text-emerald-400 dark:border-emerald-500/20",
     "financial_document": "bg-indigo-900/10 text-indigo-900 border border-indigo-500/30 backdrop-blur-md dark:bg-indigo-400/5 dark:text-indigo-300 dark:border-indigo-500/20",

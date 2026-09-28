@@ -24,16 +24,26 @@
                         class="rounded-lg px-2.5 py-1 text-[13px] font-medium whitespace-nowrap transition-all duration-200 hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-white/[0.06] dark:hover:text-zinc-200"
                         x-text="allVisibleSelected ? 'Deselect' : 'Select All'"></button>
                 <button type="button"
+                        x-show="canArchive"
                         @click="bulkArchive()"
                         :disabled="archiving"
                         class="rounded-lg px-2.5 py-1 text-[13px] font-medium whitespace-nowrap transition-all duration-200 hover:bg-zinc-100 hover:text-zinc-900 disabled:opacity-40 dark:hover:bg-white/[0.06] dark:hover:text-zinc-200">
                     <span x-text="archiving ? 'Archiving...' : 'Archive'"></span>
                 </button>
                 <button type="button"
+                        x-show="canRestore"
                         @click="bulkUnarchive()"
                         :disabled="unarchiving"
                         class="rounded-lg px-2.5 py-1 text-[13px] font-medium whitespace-nowrap transition-all duration-200 hover:bg-zinc-100 hover:text-zinc-900 disabled:opacity-40 dark:hover:bg-white/[0.06] dark:hover:text-zinc-200">
                     <span x-text="unarchiving ? 'Restoring...' : 'Restore'"></span>
+                </button>
+                <button type="button"
+                        x-show="canHardDelete"
+                        @click="bulkHardDelete()"
+                        :disabled="hardDeleting"
+                        :title="selectedPermanentCount < selectedIds.length ? selectedPermanentCount + ' of ' + selectedIds.length + ' selected are past the 7-year retention window' : 'Permanently delete'"
+                        class="rounded-lg px-2.5 py-1 text-[13px] font-medium whitespace-nowrap text-red-600 transition-all duration-200 hover:bg-red-500/10 disabled:opacity-40 dark:text-red-400 dark:hover:bg-red-500/10">
+                    <span x-text="hardDeleting ? 'Deleting...' : 'Delete'"></span>
                 </button>
                 <button type="button"
                         @click="exportSelected()"
@@ -68,16 +78,26 @@
                         class="rounded-lg px-2.5 py-1 text-[13px] font-medium whitespace-nowrap transition-all duration-200 hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-white/[0.06] dark:hover:text-zinc-200"
                         x-text="allVisibleSelected ? 'Deselect' : 'Select All'"></button>
                 <button type="button"
+                        x-show="canArchive"
                         @click="bulkArchive()"
                         :disabled="archiving"
                         class="rounded-lg px-2.5 py-1 text-[13px] font-medium whitespace-nowrap transition-all duration-200 hover:bg-zinc-100 hover:text-zinc-900 disabled:opacity-40 dark:hover:bg-white/[0.06] dark:hover:text-zinc-200">
                     <span x-text="archiving ? 'Archiving...' : 'Archive'"></span>
                 </button>
                 <button type="button"
+                        x-show="canRestore"
                         @click="bulkUnarchive()"
                         :disabled="unarchiving"
                         class="rounded-lg px-2.5 py-1 text-[13px] font-medium whitespace-nowrap transition-all duration-200 hover:bg-zinc-100 hover:text-zinc-900 disabled:opacity-40 dark:hover:bg-white/[0.06] dark:hover:text-zinc-200">
                     <span x-text="unarchiving ? 'Restoring...' : 'Restore'"></span>
+                </button>
+                <button type="button"
+                        x-show="canHardDelete"
+                        @click="bulkHardDelete()"
+                        :disabled="hardDeleting"
+                        :title="selectedPermanentCount < selectedIds.length ? selectedPermanentCount + ' of ' + selectedIds.length + ' selected are past the 7-year retention window' : 'Permanently delete'"
+                        class="rounded-lg px-2.5 py-1 text-[13px] font-medium whitespace-nowrap text-red-600 transition-all duration-200 hover:bg-red-500/10 disabled:opacity-40 dark:text-red-400 dark:hover:bg-red-500/10">
+                    <span x-text="hardDeleting ? 'Deleting...' : 'Delete'"></span>
                 </button>
                 <button type="button"
                         @click="exportSelected()"

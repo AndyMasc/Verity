@@ -16,6 +16,7 @@ from .merges import (
 from .record_state import (
     ArchiveRecord,
     BulkArchiveView,
+    BulkHardDeleteView,
     BulkUnarchiveView,
     DeleteRecordView,
     UnarchiveRecord,
@@ -26,6 +27,7 @@ __all__ = [
     "AddRecordView",
     "ArchiveRecord",
     "BulkArchiveView",
+    "BulkHardDeleteView",
     "BulkUnarchiveView",
     "CheckOCRStatus",
     "CreateFolder",
