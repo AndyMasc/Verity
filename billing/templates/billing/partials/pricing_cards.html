@@ -238,7 +238,7 @@
 <script>
     document.addEventListener('alpine:initialized', function () {
         if (typeof posthog === 'undefined') { return; }
-        var root = document.querySelector('[x-data~="selectedCategory"]');
+        var root = document.querySelector('[data-plan-view-tracking]');
         if (!root) { return; }
         var data = Alpine.$data(root);
         var track = function () {
