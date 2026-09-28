@@ -48,11 +48,6 @@ class Command(BaseCommand):
             [  # noqa: S607
                 "stripe",
                 "listen",
-                # The CLI no longer defaults to every event; it exits unless one
-                # of --events/--all-snapshot/--all-thin is given. --all-snapshot
-                # is what the old bare `stripe listen` forwarded, and it matches
-                # the "*" enabled_events written to the endpoints above.
-                "--all-snapshot",
                 "--forward-to",
                 f"http://localhost:8000/stripe/webhook/{u_account}/",
                 "--forward-connect-to",

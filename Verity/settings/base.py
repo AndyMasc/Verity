@@ -38,11 +38,6 @@ else:
     )
     database_config["DISABLE_SERVER_SIDE_CURSORS"] = True
 
-# Neon Postgres suspends idle computes and its pooled endpoint recycles
-# connections, so long-lived app-side connections come back dead ("SSL
-# connection has been closed unexpectedly"). Treat Neon as connectionless:
-# open fresh per request and let the pooler multiplex, and use a backend that
-# retries the transient mid-handshake drops.
 _db_host = database_config.get("HOST", "")
 _is_neon = bool(_db_host) and ".neon.tech" in _db_host
 if _is_neon:
