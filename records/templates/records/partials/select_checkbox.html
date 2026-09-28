@@ -1,18 +1,9 @@
-{# Selection checkbox for a record row, shared by the desktop and mobile layouts.
-
-The tap target is deliberately larger than the 18px box it draws: the visible
-checkbox is centred inside a 36px area, and the negative margin keeps the
-visual layout exactly as before. That stops a near-miss on the checkbox from
-landing on the surrounding link and opening the record instead of selecting it.
-#}
 <div class="relative -m-2 flex h-9 w-9 shrink-0 items-center justify-center"
      @click.stop>
-    {# Unselected dot, hidden once selected. #}
     <span class="absolute inset-0 flex items-center justify-center transition-opacity duration-150"
           :class="selectedIds.includes('{{ select_id }}') ? 'opacity-0' : 'opacity-100'">
         <span class="size-2 rounded-full {% if not record.is_active %}bg-zinc-400 dark:bg-zinc-600{% elif record.expiry_date %}bg-amber-500 dark:bg-amber-600{% else %}bg-zinc-900 dark:bg-zinc-100{% endif %}"></span>
     </span>
-    {# Label spans the whole 36px area, so the whole zone toggles selection. #}
     <label class="absolute inset-0 flex cursor-pointer items-center justify-center"
            :class="selectedIds.includes('{{ select_id }}') ? 'opacity-100' : 'opacity-0 hover:opacity-100'">
         <input type="checkbox"
