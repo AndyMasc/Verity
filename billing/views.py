@@ -117,7 +117,13 @@ def _validated_price(price_id: str | None, category: str, user=None) -> str | No
     if not price_id:
         return None
     price = (
-        Price.objects.filter(id=price_id, active=True).select_related("product").first()
+        Price.objects.filter(
+            id=price_id,
+            active=True,
+            livemode=djstripe_settings.STRIPE_LIVE_MODE,
+        )
+        .select_related("product")
+        .first()
     )
     if price is None or price.product is None:
         return None

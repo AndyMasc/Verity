@@ -6,6 +6,7 @@ subscription count cache and the dashboard context cache when the
 underlying data changes.
 """
 
+import posthog
 from allauth.account.signals import (
     user_logged_in as allauth_user_logged_in,
 )
@@ -18,7 +19,6 @@ from django.dispatch import receiver
 from posthog import identify_context
 
 from core import apps
-import posthog
 from core.services.dashboard import invalidate_dashboard_cache
 from Verity.utils import bump_paginator_count_version
 

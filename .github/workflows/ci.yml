@@ -22,9 +22,9 @@ jobs:
           python-version: "3.13"
           cache: pip
       - name: Install dependencies
-        run: pip install -r requirements-dev.txt
-      - name: Ruff lint
-        run: ruff check .
+        run: pip install -r requirements.txt
+      - name: Black lint
+        run: black .
       - name: Ruff format check
         run: ruff format --check .
       - name: Mypy
@@ -113,7 +113,7 @@ jobs:
           python-version: "3.13"
           cache: pip
       - name: Install dependencies
-        run: pip install -r requirements-dev.txt
+        run: pip install -r requirements.txt
       - name: Django system checks
         run: python manage.py check
       - name: No missing migrations

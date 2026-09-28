@@ -465,6 +465,12 @@ FERNET_KEYS = [
 
 # Stripe
 STRIPE_SECRET_KEY = env("STRIPE_SECRET_KEY")
+# Stripe issues different product, price and customer IDs in test vs live mode,
+# so catalog queries must be scoped to the mode this deployment runs in.
+# Derived from the key prefix so it is correct without extra configuration.
+STRIPE_LIVE_MODE = env.bool(
+    "STRIPE_LIVE_MODE", default=STRIPE_SECRET_KEY.startswith("sk_live_")
+)
 STRIPE_PUBLISHABLE_KEY = env("STRIPE_PUBLISHABLE_KEY")
 DJSTRIPE_FOREIGN_KEY_TO_FIELD = env("DJSTRIPE_FOREIGN_KEY_TO_FIELD")
 DJSTRIPE_WEBHOOK_SECRET = env("STRIPE_WEBHOOK_SECRET", default="")

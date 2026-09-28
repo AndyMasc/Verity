@@ -1,5 +1,5 @@
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.utils import timezone
 from djstripe.models import Customer, Price, Product, Subscription, SubscriptionItem
 
@@ -121,6 +121,48 @@ class PricingContextTests(TestCase):
             p for p in context["base_plans"] if p.id == metadata.VERITY_PRO.stripe_id
         )
         self.assertEqual(pro_card.checkout_price_id, "price_keep")
+
+    def test_catalog_is_scoped_to_the_configured_stripe_mode(self):
+        # Stripe issues different product and price IDs per mode, so a product
+        # belonging to the other mode must never reach a pricing card.
+        for livemode, product_id, price_id in (
+            (False, "prod_test_mode", "price_test_mode"),
+            (True, "prod_live_mode", "price_live_mode"),
+        ):
+            product = Product.objects.create(
+                id=product_id,
+                livemode=livemode,
+                active=True,
+                name=product_id,
+            )
+            price = Price.objects.create(
+                id=price_id,
+                livemode=livemode,
+                active=True,
+                product=product,
+                currency="usd",
+            )
+            price.stripe_data = {"recurring": {"interval": "month"}}
+            price.save(update_fields=["stripe_data"])
+
+        user = self._user()
+        with override_settings(STRIPE_LIVE_MODE=False):
+            test_mode = services.pricing_context(user)
+        with override_settings(STRIPE_LIVE_MODE=True):
+            live_mode = services.pricing_context(user)
+
+        self.assertIn("prod_test_mode", [p.id for p in test_mode["products"]])
+        self.assertNotIn("prod_live_mode", [p.id for p in test_mode["products"]])
+        self.assertIn("prod_live_mode", [p.id for p in live_mode["products"]])
+        self.assertNotIn("prod_test_mode", [p.id for p in live_mode["products"]])
+
+    def test_free_plan_copy_does_not_mutate_the_shared_constant(self):
+        # pricing_context used to attach display attributes to the module-level
+        # VERITY_FREE, leaking between concurrent requests.
+        services.pricing_context(self._user())
+        self.assertFalse(hasattr(metadata.VERITY_FREE, "features_list"))
+        self.assertFalse(hasattr(metadata.VERITY_FREE, "checkout_price_id"))
+        self.assertFalse(hasattr(metadata.VERITY_FREE, "metadata"))
 
 
 class AlreadyActiveTests(TestCase):

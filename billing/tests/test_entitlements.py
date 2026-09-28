@@ -206,7 +206,7 @@ class ContextProcessorTests(TestCase):
         request.user = AnonymousUser()
         ctx = subscription_status(request)
         self.assertFalse(ctx["is_subscribed"])
-        self.assertEqual(ctx["plan"], "free")
+        self.assertEqual(entitlements.get_plan(request.user), "free")
         self.assertEqual(ctx["plan_name"], metadata.VERITY_FREE.name)
 
     def test_subscription_with_non_active_status_is_free(self):
@@ -215,7 +215,7 @@ class ContextProcessorTests(TestCase):
         self._add_subscription(status="canceled")
         ctx = subscription_status(self._request())
         self.assertFalse(ctx["is_subscribed"])
-        self.assertEqual(ctx["plan"], "free")
+        self.assertEqual(entitlements.get_plan(self.user), "free")
 
     def test_storage_addon_plan_name_is_not_free(self):
         from ..context_processors import subscription_status
@@ -225,11 +225,11 @@ class ContextProcessorTests(TestCase):
         )
         ctx = subscription_status(self._request())
         self.assertEqual(ctx["plan_name"], metadata.STORAGE_UPGRADE_10.name)
-        self.assertEqual(ctx["plan"], "free")
+        self.assertEqual(entitlements.get_plan(self.user), "free")
         self.assertEqual(
             ctx["monthly_scan_limit"], entitlements.FREE_MONTHLY_SCAN_LIMIT
         )
-        self.assertNotIn(features.UNLIMITED_SCANS, ctx["features"])
+        self.assertNotIn(features.UNLIMITED_SCANS, entitlements.get_features(self.user))
         self.assertTrue(ctx["storage_pack_requires_paid_base"])
 
     def test_pro_plan_name_is_dynamic(self):
@@ -240,7 +240,7 @@ class ContextProcessorTests(TestCase):
         )
         ctx = subscription_status(self._request())
         self.assertEqual(ctx["plan_name"], metadata.VERITY_PRO.name)
-        self.assertEqual(ctx["plan"], "paid")
+        self.assertEqual(entitlements.get_plan(self.user), "paid")
         self.assertEqual(ctx["monthly_scan_limit"], features.PRO_SCAN_LIMIT)
 
     def _add_subscription(self, status="active", product_id=None):

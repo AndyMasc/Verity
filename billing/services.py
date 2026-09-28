@@ -5,9 +5,11 @@ tested in one place, and always use djstripe's mode-aware secret key.
 """
 
 import logging
+from copy import copy
 
 import stripe
-from djstripe.models import Product, Subscription
+from django.db.models import Prefetch
+from djstripe.models import Price, Product, Subscription
 from djstripe.settings import djstripe_settings
 
 from . import metadata
@@ -101,6 +103,8 @@ def _checkout_price_id(product: Product) -> str | None:
     dj-stripe Prices have no default ordering, so it can select an archived
     price that the checkout validation (_validated_price) rejects.
     """
+    # "active" and the mode are also applied by the prefetch in
+    # "pricing_context"; re-checking here keeps this correct for any caller.
     candidates = [
         price
         for price in product.prices.all()
@@ -124,6 +128,7 @@ def _product_pro_only(meta, base_plan) -> bool:
 def _decorate_product_for_pricing(product, *, base_plan, held_product_ids):
     """Attach display metadata used by the pricing cards and checkout UI."""
     meta = metadata.PRODUCTS.get(product.id)
+    product.category = meta.category if meta else None
     product.features_list = meta.features if meta else []
     product.checkout_price_id = _checkout_price_id(product)
     product.already_active = product.id in held_product_ids
@@ -133,7 +138,14 @@ def _decorate_product_for_pricing(product, *, base_plan, held_product_ids):
 
 def pricing_context(user) -> dict:
     """Build the pricing data shared by the pricing page and the landing page."""
-    products = list(Product.objects.filter(active=True).prefetch_related("prices"))
+    live = djstripe_settings.STRIPE_LIVE_MODE
+    products = list(
+        Product.objects.filter(active=True, livemode=live).prefetch_related(
+            Prefetch(
+                "prices", queryset=Price.objects.filter(active=True, livemode=live)
+            )
+        )
+    )
     base_plan = metadata.plan_for_user(user)
     held_product_ids = {
         meta.stripe_id for meta in metadata.active_products_for_user(user)
@@ -144,22 +156,14 @@ def pricing_context(user) -> dict:
             product, base_plan=base_plan, held_product_ids=held_product_ids
         )
 
-    free_plan = metadata.VERITY_FREE
+    # A copy, not the module-level constant: the free plan has no Stripe
+    # product behind it but the cards expect the same shape.
+    free_plan = copy(metadata.VERITY_FREE)
     free_plan.features_list = free_plan.features
     free_plan.prices = []
-    free_plan.metadata = {"category": "base_plan"}
+    free_plan.checkout_price_id = None
+    free_plan.already_active = True
     products.insert(0, free_plan)
-
-    def _by_category(category: str) -> list:
-        return [
-            p
-            for p in products
-            if isinstance(getattr(p, "metadata", None), dict)
-            and p.metadata.get("category") == category
-        ]
-
-    base_plans = _by_category("base_plan")
-    storage_plans = _by_category("storage_plan")
 
     return {
         "products": products,
@@ -167,8 +171,8 @@ def pricing_context(user) -> dict:
         "has_active_subscription": bool(
             user.is_authenticated and user.has_active_subscription
         ),
-        "base_plans": base_plans,
-        "storage_plans": storage_plans,
+        "base_plans": [p for p in products if p.category == "base_plan"],
+        "storage_plans": [p for p in products if p.category == "storage_plan"],
     }
 
 
@@ -203,8 +207,6 @@ def reconcile_subscription_statuses(
             remote = stripe.Subscription.retrieve(local.id)
             remote_status = remote.status
         except stripe.error.InvalidRequestError:
-            # No longer exists in Stripe (deleted/expired). The period ended
-            # or it was removed out-of-band; local status is stale.
             remote_status = "canceled"
         except stripe.error.StripeError as exc:
             logger.warning(
@@ -234,8 +236,6 @@ def reconcile_subscription_statuses(
         from .context_processors import invalidate_plan_usage_caches
         from .models import CustomUser
 
-        # djstripe's Subscription.customer_id holds the Stripe customer id,
-        # while CustomUser.customer_id is a plain FK keyed on djstripe_id.
         customer = local.customer
         if customer is not None:
             for user_id in CustomUser.objects.filter(

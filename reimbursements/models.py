@@ -688,7 +688,6 @@ class PackageEmailVerification(models.Model):
     )
     email = models.EmailField(max_length=254)
     code_hash = models.CharField(max_length=64)
-    salt = models.UUIDField(default=uuid.uuid4, editable=False)
     attempts = models.PositiveIntegerField(default=0)
     expires_at = models.DateTimeField()
     verified_at = models.DateTimeField(null=True, blank=True)

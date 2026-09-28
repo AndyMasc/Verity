@@ -270,7 +270,11 @@ class HandleSubscriptionCancellationTrackingTests(TestCase):
                     }
                 )
             )
-        self.assertEqual(self.captured, [])
+        # subscription_updated is expected here; a *cancellation* is not, since
+        # customer.subscription.deleted owns that event.
+        self.assertNotIn(
+            "subscription_cancelled", [name[0] for name, _ in self.captured]
+        )
 
 
 class EnqueueReimbursementProcessingTests(TestCase):

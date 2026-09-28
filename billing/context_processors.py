@@ -50,7 +50,6 @@ def invalidate_plan_usage_caches(user_id: int) -> None:
 def _build_subscription_status(user) -> dict[str, Any]:
     active_subscriptions = metadata._active_subscriptions(user)
     is_subscribed = bool(active_subscriptions)
-    primary_subscription = active_subscriptions[0] if active_subscriptions else None
 
     active_products = metadata.active_products_for_user(user)
     plan_name = ", ".join(product.name for product in active_products) or (
@@ -64,20 +63,10 @@ def _build_subscription_status(user) -> dict[str, Any]:
         )
     )
 
-    # The Stripe model instance is intentionally not cached (stale serialized
-    # objects in Redis); every template consumes the primitives below instead.
     return {
-        "subscription": None,
         "is_subscribed": is_subscribed,
-        "subscription_cancel_at_period_end": (
-            primary_subscription.cancel_at_period_end
-            if primary_subscription is not None
-            else False
-        ),
-        "plan": entitlements.get_plan(user),
         "plan_name": plan_name,
         "monthly_scan_limit": entitlements.get_monthly_scan_limit(user),
-        "features": list(entitlements.get_features(user)),
         "storage_pack_requires_paid_base": storage_pack_requires_paid_base,
     }
 
@@ -119,13 +108,6 @@ def scan_usage(request: HttpRequest) -> dict[str, Any]:
 
     value = {
         "scan_usage_count": count,
-        "scan_usage_period": period,
-        "free_monthly_scan_limit": (
-            monthly_scan_limit
-            if monthly_scan_limit is not None
-            else features.PRO_SCAN_LIMIT
-        ),
-        "scan_usage_percentage": min(round(percentage), 100),
         "is_fair_use_approaching": percentage >= 80 and percentage < 100,
         "is_fair_use_exceeded": percentage >= 100,
     }
@@ -147,9 +129,7 @@ def storage_usage(request: HttpRequest) -> dict[str, Any]:
     limit_gb = entitlements.get_storage_limit(user)
     value = {
         "storage_usage_gb": usage_bytes / (1024**3),
-        "storage_usage_bytes": usage_bytes,
         "storage_limit_gb": limit_gb,
-        "is_storage_limit_exceeded": usage_bytes / (1024**3) >= limit_gb,
     }
     cache.set(cache_key, value, BILLING_CONTEXT_CACHE_TTL)
     return value

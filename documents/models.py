@@ -116,7 +116,6 @@ class DocumentData(models.Model):
     )
     did_ocr = models.BooleanField(default=False)
     ocr_error = models.TextField(blank=True, default="")
-    ocr_metadata = models.JSONField(blank=True, null=True)
     ocr_raw_data = models.JSONField(blank=True, null=True)
     notes = models.TextField(blank=True, default="")
     file_extension = models.CharField(max_length=10, blank=True, default="")

@@ -208,10 +208,23 @@ def handle_subscription_changed(**kwargs: Any) -> None:
 
     _invalidate_subscription_caches_for_event(stripe_sub)
 
-    if "base_plan" in _subscription_categories(stripe_sub):
+    customer_id = stripe_sub.get("customer")
+    categories = _subscription_categories(stripe_sub)
+    if "base_plan" in categories:
         _cancel_pro_only_storage_for_customer(
-            stripe_sub.get("customer"), base_subscription_id=stripe_sub.get("id")
+            customer_id, base_subscription_id=stripe_sub.get("id")
         )
+
+    # The only place Stripe reports an item added or removed after checkout,
+    # so without this an add-on bought post-signup is never seen.
+    _capture(
+        "subscription_updated",
+        _subscriber_pk(customer_id),
+        {
+            "includes_base_plan": "base_plan" in categories,
+            "includes_storage_plan": "storage_plan" in categories,
+        },
+    )
 
 
 def _capture_subscription_cancelled(
@@ -230,8 +243,18 @@ def _capture_subscription_cancelled(
         return
 
     user = getattr(getattr(sub, "customer", None), "subscriber", None)
+    metas = [
+        metadata.PRODUCTS[item.price.product.id]
+        for item in sub.items.select_related("price__product")
+        if item.price
+        and item.price.product
+        and item.price.product.id in metadata.PRODUCTS
+    ]
+    base = next((meta for meta in metas if meta.category == "base_plan"), None)
     properties = {
-        "plan": None,
+        "plan": (base or metas[0]).name if metas else None,
+        "includes_base_plan": base is not None,
+        "includes_storage_plan": any(m.category == "storage_plan" for m in metas),
         "months_active": None,
         "cancel_type": (
             "period_end"
@@ -239,10 +262,6 @@ def _capture_subscription_cancelled(
             else "immediate"
         ),
     }
-
-    item = sub.items.select_related("price__product").first()
-    if item and item.price and item.price.product:
-        properties["plan"] = item.price.product.name
 
     if sub.created:
         properties["months_active"] = round(
@@ -276,12 +295,23 @@ def handle_checkout_settled(**kwargs: Any) -> None:
     if session.get("payment_status") not in ("paid", "no_payment_required"):
         return
 
+    line_items = (session.get("line_items") or {}).get("data") or []
+    categories = {
+        category
+        for category in (
+            metadata.category_for_product((item.get("price") or {}).get("product"))
+            for item in line_items
+        )
+        if category
+    }
     _capture(
         "subscription_checkout_completed",
         _subscriber_pk(session.get("customer"), session.get("client_reference_id")),
         {
             "amount": (session.get("amount_total") or 0) / 100,
             "currency": session.get("currency"),
+            "includes_base_plan": "base_plan" in categories,
+            "includes_storage_plan": "storage_plan" in categories,
         },
     )
 

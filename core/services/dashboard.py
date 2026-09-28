@@ -16,7 +16,6 @@ from django.utils import timezone
 from django.utils.timezone import make_aware
 
 from core.models import Notification, UserSettings
-from documents.models import DocumentData, DocumentStatus
 from records.models import MergeLog, Record
 from reimbursements.models import PackagePayment, ReimbursementPackage
 
@@ -176,7 +175,6 @@ async def get_dashboard_context(user) -> dict:
                     "id",
                     filter=Q(recipient=user, status=ReimbursementPackage.Status.PAID),
                 ),
-                has_packages=Count("id"),
             )
         )(),
         _fetch_values_list(
@@ -202,19 +200,6 @@ async def get_dashboard_context(user) -> dict:
     notifications = cast(list, notifications)
     unread_notifications_count = cast(int, unread_notifications_count)
 
-    orphaned_count = (
-        await DocumentData.objects.for_user(user)  # type: ignore
-        .orphaned()
-        .exclude(
-            status__in=[
-                DocumentStatus.COMPLETED,
-                DocumentStatus.PENDING_UPLOAD,
-                DocumentStatus.DELETING,
-            ]
-        )
-        .acount()
-    )
-
     monthly_expenses_total = await sync_to_async(_convert_total)(
         [(b, c) for b, c in monthly_expense_rows if b], user_currency
     )
@@ -229,11 +214,7 @@ async def get_dashboard_context(user) -> dict:
     expiring_soon_count = len(expiring_soon)
 
     context = {
-        "merged_records_count": merge_count,
         "records": recent_records,
-        "expiring_soon": expiring_soon,
-        "expiring_soon_count": expiring_soon_count,
-        "monthly_expenses": monthly_expenses_total,
         "metrics": [
             {
                 "label": f"{datetime.now().strftime('%B')} Expenses",
@@ -257,7 +238,6 @@ async def get_dashboard_context(user) -> dict:
                 "url": f"{records_list_url}?merged=True",
             },
         ],
-        "orphaned_document_count": orphaned_count,
         "webpush_warning": webpush_warning,
         "notifications": notifications,
         "unread_notifications_count": unread_notifications_count,
@@ -265,7 +245,6 @@ async def get_dashboard_context(user) -> dict:
         "reimbursements_sent_pending_count": reimb_stats["sent_pending_count"],
         "reimbursements_received_total": received_reimbursements_total,
         "reimbursements_received_count": reimb_stats["received_count"],
-        "has_packages": reimb_stats["has_packages"] > 0,
     }
 
     await cache.aset(cache_key, context, DASHBOARD_CACHE_TTL)

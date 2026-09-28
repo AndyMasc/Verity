@@ -137,7 +137,7 @@ class StorageUtilsTest(TestCase):
             "https://example.com/presigned-url"
         )
         mock_get_s3.return_value = mock_s3
-        result = generate_presigned_post(1, "users/1/test.pdf", "application/pdf")
+        result = generate_presigned_post("users/1/test.pdf", "application/pdf")
         self.assertEqual(result, "https://example.com/presigned-url")
 
     @patch("documents.storage.get_s3_client")

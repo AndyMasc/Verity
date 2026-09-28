@@ -3,15 +3,11 @@
 from __future__ import annotations
 
 import hashlib
-from typing import TYPE_CHECKING
 
 from django.core.cache import cache
 from django.core.paginator import Paginator
 from django.db.models import QuerySet
 from django.utils.functional import cached_property
-
-if TYPE_CHECKING:
-    pass
 
 PAGINATOR_COUNT_CACHE_TTL = 60
 _PAGINATOR_VERSION_TTL = 60 * 60 * 24 * 7

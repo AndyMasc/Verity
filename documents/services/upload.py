@@ -121,7 +121,7 @@ class UploadService:
                 status=DocumentStatus.PENDING_UPLOAD,
             )
 
-        upload_url = generate_presigned_post(self.user_id, key, content_type)
+        upload_url = generate_presigned_post(key, content_type)
 
         return PresignResult(
             status="upload_url",

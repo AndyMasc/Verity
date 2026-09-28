@@ -69,10 +69,9 @@ class DashboardViewTest(TestCase):
     def test_context_has_counts(self):
         self.client.force_login(self.user)
         response = self.client.get(reverse("core:dashboard"))
-        self.assertIn("merged_records_count", response.context)
         self.assertIn("records", response.context)
-        self.assertIn("expiring_soon", response.context)
-        self.assertIn("orphaned_document_count", response.context)
+        # Counts are surfaced through the metrics tiles the template renders.
+        self.assertIn("metrics", response.context)
 
 
 class DashboardViewAsyncTest(TestCase):
@@ -224,7 +223,12 @@ class DashboardMonthlyExpensesTest(TestCase):
 
         response = self.client.get(reverse("core:dashboard"))
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(float(response.context["monthly_expenses"]), 50.00)
+        monthly_expenses = next(
+            m["value"]
+            for m in response.context["metrics"]
+            if m["label"].endswith("Expenses")
+        )
+        self.assertEqual(float(monthly_expenses), 50.00)
 
 
 class NotificationViewsTest(TestCase):
