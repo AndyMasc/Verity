@@ -103,7 +103,7 @@ google-genai==2.10.0
 google-resumable-media==2.10.0
 googleapis-common-protos==1.75.0
 greenlet==3.5.4
-gunicorn==23.0.0
+gunicorn==26.2.0
 h11==0.16.0
 honcho==2.0.0
 http_ece==1.2.1
