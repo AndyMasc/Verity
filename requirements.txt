@@ -169,7 +169,7 @@ parsy==1.1.0
 pathspec==1.1.1
 pendulum==3.2.0
 periodiq==0.14.0
-posthog==7.31.0
+posthog==7.60.0
 pika==1.4.4
 pillow==12.3.0
 pillow_heif==1.4.0
