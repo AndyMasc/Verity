@@ -81,13 +81,33 @@
                 defaults: '2026-05-30',
                 person_profiles: 'identified_only',
                 persistence: verityCookieConsent === 'allowed' ? 'localStorage+cookie' : 'memory',
+                // Session replay is the only reason the GlitchTip integration below can
+                // link an error to a recording, and it must stay off for users who
+                // declined cookies.
+                session_recording: verityCookieConsent === 'allowed' ? {
+                    maskAllInputs: true,
+                    maskInputOptions: true,
+                } : false,
                 tracing_headers: ['veritypay.app'],
             })
-            // The browser SDK is the only thing that knows the PostHog session id.
-            // Mirror it into a first-party cookie so backend captures (login,
-            // view events) can be linked to this session recording.
+
+            if (window.Sentry && window.Sentry.addEventProcessor) {
+                window.Sentry.addEventProcessor(function (event) {
+                    var replayUrl = window.posthog && window.posthog.get_session_replay_url
+                        ? window.posthog.get_session_replay_url()
+                        : null;
+                    if (replayUrl) {
+                        event.contexts = event.contexts || {};
+                        event.contexts.posthog = { url: replayUrl };
+                    }
+                    return event;
+                });
+            }
+
+            // The browser SDK is the only thing that knows the PostHog session id. Mirror it into a first-party cookie so backend captures (login, view events) can be linked to this session recording.
             posthog.onSessionId(function (sessionId) {
                 if (!sessionId) return;
+
                 document.cookie = 'verity_ph_session=' + encodeURIComponent(sessionId) +
                     '; path=/; max-age=1800; samesite=lax' +
                     (window.location.protocol === 'https:' ? '; secure' : '');
@@ -95,10 +115,24 @@
         </script>
         {% if user.is_authenticated %}
             <script>
-            posthog.identify("{{ user.pk }}", {  
-            email: "{{ user.email }}",  
-            name: "{{ user.username }}",  
-            });  
+            // PostHog is third-party analytics, so identification follows cookie
+            // consent.
+            if (verityCookieConsent === 'allowed') {
+                posthog.identify("{{ user.pk|escapejs }}", {
+                    email: "{{ user.email|escapejs }}",
+                    name: "{{ user.username|escapejs }}",
+                });
+            }
+
+            window.posthog.onLoad(function() {
+                if (window.Sentry && typeof window.Sentry.setUser === 'function') {
+                    window.Sentry.setUser({
+                        id: "{{ user.pk|escapejs }}",
+                        username: "{{ user.username|escapejs }}",
+                        email: "{{ user.email|escapejs }}"
+                    });
+                }
+            });
             </script>
         {% endif %}
         <title>{% block title %}Verity{% endblock %}</title>

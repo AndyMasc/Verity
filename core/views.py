@@ -6,11 +6,10 @@ caches the result to reduce database load on repeated visits.
 
 import json
 import logging
-import time as _time
 from inspect import iscoroutine
 from typing import Any
-from dramatiq.brokers.redis import RedisBroker
 
+import dramatiq
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -26,7 +25,6 @@ from django.views.generic import ListView, TemplateView, UpdateView
 from django_ratelimit.decorators import ratelimit
 from webpush.models import SubscriptionInfo
 from webpush.views import save_info
-import dramatiq
 
 from billing.services import pricing_context
 from core.apps import posthog_client

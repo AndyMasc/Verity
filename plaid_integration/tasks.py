@@ -9,10 +9,10 @@ import json
 import logging
 from datetime import date
 from typing import Any
-from django.conf import settings
 
 import dramatiq
 import plaid
+from django.conf import settings
 from django.db import IntegrityError
 from django.db import transaction as db_transaction
 from django.db.models import Q

@@ -10,7 +10,7 @@ import requests
 from cryptography.hazmat.primitives.asymmetric import ec
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
-from django.test import TestCase
+from django.test import TestCase, override_settings
 
 from plaid_integration.models import PlaidItem
 from plaid_integration.services import public_token_exchange
@@ -201,8 +201,13 @@ class WebhookVerificationTest(TestCase):
         self.assertFalse(verify_plaid_webhook(b"body", unsigned))
 
 
+@override_settings(DEBUG=True)
 class SyncAndConvertTaskTest(TestCase):
-    """Tests for the sync_and_convert_for_item_task background task."""
+    """Tests for the sync_and_convert_for_item_task background task.
+
+    DEBUG is forced on because the task returns its stats only in DEBUG; in
+    production it returns None to silence benign Sentry noise.
+    """
 
     def setUp(self):
         self.user = User.objects.create_user(username="testuser", password="pass")
@@ -233,7 +238,7 @@ class SyncAndConvertTaskTest(TestCase):
         }
         mock_client.transactions_sync.return_value = mock_response
 
-        result = sync_and_convert_for_item_task(self.plaid_item.id)
+        result = sync_and_convert_for_item_task.fn(self.plaid_item.id)
         self.assertEqual(result["added"], 1)
         self.assertEqual(result["modified"], 0)
         self.assertEqual(result["removed"], 0)
@@ -258,7 +263,7 @@ class SyncAndConvertTaskTest(TestCase):
         }
         mock_client.transactions_sync.return_value = mock_response
 
-        result = sync_and_convert_for_item_task(self.plaid_item.id)
+        result = sync_and_convert_for_item_task.fn(self.plaid_item.id)
         self.assertEqual(result["removed"], 1)
         record.refresh_from_db()
         self.assertFalse(record.is_active)
@@ -293,7 +298,7 @@ class SyncAndConvertTaskTest(TestCase):
         )
         mock_client.transactions_sync.side_effect = error
 
-        result = sync_and_convert_for_item_task(self.plaid_item.id)
+        result = sync_and_convert_for_item_task.fn(self.plaid_item.id)
 
         self.assertEqual(result, {"error": "ITEM_LOGIN_REQUIRED"})
         self.plaid_item.refresh_from_db()
@@ -353,11 +358,11 @@ class SyncAndConvertTaskTest(TestCase):
         }
         mock_client.transactions_sync.side_effect = [page1, page2]
 
-        result = sync_and_convert_for_item_task(self.plaid_item.id)
+        result = sync_and_convert_for_item_task.fn(self.plaid_item.id)
         self.assertEqual(result["added"], 2)
 
     @patch("plaid_integration.tasks.try_match_plaid_record")
     @patch("plaid_integration.tasks.client")
     def test_nonexistent_plaid_item_returns_error(self, mock_client, mock_match):
-        result = sync_and_convert_for_item_task(99999)
+        result = sync_and_convert_for_item_task.fn(99999)
         self.assertIn("error", result)

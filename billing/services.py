@@ -9,7 +9,7 @@ from copy import copy
 
 import stripe
 from django.db.models import Prefetch
-from djstripe.models import Price, Product, Subscription
+from djstripe.models import Price, Product
 from djstripe.settings import djstripe_settings
 
 from . import metadata
@@ -172,73 +172,3 @@ def pricing_context(user) -> dict:
         "base_plans": [p for p in products if p.category == "base_plan"],
         "storage_plans": [p for p in products if p.category == "storage_plan"],
     }
-
-
-def reconcile_subscription_statuses(
-    subscription_ids: list[str] | None = None,
-) -> int:
-    """Reconcile local djstripe subscription statuses against Stripe.
-
-    Local rows drift from Stripe when a webhook event is missed (endpoint
-    downtime, exhausted Stripe retries, a crashed handler, ...). This refetches
-    each local subscription from Stripe and updates its stored status to match,
-    so "plan_for_user" stops trusting stale "active" rows.
-
-    Subscriptions that no longer exist in Stripe are marked "canceled".
-
-    Args:
-        subscription_ids: Optional filter; when None, all local subscriptions
-            are reconciled.
-
-    Returns:
-        The number of local rows whose stored status was corrected.
-    """
-    _configure()
-
-    queryset = Subscription.objects.all().order_by("id")
-    if subscription_ids:
-        queryset = queryset.filter(id__in=subscription_ids)
-
-    corrected = 0
-    for local in queryset.iterator(chunk_size=100):
-        try:
-            remote = stripe.Subscription.retrieve(local.id)
-            remote_status = remote.status
-        except stripe.error.InvalidRequestError:
-            remote_status = "canceled"
-        except stripe.error.StripeError as exc:
-            logger.warning(
-                "Reconciliation: failed to fetch subscription %s from Stripe: %s",
-                local.id,
-                exc,
-            )
-            continue
-
-        local_status = (local.stripe_data or {}).get("status")
-        if local_status == remote_status:
-            continue
-
-        data = dict(local.stripe_data or {})
-        data["status"] = remote_status
-        Subscription.objects.filter(pk=local.pk).update(stripe_data=data)
-        corrected += 1
-        logger.info(
-            "Reconciliation: %s status %s -> %s",
-            local.id,
-            local_status,
-            remote_status,
-        )
-
-        # A reconciled status change alters the user's plan/subscription state,
-        # so clear the cached billing context for every user on this customer.
-        from .context_processors import invalidate_plan_usage_caches
-        from .models import CustomUser
-
-        customer = local.customer
-        if customer is not None:
-            for user_id in CustomUser.objects.filter(
-                customer_id=customer.djstripe_id
-            ).values_list("id", flat=True):
-                invalidate_plan_usage_caches(user_id)
-
-    return corrected
