@@ -57,71 +57,13 @@ class RecordSharingSectionView(LoginRequiredMixin, View):
         return render(request, "records/partials/shares/share_panel.html", context)
 
 
-class ShareRecordView(LoginRequiredMixin, View):
-    """Grant record access to users by email (owner only, Pro gated)."""
-
-    @method_decorator(ratelimit(key="user", rate="10/m", method="POST", block=True))
-    def post(self, request: HttpRequest, pk: int) -> HttpResponse:
-        record = _owned_record_or_404(request, pk)
-        if not _can_grant_shares(request.user):
-            messages.error(request, "Record sharing requires the Pro plan")
-            return redirect("records:record_detail", pk=pk)
-        if record.user_id != request.user.pk:
-            messages.error(request, "Only the record owner can share it")
-            return redirect("records:record_detail", pk=pk)
-
-        emails = [
-            e.strip() for e in request.POST.get("emails", "").split(",") if e.strip()
-        ]
-        permission = request.POST.get("permission", RecordShare.Permission.EDIT)
-        if permission not in RecordShare.Permission.values:
-            permission = RecordShare.Permission.EDIT
-        include_documents = request.POST.get("include_documents") in {
-            "on",
-            "true",
-            "1",
-        }
-
-        try:
-            shares, unknown = share_services.share_record_with_users(
-                record=record,
-                owner=request.user,
-                emails=emails,
-                config=share_services.ShareConfig(
-                    permission=permission,
-                    include_documents=include_documents,
-                ),
-            )
-        except share_services.ShareError as exc:
-            messages.error(request, str(exc))
-        else:
-            if shares:
-                if posthog_client is not None:
-                    posthog_client.capture(
-                        "record_shared",
-                        properties={
-                            "recipient_count": len(shares),
-                            "permission": permission,
-                            "includes_documents": include_documents,
-                        },
-                    )
-                messages.success(
-                    request,
-                    f"Shared with {len(shares)} user{'s' if len(shares) != 1 else ''}",
-                )
-            if unknown:
-                messages.warning(
-                    request,
-                    "No account found for: " + ", ".join(unknown),
-                )
-        return redirect("records:record_detail", pk=pk)
-
-
 @method_decorator(require_POST, name="dispatch")
 class BulkShareView(LoginRequiredMixin, View):
-    """Share several selected records at once by email (owner only, Pro gated).
+    """Share selected records at once by email (owner only, Pro gated).
 
-    Takes a JSON body of "{"record_ids": [1, 2], "emails": "a@x.com, b@y.com"}"
+    The single path for granting access: sharing one record is just this with
+    one id. Takes a JSON body of
+    "{"record_ids": [1, 2], "emails": "a@x.com, b@y.com", "permission": "view"}"
     and returns a JSON summary for the bulk action bar.
     """
 
@@ -137,14 +79,24 @@ class BulkShareView(LoginRequiredMixin, View):
             return error
 
         try:
-            raw = json.loads(request.body or b"{}").get("emails", "")
+            body = json.loads(request.body or b"{}")
         except json.JSONDecodeError:
             return JsonResponse({"error": "Invalid request body."}, status=400)
-        emails = [e.strip() for e in raw.split(",") if e.strip()]
+
+        emails = [e.strip() for e in body.get("emails", "").split(",") if e.strip()]
         if not emails:
             return JsonResponse(
                 {"error": "At least one recipient email is required."}, status=400
             )
+
+        permission = body.get("permission", RecordShare.Permission.EDIT)
+        if permission not in RecordShare.Permission.values:
+            permission = RecordShare.Permission.EDIT
+        include_documents = bool(body.get("include_documents", True))
+        config = share_services.ShareConfig(
+            permission=permission,
+            include_documents=include_documents,
+        )
 
         owned = list(
             Record.objects.filter(pk__in=record_ids, user=request.user).distinct()
@@ -163,21 +115,36 @@ class BulkShareView(LoginRequiredMixin, View):
         total_shares = sum(
             len(
                 share_services.grant_shares(
-                    record=record, owner=request.user, recipients=recipients
+                    record=record,
+                    owner=request.user,
+                    recipients=recipients,
+                    config=config,
                 )
             )
             for record in owned
         )
 
         if total_shares and posthog_client is not None:
-            posthog_client.capture(
-                "records_shared_in_bulk",
-                properties={
-                    "record_count": len(owned),
-                    "recipient_count": len(recipients),
-                    "share_count": total_shares,
-                },
-            )
+            # One record keeps the original record_shared event so the existing
+            # single-share funnel stays intact; several keep the bulk event.
+            if len(owned) == 1:
+                posthog_client.capture(
+                    "record_shared",
+                    properties={
+                        "recipient_count": len(recipients),
+                        "permission": permission,
+                        "includes_documents": include_documents,
+                    },
+                )
+            else:
+                posthog_client.capture(
+                    "records_shared_in_bulk",
+                    properties={
+                        "record_count": len(owned),
+                        "recipient_count": len(recipients),
+                        "share_count": total_shares,
+                    },
+                )
         return JsonResponse(
             {
                 "success": True,

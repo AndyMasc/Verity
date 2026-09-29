@@ -40,10 +40,16 @@ class SharingTestCase(TestCase):
             currency="usd",
         )
 
-    def _share(self, emails):
-        return share_services.share_record_with_users(
-            record=self.record, owner=self.owner, emails=emails
+    def _share(self, emails, **config):
+        """Share via the bulk service, which is now the only grant path."""
+        recipients, unknown = share_services.resolve_recipients(emails)
+        shared = share_services.grant_shares(
+            record=self.record,
+            owner=self.owner,
+            recipients=recipients,
+            config=share_services.ShareConfig(**config) if config else None,
         )
+        return shared, unknown
 
     def _detail_post(self, user, data):
         self.client.force_login(user)
@@ -105,9 +111,10 @@ class TestShareService(SharingTestCase):
             == 1
         )
 
-    def test_self_share_rejected(self):
-        with self.assertRaises(share_services.SelfShareError):
-            self._share([self.owner.email])
+    def test_self_share_is_skipped(self):
+        shared, _ = self._share([self.owner.email])
+        assert shared == []
+        assert not RecordShare.objects.filter(record=self.record).exists()
 
     def test_unknown_emails_returned_not_shared(self):
         shared, unknown = self._share([self.recipient.email, "ghost@acme.com"])
@@ -120,8 +127,10 @@ class TestShareService(SharingTestCase):
     def test_non_owner_cannot_share(self):
         self._share([self.stranger.email])
         with self.assertRaises(share_services.NotOwnerError):
-            share_services.share_record_with_users(
-                record=self.record, owner=self.stranger, emails=[self.recipient.email]
+            share_services.grant_shares(
+                record=self.record,
+                owner=self.stranger,
+                recipients=[self.recipient],
             )
 
     def test_revoke_removes_access_and_audits(self):
@@ -283,20 +292,26 @@ class TestShareViews(SharingTestCase):
     def test_free_user_cannot_grant(self):
         self.client.force_login(self.owner)
         response = self.client.post(
-            reverse("records:record_share", args=[self.record.pk]),
-            {"emails": self.recipient.email},
+            reverse("records:bulk_share"),
+            data=json.dumps(
+                {"record_ids": [self.record.pk], "emails": self.recipient.email}
+            ),
+            content_type="application/json",
         )
-        assert response.status_code == 302
+        assert response.status_code == 403
         assert not RecordShare.objects.filter(record=self.record).exists()
 
     def test_pro_user_can_grant(self):
         give_pro_subscription(self.owner)
         self.client.force_login(self.owner)
         response = self.client.post(
-            reverse("records:record_share", args=[self.record.pk]),
-            {"emails": self.recipient.email},
+            reverse("records:bulk_share"),
+            data=json.dumps(
+                {"record_ids": [self.record.pk], "emails": self.recipient.email}
+            ),
+            content_type="application/json",
         )
-        assert response.status_code == 302
+        assert response.status_code == 200
         assert RecordShare.objects.filter(
             record=self.record, user=self.recipient
         ).exists()
@@ -384,6 +399,99 @@ class TestShareViews(SharingTestCase):
         assert RecordShare.objects.filter(
             record=self.record, user=self.recipient
         ).exists()
+
+    def test_bulk_share_honours_view_only_permission(self):
+        """The access options moved here with the single-share form."""
+        give_pro_subscription(self.owner)
+        self.client.force_login(self.owner)
+        self.client.post(
+            reverse("records:bulk_share"),
+            data=json.dumps(
+                {
+                    "record_ids": [self.record.pk],
+                    "emails": self.recipient.email,
+                    "permission": "view",
+                }
+            ),
+            content_type="application/json",
+        )
+        share = RecordShare.objects.get(record=self.record, user=self.recipient)
+        assert share.permission == "view"
+
+    def test_bulk_share_can_withhold_documents(self):
+        give_pro_subscription(self.owner)
+        self.client.force_login(self.owner)
+        self.client.post(
+            reverse("records:bulk_share"),
+            data=json.dumps(
+                {
+                    "record_ids": [self.record.pk],
+                    "emails": self.recipient.email,
+                    "include_documents": False,
+                }
+            ),
+            content_type="application/json",
+        )
+        share = RecordShare.objects.get(record=self.record, user=self.recipient)
+        assert share.include_documents is False
+
+    def test_bulk_share_rejects_an_unknown_permission(self):
+        give_pro_subscription(self.owner)
+        self.client.force_login(self.owner)
+        self.client.post(
+            reverse("records:bulk_share"),
+            data=json.dumps(
+                {
+                    "record_ids": [self.record.pk],
+                    "emails": self.recipient.email,
+                    "permission": "superuser",
+                }
+            ),
+            content_type="application/json",
+        )
+        share = RecordShare.objects.get(record=self.record, user=self.recipient)
+        assert share.permission == RecordShare.Permission.EDIT
+
+    @mock.patch("records.views.shares.posthog_client")
+    def test_single_record_share_still_fires_record_shared(self, mock_ph):
+        """The one-record funnel must keep its original analytics event."""
+        give_pro_subscription(self.owner)
+        self.client.force_login(self.owner)
+        self.client.post(
+            reverse("records:bulk_share"),
+            data=json.dumps(
+                {
+                    "record_ids": [self.record.pk],
+                    "emails": self.recipient.email,
+                    "permission": "view",
+                    "include_documents": False,
+                }
+            ),
+            content_type="application/json",
+        )
+        events = [c.args[0] for c in mock_ph.capture.call_args_list]
+        assert "record_shared" in events
+        assert "records_shared_in_bulk" not in events
+
+    @mock.patch("records.views.shares.posthog_client")
+    def test_multi_record_share_fires_the_bulk_event(self, mock_ph):
+        give_pro_subscription(self.owner)
+        second = Record.objects.create(
+            user=self.owner, title="Second", record_type="expense_receipt"
+        )
+        self.client.force_login(self.owner)
+        self.client.post(
+            reverse("records:bulk_share"),
+            data=json.dumps(
+                {
+                    "record_ids": [self.record.pk, second.pk],
+                    "emails": self.recipient.email,
+                }
+            ),
+            content_type="application/json",
+        )
+        events = [c.args[0] for c in mock_ph.capture.call_args_list]
+        assert "records_shared_in_bulk" in events
 
     def test_bulk_share_ignores_records_they_do_not_own(self):
         give_pro_subscription(self.owner)

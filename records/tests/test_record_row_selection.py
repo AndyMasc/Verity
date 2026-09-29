@@ -52,3 +52,8 @@ class RecordRowSelectionTest(TestCase):
         )
         # And it stops the click from bubbling up to the record link.
         self.assertIn("@click.stop", self.html)
+
+    def test_checkbox_is_always_visible_not_hover_only(self):
+        """No hover state exists on touch, so the control must never hide."""
+        self.assertNotIn("opacity-0 hover:opacity-100", self.html)
+        self.assertNotIn("'opacity-0' : 'opacity-100'", self.html)

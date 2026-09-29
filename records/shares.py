@@ -178,26 +178,6 @@ def grant_shares(
     return granted
 
 
-def share_record_with_users(
-    *,
-    record: Record,
-    owner,
-    emails: list[str],
-    config: ShareConfig | None = None,
-) -> tuple[list[RecordShare], list[str]]:
-    """Share "record" with every existing account matching "emails".
-
-    Returns "(newly granted shares, unknown_emails)".
-    """
-    recipients, unknown = resolve_recipients(emails)
-    if any(user.pk == record.user_id for user in recipients):
-        raise SelfShareError("You cannot share a record with yourself")
-    return (
-        grant_shares(record=record, owner=owner, recipients=recipients, config=config),
-        unknown,
-    )
-
-
 def _notify_share_recipient(*, record: Record, share: RecordShare, actor) -> None:
     """Best-effort notification to the recipient.
 

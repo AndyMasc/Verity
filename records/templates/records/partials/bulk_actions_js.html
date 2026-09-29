@@ -23,6 +23,8 @@
             emailCheckTimeout: null,
             showShareModal: false,
             shareEmails: '',
+            sharePermission: 'edit',
+            shareIncludeDocuments: true,
             sharing: false,
             shareError: '',
 
@@ -118,6 +120,8 @@
             openShareModal() {
                 this.shareEmails = '';
                 this.shareError = '';
+                this.sharePermission = 'edit';
+                this.shareIncludeDocuments = true;
                 this.showShareModal = true;
             },
 
@@ -143,6 +147,8 @@
                         body: JSON.stringify({
                             record_ids: this.selectedIds.map(Number),
                             emails: emails.join(', '),
+                            permission: this.sharePermission,
+                            include_documents: this.shareIncludeDocuments,
                         }),
                     });
                     const data = await response.json().catch(() => null);
