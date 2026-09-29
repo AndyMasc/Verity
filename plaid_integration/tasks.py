@@ -9,6 +9,7 @@ import json
 import logging
 from datetime import date
 from typing import Any
+from django.conf import settings
 
 import dramatiq
 import plaid
@@ -278,8 +279,9 @@ def sync_and_convert_for_item_task(plaid_item_id: int | str):
                 "record_count": stats["added"],
             },
         )
-
-    return # Silences benign errors; Values are logged in the broker's result backend if configured. 
+    if settings.DEBUG:
+        return {"status": "synced", **stats}
+    return None  # In production, returning nothing silences benign errors that Sentry produces - the result is logged in the broker's result backend if configured. Return value in dev is only for debugging and testing.
 
 
 @dramatiq.actor(max_retries=3, min_backoff=2, periodic=cron("0 * * * *"))
