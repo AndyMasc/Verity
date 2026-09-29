@@ -164,6 +164,10 @@ def grant_shares(
 
     The owner is skipped rather than rejected, so one self-addressed entry in
     a bulk list cannot stop the other recipients from being shared with.
+
+    Notification is left to the caller: a bulk share collects the shares from
+    every record and sends one email per recipient, which this per-record
+    function cannot do.
     """
     granted: list[RecordShare] = []
     for user in recipients:
@@ -174,26 +178,26 @@ def grant_shares(
         )
         if granted_now:
             granted.append(share)
-            _notify_share_recipient(record=record, share=share, actor=owner)
     return granted
 
 
-def _notify_share_recipient(*, record: Record, share: RecordShare, actor) -> None:
-    """Best-effort notification to the recipient.
+def notify_share_recipients(*, shares: list[RecordShare], actor) -> None:
+    """Send each recipient one email covering every record just granted to them.
 
-    Runs after the share row is committed and can never fail the grant:
+    Runs after the shares are committed and can never fail the grant:
     deliverability issues are logged, not raised. Only newly granted shares
     reach this point, so duplicates never re-notify.
     """
+    if not shares:
+        return
     try:
-        from .notifications import send_record_shared_notification
+        from .notifications import send_records_shared_notification
 
-        send_record_shared_notification(record=record, share=share, actor=actor)
+        send_records_shared_notification(shares=shares, actor=actor)
     except Exception:
         logger.exception(
-            "Share notification delivery failed (record=%s, recipient=%s)",
-            record.pk,
-            share.user_id,
+            "Share notification delivery failed (record(s)=%s)",
+            ", ".join(str(s.record_id) for s in shares),
         )
 
 

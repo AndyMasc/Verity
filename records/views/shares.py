@@ -112,8 +112,9 @@ class BulkShareView(LoginRequiredMixin, View):
         recipients = [u for u in found if u.pk != request.user.pk]
         self_addressed = len(found) != len(recipients)
 
-        total_shares = sum(
-            len(
+        granted_shares: list[RecordShare] = []
+        for record in owned:
+            granted_shares.extend(
                 share_services.grant_shares(
                     record=record,
                     owner=request.user,
@@ -121,8 +122,14 @@ class BulkShareView(LoginRequiredMixin, View):
                     config=config,
                 )
             )
-            for record in owned
+
+        # One notification per recipient covering everything they were granted,
+        # rather than one email per record.
+        share_services.notify_share_recipients(
+            shares=granted_shares, actor=request.user
         )
+
+        total_shares = len(granted_shares)
 
         if total_shares and posthog_client is not None:
             # One record keeps the original record_shared event so the existing

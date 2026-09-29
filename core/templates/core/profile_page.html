@@ -37,7 +37,7 @@
                 <nav class="space-y-1">
                     <button @click="currentTab = 'general'"
                             :class="currentTab === 'general' ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 font-medium shadow-xs' : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100/80 dark:hover:bg-zinc-800/50'"
-                            class="flex w-full cursor-pointer items-center gap-3 rounded-xl px-3.5 py-2.5 text-left text-xs transition-all duration-200">
+                            class="flex w-full cursor-pointer items-center gap-3 rounded-lg px-3.5 py-2.5 text-left text-xs transition-all duration-200">
                         <svg class="size-4 shrink-0 opacity-80"
                              fill="none"
                              viewBox="0 0 24 24"
@@ -49,7 +49,7 @@
                     </button>
                     <button @click="currentTab = 'preferences'"
                             :class="currentTab === 'preferences' ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 font-medium shadow-xs' : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100/80 dark:hover:bg-zinc-800/50'"
-                            class="flex w-full cursor-pointer items-center gap-3 rounded-xl px-3.5 py-2.5 text-left text-xs transition-all duration-200">
+                            class="flex w-full cursor-pointer items-center gap-3 rounded-lg px-3.5 py-2.5 text-left text-xs transition-all duration-200">
                         <svg class="size-4 shrink-0 opacity-80"
                              fill="none"
                              viewBox="0 0 24 24"
@@ -61,7 +61,7 @@
                     </button>
                     <button @click="currentTab = 'notifications'"
                             :class="currentTab === 'notifications' ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 font-medium shadow-xs' : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100/80 dark:hover:bg-zinc-800/50'"
-                            class="flex w-full cursor-pointer items-center gap-3 rounded-xl px-3.5 py-2.5 text-left text-xs transition-all duration-200">
+                            class="flex w-full cursor-pointer items-center gap-3 rounded-lg px-3.5 py-2.5 text-left text-xs transition-all duration-200">
                         <svg class="size-4 shrink-0 opacity-80"
                              fill="none"
                              viewBox="0 0 24 24"
@@ -73,7 +73,7 @@
                     </button>
                     <button @click="currentTab = 'security'"
                             :class="currentTab === 'security' ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 font-medium shadow-xs' : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100/80 dark:hover:bg-zinc-800/50'"
-                            class="flex w-full cursor-pointer items-center gap-3 rounded-xl px-3.5 py-2.5 text-left text-xs transition-all duration-200">
+                            class="flex w-full cursor-pointer items-center gap-3 rounded-lg px-3.5 py-2.5 text-left text-xs transition-all duration-200">
                         <svg class="size-4 shrink-0 opacity-80"
                              fill="none"
                              viewBox="0 0 24 24"
@@ -128,9 +128,6 @@
                             <div class="space-y-1">
                                 <div class="flex items-center gap-2">
                                     <span class="text-sm font-semibold text-zinc-900 dark:text-white">{{ plan_name }}</span>
-                                    {% if is_subscribed %}
-                                        <span class="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:border-emerald-800/50 dark:bg-emerald-950/50 dark:text-emerald-300">Active</span>
-                                    {% endif %}
                                 </div>
                                 {% if not is_subscribed %}
                                     <p class="text-xs text-zinc-600 dark:text-zinc-400">Upgrade to unlock advanced features.</p>
@@ -194,10 +191,6 @@
                      x-transition:enter-end="opacity-100 translate-y-0"
                      class="space-y-6">
                     <div class="overflow-hidden rounded-2xl border border-zinc-200/80 bg-white/70 shadow-xs backdrop-blur-xl dark:border-zinc-800/80 dark:bg-zinc-900/45">
-                        <div class="border-b border-zinc-100 bg-zinc-50/50 px-6 py-4 dark:border-zinc-800/80 dark:bg-zinc-900/20">
-                            <h3 class="text-xs font-semibold tracking-wider text-zinc-600 uppercase dark:text-zinc-400">Application Preferences</h3>
-                            <p class="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">Customize your workflow and automation behavior.</p>
-                        </div>
                         <div>
                             <form hx-post="{% url 'core:profile_page' %}"
                                   hx-target="#UserSettingsForm"
@@ -219,10 +212,6 @@
                      x-transition:enter-end="opacity-100 translate-y-0"
                      class="space-y-6">
                     <div class="overflow-hidden rounded-2xl border border-zinc-200/80 bg-white/70 shadow-xs backdrop-blur-xl dark:border-zinc-800/80 dark:bg-zinc-900/45">
-                        <div class="border-b border-zinc-100 bg-zinc-50/50 px-6 py-4 dark:border-zinc-800/80 dark:bg-zinc-900/20">
-                            <h3 class="text-xs font-semibold tracking-wider text-zinc-600 uppercase dark:text-zinc-400">Notification Channels</h3>
-                            <p class="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">Control how and when you receive communications. Essential notifications are always delivered.</p>
-                        </div>
                         <form hx-post="{% url 'core:profile_page' %}"
                               hx-target="#UserSettingsForm"
                               hx-swap="outerHTML"
@@ -265,7 +254,7 @@
                     </div>
                     <div class="flex flex-col items-start justify-between gap-4 rounded-2xl border border-zinc-200/80 bg-white/70 p-6 shadow-xs backdrop-blur-xl sm:flex-row sm:items-center dark:border-zinc-800/80 dark:bg-zinc-900/45">
                         <div class="space-y-1">
-                            <h4 class="text-xs font-semibold tracking-wider text-zinc-600 uppercase dark:text-zinc-400">Device Push Integration</h4>
+                            <h4 class="text-xs font-semibold tracking-wider text-zinc-600 uppercase dark:text-zinc-400">Registered devices for push notifications</h4>
                             <p class="text-xs text-zinc-600 dark:text-zinc-400">
                                 You currently have <span class="font-medium text-zinc-800 dark:text-zinc-200">{{ webpush_subscription_count }}</span> registered subscription{{ webpush_subscription_count|pluralize }}.
                             </p>
@@ -280,9 +269,6 @@
                      x-transition:enter-start="opacity-0 translate-y-1"
                      x-transition:enter-end="opacity-100 translate-y-0">
                     <div class="divide-y divide-zinc-100 overflow-hidden rounded-2xl border border-zinc-200/80 bg-white/70 shadow-xs backdrop-blur-xl dark:divide-zinc-800/60 dark:border-zinc-800/80 dark:bg-zinc-900/45">
-                        <div class="bg-zinc-50/50 px-6 py-4 dark:bg-zinc-900/20">
-                            <h3 class="text-xs font-semibold tracking-wider text-zinc-600 uppercase dark:text-zinc-400">Security & Authentication</h3>
-                        </div>
                         {% url 'account_email' as email_url %}
                         {% if email_url %}
                             <a href="{{ email_url }}"

@@ -8,11 +8,11 @@
                 {{ form.default_currency.label }}
             </label>
             <span class="mt-0.5 text-[11px] text-zinc-500 dark:text-zinc-400">
-                Default currency for new records and reimbursements.
+                Default currency for your use through the app. When you recieve reimbursement requests, we'll try to convert them to this currency.
             </span>
         </div>
         <div class="flex items-center pt-0.5">
-            {% render_field form.default_currency class="w-40 rounded border-zinc-300 dark:border-zinc-700 text-sm bg-transparent cursor-pointer px-2 py-1" %}
+            {% render_field form.default_currency class="w-75 rounded border-zinc-300 dark:border-zinc-700 text-sm bg-transparent cursor-pointer px-2 py-1" %}
         </div>
     </div>
     <div class="flex items-start justify-between px-6 py-4 transition-all duration-200 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/10">
