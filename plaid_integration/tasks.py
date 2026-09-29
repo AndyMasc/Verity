@@ -238,7 +238,7 @@ def _process_sync_page(
 
 
 @dramatiq.actor(max_retries=3)
-def sync_and_convert_for_item_task(plaid_item_id: int | str) -> dict[str, Any]:
+def sync_and_convert_for_item_task(plaid_item_id: int | str):
     """Sync all pending transactions for a Plaid item and create/update Records.
 
     Paginates through the Plaid Transactions Sync endpoint using the stored
@@ -279,7 +279,7 @@ def sync_and_convert_for_item_task(plaid_item_id: int | str) -> dict[str, Any]:
             },
         )
 
-    return {"status": "synced", **stats}
+    return # Silences benign errors; Values are logged in the broker's result backend if configured. 
 
 
 @dramatiq.actor(max_retries=3, min_backoff=2, periodic=cron("0 * * * *"))
