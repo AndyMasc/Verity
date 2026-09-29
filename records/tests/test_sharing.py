@@ -645,6 +645,17 @@ class TestBulkShareDigestNotification(SharingTestCase):
         assert f"{len(self.all_records)} records" in kwargs["subject"]
         assert "shared 4 records" in kwargs["db_message"]
 
+    def test_record_url_resolves_to_a_real_route(self):
+        """The emailed link must resolve; a hand-written path 404s."""
+        from urllib.parse import urlparse
+
+        from django.urls import resolve
+
+        from records.notifications import build_record_url
+
+        match = resolve(urlparse(build_record_url(self.record.pk)).path)
+        assert match.kwargs["pk"] == self.record.pk
+
     @mock.patch("core.services.notifications.send_multi_channel_notification")
     def test_single_record_keeps_original_subject(self, mock_send):
         send_records_shared_notification(shares=self.granted[:1], actor=self.owner)

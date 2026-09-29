@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING
 
 from django.conf import settings
 from django.template.loader import render_to_string
+from django.urls import reverse
 from django.utils.html import escape
 
 from core.currencies import format_currency
@@ -27,8 +28,13 @@ logger = logging.getLogger(__name__)
 
 
 def build_record_url(record_id: int) -> str:
+    """Absolute URL to a record's detail page.
+
+    The path comes from "reverse" rather than a literal: the route is mounted
+    under /records/, so a hand-written "/record_detail/<id>/" 404s.
+    """
     site_url = getattr(settings, "SITE_URL", "http://localhost:8000")
-    return f"{site_url}/record_detail/{record_id}/"
+    return f"{site_url}{reverse('records:record_detail', args=[record_id])}"
 
 
 def send_records_shared_notification(*, shares: list[RecordShare], actor) -> None:

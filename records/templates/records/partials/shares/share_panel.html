@@ -12,12 +12,9 @@
             {% for share in shares %}
                 <li class="group flex items-center justify-between gap-3 py-2.5 px-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.04] hover:border-white/[0.08] transition-all duration-200 {% if not share.is_active %}opacity-60{% endif %}">
                     <div class="flex min-w-0 items-center gap-3">
-                        <div class="flex size-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-700 text-[11px] font-bold text-white uppercase shadow-sm shadow-indigo-500/20">
-                            {{ share.user.email|slice:":1" }}
-                        </div>
                         <div class="min-w-0">
                             <p class="truncate text-xs font-medium text-zinc-200 transition-colors group-hover:text-white">
-                                {{ share.user.get_full_name|default:share.user.email }}
+                                {{ share.user.username }}
                             </p>
                             <p class="truncate text-[10px] text-zinc-500">{{ share.user.email }}</p>
                             <p class="truncate text-[10px] text-zinc-500">
@@ -52,10 +49,7 @@
     {% endif %}
     {% if can_grant %}
         <p class="border-t border-white/[0.06] pt-4 text-[11px] leading-relaxed text-zinc-500">
-            To share this record, select it on the
-            <a href="{% url 'records:view_all_records' %}"
-               class="text-indigo-400 underline underline-offset-2 hover:text-indigo-300">records list</a>
-            and use the Share action. View-only recipients cannot edit; edits by editors are attributed in record history.
+            To share this record, select it on the records list and use the share action.
         </p>
     {% elif can_share_feature is False %}
         <div class="rounded-xl border border-rose-500/20 bg-rose-500/10 p-3">
