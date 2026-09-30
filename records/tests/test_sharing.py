@@ -577,7 +577,9 @@ class TestShareNotificationPayload(SharingTestCase):
         payload = kwargs["webpush_payload"]
         assert payload["head"] == "Record Shared"
         assert "Acme invoice" in payload["body"]
-        assert f"/record_detail/{self.record.pk}/" in payload["url"]
+        assert payload["url"].endswith(
+            reverse("records:record_detail", args=[self.record.pk])
+        )
         assert "Acme invoice" in kwargs["html_body"]
         assert "Acme invoice" in kwargs["text_body"]
 
@@ -663,7 +665,9 @@ class TestBulkShareDigestNotification(SharingTestCase):
         kwargs = mock_send.call_args.kwargs
         assert "Acme invoice" in kwargs["subject"]
         assert kwargs["webpush_payload"]["head"] == "Record Shared"
-        assert f"/record_detail/{self.record.pk}/" in kwargs["webpush_payload"]["url"]
+        assert kwargs["webpush_payload"]["url"].endswith(
+            reverse("records:record_detail", args=[self.record.pk])
+        )
 
 
 class TestSharedDocuments(SharingTestCase):
