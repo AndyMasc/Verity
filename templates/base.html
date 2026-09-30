@@ -77,7 +77,7 @@
                 // Must match STORAGE_KEY in core/cookie_consent.html, which is
                 // the only writer. Reading a different key leaves this null, so
                 // identify() never runs and no person properties are set.
-                CookieConsent = window.localStorage.getItem('verity_cookie_consent');
+                CookieConsent = window.localStorage.getItem('cookie_consent');
             } catch (e) {}
             posthog.init('phc_mpykm4fSgjtgt6iPipx5S3enBZ6zQB4Y7LQAD2NVErc9', {
                 api_host: 'https://us.i.posthog.com',
