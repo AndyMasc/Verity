@@ -8,6 +8,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.cache import cache
+from django.core.exceptions import NON_FIELD_ERRORS
 from django.db import transaction
 from django.db.models import Count, Q
 from django.http import HttpResponse
@@ -349,22 +350,40 @@ class RecordDetailView(LoginRequiredMixin, UpdateView):
     def form_invalid(self, form):
         messages.error(self.request, "An error was left in a record")
         is_htmx = self.request.headers.get("HX-Request") == "true"
-        response = render(
-            self.request,
-            self.get_template_names(),
-            self.get_context_data(form=form),
-            status=200 if is_htmx else 422,
-        )
         if is_htmx:
+            # Autosave: swap the error summary in out-of-band and leave the form
+            # alone. Re-rendering it here would replace the element the user is
+            # typing into, throwing away their focus and cursor on every failed
+            # attempt -- and because autosave validates the whole form, a record
+            # missing one required field fails on every keystroke.
+            blocking = [
+                (str(form[name].label), f"id_{name}")
+                for name in form.errors
+                if name != NON_FIELD_ERRORS
+            ]
+            response = render(
+                self.request,
+                "records/partials/record_form_errors.html",
+                {"blocking": blocking},
+            )
+            response["HX-Reswap"] = "none"
+            names = ", ".join(label for label, _ in blocking)
             response["HX-Trigger"] = json.dumps(
                 {
                     "showToast": {
-                        "text": "An error was left in a record",
+                        "text": f"Not saved — {names} required",
                         "tags": "error",
                     }
                 }
             )
-        return response
+            return response
+
+        return render(
+            self.request,
+            self.get_template_names(),
+            self.get_context_data(form=form),
+            status=422,
+        )
 
 
 class HardDeleteRecordView(LoginRequiredMixin, View):
@@ -377,8 +396,9 @@ class HardDeleteRecordView(LoginRequiredMixin, View):
     @method_decorator(ratelimit(key="user", rate="5/m", method="POST", block=True))
     def post(self, request, pk: int) -> HttpResponse:
         record = get_object_or_404(Record, pk=pk, user=request.user)
-        seven_years_ago = timezone.now() - timedelta(days=365 * 7)
-        if record.date_added > seven_years_ago.date():
+        # "Record.can_hard_delete" is the single definition of the retention
+        # rule; re-deriving the cutoff here is what let the two drift apart.
+        if not record.can_hard_delete:
             resp = htmx_response(
                 request,
                 toast="This record is not old enough for permanent deletion.",

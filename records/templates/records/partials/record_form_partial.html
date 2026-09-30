@@ -9,53 +9,63 @@
       hx-swap="outerHTML"
       x-data="recordPage()">
     {% csrf_token %}
+    <div id="record-errors" class="mt-4 empty:hidden"></div>
     <div class="flex items-center justify-between gap-3 border-b border-zinc-200/80 pb-4 dark:border-zinc-800/30">
-        <a href="{% url 'records:view_all_records' %}"
-           class="group -ml-2 inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-white/5 dark:hover:text-zinc-50">
-            <svg class="size-4 transition-transform duration-200 group-hover:-translate-x-0.5"
-                 fill="none"
-                 viewBox="0 0 24 24"
-                 stroke-width="2"
-                 stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
-            </svg>
-            <span>Records</span>
-        </a>
-        <div class="flex items-center gap-2">
-            <span class="htmx-indicator mr-2 inline-flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
-                <span class="size-1.5 animate-pulse rounded-full bg-emerald-500"></span>
-                Saving
-            </span>
-            <a href="{% url 'records:record_history' record.pk %}"
-               class="inline-flex items-center gap-1.5 rounded-full border border-zinc-200/80 bg-white px-3 py-1.5 text-xs font-medium text-zinc-600 shadow-xs transition-colors hover:bg-zinc-50 hover:text-zinc-900 dark:border-zinc-800/30 dark:bg-zinc-900/45 dark:text-zinc-300 dark:hover:bg-white/5 dark:hover:text-zinc-100">
-                <svg class="size-3.5"
-                     fill="none"
-                     viewBox="0 0 24 24"
-                     stroke-width="1.75"
-                     stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                </svg>
-                <span>View History</span>
-            </a>
-            <button type="button"
-                    onclick="toggleShareModal(true)"
-                    hx-get="{% url 'records:record_shares_panel' record.pk %}"
-                    hx-target="#share-panel-body"
-                    hx-swap="innerHTML"
-                    class="inline-flex items-center gap-1.5 rounded-full bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white shadow-xs transition-colors hover:bg-zinc-700 active:scale-[0.98] dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200">
-                <svg class="size-3.5"
-                     fill="none"
-                     viewBox="0 0 24 24"
-                     stroke-width="1.75"
-                     stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Z" />
-                </svg>
-                <span>{% if record.shared_count > 0 %}{{ record.shared_count }} share{{ record.shared_count|pluralize }}{% else %}Share{% endif %}</span>
-            </button>
+        <div class="flex w-full items-center justify-between gap-3">
+            <div class="flex gap-3">
+                <a href="{% url 'records:record_history' record.pk %}"
+                   class="inline-flex items-center gap-1.5 rounded-full border border-zinc-200/80 bg-white px-3 py-1.5 text-xs font-medium text-zinc-600 transition-colors dark:border-zinc-800 dark:bg-zinc-900 dark:text-white">
+                    <svg class="size-3.5"
+                         fill="none"
+                         viewBox="0 0 24 24"
+                         stroke-width="1.75"
+                         stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                    </svg>
+                    <span>History</span>
+                </a>
+                <button type="button"
+                        @click="$dispatch('open-share-modal')"
+                        hx-get="{% url 'records:record_shares_panel' record.pk %}"
+                        hx-target="#share-panel-body"
+                        hx-swap="innerHTML"
+                        class="inline-flex items-center gap-1.5 rounded-full bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-zinc-700 active:scale-[0.98] dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200">
+                    <svg class="size-3"
+                         fill="none"
+                         viewBox="0 0 24 24"
+                         stroke-width="1.75"
+                         stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z" />
+                    </svg>
+                    <span>{% if record.shared_count > 0 %}{{ record.shared_count }} share{{ record.shared_count|pluralize }}{% else %}Share{% endif %}</span>
+                </button>
+                <span class="htmx-indicator mr-2 inline-flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
+                    <span class="size-1.5 animate-pulse rounded-full bg-emerald-500"></span>
+                    Saving
+                </span>
+            </div>
+            <meta name="csrf-token" content="{{ csrf_token }}">
+            {% if record.can_hard_delete and request.user == record.user %}
+                <button type="button"
+                        hx-post="{% url 'records:hard_delete_record' record.pk %}"
+                        hx-swap="none"
+                        hx-confirm="This record has met its retention period. Permanently delete this record and all associated documents? This cannot be undone."
+                        title="Retention period passed — permanently delete?"
+                        class="inline-flex items-center gap-1.5 rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-medium text-rose-700 transition-colors hover:bg-rose-500/10 active:scale-[0.98] dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-400 dark:hover:bg-rose-500/10">
+                    <svg class="size-3.5"
+                         fill="none"
+                         viewBox="0 0 24 24"
+                         stroke-width="1.75"
+                         stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                    </svg>
+                    Delete
+                </button>
+            {% endif %}
         </div>
     </div>
     {% if form.non_field_errors %}
-        <div class="mt-4 flex items-start gap-2.5 rounded-xl bg-rose-500/10 px-4 py-3 text-xs text-rose-900 dark:text-rose-200">
+        <div class="mt-4 flex items-start gap-3.5 rounded-xl bg-rose-500/10 px-4 py-3 text-xs text-rose-900 dark:text-rose-200">
             <svg class="mt-px size-4 shrink-0"
                  fill="none"
                  viewBox="0 0 24 24"
@@ -67,12 +77,14 @@
         </div>
     {% endif %}
     <header class="pt-6 pb-4">
-        <div class="flex items-center gap-3">
-            <span class="inline-flex items-center rounded-full {{ record.badge_classes }} px-2 py-1">
-                {% render_field form.record_type class="cursor-pointer appearance-none bg-transparent text-[10px] font-bold tracking-wider uppercase focus:none" %}
+        <div class="flex items-center justify-between gap-3">
+            <span class="rounded-full {{ record.badge_classes }} flex p-1 px-2">
+                {% render_field form.record_type class="cursor-pointer bg-transparent text-[10px] ring-none outline-none font-bold tracking-wider uppercase" %}
             </span>
-            <span class="text-xs text-zinc-500 dark:text-zinc-400">· REF PK: #{{ record.pk }}</span>
-            <span class="text-xs text-zinc-500 dark:text-zinc-400">· {{ record.date_added|date:"b d, Y" }}</span>
+            <div class="flex flex-col">
+                <span class="text-right text-xs capitalize">Ref PK: {{ record.pk }}</span>
+                <span class="text-right text-xs capitalize">{{ record.date_added|date:"b d, Y" }}</span>
+            </div>
         </div>
         <div class="mt-2">
             <label for="{{ form.title.id_for_label }}" class="sr-only">Record Title</label>
@@ -82,19 +94,19 @@
             {% endif %}
         </div>
     </header>
-    <div class="mt-2 space-y-4">
-        <div class="rounded-xl border border-zinc-200/80 bg-zinc-50/50 p-5 dark:border-zinc-800/30 dark:bg-zinc-900/45">
+    <div class="mt-2 space-y-3">
+        <div class="rounded-xl border border-zinc-200/80 bg-white p-5 dark:border-zinc-800/30 dark:bg-zinc-900/45">
             <div class="grid grid-cols-1 gap-6 md:grid-cols-12 md:items-center">
                 <div class="md:col-span-7"
                      x-data="{ sym: '{{ form.currency.value|default:'usd'|currency_symbol }}' }"
                      @change="sym = $event.target.value ? $event.target.value : sym">
                     <label id="amount-label"
-                           class="block text-[11px] font-bold tracking-wider text-zinc-500 uppercase dark:text-zinc-300">Total Value <span class="text-rose-600">*</span></label>
+                           class="block text-[11px] font-medium tracking-wider text-zinc-500 uppercase dark:text-zinc-400">Total Value <span class="text-rose-400">*</span></label>
                     <div class="mt-1.5 flex items-baseline gap-1.5">
-                        <span class="text-2xl font-medium text-zinc-900 dark:text-zinc-300"
+                        <span class="text-2xl font-medium text-zinc-900 dark:text-zinc-400"
                               x-text="sym"
                               aria-hidden="true">US$</span>
-                        {% render_field form.balance step="0.01" placeholder="0.00" aria-labelledby="amount-label" class="w-auto min-w-[4ch] max-w-[12ch] font-bold flex-1 border-0 bg-transparent p-0 text-3xl tracking-tight tabular-nums text-zinc-900 placeholder-zinc-400 focus:ring-0 focus:outline-none sm:text-4xl dark:text-white dark:placeholder-zinc-600" %}
+                        {% render_field form.balance step="0.01" placeholder="0.00" aria-labelledby="amount-label" class="w-auto min-w-[4ch] max-w-[12ch] font-semibold flex-1 border-0 bg-transparent p-0 text-3xl tracking-tight tabular-nums text-zinc-900 placeholder-zinc-400 focus:ring-0 focus:outline-none sm:text-4xl dark:text-white dark:placeholder-zinc-600" %}
                     </div>
                     {% if form.currency %}
                         <div class="shadow-2xs mt-2 inline-flex items-center rounded-md border border-zinc-200/80 bg-white px-2 py-1 dark:border-zinc-800/30 dark:bg-zinc-900">
@@ -114,7 +126,7 @@
                 </div>
                 <div class="border-t border-zinc-200/60 pt-4 md:col-span-5 md:border-t-0 md:border-l md:border-zinc-200/60 md:pt-0 md:pl-6 dark:border-zinc-800/30">
                     <label for="{{ form.merchant.id_for_label }}"
-                           class="block text-[11px] font-bold tracking-wider text-zinc-500 uppercase dark:text-zinc-300">Merchant / Vendor <span class="text-rose-600">*</span></label>
+                           class="block text-[11px] font-medium tracking-wider text-zinc-500 uppercase dark:text-zinc-400">Merchant / Vendor <span class="text-rose-400">*</span></label>
                     <div class="mt-2">
                         {% render_field form.merchant placeholder="Merchant name" class="w-full border-0 bg-transparent p-0 text-base font-semibold text-zinc-900 placeholder-zinc-500 focus:ring-0 focus:outline-none dark:text-white dark:placeholder-zinc-500" %}
                     </div>
@@ -124,10 +136,10 @@
                 </div>
             </div>
         </div>
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <div class="rounded-xl border border-zinc-200/80 bg-zinc-50/50 p-4 dark:border-zinc-800/30 dark:bg-zinc-900/45">
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div class="rounded-xl border border-zinc-200/80 bg-white p-4 dark:border-zinc-800/30 dark:bg-zinc-900/45">
                 <label for="{{ form.transaction_date.id_for_label }}"
-                       class="block text-[11px] font-bold tracking-wider text-zinc-500 uppercase dark:text-zinc-300">Transaction Date <span class="text-rose-600">*</span></label>
+                       class="block text-[11px] font-medium tracking-wider text-zinc-500 uppercase dark:text-zinc-400">Transaction Date <span class="text-rose-400">*</span></label>
                 <div class="mt-2">
                     {% render_field form.transaction_date type="date" class="w-full cursor-pointer border-0 bg-transparent p-0 text-sm font-semibold text-zinc-900 focus:ring-0 focus:outline-none dark:text-zinc-100" %}
                 </div>
@@ -135,9 +147,9 @@
                     <p class="mt-1 text-xs font-medium text-rose-700 dark:text-rose-300">{{ form.transaction_date.errors|striptags }}</p>
                 {% endif %}
             </div>
-            <div class="rounded-xl border border-zinc-200/80 bg-zinc-50/50 p-4 dark:border-zinc-800/30 dark:bg-zinc-900/45">
+            <div class="rounded-xl border border-zinc-200/80 bg-white p-4 dark:border-zinc-800/30 dark:bg-zinc-900/45">
                 <label for="{{ form.expiry_date.id_for_label }}"
-                       class="block text-[11px] font-bold tracking-wider text-zinc-500 uppercase dark:text-zinc-300">Expiry Date</label>
+                       class="block text-[11px] font-medium tracking-wider text-zinc-500 uppercase dark:text-zinc-400">Expiry Date</label>
                 <div class="mt-2">
                     {% render_field form.expiry_date type="date" class="w-full cursor-pointer border-0 bg-transparent p-0 text-sm font-semibold text-zinc-900 focus:ring-0 focus:outline-none dark:text-zinc-100 dark:placeholder-zinc-500" %}
                 </div>
@@ -145,9 +157,9 @@
                     <p class="mt-1 text-xs font-medium text-rose-700 dark:text-rose-300">{{ form.expiry_date.errors|striptags }}</p>
                 {% endif %}
             </div>
-            <div class="rounded-xl border border-zinc-200/80 bg-zinc-50/50 p-4 sm:col-span-2 lg:col-span-1 dark:border-zinc-800/30 dark:bg-zinc-900/45">
+            <div class="rounded-xl border border-zinc-200/80 bg-white p-4 sm:col-span-2 lg:col-span-1 dark:border-zinc-800/30 dark:bg-zinc-900/45">
                 <label for="{{ form.payment_method.id_for_label }}"
-                       class="block text-[11px] font-bold tracking-wider text-zinc-500 uppercase dark:text-zinc-300">Payment Method <span class="text-rose-600">*</span></label>
+                       class="block text-[11px] font-medium tracking-wider text-zinc-500 uppercase dark:text-zinc-400">Payment Method <span class="text-rose-400">*</span></label>
                 <div class="mt-2">
                     {% if form.payment_method.field.disabled %}
                         <p class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{{ record.payment_method|default:"—" }}</p>
@@ -159,9 +171,9 @@
                     <p class="mt-1 text-xs font-medium text-rose-700 dark:text-rose-300">{{ form.payment_method.errors|striptags }}</p>
                 {% endif %}
             </div>
-            <div class="rounded-xl border border-zinc-200/80 bg-zinc-50/50 p-4 dark:border-zinc-800/30 dark:bg-zinc-900/45">
+            <div class="rounded-xl border border-zinc-200/80 bg-white p-4 dark:border-zinc-800/30 dark:bg-zinc-900/45">
                 <label for="{{ form.folder.id_for_label }}"
-                       class="block text-[11px] font-bold tracking-wider text-zinc-500 uppercase dark:text-zinc-300">Folder</label>
+                       class="block text-[11px] font-medium tracking-wider text-zinc-500 uppercase dark:text-zinc-400">Folder</label>
                 <div class="relative mt-2">
                     {% render_field form.folder class="w-full cursor-pointer appearance-none border-0 bg-transparent p-0 pr-6 text-sm font-semibold text-zinc-900 focus:ring-0 focus:outline-none dark:text-zinc-100" %}
                     <svg class="pointer-events-none absolute top-1/2 right-0 size-3.5 -translate-y-1/2 text-zinc-500"
@@ -173,19 +185,18 @@
                     </svg>
                 </div>
             </div>
-            <div class="rounded-xl border border-zinc-200/80 bg-zinc-50/50 p-4 sm:col-span-2 dark:border-zinc-800/30 dark:bg-zinc-900/45">
+            <div class="rounded-xl border border-zinc-200/80 bg-white p-4 sm:col-span-2 dark:border-zinc-800/30 dark:bg-zinc-900/45">
                 <label for="{{ form.nickname.id_for_label }}"
-                       class="block text-[11px] font-bold tracking-wider text-zinc-500 uppercase dark:text-zinc-300">Account Nickname</label>
+                       class="block text-[11px] font-medium tracking-wider text-zinc-500 uppercase dark:text-zinc-400">Account Nickname</label>
                 <div class="mt-2">
                     {% render_field form.nickname placeholder="e.g. Personal card" class="w-full border-0 bg-transparent p-0 text-sm font-semibold text-zinc-900 placeholder-zinc-500 focus:ring-0 focus:outline-none dark:text-zinc-100 dark:placeholder-zinc-500" %}
                 </div>
             </div>
         </div>
-        <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <div class="rounded-xl border border-zinc-200/80 bg-zinc-50/50 p-4 dark:border-zinc-800/30 dark:bg-zinc-900/45">
+        <div class="grid grid-cols-1 gap-3 lg:grid-cols-2">
+            <div class="rounded-xl border border-zinc-200/80 bg-white p-4 dark:border-zinc-800/30 dark:bg-zinc-900/45">
                 <label for="{{ form.products.id_for_label }}"
-                       class="block text-[11px] font-bold tracking-wider text-zinc-500 uppercase dark:text-zinc-300">Products / Line Items</label>
-                <p class="mt-0.5 text-xs text-zinc-600 dark:text-zinc-300">Itemised products, services, or line items on this record.</p>
+                       class="block text-[11px] font-medium tracking-wider text-zinc-500 uppercase dark:text-zinc-400">Products / Line Items</label>
                 <div class="mt-3">
                     {% render_field form.products rows="4" placeholder="Sport Shoes..." class="w-full resize-y border-0 bg-transparent p-0 text-xs leading-relaxed text-zinc-900 placeholder-zinc-500 focus:ring-0 focus:outline-none dark:text-zinc-100 dark:placeholder-zinc-500" %}
                 </div>
@@ -193,10 +204,9 @@
                     <p class="mt-1 text-xs font-medium text-rose-700 dark:text-rose-300">{{ form.products.errors|striptags }}</p>
                 {% endif %}
             </div>
-            <div class="rounded-xl border border-zinc-200/80 bg-zinc-50/50 p-4 dark:border-zinc-800/30 dark:bg-zinc-900/45">
+            <div class="rounded-xl border border-zinc-200/80 bg-white p-4 dark:border-zinc-800/30 dark:bg-zinc-900/45">
                 <label for="{{ form.notes.id_for_label }}"
-                       class="block text-[11px] font-bold tracking-wider text-zinc-500 uppercase dark:text-zinc-300">Business Purpose / Notes <span class="text-rose-600">*</span></label>
-                <p class="mt-0.5 text-xs text-zinc-600 dark:text-zinc-300">Why this expense was incurred and any supporting context.</p>
+                       class="block text-[11px] font-medium tracking-wider text-zinc-500 uppercase dark:text-zinc-400">Business Purpose / Notes <span class="text-rose-400">*</span></label>
                 <div class="mt-3">
                     {% render_field form.notes rows="4" placeholder="Add details or notes..." class="w-full resize-y border-0 bg-transparent p-0 text-xs leading-relaxed text-zinc-900 placeholder-zinc-500 focus:ring-0 focus:outline-none dark:text-zinc-100 dark:placeholder-zinc-500" %}
                 </div>
@@ -205,15 +215,15 @@
                 {% endif %}
             </div>
         </div>
-        <section class="rounded-xl border border-zinc-200/80 bg-zinc-50/50 p-4 dark:border-zinc-800/30 dark:bg-zinc-900/45">
+        <section class="rounded-xl border border-zinc-200/80 bg-white p-4 dark:border-zinc-800/30 dark:bg-zinc-900/45">
             <div class="flex items-center justify-between gap-3">
                 <div>
-                    <h2 class="text-[11px] font-bold tracking-wider text-zinc-500 uppercase dark:text-zinc-300">Documents</h2>
-                    <p class="mt-0.5 text-xs text-zinc-600 dark:text-zinc-300">Receipts, invoices, and supporting files.</p>
+                    <h2 class="text-[11px] font-medium tracking-wider text-zinc-500 uppercase dark:text-zinc-400">Documents</h2>
+                    <p class="mt-0.5 text-xs text-zinc-600 dark:text-zinc-400">Receipts, invoices, and supporting files.</p>
                 </div>
                 {% if request.user == record.user %}
                     <a href="{% url 'documents:add_support_docs' record.pk %}"
-                       class="shadow-2xs inline-flex shrink-0 items-center gap-1 rounded-full border border-zinc-200/80 bg-white px-2.5 py-1 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-800/30 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700">
+                       class="shadow-2xs inline-flex shrink-0 items-center gap-1 rounded-full bg-black px-2.5 py-1 text-xs font-medium text-white transition-colors dark:bg-white dark:text-black dark:hover:bg-zinc-200 hover:dark:bg-zinc-200">
                         <svg class="size-3.5"
                              fill="none"
                              viewBox="0 0 24 24"
@@ -250,8 +260,8 @@
                             {% endfor %}
                         </ul>
                     {% else %}
-                        <div class="rounded-lg border border-dashed border-zinc-200 px-4 py-6 text-center dark:border-zinc-800/30">
-                            <p class="text-xs font-medium text-zinc-600 dark:text-zinc-300">No documents attached</p>
+                        <div class="rounded-lg border border-dashed border-zinc-300 px-4 py-6 text-center dark:border-zinc-800">
+                            <p class="text-xs font-medium text-zinc-600 dark:text-zinc-400">No documents attached</p>
                         </div>
                     {% endif %}
                 {% endwith %}

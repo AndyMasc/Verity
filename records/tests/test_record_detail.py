@@ -1,3 +1,5 @@
+import json
+import re
 from datetime import date
 from decimal import Decimal
 
@@ -208,6 +210,11 @@ class RecordDetailViewTest(TestCase):
         self.assertEqual(self.record.record_type, "voucher")
 
     def test_invalid_hx_post_returns_errored_form(self):
+        """A rejected autosave swaps in an error summary and leaves the form alone.
+
+        Autosave validates every field on every keystroke, so re-rendering the form
+        here would destroy the field being typed into on each attempt.
+        """
         self.client.force_login(self.user)
         response = self.client.post(
             self.url,
@@ -227,9 +234,77 @@ class RecordDetailViewTest(TestCase):
             headers={"hx-request": "true"},
         )
         self.assertEqual(response.status_code, 200)
+        # The form itself must not be re-rendered, or the user's focus, cursor
+        # and in-progress input are thrown away.
+        self.assertEqual(response.headers.get("HX-Reswap"), "none")
+        self.assertNotContains(response, 'id="record-form"')
+        # The summary is swapped out-of-band into the form's error slot.
+        self.assertContains(response, 'hx-swap-oob="innerHTML:#record-errors"')
+        self.assertContains(response, "Not saved yet")
+        # It names the specific blocking fields rather than a generic message.
+        self.assertContains(response, "Merchant")
+        self.assertContains(response, "Title")
+        trigger = json.loads(response.headers["HX-Trigger"])
+        self.assertEqual(trigger["showToast"]["tags"], "error")
+        self.assertIn("required", trigger["showToast"]["text"])
+        # Nothing was written.
+        self.record.refresh_from_db()
+        self.assertNotEqual(self.record.title, "")
+
+    def test_textareas_render_without_leading_whitespace(self):
+        """Django's textarea template indents the value; it must not reach the user.
+
+        The parser drops the newline after <textarea> but keeps the spaces, which
+        would leave the cursor and first word sitting four columns in.
+        """
+        self.client.force_login(self.user)
+        response = self.client.get(self.url)
+        html = response.content.decode()
+        for name in ("products", "notes"):
+            with self.subTest(field=name):
+                match = re.search(
+                    rf'<textarea[^>]*name="{name}"[^>]*>(.*?)</textarea>', html, re.S
+                )
+                self.assertIsNotNone(match, f"{name} textarea not found")
+                self.assertEqual(
+                    match.group(1).lstrip(),
+                    match.group(1),
+                    f"{name} textarea value has leading whitespace",
+                )
+
+    def test_detail_page_has_error_summary_slot(self):
+        """The form carries the empty target the summary is swapped into."""
+        self.client.force_login(self.user)
+        response = self.client.get(self.url)
+        self.assertContains(response, 'id="record-errors"')
         self.assertContains(response, "record-form")
-        self.assertContains(response, "This field is required")
-        self.assertIn("HX-Trigger", response.headers)
+
+    def test_valid_hx_post_saves_and_reports_success(self):
+        """A good autosave returns 204 with a toast the client actually shows."""
+        self.client.force_login(self.user)
+        response = self.client.post(
+            self.url,
+            {
+                "title": "Autosaved",
+                "products": "Item",
+                "record_type": "expense_receipt",
+                "transaction_date": "2024-06-15",
+                "merchant": "Acme",
+                "balance": "12.50",
+                "currency": "usd",
+                "notes": "Business purpose",
+                "payment_method": "Visa",
+                "nickname": "",
+                "folder": "",
+                "expiry_date": "",
+            },
+            headers={"hx-request": "true"},
+        )
+        self.assertEqual(response.status_code, 204)
+        trigger = json.loads(response.headers["HX-Trigger"])
+        self.assertEqual(trigger["showToast"]["tags"], "success")
+        self.record.refresh_from_db()
+        self.assertEqual(self.record.title, "Autosaved")
 
     def test_other_user_cannot_update(self):
         user2 = User.objects.create_user(username="otherupd", password="pass")

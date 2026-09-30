@@ -46,6 +46,7 @@
         <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.10/dist/htmx.min.js"
                 integrity="sha384-H5SrcfygHmAuTDZphMHqBJLc3FhssKjG7w/CeCpFReSfwBWDTKpkzPP8c+cLsK+V"
                 crossorigin="anonymous"></script>
+        <style>[x-cloak] { display: none !important; }</style>
         {% load tailwind_tags %}
         {% tailwind_css %}
         {% load webpush_notifications %}
@@ -156,42 +157,52 @@
         </main>
     </body>
     <script>
-        document.addEventListener('htmx:oobBeforeSwap', function(evt) {
-            handleHtmxTriggers(evt);
-        });
-        document.addEventListener('htmx:afterOnLoad', function(evt) {
-            handleHtmxTriggers(evt);
-        });
+        // htmx:afterRequest is the only event that fires for *every* completed
+        // request. Autosave replies 204 with an empty body, so nothing swaps and
+        // neither oobBeforeSwap nor afterOnLoad ever runs — without this the
+        // HX-Trigger toast header is read by nobody and saves look silent.
+        document.addEventListener('htmx:afterRequest', handleHtmxTriggers);
+        document.addEventListener('htmx:oobBeforeSwap', handleHtmxTriggers);
+        document.addEventListener('htmx:afterOnLoad', handleHtmxTriggers);
 
         function handleHtmxTriggers(evt) {
-            const xhr = evt.detail.xhr;
-            if (xhr) {
-                const triggerHeader = xhr.getResponseHeader('HX-Trigger');
-                if (triggerHeader) {
-                    try {
-                        const triggers = JSON.parse(triggerHeader);
-                        if (triggers.djangoMessages) {
-                            triggers.djangoMessages.forEach(msg => {
-                                const toastEvent = new CustomEvent('django-messages', {
-                                    detail: { message: msg.message, level: msg.level }
-                                });
-                                window.dispatchEvent(toastEvent);
-                            });
-                        }
-                        if (triggers.showToast) {
-                            const msg = triggers.showToast;
-                            const level = msg.tags === 'error' ? 40 : msg.tags === 'warning' ? 30 : 25;
-                            const toastEvent = new CustomEvent('django-messages', {
-                                detail: { message: msg.text, level }
-                            });
-                            window.dispatchEvent(toastEvent);
-                        }
-                    } catch (e) {
-                        console.error("Failed to parse HX-Trigger header values:", e);
-                    }
+            const xhr = evt.detail && evt.detail.xhr;
+            if (!xhr || xhr._verityTriggersHandled) return;
+            const triggerHeader = xhr.getResponseHeader('HX-Trigger');
+            if (!triggerHeader) return;
+            // Several of the events above can fire for one request; show the
+            // toast once.
+            xhr._verityTriggersHandled = true;
+            try {
+                const triggers = JSON.parse(triggerHeader);
+                if (triggers.djangoMessages) {
+                    triggers.djangoMessages.forEach(msg => {
+                        window.dispatchEvent(new CustomEvent('django-messages', {
+                            detail: { message: msg.message, level: msg.level }
+                        }));
+                    });
                 }
+                if (triggers.showToast) {
+                    const msg = triggers.showToast;
+                    const level = msg.tags === 'error' ? 40 : msg.tags === 'warning' ? 30 : 25;
+                    window.dispatchEvent(new CustomEvent('django-messages', {
+                        detail: { message: msg.text, level }
+                    }));
+                }
+            } catch (e) {
+                console.error("Failed to parse HX-Trigger header values:", e);
             }
         }
+
+        // Clear a stale autosave error summary as soon as the user edits again,
+        // so a fixed record stops showing "Not saved yet". Scoped by element id
+        // because this listener lives on document.body.
+        document.body.addEventListener('htmx:beforeRequest', function (evt) {
+            var elt = evt.detail && evt.detail.elt;
+            if (!elt || elt.id !== 'record-form') return;
+            var box = document.getElementById('record-errors');
+            if (box) box.innerHTML = '';
+        });
 
         document.body.addEventListener('htmx:beforeSwap', function(evt) {
             if (evt.detail.xhr.status === 422) {
