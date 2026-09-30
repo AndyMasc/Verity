@@ -2,233 +2,222 @@
 <form method="POST"
       action="{% url 'records:record_detail' record.pk %}"
       id="record-form"
-      class="mx-auto w-full max-w-5xl space-y-8 py-8 font-sans selection:bg-zinc-900 selection:text-white sm:space-y-10 sm:py-12 dark:selection:bg-white dark:selection:text-zinc-900"
+      class="mx-auto max-w-7xl py-8 font-sans selection:bg-zinc-900 selection:text-white dark:selection:bg-white dark:selection:text-zinc-900"
       hx-post="{% url 'records:record_detail' record.pk %}"
       hx-trigger="change, input changed delay:800ms"
       hx-target="this"
       hx-swap="outerHTML"
       x-data="recordPage()">
     {% csrf_token %}
-    <nav class="flex items-center justify-between border-b border-zinc-200/40 pb-4 sm:pb-6 dark:border-zinc-800/30">
+    <div class="flex items-center justify-between gap-3 border-b border-zinc-200/80 pb-4 dark:border-zinc-800/30">
         <a href="{% url 'records:view_all_records' %}"
-           class="group shadow-2xs inline-flex items-center gap-1.5 rounded-xl border border-zinc-200/60 bg-white px-3 py-1.5 text-[12px] font-medium tracking-tight text-zinc-700 backdrop-blur-md transition-all duration-200 hover:bg-zinc-50 hover:text-zinc-900 active:scale-[0.97] sm:gap-2 dark:border-zinc-800/30 dark:bg-zinc-900/45 dark:text-zinc-300 dark:hover:bg-zinc-800/60 dark:hover:text-zinc-100">
-            <svg class="h-3.5 w-3.5 transition-transform duration-300 group-hover:-translate-x-0.5"
+           class="group -ml-2 inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-zinc-50">
+            <svg class="size-4 transition-transform duration-200 group-hover:-translate-x-0.5"
                  fill="none"
                  viewBox="0 0 24 24"
-                 stroke="currentColor"
-                 stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+                 stroke-width="2"
+                 stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
             </svg>
             <span>Records</span>
         </a>
         <div class="flex items-center gap-2">
-            <div class="htmx-indicator shadow-2xs flex items-center gap-2 rounded-xl border border-zinc-200/60 bg-white px-3 py-1.5 text-[12px] font-medium text-zinc-700 backdrop-blur-md dark:border-zinc-800/30 dark:bg-zinc-900/45 dark:text-zinc-300">
-                <span class="relative flex h-2 w-2">
-                    <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60"></span>
-                    <span class="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
-                </span>
-                <span>Saving...</span>
-            </div>
+            <span class="htmx-indicator mr-2 inline-flex items-center gap-1.5 text-xs text-zinc-400 dark:text-zinc-500">
+                <span class="size-1.5 animate-pulse rounded-full bg-emerald-500"></span>
+                Saving
+            </span>
+            <a href="{% url 'records:record_history' record.pk %}"
+               class="inline-flex items-center gap-1.5 rounded-full border border-zinc-200/80 bg-white px-3 py-1.5 text-xs font-medium text-zinc-600 shadow-xs transition-colors hover:bg-zinc-50 hover:text-zinc-900 dark:border-zinc-800/30 dark:bg-zinc-900/45 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-zinc-100">
+                <svg class="size-3.5"
+                     fill="none"
+                     viewBox="0 0 24 24"
+                     stroke-width="1.75"
+                     stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                </svg>
+                <span>View History</span>
+            </a>
+            <button type="button"
+                    onclick="toggleShareModal(true)"
+                    hx-get="{% url 'records:record_shares_panel' record.pk %}"
+                    hx-target="#share-panel-body"
+                    hx-swap="innerHTML"
+                    class="inline-flex items-center gap-1.5 rounded-full bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white shadow-xs transition-colors hover:bg-zinc-700 active:scale-[0.98] dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200">
+                <svg class="size-3.5"
+                     fill="none"
+                     viewBox="0 0 24 24"
+                     stroke-width="1.75"
+                     stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Z" />
+                </svg>
+                <span>{% if record.shared_count > 0 %}{{ record.shared_count }} share{{ record.shared_count|pluralize }}{% else %}Share{% endif %}</span>
+            </button>
         </div>
-    </nav>
+    </div>
     {% if form.non_field_errors %}
-        <div class="flex items-center gap-2.5 rounded-2xl border border-rose-500/20 bg-rose-500/5 p-4 text-xs text-rose-700 dark:text-rose-300">
-            <svg class="h-4 w-4 shrink-0 text-rose-500"
+        <div class="mt-4 flex items-start gap-2.5 rounded-xl bg-rose-500/10 px-4 py-3 text-xs text-rose-800 dark:text-rose-300">
+            <svg class="mt-px size-4 shrink-0"
                  fill="none"
                  viewBox="0 0 24 24"
-                 stroke="currentColor"
-                 stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                 stroke-width="1.75"
+                 stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3Z" />
             </svg>
-            <span class="font-semibold">{{ form.non_field_errors|striptags }}</span>
+            <span class="font-medium">{{ form.non_field_errors|striptags }}</span>
         </div>
     {% endif %}
-    <header class="space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2.5">
-            <div class="flex flex-wrap items-center gap-2.5">
-                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wider uppercase border {{ record.badge_classes }} shadow-2xs">
-                    {% render_field form.record_type class="outline-none bg-transparent cursor-pointer text-[11px] font-bold uppercase tracking-wider focus:ring-0 border-none p-0" %}
-                </span>
-                <span class="text-zinc-500 dark:text-zinc-400">&middot;</span>
-                <span class="font-mono text-xs font-medium text-zinc-600 dark:text-zinc-400">REF PK: #{{ record.pk }}</span>
-                <span class="text-zinc-500 dark:text-zinc-400">&middot;</span>
-                <span class="font-mono text-xs font-medium text-zinc-600 tabular-nums dark:text-zinc-400">{{ record.date_added|date:"M d, Y" }}</span>
-            </div>
-            <div class="flex gap-2">
-                <a href="{% url 'records:record_history' record.pk %}"
-                   class="shadow-2xs inline-flex items-center justify-center gap-1.5 rounded-xl border border-zinc-200/60 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 transition-all duration-200 hover:bg-zinc-50 hover:text-zinc-900 active:scale-[0.97] dark:border-zinc-800/30 dark:bg-zinc-900/45 dark:text-zinc-300 dark:hover:bg-zinc-800/60 dark:hover:text-zinc-100">
-                    <svg class="h-3.5 w-3.5 text-zinc-600 dark:text-zinc-400"
-                         fill="none"
-                         viewBox="0 0 24 24"
-                         stroke-width="2"
-                         stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    View History
-                </a>
-                <button type="button"
-                        onclick="toggleShareModal(true)"
-                        hx-get="{% url 'records:record_shares_panel' record.pk %}"
-                        hx-target="#share-panel-body"
-                        hx-swap="innerHTML"
-                        class="shadow-2xs inline-flex items-center justify-center gap-1.5 rounded-xl bg-black px-3 py-1.5 text-xs font-semibold text-white transition-all duration-200 active:scale-[0.97] dark:bg-white dark:text-black">
-                    <svg class="h-3.5 w-3.5"
-                         fill="none"
-                         viewBox="0 0 24 24"
-                         stroke-width="2"
-                         stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z" />
-                    </svg>
-                    {% if record.shared_count > 0 %}{{ record.shared_count }} share{{ record.shared_count|pluralize }}{% else %}Share & Collaborate{% endif %}
-                </button>
-            </div>
+    <header class="pt-6 pb-4">
+        <div class="flex items-center gap-3">
+            <span class="inline-flex items-center rounded-full {{ record.badge_classes }} px-2 py-1">
+                {% render_field form.record_type class="cursor-pointer appearance-none bg-transparent text-[10px] font-bold tracking-wider uppercase focus:none" %}
+            </span>
+            <span class="text-xs text-zinc-400 dark:text-zinc-500">· REF PK: #{{ record.pk }}</span>
+            <span class="text-xs text-zinc-400 dark:text-zinc-500">· {{ record.date_added|date:"b d, Y" }}</span>
         </div>
-        <div>
+        <div class="mt-2">
             <label for="{{ form.title.id_for_label }}" class="sr-only">Record Title</label>
-            {% render_field form.title placeholder="Untitled Record" class="w-full text-2xl sm:text-3xl font-semibold tracking-tight bg-transparent border-none p-0 text-zinc-900 dark:text-zinc-100 focus:outline-hidden placeholder-zinc-500 dark:placeholder-zinc-500 transition-all" %}
+            {% render_field form.title placeholder="Untitled record" class="w-full border-0 bg-transparent p-0 text-2xl font-bold tracking-tight text-zinc-900 placeholder-zinc-400 focus:ring-0 focus:outline-none sm:text-3xl dark:text-white dark:placeholder-zinc-600" %}
             {% if form.title.errors %}
-                <p class="mt-1 text-xs font-semibold text-rose-600 dark:text-rose-400">{{ form.title.errors|striptags }}</p>
+                <p class="mt-1 text-xs font-medium text-rose-600 dark:text-rose-400">{{ form.title.errors|striptags }}</p>
             {% endif %}
         </div>
     </header>
-    <div class="space-y-4">
-        <div x-data="{ mouseX: 0, mouseY: 0 }"
-             @mousemove="const rect = $el.getBoundingClientRect(); mouseX = $event.clientX - rect.left; mouseY = $event.clientY - rect.top"
-             class="group shadow-2xs relative overflow-hidden rounded-2xl border border-zinc-200/60 bg-white backdrop-blur-xl dark:border-zinc-800/30 dark:bg-zinc-900/45">
-            <div class="pointer-events-none absolute -inset-px rounded-2xl opacity-0 transition duration-300 group-hover:opacity-100 dark:hidden"
-                 :style="`background: radial-gradient(400px circle at ${mouseX}px ${mouseY}px, rgba(0,0,0,0.015), transparent 40%);`">
-            </div>
-            <div class="pointer-events-none absolute -inset-px hidden rounded-2xl opacity-0 transition duration-300 group-hover:opacity-100 dark:block"
-                 :style="`background: radial-gradient(400px circle at ${mouseX}px ${mouseY}px, rgba(255,255,255,0.02), transparent 40%);`">
-            </div>
-            <div class="relative z-10 flex flex-col gap-6 p-6 sm:p-6 md:flex-row md:items-center">
-                <div class="min-w-0 flex-1 space-y-2">
-                    <div class="flex items-center gap-4">
-                        <label class="text-[11px] font-bold tracking-wider text-zinc-600 uppercase dark:text-zinc-400">
-                            Total Value <span class="font-bold text-rose-600 dark:text-rose-400">*</span>
-                        </label>
+    <div class="mt-2 space-y-4">
+        <div class="rounded-xl border border-zinc-200/80 bg-zinc-50/50 p-5 dark:border-zinc-800/30 dark:bg-zinc-900/45">
+            <div class="grid grid-cols-1 gap-6 md:grid-cols-12 md:items-center">
+                <div class="md:col-span-7"
+                     x-data="{ sym: '{{ form.currency.value|default:'usd'|currency_symbol }}' }"
+                     @change="sym = $event.target.value ? $event.target.value : sym">
+                    <label id="amount-label"
+                           class="block text-[11px] font-bold tracking-wider text-zinc-400 uppercase dark:text-zinc-400">Total Value <span class="text-rose-500">*</span></label>
+                    <div class="mt-1.5 flex items-baseline gap-1.5">
+                        <span class="text-2xl font-medium text-zinc-900 dark:text-zinc-400"
+                              x-text="sym"
+                              aria-hidden="true">US$</span>
+                        {% render_field form.balance step="0.01" placeholder="0.00" aria-labelledby="amount-label" class="w-auto min-w-[4ch] max-w-[12ch] font-bold flex-1 border-0 bg-transparent p-0 text-3xl tracking-tight tabular-nums text-zinc-900 placeholder-zinc-300 focus:ring-0 focus:outline-none sm:text-4xl dark:text-white dark:placeholder-zinc-700" %}
                     </div>
-                    <div class="flex flex-wrap items-center gap-3"
-                         x-data="{ sym: '{{ form.currency.value|default:'usd'|currency_symbol }}' }"
-                         @change="sym = $event.target.value ? $event.target.value : sym">
-                        <div class="flex items-baseline gap-1.5">
-                            <span class="text-3xl font-semibold tracking-tight text-zinc-600 tabular-nums sm:text-4xl dark:text-zinc-400"
-                                  x-text="sym">$</span>
-                            {% render_field form.balance step="0.01" placeholder="0.00" class="text-3xl sm:text-4xl font-semibold tracking-tight tabular-nums bg-transparent border-none p-0 text-zinc-900 dark:text-zinc-100 focus:outline-hidden w-auto min-w-[120px] placeholder-zinc-500 dark:placeholder-zinc-500" %}
+                    {% if form.currency %}
+                        <div class="shadow-2xs mt-2 inline-flex items-center rounded-md border border-zinc-200/80 bg-white px-2 py-1 dark:border-zinc-800/30 dark:bg-zinc-900">
+                            {% render_field form.currency aria-label="Currency" class="cursor-pointer appearance-none border-0 bg-transparent pr-5 text-xs font-semibold text-zinc-700 focus:ring-0 focus:outline-none dark:text-zinc-200" %}
+                            <svg class="pointer-events-none -ml-4 size-3 text-zinc-400"
+                                 fill="none"
+                                 viewBox="0 0 24 24"
+                                 stroke-width="2"
+                                 stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                            </svg>
                         </div>
-                        {% if form.currency %}
-                            <div class="self-center text-xs font-semibold text-zinc-700 dark:text-zinc-300">
-                                {% render_field form.currency class="bg-transparent border-none text-xs font-semibold cursor-pointer focus:ring-0 text-left p-0 text-zinc-800 dark:text-zinc-200" %}
-                            </div>
-                        {% endif %}
-                    </div>
+                    {% endif %}
                     {% if form.balance.errors %}
-                        <p class="mt-1 text-xs font-semibold text-rose-600 dark:text-rose-400">{{ form.balance.errors|striptags }}</p>
+                        <p class="mt-1 text-xs font-medium text-rose-600 dark:text-rose-400">{{ form.balance.errors|striptags }}</p>
                     {% endif %}
                 </div>
-                <div class="w-full space-y-2 border-zinc-200/60 pt-4 md:w-72 md:border-l md:pt-0 md:pl-6 dark:border-zinc-800/30">
+                <div class="border-t border-zinc-200/60 pt-4 md:col-span-5 md:border-t-0 md:border-l md:border-zinc-200/60 md:pt-0 md:pl-6 dark:border-zinc-800/30">
                     <label for="{{ form.merchant.id_for_label }}"
-                           class="block text-[11px] font-bold tracking-wider text-zinc-600 uppercase dark:text-zinc-400">
-                        Merchant / Vendor <span class="font-bold text-rose-600 dark:text-rose-400">*</span>
-                    </label>
-                    {% render_field form.merchant placeholder="Merchant name" class="w-full text-sm font-semibold bg-transparent border-none p-0 text-zinc-900 dark:text-zinc-100 focus:outline-hidden placeholder-zinc-500 dark:placeholder-zinc-500" %}
+                           class="block text-[11px] font-bold tracking-wider text-zinc-400 uppercase dark:text-zinc-400">Merchant / Vendor <span class="text-rose-500">*</span></label>
+                    <div class="mt-2">
+                        {% render_field form.merchant placeholder="Merchant name" class="w-full border-0 bg-transparent p-0 text-base font-semibold text-zinc-900 placeholder-zinc-400 focus:ring-0 focus:outline-none dark:text-white dark:placeholder-zinc-600" %}
+                    </div>
                     {% if form.merchant.errors %}
-                        <p class="mt-1 text-xs font-semibold text-rose-600 dark:text-rose-400">{{ form.merchant.errors|striptags }}</p>
+                        <p class="mt-1 text-xs font-medium text-rose-600 dark:text-rose-400">{{ form.merchant.errors|striptags }}</p>
                     {% endif %}
                 </div>
             </div>
         </div>
-        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
-            <div class="shadow-2xs space-y-1.5 rounded-xl border border-zinc-200/60 bg-white p-4 backdrop-blur-md dark:border-zinc-800/30 dark:bg-zinc-900/45">
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div class="rounded-xl border border-zinc-200/80 bg-zinc-50/50 p-4 dark:border-zinc-800/30 dark:bg-zinc-900/45">
                 <label for="{{ form.transaction_date.id_for_label }}"
-                       class="block text-[11px] font-bold tracking-wider text-zinc-600 uppercase dark:text-zinc-400">
-                    Transaction Date <span class="font-bold text-rose-600 dark:text-rose-400">*</span>
-                </label>
-                {% render_field form.transaction_date type="date" class="w-full text-[13px] font-semibold bg-transparent border-none p-0 text-zinc-900 dark:text-zinc-100 focus:outline-hidden cursor-pointer tabular-nums" %}
+                       class="block text-[11px] font-bold tracking-wider text-zinc-400 uppercase dark:text-zinc-400">Transaction Date <span class="text-rose-500">*</span></label>
+                <div class="mt-2">
+                    {% render_field form.transaction_date type="date" class="w-full cursor-pointer border-0 bg-transparent p-0 text-sm font-semibold text-zinc-900 focus:ring-0 focus:outline-none dark:text-zinc-100" %}
+                </div>
                 {% if form.transaction_date.errors %}
-                    <p class="text-[11px] font-semibold text-rose-600 dark:text-rose-400">{{ form.transaction_date.errors|striptags }}</p>
+                    <p class="mt-1 text-xs font-medium text-rose-600 dark:text-rose-400">{{ form.transaction_date.errors|striptags }}</p>
                 {% endif %}
             </div>
-            <div class="shadow-2xs space-y-1.5 rounded-xl border border-zinc-200/60 bg-white p-4 backdrop-blur-md dark:border-zinc-800/30 dark:bg-zinc-900/45">
+            <div class="rounded-xl border border-zinc-200/80 bg-zinc-50/50 p-4 dark:border-zinc-800/30 dark:bg-zinc-900/45">
                 <label for="{{ form.expiry_date.id_for_label }}"
-                       class="block text-[11px] font-bold tracking-wider text-zinc-600 uppercase dark:text-zinc-400">
-                    Expiry Date
-                </label>
-                {% render_field form.expiry_date type="date" class="w-full text-[13px] font-semibold bg-transparent border-none p-0 text-zinc-900 dark:text-zinc-100 focus:outline-hidden cursor-pointer tabular-nums" %}
+                       class="block text-[11px] font-bold tracking-wider text-zinc-400 uppercase dark:text-zinc-400">Expiry Date</label>
+                <div class="mt-2">
+                    {% render_field form.expiry_date type="date" class="w-full cursor-pointer border-0 bg-transparent p-0 text-sm font-semibold text-zinc-900 focus:ring-0 focus:outline-none dark:text-zinc-100 dark:placeholder-zinc-600" %}
+                </div>
                 {% if form.expiry_date.errors %}
-                    <p class="text-[11px] font-semibold text-rose-600 dark:text-rose-400">{{ form.expiry_date.errors|striptags }}</p>
+                    <p class="mt-1 text-xs font-medium text-rose-600 dark:text-rose-400">{{ form.expiry_date.errors|striptags }}</p>
                 {% endif %}
             </div>
-            <div class="shadow-2xs space-y-1.5 rounded-xl border border-zinc-200/60 bg-white p-4 backdrop-blur-md dark:border-zinc-800/30 dark:bg-zinc-900/45">
+            <div class="rounded-xl border border-zinc-200/80 bg-zinc-50/50 p-4 sm:col-span-2 lg:col-span-1 dark:border-zinc-800/30 dark:bg-zinc-900/45">
                 <label for="{{ form.payment_method.id_for_label }}"
-                       class="block text-[11px] font-bold tracking-wider text-zinc-600 uppercase dark:text-zinc-400">
-                    Payment Method <span class="font-bold text-rose-600 dark:text-rose-400">*</span>
-                </label>
-                {% if form.payment_method.field.disabled %}
-                    <p class="text-[13px] font-semibold text-zinc-900 dark:text-zinc-100">{{ record.payment_method|default:"&mdash;" }}</p>
-                {% else %}
-                    {% render_field form.payment_method placeholder="e.g., Visa 1234" class="w-full text-[13px] font-semibold bg-transparent border-none p-0 text-zinc-900 dark:text-zinc-100 focus:outline-hidden placeholder-zinc-500 dark:placeholder-zinc-500" %}
-                {% endif %}
+                       class="block text-[11px] font-bold tracking-wider text-zinc-400 uppercase dark:text-zinc-400">Payment Method <span class="text-rose-500">*</span></label>
+                <div class="mt-2">
+                    {% if form.payment_method.field.disabled %}
+                        <p class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{{ record.payment_method|default:"—" }}</p>
+                    {% else %}
+                        {% render_field form.payment_method placeholder="Plaid Saving (••1111)" class="w-full border-0 bg-transparent p-0 text-sm font-semibold text-zinc-900 placeholder-zinc-400 focus:ring-0 focus:outline-none dark:text-zinc-100 dark:placeholder-zinc-600" %}
+                    {% endif %}
+                </div>
                 {% if form.payment_method.errors %}
-                    <p class="text-[11px] font-semibold text-rose-600 dark:text-rose-400">{{ form.payment_method.errors|striptags }}</p>
+                    <p class="mt-1 text-xs font-medium text-rose-600 dark:text-rose-400">{{ form.payment_method.errors|striptags }}</p>
                 {% endif %}
             </div>
-            <div class="shadow-2xs space-y-1.5 rounded-xl border border-zinc-200/60 bg-white p-4 backdrop-blur-md dark:border-zinc-800/30 dark:bg-zinc-900/45">
+            <div class="rounded-xl border border-zinc-200/80 bg-zinc-50/50 p-4 dark:border-zinc-800/30 dark:bg-zinc-900/45">
                 <label for="{{ form.folder.id_for_label }}"
-                       class="block text-[11px] font-bold tracking-wider text-zinc-600 uppercase dark:text-zinc-400">
-                    Folder
-                </label>
-                {% render_field form.folder class="w-full text-[13px] font-semibold bg-transparent border-none p-0 text-zinc-900 dark:text-zinc-100 focus:outline-hidden" %}
+                       class="block text-[11px] font-bold tracking-wider text-zinc-400 uppercase dark:text-zinc-400">Folder</label>
+                <div class="relative mt-2">
+                    {% render_field form.folder class="w-full cursor-pointer appearance-none border-0 bg-transparent p-0 pr-6 text-sm font-semibold text-zinc-900 focus:ring-0 focus:outline-none dark:text-zinc-100" %}
+                    <svg class="pointer-events-none absolute top-1/2 right-0 size-3.5 -translate-y-1/2 text-zinc-400"
+                         fill="none"
+                         viewBox="0 0 24 24"
+                         stroke-width="2"
+                         stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                    </svg>
+                </div>
             </div>
-            <div class="shadow-2xs space-y-1.5 rounded-xl border border-zinc-200/60 bg-white p-4 backdrop-blur-md sm:col-span-2 lg:col-span-2 dark:border-zinc-800/30 dark:bg-zinc-900/45">
+            <div class="rounded-xl border border-zinc-200/80 bg-zinc-50/50 p-4 sm:col-span-2 dark:border-zinc-800/30 dark:bg-zinc-900/45">
                 <label for="{{ form.nickname.id_for_label }}"
-                       class="block text-[11px] font-bold tracking-wider text-zinc-600 uppercase dark:text-zinc-400">
-                    Account Nickname
-                </label>
-                {% render_field form.nickname placeholder="e.g., Personal Card" class="w-full text-[13px] font-semibold bg-transparent border-none p-0 text-zinc-900 dark:text-zinc-100 focus:outline-hidden placeholder-zinc-500 dark:placeholder-zinc-500" %}
+                       class="block text-[11px] font-bold tracking-wider text-zinc-400 uppercase dark:text-zinc-400">Account Nickname</label>
+                <div class="mt-2">
+                    {% render_field form.nickname placeholder="e.g. Personal card" class="w-full border-0 bg-transparent p-0 text-sm font-semibold text-zinc-900 placeholder-zinc-400 focus:ring-0 focus:outline-none dark:text-zinc-100 dark:placeholder-zinc-600" %}
+                </div>
             </div>
         </div>
-        <div class="grid grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-2">
-            <section class="shadow-2xs flex flex-col rounded-2xl border border-zinc-200/60 bg-white p-5 backdrop-blur-xl sm:p-6 dark:border-zinc-800/30 dark:bg-zinc-900/45">
+        <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <div class="rounded-xl border border-zinc-200/80 bg-zinc-50/50 p-4 dark:border-zinc-800/30 dark:bg-zinc-900/45">
                 <label for="{{ form.products.id_for_label }}"
-                       class="block text-[13px] font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
-                    Products / Line Items
-                </label>
-                <p class="mt-0.5 text-[11px] font-medium text-zinc-600 dark:text-zinc-400">Itemized products, services, or line items on this record.</p>
-                <div class="mt-4 flex flex-1 flex-col">
-                    {% render_field form.products class="resize-y min-h-[140px] flex-1 w-full bg-transparent border-none text-xs font-medium text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 dark:placeholder-zinc-500 focus:outline-hidden" %}
-                    {% if form.products.errors %}
-                        <p class="mt-1 text-xs font-semibold text-rose-600 dark:text-rose-400">{{ form.products.errors|striptags }}</p>
-                    {% endif %}
+                       class="block text-[11px] font-bold tracking-wider text-zinc-400 uppercase dark:text-zinc-400">Products / Line Items</label>
+                <p class="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">Itemised products, services, or line items on this record.</p>
+                <div class="mt-3">
+                    {% render_field form.products rows="4" placeholder="Sport Shoes..." class="w-full resize-y border-0 bg-transparent p-0 text-xs leading-relaxed text-zinc-900 placeholder-zinc-400 focus:ring-0 focus:outline-none dark:text-zinc-100 dark:placeholder-zinc-600" %}
                 </div>
-            </section>
-            <section class="shadow-2xs flex flex-col rounded-2xl border border-zinc-200/60 bg-white p-5 backdrop-blur-xl sm:p-6 dark:border-zinc-800/30 dark:bg-zinc-900/45">
+                {% if form.products.errors %}
+                    <p class="mt-1 text-xs font-medium text-rose-600 dark:text-rose-400">{{ form.products.errors|striptags }}</p>
+                {% endif %}
+            </div>
+            <div class="rounded-xl border border-zinc-200/80 bg-zinc-50/50 p-4 dark:border-zinc-800/30 dark:bg-zinc-900/45">
                 <label for="{{ form.notes.id_for_label }}"
-                       class="block text-[13px] font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
-                    Business Purpose / Notes <span class="font-bold text-rose-600 dark:text-rose-400">*</span>
-                </label>
-                <p class="mt-0.5 text-[11px] font-medium text-zinc-600 dark:text-zinc-400">Why this expense was incurred and any supporting context.</p>
-                <div class="mt-4 flex flex-1 flex-col">
-                    {% render_field form.notes rows="3" class="resize-y min-h-[140px] flex-1 w-full bg-transparent border-none text-xs font-medium text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 dark:placeholder-zinc-500 focus:outline-hidden" %}
-                    {% if form.notes.errors %}
-                        <p class="mt-1 text-xs font-semibold text-rose-600 dark:text-rose-400">{{ form.notes.errors|striptags }}</p>
-                    {% endif %}
+                       class="block text-[11px] font-bold tracking-wider text-zinc-400 uppercase dark:text-zinc-400">Business Purpose / Notes <span class="text-rose-500">*</span></label>
+                <p class="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">Why this expense was incurred and any supporting context.</p>
+                <div class="mt-3">
+                    {% render_field form.notes rows="4" placeholder="Add details or notes..." class="w-full resize-y border-0 bg-transparent p-0 text-xs leading-relaxed text-zinc-900 placeholder-zinc-400 focus:ring-0 focus:outline-none dark:text-zinc-100 dark:placeholder-zinc-600" %}
                 </div>
-            </section>
+                {% if form.notes.errors %}
+                    <p class="mt-1 text-xs font-medium text-rose-600 dark:text-rose-400">{{ form.notes.errors|striptags }}</p>
+                {% endif %}
+            </div>
         </div>
-        <section class="shadow-2xs flex w-full flex-col rounded-2xl border border-zinc-200/60 bg-white p-4 backdrop-blur-xl sm:p-6 dark:border-zinc-800/30 dark:bg-zinc-900/45">
+        <section class="rounded-xl border border-zinc-200/80 bg-zinc-50/50 p-4 dark:border-zinc-800/30 dark:bg-zinc-900/45">
             <div class="flex items-center justify-between gap-3">
                 <div>
-                    <h2 class="text-[13px] font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">Documents</h2>
-                    <p class="mt-0.5 text-[11px] font-medium text-zinc-600 dark:text-zinc-400">Files, receipts, and invoices attached to this record.</p>
+                    <h2 class="text-[11px] font-bold tracking-wider text-zinc-400 uppercase dark:text-zinc-400">Documents</h2>
+                    <p class="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">Receipts, invoices, and supporting files.</p>
                 </div>
                 {% if request.user == record.user %}
                     <a href="{% url 'documents:add_support_docs' record.pk %}"
-                       class="shadow-2xs inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl bg-zinc-900 px-3 py-1 text-xs font-semibold text-white transition-all duration-200 hover:bg-zinc-800 hover:shadow-xs active:scale-[0.97] dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200">
-                        <svg class="h-3.5 w-3.5"
+                       class="shadow-2xs inline-flex shrink-0 items-center gap-1 rounded-full border border-zinc-200/80 bg-white px-2.5 py-1 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-800/30 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700">
+                        <svg class="size-3.5"
                              fill="none"
                              viewBox="0 0 24 24"
-                             stroke-width="2.5"
+                             stroke-width="2"
                              stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                         </svg>
@@ -236,58 +225,40 @@
                     </a>
                 {% endif %}
             </div>
-            <div class="mt-3.5 max-h-60 flex-1 space-y-2 overflow-auto">
+            <div class="mt-3">
                 {% with docs=documents|default_if_none:record.documents.all %}
                     {% if docs %}
-                        {% for document in docs %}
-                            <a href="{% url 'documents:view_document' document.pk %}"
-                               class="group block">
-                                <div class="flex items-center gap-3 rounded-xl border border-zinc-200/60 bg-zinc-50 p-2.5 transition-all duration-200 group-hover:border-zinc-300 group-hover:bg-zinc-100 dark:border-zinc-800/30 dark:bg-zinc-800/20 dark:group-hover:border-zinc-700 dark:group-hover:bg-zinc-800/50">
-                                    <div class="shrink-0 rounded-lg border border-zinc-200/60 bg-zinc-100 p-2 text-zinc-600 transition-colors group-hover:text-zinc-900 dark:border-zinc-700/60 dark:bg-zinc-800/60 dark:text-zinc-300 dark:group-hover:text-white">
-                                        <svg class="h-3.5 w-3.5"
+                        <ul class="divide-y divide-zinc-200/60 dark:divide-white/5">
+                            {% for document in docs %}
+                                <li>
+                                    <a href="{% url 'documents:view_document' document.pk %}"
+                                       class="group -mx-2 flex items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-zinc-200/50 dark:hover:bg-white/5">
+                                        <svg class="size-4 shrink-0 text-zinc-400 group-hover:text-zinc-700 dark:group-hover:text-zinc-200"
                                              fill="none"
                                              viewBox="0 0 24 24"
-                                             stroke-width="1.75"
+                                             stroke-width="1.5"
                                              stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9Z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
                                         </svg>
-                                    </div>
-                                    <div class="min-w-0 flex-1 truncate">
-                                        <div class="flex items-center justify-between gap-2">
-                                            <p class="truncate text-xs font-bold text-zinc-900 transition-colors group-hover:text-zinc-950 dark:text-zinc-100 dark:group-hover:text-white">
-                                                {{ document.title }}
-                                            </p>
-                                            {% if document.did_ocr %}
-                                                <span class="shrink-0 rounded border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-emerald-700 uppercase dark:text-emerald-300">
-                                                    OCR
-                                                </span>
-                                            {% endif %}
-                                        </div>
-                                        <p class="mt-0.5 truncate font-mono text-[11px] text-zinc-600 dark:text-zinc-400">{{ document.filepath }}</p>
-                                    </div>
-                                </div>
-                            </a>
-                        {% endfor %}
+                                        <span class="min-w-0 flex-1 truncate text-xs font-medium text-zinc-800 dark:text-zinc-200 dark:group-hover:text-white">{{ document.title }}</span>
+                                        {% if document.did_ocr %}
+                                            <span class="shrink-0 rounded border border-emerald-500/25 px-1.5 py-px text-[9px] font-bold tracking-wider text-emerald-700 uppercase dark:text-emerald-400">OCR</span>
+                                        {% endif %}
+                                        <span class="hidden max-w-[14rem] shrink-0 truncate text-[11px] text-zinc-400 sm:block dark:text-zinc-500">{{ document.filepath }}</span>
+                                    </a>
+                                </li>
+                            {% endfor %}
+                        </ul>
                     {% else %}
-                        <div class="flex h-full flex-col items-center justify-center rounded-xl border border-dashed border-zinc-300 bg-zinc-50/50 px-4 py-6 text-center dark:border-zinc-700 dark:bg-zinc-800/10">
-                            <div class="shadow-2xs mb-2 rounded-xl border border-zinc-200/60 bg-zinc-100 p-2.5 text-zinc-600 dark:border-zinc-700/60 dark:bg-zinc-800/60 dark:text-zinc-400">
-                                <svg class="h-4 w-4"
-                                     fill="none"
-                                     viewBox="0 0 24 24"
-                                     stroke-width="1.5"
-                                     stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m6.75 12-3-3m0 0-3 3m3-3v6m-1.5-15H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9Z" />
-                                </svg>
-                            </div>
-                            <p class="text-xs font-bold text-zinc-900 dark:text-zinc-100">No documents attached</p>
-                            <p class="mt-0.5 max-w-xs text-[11px] font-medium text-zinc-600 dark:text-zinc-400">Upload receipts, invoices, or supporting files to maintain audit readiness.</p>
+                        <div class="rounded-lg border border-dashed border-zinc-200 px-4 py-6 text-center dark:border-zinc-800/30">
+                            <p class="text-xs font-medium text-zinc-500 dark:text-zinc-400">No documents attached</p>
                         </div>
                     {% endif %}
                 {% endwith %}
             </div>
         </section>
     </div>
-    <div class="px-1 text-right text-[10px] font-semibold tracking-wide text-zinc-600 dark:text-zinc-400"
+    <div class="mt-4 text-right text-[10px] font-medium text-zinc-400 dark:text-zinc-600"
          id="char-hint"></div>
 </form>
 <script>
