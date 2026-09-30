@@ -48,6 +48,7 @@
             if (modal) modal.classList.toggle('hidden', !open);
         }
     </script>
+    {% include "records/partials/record_form_partial.html" %}
     <div class="mx-auto w-full max-w-5xl px-5 py-8">
         {% if active_merge %}
             <section class="mt-8 rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 dark:border-emerald-500/20 dark:bg-emerald-500/5">
@@ -115,7 +116,6 @@
                 </form>
             </section>
         {% endif %}
-        {% include "records/partials/record_form_partial.html" %}
     </div>
     <script>
         document.body.addEventListener('htmx:beforeSwap', function(evt) {
