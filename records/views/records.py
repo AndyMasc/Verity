@@ -267,8 +267,9 @@ class RecordDetailView(LoginRequiredMixin, UpdateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        seven_years_ago = timezone.now() - timedelta(days=365 * 7)
-        context["seven_years_ago_unix"] = seven_years_ago.timestamp()
+        # The seven-year retention rule lives on the model as
+        # "Record.can_hard_delete"; the template reads that instead of
+        # re-deriving a cutoff here.
 
         if self.object.user_id != self.request.user.pk:
             share = (
