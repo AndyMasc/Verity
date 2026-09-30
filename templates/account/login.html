@@ -3,85 +3,80 @@
 {% load allauth_ui %}
 {% load widget_tweaks %}
 {% block content %}
-    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
-            async
-            defer></script>
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
     {% #container heading="Sign in to Verity." subheading=subheading %}
     {% if not SOCIALACCOUNT_ONLY %}
         {% url 'account_login' as action_url %}
         {% #form form=form url=action_url button_text="Sign in" render_fields="true" %}
         {% csrf_token %}
-        <input type="hidden"
-               id="cf_turnstile_response"
-               name="cf_turnstile_response"
-               value="">
+        <input type="hidden" id="cf_turnstile_response" name="cf_turnstile_response" value="">
         <script>
-                    (function() {
-                        'use strict';
-                        var SITEKEY = '{{ turnstile_sitekey }}';
-                        var WIDGET_ID = 'login-turnstile-widget';
-                        var RESPONSE_ID = 'cf_turnstile_response';
-                        var widgetId = null;
+            (function() {
+                'use strict';
+                var SITEKEY = '{{ turnstile_sitekey }}';
+                var WIDGET_ID = 'login-turnstile-widget';
+                var RESPONSE_ID = 'cf_turnstile_response';
+                var widgetId = null;
 
-                        function findAuthForm() {
-                            var forms = Array.prototype.slice.call(document.querySelectorAll('form[method="post"]'));
-                            for (var i = 0; i < forms.length; i++) {
-                                var f = forms[i];
-                                if (f.querySelector('input[type="email"], input[name="email"], input[name="login"], input[type="text"]')) {
-                                    return f;
-                                }
-                                var action = (f.getAttribute('action') || '').toLowerCase();
-                                if (action.indexOf('login') !== -1) return f;
-                            }
-                            return forms[0] || null;
+                function findAuthForm() {
+                    var forms = Array.prototype.slice.call(document.querySelectorAll('form[method="post"]'));
+                    for (var i = 0; i < forms.length; i++) {
+                        var f = forms[i];
+                        if (f.querySelector('input[type="email"], input[name="email"], input[name="login"], input[type="text"]')) {
+                            return f;
                         }
+                        var action = (f.getAttribute('action') || '').toLowerCase();
+                        if (action.indexOf('login') !== -1) return f;
+                    }
+                    return forms[0] || null;
+                }
 
-                        function init() {
-                            if (!window.turnstile || typeof window.turnstile.render !== 'function') {
-                                setTimeout(init, 200);
-                                return;
+                function init() {
+                    if (!window.turnstile || typeof window.turnstile.render !== 'function') {
+                        setTimeout(init, 200);
+                        return;
+                    }
+
+            // The widget container renders outside the allauth form block,
+            // so its token is written into this hidden input inside the form.
+                    var form = findAuthForm();
+                    var input = document.getElementById(RESPONSE_ID);
+                    var el = document.getElementById(WIDGET_ID);
+                    if (!form || !input || !el) {
+                        setTimeout(init, 100);
+                        return;
+                    }
+                    if (!form.contains(input)) form.appendChild(input);
+                    if (form.dataset.turnstileAttached === '1') return;
+                    form.dataset.turnstileAttached = '1';
+
+                    widgetId = window.turnstile.render(el, {
+                        sitekey: SITEKEY,
+                        action: '{{ turnstile_actions.login }}',
+                        callback: function (token) { input.value = token || ''; },
+                        'expired-callback': function () { input.value = ''; },
+                        'error-callback': function () { input.value = ''; },
+                    });
+
+                    form.addEventListener('submit', function (event) {
+                        if (!input.value) {
+                            event.preventDefault();
+                            alert('Please complete the robot verification and try again');
+                            if (widgetId) {
+                                try { window.turnstile.reset(widgetId); } catch (_) {}
                             }
-
-                    // The widget container renders outside the allauth form block,
-                    // so its token is written into this hidden input inside the form.
-                            var form = findAuthForm();
-                            var input = document.getElementById(RESPONSE_ID);
-                            var el = document.getElementById(WIDGET_ID);
-                            if (!form || !input || !el) {
-                                setTimeout(init, 100);
-                                return;
-                            }
-                            if (!form.contains(input)) form.appendChild(input);
-                            if (form.dataset.turnstileAttached === '1') return;
-                            form.dataset.turnstileAttached = '1';
-
-                            widgetId = window.turnstile.render(el, {
-                                sitekey: SITEKEY,
-                                action: '{{ turnstile_actions.login }}',
-                                callback: function (token) { input.value = token || ''; },
-                                'expired-callback': function () { input.value = ''; },
-                                'error-callback': function () { input.value = ''; },
-                            });
-
-                            form.addEventListener('submit', function (event) {
-                                if (!input.value) {
-                                    event.preventDefault();
-                                    alert('Please complete the robot verification and try again');
-                                    if (widgetId) {
-                                        try { window.turnstile.reset(widgetId); } catch (_) {}
-                                    }
-                                    return false;
-                                }
-                                return true;
-                            });
+                            return false;
                         }
+                        return true;
+                    });
+                }
 
-                        if (document.readyState === 'loading') {
-                            document.addEventListener('DOMContentLoaded', init);
-                        } else {
-                            init();
-                        }
-                    })();
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', init);
+                } else {
+                    init();
+                }
+            })();
         </script>
         {% /form %}
     {% endif %}
@@ -91,14 +86,20 @@
             <span class="px-3 text-sm text-zinc-500 dark:text-zinc-400">Or</span>
             <div class="h-px flex-grow bg-zinc-200 dark:bg-zinc-800"></div>
         </div>
-        <a href="{{ request_login_code_url }}"
-           class="mb-2 flex h-10 w-full items-center justify-center rounded-2xl border border-zinc-200 bg-zinc-100 px-4 py-2.5 text-sm font-medium text-zinc-900 transition-all duration-200 hover:bg-zinc-200 active:scale-[0.98] dark:border-zinc-800 dark:bg-zinc-800/30 dark:text-zinc-100 dark:hover:bg-zinc-800/50">{% trans "Mail me a sign-in code" %}</a>
+        <a
+            href="{{ request_login_code_url }}"
+            class="mb-2 flex h-10 w-full items-center justify-center rounded-2xl border border-zinc-200 bg-zinc-100 px-4 py-2.5 text-sm font-medium text-zinc-900 transition-all duration-200 hover:bg-zinc-200 active:scale-[0.98] dark:border-zinc-800 dark:bg-zinc-800/30 dark:text-zinc-100 dark:hover:bg-zinc-800/50"
+        >{% trans "Mail me a sign-in code" %}</a>
     {% endif %}
     {% if SOCIALACCOUNT_ENABLED %}
         {% include "socialaccount/snippets/login.html" with page_layout="entrance" %}
     {% endif %}
-    <div class="mt-6 text-center text-sm text-zinc-600 dark:text-zinc-400">Don't have an account? <a href="{{ signup_url }}"
-    class="font-medium text-zinc-900 hover:underline dark:text-zinc-100">Sign up</a></div>
+    <div class="mt-6 text-center text-sm text-zinc-600 dark:text-zinc-400">
+        Don't have an account? <a
+            href="{{ signup_url }}"
+            class="font-medium text-zinc-900 hover:underline dark:text-zinc-100"
+        >Sign up</a>
+    </div>
     <div class="mt-8 flex justify-center">
         <div id="login-turnstile-widget"></div>
     </div>

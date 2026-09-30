@@ -2,56 +2,79 @@
 {% load form_tags %}
 {% block title %}Reimbursements | Verity{% endblock %}
 {% block content %}
-    <main class="mx-auto min-h-screen w-full max-w-9xl px-4 py-16"
-          x-data="{ tab: 'all', q: '' }">
+    <main class="mx-auto min-h-screen w-full max-w-9xl px-4 py-16" x-data="{ tab: 'all', q: '' }">
         <header class="mb-12 flex flex-col justify-between gap-6 pb-2 md:flex-row md:items-center">
             <div class="space-y-1">
-                <a href="{% url 'core:dashboard' %}"
-                   class="mb-2 inline-flex items-center gap-1.5 text-xs font-medium text-zinc-500 transition-colors duration-150 hover:text-zinc-900 dark:hover:text-zinc-100">
-                    <svg class="h-3.5 w-3.5"
-                         fill="none"
-                         viewBox="0 0 24 24"
-                         stroke-width="2"
-                         stroke="currentColor">
+                <a
+                    href="{% url 'core:dashboard' %}"
+                    class="mb-2 inline-flex items-center gap-1.5 text-xs font-medium text-zinc-500 transition-colors duration-150 hover:text-zinc-900 dark:hover:text-zinc-100"
+                >
+                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
                     </svg>
                     <span>Dashboard</span>
                 </a>
                 <h1 class="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">Reimbursements</h1>
-                <p class="text-sm text-zinc-600 dark:text-zinc-400">All reimbursement packages you've sent or received.</p>
+                <p class="text-sm text-zinc-600 dark:text-zinc-400">
+                    All reimbursement packages you've sent or received.
+                </p>
             </div>
             <div class="flex items-center gap-3">
                 <div class="relative">
-                    <svg class="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-zinc-500"
-                         fill="none"
-                         viewBox="0 0 24 24"
-                         stroke="currentColor"
-                         stroke-width="1.75">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    <svg
+                        class="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-zinc-500"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        stroke-width="1.75"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                        />
                     </svg>
-                    <input type="text"
-                           x-model="q"
-                           placeholder="Search packages..."
-                           class="w-full rounded-xl border border-zinc-200/60 bg-zinc-100/60 py-1.5 pr-4 pl-10 text-sm text-zinc-900 placeholder-zinc-500 shadow-sm transition-all focus:ring-1 focus:ring-zinc-400 focus:outline-none md:w-56 dark:border-zinc-800/80 dark:bg-zinc-900/45 dark:text-zinc-100 dark:focus:ring-zinc-600">
+                    <input
+                        type="text"
+                        x-model="q"
+                        placeholder="Search packages..."
+                        class="w-full rounded-xl border border-zinc-200/60 bg-zinc-100/60 py-1.5 pr-4 pl-10 text-sm text-zinc-900 placeholder-zinc-500 shadow-sm transition-all focus:ring-1 focus:ring-zinc-400 focus:outline-none md:w-56 dark:border-zinc-800/80 dark:bg-zinc-900/45 dark:text-zinc-100 dark:focus:ring-zinc-600"
+                    >
                 </div>
                 <div class="inline-flex rounded-xl border border-zinc-200/60 bg-zinc-100/80 p-1 text-sm shadow-sm backdrop-blur-xl dark:border-zinc-800/80 dark:bg-zinc-900/80">
-                    <button @click="tab = 'all'"
-                            :class="tab === 'all' ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm font-medium' : 'text-zinc-600 hover:text-zinc-900 dark:hover:text-zinc-200'"
-                            class="rounded-lg px-3 py-1 transition-all duration-200">All</button>
-                    <button @click="tab = 'sent'"
-                            :class="tab === 'sent' ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm font-medium' : 'text-zinc-600 hover:text-zinc-900 dark:hover:text-zinc-200'"
-                            class="rounded-lg px-3 py-1 transition-all duration-200">Sent</button>
-                    <button @click="tab = 'received'"
-                            :class="tab === 'received' ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm font-medium' : 'text-zinc-600 hover:text-zinc-900 dark:hover:text-zinc-200'"
-                            class="rounded-lg px-3 py-1 transition-all duration-200">Received</button>
+                    <button
+                        @click="tab = 'all'"
+                        :class="tab === 'all' ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm font-medium' : 'text-zinc-600 hover:text-zinc-900 dark:hover:text-zinc-200'"
+                        class="rounded-lg px-3 py-1 transition-all duration-200"
+                    >
+                        All
+                    </button>
+                    <button
+                        @click="tab = 'sent'"
+                        :class="tab === 'sent' ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm font-medium' : 'text-zinc-600 hover:text-zinc-900 dark:hover:text-zinc-200'"
+                        class="rounded-lg px-3 py-1 transition-all duration-200"
+                    >
+                        Sent
+                    </button>
+                    <button
+                        @click="tab = 'received'"
+                        :class="tab === 'received' ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm font-medium' : 'text-zinc-600 hover:text-zinc-900 dark:hover:text-zinc-200'"
+                        class="rounded-lg px-3 py-1 transition-all duration-200"
+                    >
+                        Received
+                    </button>
                 </div>
             </div>
         </header>
         {% if not stripe_connected %}
             <div class="mb-10 flex items-center justify-between rounded-2xl border border-zinc-200/60 bg-zinc-50/50 px-4 py-3.5 shadow-sm backdrop-blur-xl dark:border-zinc-800/80 dark:bg-zinc-900/45">
-                <p class="text-sm font-medium text-zinc-600 dark:text-zinc-400">Connect Stripe to send reimbursement requests.</p>
-                <a href="{% url 'reimbursements:stripe-onboard' %}"
-                   class="rounded-xl border border-zinc-200/80 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-900 shadow-xs transition-all duration-200 hover:bg-zinc-50 dark:border-zinc-700/80 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700/80">
+                <p class="text-sm font-medium text-zinc-600 dark:text-zinc-400">
+                    Connect Stripe to send reimbursement requests.
+                </p>
+                <a
+                    href="{% url 'reimbursements:stripe-onboard' %}"
+                    class="rounded-xl border border-zinc-200/80 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-900 shadow-xs transition-all duration-200 hover:bg-zinc-50 dark:border-zinc-700/80 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700/80"
+                >
                     Connect Stripe
                 </a>
             </div>
@@ -60,9 +83,13 @@
             {% for label, pkgs, type in sections %}
                 <section x-show="tab === 'all' || tab === '{{ type }}'" class="space-y-3">
                     <div class="flex items-center justify-between pb-2">
-                        <h2 class="text-xs font-medium tracking-wider text-zinc-500 uppercase dark:text-zinc-400">{{ label }}</h2>
+                        <h2 class="text-xs font-medium tracking-wider text-zinc-500 uppercase dark:text-zinc-400">
+                            {{ label }}
+                        </h2>
                         {% if pkgs %}
-                            <span class="rounded-md bg-zinc-100 px-2 py-0.5 text-[11px] font-medium text-zinc-600 dark:bg-zinc-800/80 dark:text-zinc-400">
+                            <span
+                                class="rounded-md bg-zinc-100 px-2 py-0.5 text-[11px] font-medium text-zinc-600 dark:bg-zinc-800/80 dark:text-zinc-400"
+                            >
                                 {{ pkgs|length }}
                             </span>
                         {% endif %}
@@ -71,11 +98,15 @@
                         <ul class="divide-y divide-zinc-200/20 overflow-hidden rounded-2xl border border-zinc-200/40 bg-white/40 shadow-sm backdrop-blur-xl dark:divide-zinc-800/20 dark:border-zinc-800/60 dark:bg-zinc-900/45">
                             {% for pkg in pkgs %}
                                 <li>
-                                    <a href="{% url 'reimbursements:package-detail' pkg.uuid %}"
-                                       x-show="q === '' || '{{ pkg.title|escapejs }}'.toLowerCase().includes(q.toLowerCase())"
-                                       class="group flex items-center justify-between px-4 py-3.5 transition-all duration-150 hover:bg-zinc-100/50 dark:hover:bg-zinc-800/40">
+                                    <a
+                                        href="{% url 'reimbursements:package-detail' pkg.uuid %}"
+                                        x-show="q === '' || '{{ pkg.title|escapejs }}'.toLowerCase().includes(q.toLowerCase())"
+                                        class="group flex items-center justify-between px-4 py-3.5 transition-all duration-150 hover:bg-zinc-100/50 dark:hover:bg-zinc-800/40"
+                                    >
                                         <div class="flex min-w-0 items-center gap-3.5">
-                                            <span class="w-2 h-2 rounded-full shrink-0 {% if pkg.status == 'paid' %}bg-emerald-500 {% elif pkg.is_expired %}bg-zinc-400 dark:bg-zinc-600 {% elif pkg.status == 'queued' %}bg-indigo-500 {% else %}bg-amber-500 animate-pulse{% endif %}">
+                                            <span
+                                                class="w-2 h-2 rounded-full shrink-0 {% if pkg.status == 'paid' %}bg-emerald-500 {% elif pkg.is_expired %}bg-zinc-400 dark:bg-zinc-600 {% elif pkg.status == 'queued' %}bg-indigo-500 {% else %}bg-amber-500 animate-pulse{% endif %}"
+                                            >
                                             </span>
                                             <div class="min-w-0">
                                                 <p class="truncate text-sm font-medium text-zinc-900 transition-colors group-hover:text-zinc-950 dark:text-zinc-200 dark:group-hover:text-white">
@@ -95,16 +126,26 @@
                                             </div>
                                         </div>
                                         <div class="ml-4 flex shrink-0 items-center gap-4">
-                                            <span class="text-sm font-medium text-zinc-900 tabular-nums dark:text-zinc-200">
+                                            <span
+                                                class="text-sm font-medium text-zinc-900 tabular-nums dark:text-zinc-200"
+                                            >
                                                 {{ pkg.display_total|currency_format:pkg.currency }}
                                             </span>
-                                            <span class="text-[11px] tracking-wide text-zinc-500 uppercase">{{ pkg.currency }}</span>
-                                            <svg class="h-4 w-4 text-zinc-500 transition-all duration-150 group-hover:translate-x-0.5 group-hover:text-zinc-600 dark:text-zinc-400 dark:group-hover:text-zinc-300"
-                                                 fill="none"
-                                                 viewBox="0 0 24 24"
-                                                 stroke="currentColor"
-                                                 stroke-width="1.5">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                                            <span
+                                                class="text-[11px] tracking-wide text-zinc-500 uppercase"
+                                            >{{ pkg.currency }}</span>
+                                            <svg
+                                                class="h-4 w-4 text-zinc-500 transition-all duration-150 group-hover:translate-x-0.5 group-hover:text-zinc-600 dark:text-zinc-400 dark:group-hover:text-zinc-300"
+                                                fill="none"
+                                                viewBox="0 0 24 24"
+                                                stroke="currentColor"
+                                                stroke-width="1.5"
+                                            >
+                                                <path
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    d="M8.25 4.5l7.5 7.5-7.5 7.5"
+                                                />
                                             </svg>
                                         </div>
                                     </a>
@@ -128,8 +169,10 @@
         {% if is_paginated %}
             <nav class="mt-12 flex items-center justify-between border-t border-zinc-200/40 pt-6 dark:border-zinc-800/30">
                 {% if page_obj.has_previous %}
-                    <a href="?page={{ page_obj.previous_page_number }}"
-                       class="rounded-lg px-3 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200">
+                    <a
+                        href="?page={{ page_obj.previous_page_number }}"
+                        class="rounded-lg px-3 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200"
+                    >
                         ← Previous
                     </a>
                 {% else %}
@@ -139,8 +182,10 @@
                     Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
                 </span>
                 {% if page_obj.has_next %}
-                    <a href="?page={{ page_obj.next_page_number }}"
-                       class="rounded-lg px-3 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200">
+                    <a
+                        href="?page={{ page_obj.next_page_number }}"
+                        class="rounded-lg px-3 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200"
+                    >
                         Next →
                     </a>
                 {% else %}

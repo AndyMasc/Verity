@@ -2,53 +2,78 @@
 {% load form_tags %}
 {% block title %}Dashboard | Verity{% endblock %}
 {% block content %}
-    <main class="mx-auto flex min-h-screen max-w-9xl flex-col py-12 font-sans text-zinc-900 antialiased dark:text-zinc-100"
-          x-data="recordBulkActions()"
-          id="dashboard-content"
-          hx-get="{% url 'core:dashboard' %}"
-          hx-trigger="recordChanged from:body"
-          hx-target="this"
-          hx-select="#dashboard-content"
-          hx-swap="outerHTML">
+    <main
+        class="mx-auto flex min-h-screen max-w-9xl flex-col py-12 font-sans text-zinc-900 antialiased dark:text-zinc-100"
+        x-data="recordBulkActions()"
+        id="dashboard-content"
+        hx-get="{% url 'core:dashboard' %}"
+        hx-trigger="recordChanged from:body"
+        hx-target="this"
+        hx-select="#dashboard-content"
+        hx-swap="outerHTML"
+    >
         <div class="my-auto w-full space-y-4">
             <header class="flex w-full justify-end gap-4 md:flex-row md:items-center md:justify-between">
                 <div class="hidden md:block">
                     <a href="{% url 'core:profile_page' %}" class="group inline-block">
                         <div class="shadow-2xs inline-flex items-center gap-2 rounded-full border border-zinc-200/80 bg-white px-3 py-1.5 transition-all duration-200 dark:border-white/[0.06] dark:bg-zinc-900/60">
-                            <svg xmlns="http://www.w3.org/2000/svg"
-                                 fill="none"
-                                 viewBox="0 0 24 24"
-                                 stroke-width="1.5"
-                                 stroke="currentColor"
-                                 class="size-5">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke-width="1.5"
+                                stroke="currentColor"
+                                class="size-5"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
+                                />
                             </svg>
-                            <span class="text-xs font-semibold tracking-tight text-zinc-800 dark:text-zinc-200">Hi there, <span class="capitalize">{{ request.user.username }}</span></span>
+                            <span class="text-xs font-semibold tracking-tight text-zinc-800 dark:text-zinc-200">Hi
+                                there, <span class="capitalize">{{ request.user.username }}</span></span>
                         </div>
                     </a>
                 </div>
                 <div class="flex items-center justify-between gap-2">
-                    <a href="{% url 'records:view_all_records' %}"
-                       class="flex flex-row items-center justify-center gap-2 rounded-full border border-zinc-300/60 bg-white px-3 py-1.5 text-xs font-medium text-black transition-all hover:bg-zinc-200/70 active:scale-[0.98] dark:border-zinc-800/30 dark:bg-zinc-800/40 dark:text-zinc-300 dark:hover:bg-zinc-900/60">
-                        <svg xmlns="http://www.w3.org/2000/svg"
-                             fill="none"
-                             viewBox="0 0 24 24"
-                             stroke-width="1.5"
-                             stroke="currentColor"
-                             class="size-5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                    <a
+                        href="{% url 'records:view_all_records' %}"
+                        class="flex flex-row items-center justify-center gap-2 rounded-full border border-zinc-300/60 bg-white px-3 py-1.5 text-xs font-medium text-black transition-all hover:bg-zinc-200/70 active:scale-[0.98] dark:border-zinc-800/30 dark:bg-zinc-800/40 dark:text-zinc-300 dark:hover:bg-zinc-900/60"
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke-width="1.5"
+                            stroke="currentColor"
+                            class="size-5"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
+                            />
                         </svg>
                         Search
                     </a>
-                    <a href="{% url 'documents:upload_document' %}"
-                       class="shadow-2xs flex flex-row items-center justify-center gap-2 rounded-full bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white transition-all hover:bg-zinc-800 active:scale-[0.98] dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white/95">
-                        <svg xmlns="http://www.w3.org/2000/svg"
-                             fill="none"
-                             viewBox="0 0 24 24"
-                             stroke-width="1.5"
-                             stroke="currentColor"
-                             class="size-5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0 3 3m-3-3-3 3M6.75 19.5a4.5 4.5 0 0 1-1.41-8.775 5.25 5.25 0 0 1 10.233-2.33 3 3 0 0 1 3.758 3.848A3.752 3.752 0 0 1 18 19.5H6.75Z" />
+                    <a
+                        href="{% url 'documents:upload_document' %}"
+                        class="shadow-2xs flex flex-row items-center justify-center gap-2 rounded-full bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white transition-all hover:bg-zinc-800 active:scale-[0.98] dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white/95"
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke-width="1.5"
+                            stroke="currentColor"
+                            class="size-5"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                d="M12 16.5V9.75m0 0 3 3m-3-3-3 3M6.75 19.5a4.5 4.5 0 0 1-1.41-8.775 5.25 5.25 0 0 1 10.233-2.33 3 3 0 0 1 3.758 3.848A3.752 3.752 0 0 1 18 19.5H6.75Z"
+                            />
                         </svg>
                         Upload Record
                     </a>
@@ -72,25 +97,39 @@
                                         <div class="flex min-w-0 items-center gap-2">
                                             <span class="block size-1.5 shrink-0 rounded-full bg-[#5A67FF]"></span>
                                             <span class="truncate text-xs font-medium text-zinc-800 dark:text-zinc-200">
-                                                {{ notification.subject|default:"Notice" }}: <span class="font-normal text-zinc-600 dark:text-zinc-400">{{ notification.message|truncatechars:28 }}</span>
+                                                {{ notification.subject|default:"Notice" }}: <span
+                                                    class="font-normal text-zinc-600 dark:text-zinc-400"
+                                                >{{ notification.message|truncatechars:28 }}</span>
                                             </span>
                                         </div>
-                                        <span class="shrink-0 text-[10px] text-zinc-500 dark:text-zinc-400">{{ notification.sent_at|timesince }} ago</span>
+                                        <span
+                                            class="shrink-0 text-[10px] text-zinc-500 dark:text-zinc-400"
+                                        >{{ notification.sent_at|timesince }} ago</span>
                                     </div>
                                 {% empty %}
                                     <div class="mt-5 flex flex-col items-center justify-center text-center">
                                         <div class="mb-3 flex size-9 items-center justify-center rounded-full bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
-                                            <svg xmlns="http://www.w3.org/2000/svg"
-                                                 fill="none"
-                                                 viewBox="0 0 24 24"
-                                                 stroke-width="1.5"
-                                                 stroke="currentColor"
-                                                 class="size-4">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M9.143 17.082a24.248 24.248 0 0 0 3.844.148m-3.844-.148a23.856 23.856 0 0 1-5.455-1.31 8.964 8.964 0 0 0 2.3-5.542m3.155 6.852a3 3 0 0 0 5.667 1.97m1.965-2.277L21 21m-4.225-4.225a23.81 23.81 0 0 0 3.536-1.003A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6.53 6.53m10.245 10.245L6.53 6.53M3 3l3.53 3.53" />
+                                            <svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                fill="none"
+                                                viewBox="0 0 24 24"
+                                                stroke-width="1.5"
+                                                stroke="currentColor"
+                                                class="size-4"
+                                            >
+                                                <path
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    d="M9.143 17.082a24.248 24.248 0 0 0 3.844.148m-3.844-.148a23.856 23.856 0 0 1-5.455-1.31 8.964 8.964 0 0 0 2.3-5.542m3.155 6.852a3 3 0 0 0 5.667 1.97m1.965-2.277L21 21m-4.225-4.225a23.81 23.81 0 0 0 3.536-1.003A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6.53 6.53m10.245 10.245L6.53 6.53M3 3l3.53 3.53"
+                                                />
                                             </svg>
                                         </div>
-                                        <p class="text-xs font-medium text-zinc-700 dark:text-zinc-300">All caught up!</p>
-                                        <p class="mt-0.5 text-[11px] text-zinc-500 dark:text-zinc-400">Unread notifications will appear here.</p>
+                                        <p class="text-xs font-medium text-zinc-700 dark:text-zinc-300">
+                                            All caught up!
+                                        </p>
+                                        <p class="mt-0.5 text-[11px] text-zinc-500 dark:text-zinc-400">
+                                            Unread notifications will appear here.
+                                        </p>
                                     </div>
                                 {% endfor %}
                             </div>
@@ -101,18 +140,26 @@
                         {% include 'core/partials/section_header.html' with title="Reimbursements" view_all_url=reimbursements_url %}
                         <div class="mt-3.5 grid grid-cols-2 gap-3">
                             <div class="rounded-xl border border-zinc-200/60 bg-zinc-50 p-3.5 dark:border-white/[0.035] dark:bg-zinc-900/40">
-                                <h3 class="text-[10px] font-semibold tracking-wider text-zinc-600 uppercase dark:text-zinc-400">Sent</h3>
+                                <h3 class="text-[10px] font-semibold tracking-wider text-zinc-600 uppercase dark:text-zinc-400">
+                                    Sent
+                                </h3>
                                 <p class="mt-1 truncate text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
                                     {{ reimbursements_sent_total|default:"0.00"|currency_format:user.settings.default_currency }}
                                 </p>
-                                <p class="mt-0.5 text-[11px] font-medium text-zinc-600 dark:text-zinc-400">{{ reimbursements_sent_pending_count }} pending</p>
+                                <p class="mt-0.5 text-[11px] font-medium text-zinc-600 dark:text-zinc-400">
+                                    {{ reimbursements_sent_pending_count }} pending
+                                </p>
                             </div>
                             <div class="rounded-xl border border-zinc-200/60 bg-zinc-50 p-3.5 dark:border-white/[0.035] dark:bg-zinc-900/40">
-                                <h3 class="text-[10px] font-semibold tracking-wider text-zinc-600 uppercase dark:text-zinc-400">Received</h3>
+                                <h3 class="text-[10px] font-semibold tracking-wider text-zinc-600 uppercase dark:text-zinc-400">
+                                    Received
+                                </h3>
                                 <p class="mt-1 truncate text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
                                     {{ reimbursements_received_total|default:"0.00"|currency_format:user.settings.default_currency }}
                                 </p>
-                                <p class="mt-0.5 text-[11px] font-medium text-zinc-600 dark:text-zinc-400">{{ reimbursements_received_count }} completed</p>
+                                <p class="mt-0.5 text-[11px] font-medium text-zinc-600 dark:text-zinc-400">
+                                    {{ reimbursements_received_count }} completed
+                                </p>
                             </div>
                         </div>
                     </section>
@@ -128,11 +175,18 @@
                         <div class="flex flex-col items-center justify-center py-12 text-center">
                             <div class="mb-3 flex size-9 items-center justify-center rounded-full bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
                                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="1.5"
+                                        d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+                                    />
                                 </svg>
                             </div>
                             <p class="text-xs font-medium text-zinc-700 dark:text-zinc-300">No activity yet</p>
-                            <p class="mt-0.5 text-[11px] text-zinc-500 dark:text-zinc-400">Upload a file or create a record to get started.</p>
+                            <p class="mt-0.5 text-[11px] text-zinc-500 dark:text-zinc-400">
+                                Upload a file or create a record to get started.
+                            </p>
                         </div>
                     {% endfor %}
                 </div>

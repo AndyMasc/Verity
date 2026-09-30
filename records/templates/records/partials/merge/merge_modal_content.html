@@ -2,45 +2,47 @@
 <div class="space-y-4">
     <div class="flex items-center justify-between">
         <h2 class="text-base font-semibold text-zinc-900 dark:text-zinc-100">Select {{ label }}</h2>
-        <button type="button"
-                @click="showModal = false"
-                class="cursor-pointer rounded-lg p-1.5 text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-300">
-            <svg class="h-4 w-4"
-                 fill="none"
-                 viewBox="0 0 24 24"
-                 stroke-width="2"
-                 stroke="currentColor">
+        <button
+            type="button"
+            @click="showModal = false"
+            class="cursor-pointer rounded-lg p-1.5 text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
+        >
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
             </svg>
         </button>
     </div>
     <div class="relative">
         <div class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-zinc-500 dark:text-zinc-400">
-            <svg class="h-4 w-4"
-                 fill="none"
-                 viewBox="0 0 24 24"
-                 stroke-width="2.2"
-                 stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.604 10.604z" />
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor">
+                <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.604 10.604z"
+                />
             </svg>
         </div>
-        <input class="w-full rounded-xl border border-zinc-200 bg-zinc-100 py-2.5 pr-3.5 pl-9 text-xs text-zinc-900 placeholder-zinc-500 transition-all duration-200 focus:border-zinc-400 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:border-zinc-600"
-               placeholder="Search {{ label|lower }}..."
-               id="modal-{{ mode }}-search"
-               type="search"
-               name="search"
-               hx-get="{% url 'records:manual_merge_search' mode %}"
-               hx-trigger="input changed delay:300ms, keyup[key=='Enter']"
-               hx-target="#modal-{{ mode }}-results"
-               hx-indicator="#modal-{{ mode }}-indicator"
-               hx-include="#modal-{{ mode }}-filter-form">
+        <input
+            class="w-full rounded-xl border border-zinc-200 bg-zinc-100 py-2.5 pr-3.5 pl-9 text-xs text-zinc-900 placeholder-zinc-500 transition-all duration-200 focus:border-zinc-400 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:border-zinc-600"
+            placeholder="Search {{ label|lower }}..."
+            id="modal-{{ mode }}-search"
+            type="search"
+            name="search"
+            hx-get="{% url 'records:manual_merge_search' mode %}"
+            hx-trigger="input changed delay:300ms, keyup[key=='Enter']"
+            hx-target="#modal-{{ mode }}-results"
+            hx-indicator="#modal-{{ mode }}-indicator"
+            hx-include="#modal-{{ mode }}-filter-form"
+        >
     </div>
-    <form id="modal-{{ mode }}-filter-form"
-          hx-get="{% url 'records:manual_merge_search' mode %}"
-          hx-trigger="change"
-          hx-target="#modal-{{ mode }}-results"
-          hx-include="#modal-{{ mode }}-search"
-          class="scrollbar-none flex items-center gap-2 overflow-x-auto">
+    <form
+        id="modal-{{ mode }}-filter-form"
+        hx-get="{% url 'records:manual_merge_search' mode %}"
+        hx-trigger="change"
+        hx-target="#modal-{{ mode }}-results"
+        hx-include="#modal-{{ mode }}-search"
+        class="scrollbar-none flex items-center gap-2 overflow-x-auto"
+    >
         {% for field in filter.form %}
             {% if field.name == 'record_type' or field.name == 'folder' or field.name == 'this_month' %}
                 <div class="flex shrink-0 items-center rounded-xl border border-zinc-200 bg-zinc-100 px-2.5 py-1.5 text-xs font-medium text-zinc-600 transition-all duration-200 hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-300 dark:hover:border-zinc-600">
@@ -48,17 +50,20 @@
                 </div>
             {% endif %}
         {% endfor %}
-        <button type="button"
-                hx-get="{% url 'records:manual_merge_search' mode %}"
-                hx-target="#modal-{{ mode }}-results"
-                class="shrink-0 cursor-pointer text-xs font-medium text-zinc-600 transition-colors hover:text-zinc-700 dark:text-zinc-300 dark:hover:text-zinc-100">
+        <button
+            type="button"
+            hx-get="{% url 'records:manual_merge_search' mode %}"
+            hx-target="#modal-{{ mode }}-results"
+            class="shrink-0 cursor-pointer text-xs font-medium text-zinc-600 transition-colors hover:text-zinc-700 dark:text-zinc-300 dark:hover:text-zinc-100"
+        >
             Clear
         </button>
     </form>
-    <div id="modal-{{ mode }}-results"
-         class="relative max-h-[45vh] min-h-0 overflow-y-auto">
-        <div id="modal-{{ mode }}-indicator"
-             class="htmx-indicator absolute inset-0 z-10 hidden items-center justify-center rounded-xl bg-white/40 backdrop-blur-[1px] dark:bg-zinc-950/40">
+    <div id="modal-{{ mode }}-results" class="relative max-h-[45vh] min-h-0 overflow-y-auto">
+        <div
+            id="modal-{{ mode }}-indicator"
+            class="htmx-indicator absolute inset-0 z-10 hidden items-center justify-center rounded-xl bg-white/40 backdrop-blur-[1px] dark:bg-zinc-950/40"
+        >
             <div class="animate-pulse rounded-xl border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-600 shadow-xs dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
                 Updating...
             </div>

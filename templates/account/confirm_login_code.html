@@ -10,24 +10,26 @@
     <div>
         {% setvar email_link %}
         <a href="mailto:{{ email }}">{{ email }}</a>
-    {% endsetvar %}
-    {% blocktrans asvar subheading %}
+        {% endsetvar %}
+        {% blocktrans asvar subheading %}
                 We've sent a code to <a href="mailto:{{ email }}">{{ email }}</a>. The code expires shortly, so please enter it soon.
             {% endblocktrans %}
-</div>
-{% url 'account_confirm_login_code' as action_url %}
-{% #form form=form url=action_url button_text=heading %}
-{{ redirect_field }}
-{% csrf_token %}
-{% /form %}
-<button type="submit"
-        class="flex h-10 w-full items-center justify-center rounded-2xl border border-zinc-200 bg-zinc-100 px-4 py-2.5 text-sm font-medium text-zinc-900 transition-all duration-200 hover:bg-zinc-200 active:scale-[0.98] dark:border-zinc-800 dark:bg-zinc-800/30 dark:text-zinc-100 dark:hover:bg-zinc-800/50"
-        form="logout-from-stage">{% translate "Cancel" %}</button>
-<form id="logout-from-stage"
-      method="post"
-      action="{% url 'account_logout' %}">
-    <input type="hidden" name="next" value="{% url 'account_login' %}">
+    </div>
+    {% url 'account_confirm_login_code' as action_url %}
+    {% #form form=form url=action_url button_text=heading %}
+    {{ redirect_field }}
     {% csrf_token %}
-</form>
-{% /container %}
+    {% /form %}
+    <button
+        type="submit"
+        class="flex h-10 w-full items-center justify-center rounded-2xl border border-zinc-200 bg-zinc-100 px-4 py-2.5 text-sm font-medium text-zinc-900 transition-all duration-200 hover:bg-zinc-200 active:scale-[0.98] dark:border-zinc-800 dark:bg-zinc-800/30 dark:text-zinc-100 dark:hover:bg-zinc-800/50"
+        form="logout-from-stage"
+    >
+        {% translate "Cancel" %}
+    </button>
+    <form id="logout-from-stage" method="post" action="{% url 'account_logout' %}">
+        <input type="hidden" name="next" value="{% url 'account_login' %}">
+        {% csrf_token %}
+    </form>
+    {% /container %}
 {% endblock content %}

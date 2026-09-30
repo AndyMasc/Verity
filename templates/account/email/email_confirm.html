@@ -5,7 +5,7 @@
 {% load widget_tweaks %}
 {% block content %}
     {% trans "Confirm Email Address" as heading %}
-    {% #container heading=heading subheading=subheading  %}
+    {% #container heading=heading subheading=subheading %}
     {% if confirmation %}
         {% user_display confirmation.email_address.user as user_display %}
         {% if can_confirm %}

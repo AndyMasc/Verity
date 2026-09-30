@@ -1,6 +1,5 @@
 {% load form_tags %}
-<section class="grid grid-cols-[repeat(auto-fit,minmax(170px,1fr))] gap-3"
-         aria-label="Metrics Overview">
+<section class="grid grid-cols-[repeat(auto-fit,minmax(170px,1fr))] gap-3" aria-label="Metrics Overview">
     {% for metric in metrics %}
         {% include 'core/partials/metric_card.html' %}
     {% endfor %}

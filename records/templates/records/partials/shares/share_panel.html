@@ -2,7 +2,9 @@
     <div class="flex items-center justify-between gap-3">
         <h3 class="text-[11px] font-semibold tracking-wider text-zinc-500 uppercase dark:text-zinc-400">Shared with</h3>
         {% if is_recipient %}
-            <span class="rounded-full bg-amber-500/10 px-2.5 py-0.5 text-[11px] font-medium text-amber-400 ring-1 ring-amber-500/20 ring-inset">
+            <span
+                class="rounded-full bg-amber-500/10 px-2.5 py-0.5 text-[11px] font-medium text-amber-400 ring-1 ring-amber-500/20 ring-inset"
+            >
                 Shared with you
             </span>
         {% endif %}
@@ -21,19 +23,27 @@
                                 {{ share.get_permission_display }}
                                 {% if share.include_documents %}&middot; documents{% endif %}
                                 {% if share.purpose %}&middot; {{ share.get_purpose_display|lower }}{% endif %}
-                                {% if share.revoked_at %}&middot; revoked {{ share.revoked_at|date:"M d, Y" }}{% elif share.expires_at %}&middot; until {{ share.expires_at|date:"M d, Y" }}{% endif %}
+                                {% if share.revoked_at %}&middot; revoked
+                                    {{ share.revoked_at|date:"M d, Y" }}{% elif share.expires_at %}&middot; until
+                                    {{ share.expires_at|date:"M d, Y" }}{% endif %}
                             </p>
                         </div>
                     </div>
                     <div class="flex shrink-0 items-center gap-2.5">
-                        <span class="hidden text-[10px] text-zinc-500 tabular-nums sm:block">{{ share.created_at|date:"M d, Y" }}</span>
+                        <span
+                            class="hidden text-[10px] text-zinc-500 tabular-nums sm:block"
+                        >{{ share.created_at|date:"M d, Y" }}</span>
                         {% if can_grant and share.is_active %}
-                            <form method="POST"
-                                  action="{% url 'records:record_share_revoke' record.pk share.pk %}"
-                                  onsubmit="return confirm('Revoke access for {{ share.user.email }}? This cannot be undone.');">
+                            <form
+                                method="POST"
+                                action="{% url 'records:record_share_revoke' record.pk share.pk %}"
+                                onsubmit="return confirm('Revoke access for {{ share.user.email }}? This cannot be undone.')"
+                            >
                                 {% csrf_token %}
-                                <button type="submit"
-                                        class="rounded-lg bg-rose-500/0 px-2.5 py-1 text-[11px] font-medium text-rose-400/80 transition-all duration-200 hover:bg-rose-500/10 hover:text-rose-300">
+                                <button
+                                    type="submit"
+                                    class="rounded-lg bg-rose-500/0 px-2.5 py-1 text-[11px] font-medium text-rose-400/80 transition-all duration-200 hover:bg-rose-500/10 hover:text-rose-300"
+                                >
                                     Revoke
                                 </button>
                             </form>
