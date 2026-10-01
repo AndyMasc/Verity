@@ -17,7 +17,7 @@ def trigger_error(request):
         from django.http import HttpResponseForbidden
 
         return HttpResponseForbidden()
-    raise Exception("Intentional error triggered from /glitchtip-debug/")
+    raise Exception("Intentional error triggered.")
 
 
 app_name = "core"
@@ -44,5 +44,5 @@ urlpatterns = [
     path("privacy_policy/", views.privacy_policy, name="privacy_policy"),
     path("profile_page/", views.ProfilePageView.as_view(), name="profile_page"),
     path("health/", views.health_check, name="health_check"),
-    path("glitchtip-debug/", trigger_error),
+    path("trigger-error/", trigger_error),
 ]

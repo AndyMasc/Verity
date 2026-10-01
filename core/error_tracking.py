@@ -1,74 +1,100 @@
-"""Report Dramatiq worker failures to error tracking.
+"""Error tracking for the two paths Django's integration does not cover.
 
-Sentry's DjangoIntegration only sees exceptions that propagate out of an HTTP
-request. A Dramatiq actor is not a request, so nothing it raised was ever
-reported. LoggingIntegration partly covered the gap by forwarding log records,
-which made every "log the failure then re-raise" in a worker load bearing, and
-worker failures with no log line at all were invisible.
-
-This closes the gap so the logs can go back to being ordinary log lines.
+A Dramatiq actor is not a request, so nothing hooks into worker failures.
+"ErrorTracking" reports those. An error the app catches and continues past never
+becomes an exception either, so "LogCapture" reports those from the log stream.
 """
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
-import sentry_sdk
 from dramatiq.middleware import Middleware
 
+_MAX_TEXT = 2000
 _MAX_ARG = 200
+# Reporting a failure that itself fails would otherwise recurse.
+_INTERNAL = ("posthog", "core.error_tracking")
+
+
+def _client():
+    from core.apps import posthog_client
+
+    return posthog_client
+
+
+def _text(value: Any, limit: int = _MAX_TEXT) -> str:
+    try:
+        return str(value)[:limit]
+    except Exception:
+        return f"<unrepresentable {type(value).__name__}>"
 
 
 class ErrorTracking(Middleware):
-    """Capture actor exceptions, tagged with which actor and arguments failed.
+    """Report actor exceptions, carrying which actor and arguments failed.
 
-    The actor name and its arguments are attached as context because a
-    traceback does not carry them. That is what ties a failing task back to the
-    specific record, payment or package it was working on.
+    The traceback does not say which record or payment a task was working on.
     """
-
-    @property
-    def actor_options(self) -> set[str]:
-        return set()
-
-    def before_process_message(self, broker, message) -> None:  # noqa: ARG002
-        scope = sentry_sdk.get_current_scope()
-        scope.set_tag("dramatiq.actor", message.actor_name)
-        scope.set_tag("dramatiq.queue", message.queue_name)
-        scope.set_context("dramatiq.arguments", _safe_args(message))
 
     def after_process_message(
         self,
         broker,  # noqa: ARG002
-        message,  # noqa: ARG002
+        message,
         *,
         result: Any = None,  # noqa: ARG002
         exception: BaseException | None = None,
     ) -> None:
-        if exception is not None:
-            sentry_sdk.capture_exception(exception)
-
-    def after_skip_message(self, broker, message) -> None:  # noqa: ARG002
-        """Record a message discarded before it ran.
-
-        AgeLimit drops work silently, so without this a task that never
-        executed leaves no trace at all.
-        """
-        sentry_sdk.capture_message(
-            f"Dramatiq message skipped without running: {message.actor_name}"
+        if exception is None:
+            return
+        client = _client()
+        if client is None:
+            return
+        client.capture_exception(
+            exception,
+            properties={
+                "actor": message.actor_name,
+                "queue": message.queue_name,
+                "arguments": {
+                    str(k): _text(v, _MAX_ARG) for k, v in (message.args or {}).items()
+                },
+            },
         )
 
+    def after_skip_message(self, broker, message) -> None:  # noqa: ARG002
+        """Work discarded before it ran, by AgeLimit or similar."""
+        client = _client()
+        if client is not None:
+            client.capture(
+                "dramatiq_message_skipped",
+                properties={"actor": message.actor_name},
+            )
 
-def _safe_args(message) -> dict[str, str]:
-    """Actor arguments, rendered as short strings.
 
-    These are the only record of which record or payment a task was working on,
-    so they are worth keeping even when a value cannot be encoded.
-    """
-    args = {}
-    for name, value in (getattr(message, "args", None) or {}).items():
+class LogCapture(logging.Handler):
+    """Forward warning and error log records to error tracking."""
+
+    def emit(self, record: logging.LogRecord) -> None:
         try:
-            args[str(name)] = repr(value)[:_MAX_ARG]
-        except Exception:  # pragma: no cover - repr should not raise
-            args[str(name)] = f"<unrepresentable {type(value).__name__}>"
-    return args
+            if record.name.split(".")[0] in _INTERNAL:
+                return
+            client = _client()
+            if client is None:
+                return
+            properties = {
+                "level": record.levelname,
+                "logger": record.name,
+                "message": _text(record.getMessage()),
+                "module": record.module,
+                "line": record.lineno,
+            }
+            if record.exc_info and record.exc_info[1] is not None:
+                client.capture_exception(record.exc_info[1], properties=properties)
+            else:
+                client.capture("log_error", properties=properties)
+        except Exception:
+            self.handleError(record)
+
+    def handleError(self, record: logging.LogRecord) -> None:
+        # Never raise into whatever logged.
+        pass

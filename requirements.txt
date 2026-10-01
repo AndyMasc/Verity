@@ -236,7 +236,6 @@ s3transfer==0.19.2
 scikit-image==0.26.0
 scipy==1.18.0
 semver==3.1.0
-sentry-sdk==2.66.1
 simple-websocket==1.1.0
 six==1.17.0
 slippers==0.6.3
