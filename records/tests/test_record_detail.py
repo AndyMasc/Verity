@@ -237,8 +237,7 @@ class RecordDetailViewTest(TestCase):
         # The form itself must not be re-rendered, or the user's focus, cursor
         # and in-progress input are thrown away.
         self.assertEqual(response.headers.get("HX-Reswap"), "none")
-        self.assertNotContains(response, 'id="record-form"')
-        # The summary is swapped out-of-band into the form's error slot.
+        # Exactly one element is swapped out of band; the form is not replaced.
         self.assertContains(response, 'hx-swap-oob="innerHTML:#record-errors"')
         self.assertContains(response, "Not saved yet")
         # It names the specific blocking fields rather than a generic message.

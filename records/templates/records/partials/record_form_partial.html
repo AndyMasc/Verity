@@ -11,7 +11,59 @@
     x-data="recordPage()"
 >
     {% csrf_token %}
-    <div id="record-errors" class="mt-4 empty:hidden"></div>
+    {# Autosave error slot, normally empty. When a save is rejected the view
+       re-renders this same template with "blocking" set and answers with
+       HX-Reswap: none, so htmx applies only this element -- named out of band --
+       and leaves the form being typed into alone, preserving its value, focus
+       and cursor. Autosave validates every field, so a record missing one
+       required field fails on every keystroke; naming the blocking fields keeps
+       that from looking like the edit was lost. #}
+    <div
+        id="record-errors"
+        {% if blocking %}hx-swap-oob="innerHTML:#record-errors"{% endif %}
+        class="mt-4 empty:hidden"
+    >
+        {% if blocking %}
+            <div class="flex items-start gap-2.5 rounded-xl border border-rose-500/30 bg-rose-500/10 px-3.5 py-3">
+                <svg
+                    class="mt-px size-4 shrink-0 text-rose-600 dark:text-rose-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke-width="1.75"
+                    stroke="currentColor"
+                >
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3Z"
+                    />
+                </svg>
+                <div class="min-w-0 flex-1">
+                    <p class="text-sm font-semibold text-rose-900 dark:text-rose-100">Not saved yet</p>
+                    <p class="mt-1 text-xs leading-relaxed text-rose-800/90 dark:text-rose-200/90">
+                        {% if blocking|length == 1 %}
+                            <span class="font-medium">{{ blocking.0.0 }}</span> is required. Fill it in and this record
+                            will save automatically as you type.
+                        {% else %}
+                            These {{ blocking|length }} fields are required before this record can save:
+                        {% endif %}
+                    </p>
+                    {% if blocking|length > 1 %}
+                        <ul class="mt-2 flex flex-wrap gap-1.5">
+                            {% for label, anchor in blocking %}
+                                <li>
+                                    <a
+                                        href="#{{ anchor }}"
+                                        class="inline-flex items-center rounded-md border border-rose-500/30 bg-white/60 px-2 py-0.5 text-[11px] font-medium text-rose-800 transition-colors hover:bg-white dark:bg-white/5 dark:text-rose-200 dark:hover:bg-white/10"
+                                    >{{ label }}</a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
     <div class="flex items-center justify-between gap-3 border-b border-zinc-200/80 pb-4 dark:border-zinc-800/30">
         <div class="flex w-full items-center justify-between gap-3">
             <div class="flex gap-3">

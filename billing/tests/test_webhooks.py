@@ -231,7 +231,7 @@ class HandleSubscriptionCancellationTrackingTests(TestCase):
         self._handle_deleted(cancel_at_period_end=False)
         self.assertEqual(len(self.captured), 1)
         name, kwargs = self.captured[0]
-        self.assertEqual(name, ("subscription_cancelled",))
+        self.assertEqual(name, ("base_subscription_cancelled",))
         self.assertEqual(kwargs["distinct_id"], str(self.user.pk))
         self.assertEqual(kwargs["properties"]["plan"], "Verity Pro")
         self.assertEqual(kwargs["properties"]["cancel_type"], "immediate")
@@ -273,8 +273,40 @@ class HandleSubscriptionCancellationTrackingTests(TestCase):
         # subscription_updated is expected here; a *cancellation* is not, since
         # customer.subscription.deleted owns that event.
         self.assertNotIn(
-            "subscription_cancelled", [name[0] for name, _ in self.captured]
+            "base_subscription_cancelled", [name[0] for name, _ in self.captured]
         )
+
+    def test_scheduled_cancel_tracked_when_scheduled(self):
+        """A period-end cancel is recorded on .updated, the only event that says so."""
+        with mock.patch("billing.webhooks._cancel_pro_only_storage_for_customer"):
+            webhooks.handle_subscription_changed(
+                event=mock.Mock(
+                    data={
+                        "object": {
+                            "id": self.subscription.id,
+                            "status": "active",
+                            "customer": self.customer.id,
+                            "cancel_at_period_end": True,
+                            "items": {
+                                "data": [
+                                    {
+                                        "price": {
+                                            "product": metadata.VERITY_PRO.stripe_id
+                                        }
+                                    }
+                                ]
+                            },
+                        }
+                    }
+                )
+            )
+        cancels = [
+            (name, kwargs)
+            for name, kwargs in self.captured
+            if name[0] == "base_subscription_cancelled"
+        ]
+        self.assertEqual(len(cancels), 1)
+        self.assertEqual(cancels[0][1]["properties"]["cancel_type"], "period_end")
 
 
 class EnqueueReimbursementProcessingTests(TestCase):

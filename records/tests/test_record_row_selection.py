@@ -31,7 +31,9 @@ class RecordRowSelectionTest(TestCase):
         ).content.decode()
 
     def test_both_desktop_and_mobile_rows_render_a_checkbox(self):
-        boxes = re.findall(r'<input type="checkbox"\s+value="(\d+)"', self.html)
+        boxes = re.findall(
+            r'<input\b[^>]*\btype="checkbox"[^>]*\bvalue="(\d+)"', self.html
+        )
         self.assertEqual(
             boxes.count(str(self.record.pk)),
             2,

@@ -3,6 +3,7 @@ from typing import Any
 
 import djstripe.signals as djstripe_signals
 import stripe
+from django.core.cache import cache
 from django.db import transaction
 from django.dispatch import receiver
 from django.utils import timezone
@@ -91,6 +92,29 @@ def _subscription_categories(stripe_sub: dict) -> set[str]:
     return categories
 
 
+# Cancellations fall into three kinds, a user cancelling at period end, a user cancelling immediately, and this app
+# tidying up after itself (e.g., user cancels pro plan, so app cancels pro only packs automatically).
+# Stripe's customer.subscription.deleted event does not
+# say which, and by the time it arrives "cancel_at_period_end" has already been
+# cleared, so the intent is recorded when we first see it and marked here when we
+# cause it.
+_CANCEL_MARKER = "billing:cancel-intent:{sub_id}"
+_CANCEL_MARKER_TTL = 60 * 60 * 24
+
+
+def _mark_cancel_intent(sub_id: str, kind: str) -> None:
+    """Record how a subscription's cancellation came about, for the webhook."""
+    cache.set(_CANCEL_MARKER.format(sub_id=sub_id), kind, _CANCEL_MARKER_TTL)
+
+
+def _read_cancel_intent(sub_id: str) -> str | None:
+    return cache.get(_CANCEL_MARKER.format(sub_id=sub_id))
+
+
+def _clear_cancel_intent(sub_id: str) -> None:
+    cache.delete(_CANCEL_MARKER.format(sub_id=sub_id))
+
+
 def _has_active_pro_storage(sub: Subscription) -> bool:
     """Return whether an active subscription contains a Pro-only storage pack."""
     if (sub.stripe_data or {}).get("status") not in {"active", "trialing"}:
@@ -110,6 +134,10 @@ def _cancel_storage_subscription(
 ) -> None:
     """Cancel a Pro-only storage subscription and log the result."""
     try:
+        # Marked "system" so the resulting deleted event is not reported as the
+        # user cancelling an add-on: it is a consequence of the base plan ending,
+        # and that churn is already captured against the base plan.
+        _mark_cancel_intent(sub.id, "system")
         services.cancel_subscription(sub.id)
         logger.warning(
             "Auto-canceled pro-only storage pack %s for customer %s because base plan %s ended.",
@@ -156,8 +184,10 @@ def handle_subscription_deleted(**kwargs: Any) -> None:
         return
 
     _invalidate_subscription_caches_for_event(stripe_sub)
-    if "base_plan" in _subscription_categories(stripe_sub):
+    categories = _subscription_categories(stripe_sub)
+    if _read_cancel_intent(sub_id) != "period_end":
         _capture_subscription_cancelled(sub_id, stripe_sub)
+    if "base_plan" in categories:
         _cancel_pro_only_storage_for_customer(
             stripe_sub.get("customer"), base_subscription_id=sub_id
         )
@@ -174,6 +204,7 @@ def handle_subscription_deleted(**kwargs: Any) -> None:
             )
 
     transaction.on_commit(_clear_user_subscription)
+    transaction.on_commit(lambda: _clear_cancel_intent(sub_id))
 
 
 def _invalidate_subscription_caches_for_event(stripe_sub: dict) -> None:
@@ -213,6 +244,12 @@ def handle_subscription_changed(**kwargs: Any) -> None:
             customer_id, base_subscription_id=stripe_sub.get("id")
         )
 
+    if stripe_sub.get("cancel_at_period_end"):
+        sub_id = stripe_sub.get("id")
+        if sub_id and _read_cancel_intent(sub_id) is None:
+            _mark_cancel_intent(sub_id, "period_end")
+            _capture_subscription_cancelled(sub_id, stripe_sub)
+
     # The only place Stripe reports an item added or removed after checkout,
     # so without this an add-on bought post-signup is never seen.
     _capture(
@@ -228,7 +265,17 @@ def handle_subscription_changed(**kwargs: Any) -> None:
 def _capture_subscription_cancelled(
     sub_id: str, stripe_sub: dict | None = None
 ) -> None:
-    """Track a base-plan cancellation for churn analysis."""
+    """Record churn for a cancelled subscription, split by what it covered.
+
+    Emits "base_subscription_cancelled" when the subscription carried a base
+    plan and "addon_subscription_cancelled" when it carried an add-on, so base
+    churn and add-on churn can be read separately. A subscription holding both
+    reports both, which is what actually happened.
+
+    Cancellations this app performed itself are skipped: they are consequences
+    of another change (a plan swap, or an add-on following its base plan out)
+    rather than a decision to leave.
+    """
     if posthog_client is None:
         return
 
@@ -248,29 +295,48 @@ def _capture_subscription_cancelled(
         and item.price.product
         and item.price.product.id in metadata.PRODUCTS
     ]
+    # Skip our own cancellations: a plan swap or an add-on following its base
+    # plan out is not a user deciding to leave.
+    if _read_cancel_intent(sub_id) == "system":
+        return
+
     base = next((meta for meta in metas if meta.category == "base_plan"), None)
-    properties = {
-        "plan": (base or metas[0]).name if metas else None,
+    has_addon = any(m.category == "storage_plan" for m in metas)
+    # Recorded when the cancellation was scheduled or requested; the deleted
+    # event itself can no longer distinguish the two.
+    cancel_type = _read_cancel_intent(sub_id) or (
+        "period_end" if (stripe_sub or {}).get("cancel_at_period_end") else "immediate"
+    )
+
+    months_active = None
+    if sub.created:
+        months_active = round((timezone.now() - sub.created).days / 30.44, 1)
+
+    distinct_id = str(user.pk) if user is not None else None
+    common = {
+        "months_active": months_active,
+        "cancel_type": cancel_type,
         "includes_base_plan": base is not None,
-        "includes_storage_plan": any(m.category == "storage_plan" for m in metas),
-        "months_active": None,
-        "cancel_type": (
-            "period_end"
-            if (stripe_sub or {}).get("cancel_at_period_end")
-            else "immediate"
-        ),
+        "includes_storage_plan": has_addon,
     }
 
-    if sub.created:
-        properties["months_active"] = round(
-            (timezone.now() - sub.created).days / 30.44, 1
+    if base is not None:
+        _capture(
+            "base_subscription_cancelled",
+            distinct_id,
+            {**common, "plan": base.name},
         )
-
-    _capture(
-        "subscription_cancelled",
-        str(user.pk) if user is not None else None,
-        properties,
-    )
+    if has_addon:
+        _capture(
+            "addon_subscription_cancelled",
+            distinct_id,
+            {
+                **common,
+                "plan": ", ".join(
+                    m.name for m in metas if m.category == "storage_plan"
+                ),
+            },
+        )
 
 
 @djstripe_receiver("checkout.session.completed")
@@ -278,11 +344,10 @@ def _capture_subscription_cancelled(
 def handle_checkout_settled(**kwargs: Any) -> None:
     """Track subscription checkouts Stripe actually settled.
 
-    Closes the gap between ``subscription_checkout_started`` (pricing view) and
-    ``subscription_activated`` (success view): anyone who finishes checkout
+    Aanyone who finishes checkout
     without reaching the success URL is still counted. Delayed payment methods
-    settle later via ``checkout.session.async_payment_succeeded``, so their
-    ``checkout.session.completed`` (sent unpaid) is skipped here.
+    settle later via checkout.session.async_payment_succeeded, so their
+    checkout.session.completed (sent unpaid) is skipped here.
     """
     session = _event_object(kwargs.get("event"))
     # Package purchases are one-off payments with their own funnel

@@ -130,6 +130,11 @@ class CustomUser(AbstractUser):
                 continue
 
             try:
+                # Marked so the deleted event is not reported as the user
+                # cancelling: this is a plan swap, not churn.
+                from .webhooks import _mark_cancel_intent
+
+                _mark_cancel_intent(old_sub.id, "system")
                 services.cancel_subscription(old_sub.id)
                 logger.info(
                     "Replaced overlapping category plan %s with new subscription %s",

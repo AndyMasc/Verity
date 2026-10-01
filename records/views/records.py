@@ -350,40 +350,33 @@ class RecordDetailView(LoginRequiredMixin, UpdateView):
     def form_invalid(self, form):
         messages.error(self.request, "An error was left in a record")
         is_htmx = self.request.headers.get("HX-Request") == "true"
+        blocking = [
+            (str(form[name].label), f"id_{name}")
+            for name in form.errors
+            if name != NON_FIELD_ERRORS
+        ]
+        response = render(
+            self.request,
+            self.get_template_names(),
+            self.get_context_data(form=form, blocking=blocking or None),
+            status=200 if is_htmx else 422,
+        )
         if is_htmx:
-            # Autosave: swap the error summary in out-of-band and leave the form
-            # alone. Re-rendering it here would replace the element the user is
-            # typing into, throwing away their focus and cursor on every failed
-            # attempt -- and because autosave validates the whole form, a record
-            # missing one required field fails on every keystroke.
-            blocking = [
-                (str(form[name].label), f"id_{name}")
-                for name in form.errors
-                if name != NON_FIELD_ERRORS
-            ]
-            response = render(
-                self.request,
-                "records/partials/record_form_errors.html",
-                {"blocking": blocking},
-            )
+            # The template names #record-errors out of band, so this applies only
+            # the error summary. HX-Reswap keeps htmx from replacing the form the
+            # user is typing into, which would cost them their focus and cursor
+            # on every attempt.
             response["HX-Reswap"] = "none"
             names = ", ".join(label for label, _ in blocking)
             response["HX-Trigger"] = json.dumps(
                 {
                     "showToast": {
-                        "text": f"Not saved — {names} required",
+                        "text": f"Not saved \u2014 {names} required",
                         "tags": "error",
                     }
                 }
             )
-            return response
-
-        return render(
-            self.request,
-            self.get_template_names(),
-            self.get_context_data(form=form),
-            status=422,
-        )
+        return response
 
 
 class HardDeleteRecordView(LoginRequiredMixin, View):
