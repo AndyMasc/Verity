@@ -18,6 +18,9 @@ import os
 
 _REQUIRED_ENV = {
     "SECRET_KEY": "staticbuild",
+    # base.py reads this with no default, so it is required even though
+    # collectstatic never opens a connection. Postgres shape to match production.
+    "DATABASE_URL": "postgres://staticbuild:staticbuild@localhost:5432/staticbuild",
     "GOOGLE_OAUTH_CLIENT_ID": "staticbuild",
     "GOOGLE_OAUTH_CLIENT_SECRET": "staticbuild",
     "GITHUB_OAUTH_CLIENT_ID": "staticbuild",
