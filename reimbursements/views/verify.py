@@ -78,7 +78,7 @@ class PackagePayView(View):
         # event is left unattributed - "reimbursement_recipient_verified" takes the identity later.
         if posthog_client is not None:
             posthog_client.capture(
-                "reimbursement_package_viewed",
+                "reimbursement_package_viewed_by_recipient",
                 properties={
                     "audience": "recipient",
                     "payer_type": (

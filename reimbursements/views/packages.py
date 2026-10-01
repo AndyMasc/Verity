@@ -95,7 +95,7 @@ class PackageDetailView(LoginRequiredMixin, DetailView):
         if posthog_client is not None and package is not None:
             # The signed-in side of the same funnel the public pay page reports on.
             posthog_client.capture(
-                "reimbursement_package_viewed",
+                "reimbursement_package_viewed_by_sender" if package.creator_id == request.user.pk else "reimbursement_package_viewed_by_recipient",
                 distinct_id=str(request.user.pk),
                 properties={
                     "audience": (
