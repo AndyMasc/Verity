@@ -26,7 +26,7 @@ from ..forms import (
     RequestVerificationCodeForm,
     VerifyEmailCodeForm,
 )
-from ..models import ReimbursementPackage, _external_payer_distinct_id
+from ..models import ReimbursementPackage, external_payer_distinct_id
 from ..verification import send_verification_code, verify_code
 
 _VERIFIED_SESSION_PREFIX = "_reimbursement_verified"
@@ -73,24 +73,6 @@ class PackagePayView(View):
         )
 
         verified = _verified_in_session(request, package)
-        # Whoever opened the page: an external payer, or the signed-in recipient
-        # or creator. An external payer is anonymous here, so the
-        # event is left unattributed - "reimbursement_recipient_verified" takes the identity later.
-        if posthog_client is not None:
-            posthog_client.capture(
-                "reimbursement_package_viewed_by_recipient",
-                properties={
-                    "audience": "recipient",
-                    "payer_type": (
-                        "registered" if request.user.is_authenticated else "external"
-                    ),
-                    "record_count": package.records.count(),
-                    "total_amount": float(package.total_amount),
-                    "currency": package.currency,
-                    "status": package.status,
-                    "requires_verification": not verified,
-                },
-            )
 
         if package.status == ReimbursementPackage.Status.PAID:
             return self._render(request, package, state="paid")
@@ -130,6 +112,18 @@ class PackagePayView(View):
             "package": package,
             "is_public": True,
             "email": "",
+            "viewed_event": "reimbursement_package_viewed_by_recipient",
+            "viewed_props": {
+                "audience": "recipient",
+                "payer_type": (
+                    "registered" if request.user.is_authenticated else "external"
+                ),
+                "record_count": package.records.count(),
+                "total_amount": float(package.total_amount),
+                "currency": package.currency,
+                "status": package.status,
+                "requires_verification": not _verified_in_session(request, package),
+            },
             **extra,
         }
         return render(request, self.template_name, context)
@@ -207,7 +201,7 @@ class VerifyEmailCodeView(View):
         if posthog_client is not None:
             posthog_client.capture(
                 "reimbursement_recipient_verified",
-                distinct_id=_external_payer_distinct_id(email),
+                distinct_id=external_payer_distinct_id(email),
                 properties={
                     "package_uuid": str(package.uuid),
                     "payer_type": "external",

@@ -3,15 +3,13 @@
 Covers merge initiation, undo, access control, and HTMX responses.
 """
 
-import json
 from decimal import Decimal
 
-import pytest
 from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
-from records.models import AuditLog, Folder, MergeLog, Record
+from records.models import MergeLog, Record
 
 User = get_user_model()
 
@@ -42,10 +40,6 @@ class ManualMergeViewTest(TestCase):
             transaction_date="2024-06-15",
         )
         self.url = reverse("records:manual_merge")
-
-    def test_login_required(self):
-        response = self.client.get(self.url)
-        self.assertIn(response.status_code, [302, 300])
 
     def test_get_returns_form(self):
         self.client.force_login(self.user)

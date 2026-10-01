@@ -92,7 +92,7 @@ def give_pro_subscription(user) -> Subscription:
 def add_subscription(user, customer, status="active", product_id=None):
     """Attach a djstripe Subscription to a user, optionally with a product.
 
-    Returns the subscription. ``product_id`` creates the Product / Price /
+    Returns the subscription. product_id creates the Product / Price /
     SubscriptionItem rows the entitlement layer reads.
     """
     sub = Subscription.objects.create(

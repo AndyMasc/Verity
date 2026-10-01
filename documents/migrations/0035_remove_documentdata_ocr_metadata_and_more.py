@@ -4,7 +4,6 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("documents", "0034_remove_documentdata_ocr_retries_and_more"),
     ]

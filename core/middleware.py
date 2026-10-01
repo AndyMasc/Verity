@@ -94,14 +94,14 @@ class PostHogSessionIdMiddleware:
     """Attaches the browser's PostHog session ID to the current PostHog context.
 
     Only the browser and mobile SDKs mint a PostHog session ID, so events
-    captured in Django (``user_logged_in``, view-level captures) arrive without
-    ``$session_id`` and cannot be used to filter session recordings. The web SDK
+    captured in Django (user_logged_in, view-level captures) arrive without
+    $session_id and cannot be used to filter session recordings. The web SDK
     mirrors its session ID into a first-party cookie; this reads that cookie and
     sets it on the request's PostHog context, which the Python SDK merges onto
     every event captured during the request.
 
-    Must be listed *after* ``posthog.integrations.django.PosthogContextMiddleware``
-    in ``MIDDLEWARE``: that middleware opens a fresh context per request, so a
+    Must be listed *after* posthog.integrations.django.PosthogContextMiddleware
+    in MIDDLEWARE: that middleware opens a fresh context per request, so a
     session ID set before it would be discarded.
     """
 

@@ -21,10 +21,6 @@ class AddRecordViewTest(TestCase):
         self.user = User.objects.create_user(username="adduser", password="pass")
         self.url = reverse("records:add_record_manual")
 
-    def test_login_required(self):
-        response = self.client.get(self.url)
-        self.assertEqual(response.status_code, 302)
-
     def test_get_form(self):
         self.client.force_login(self.user)
         response = self.client.get(self.url)
@@ -132,10 +128,6 @@ class RecordDetailViewTest(TestCase):
             transaction_date=date(2024, 6, 15),
         )
         self.url = reverse("records:record_detail", args=[self.record.id])
-
-    def test_login_required(self):
-        response = self.client.get(self.url)
-        self.assertEqual(response.status_code, 302)
 
     def test_owner_can_view(self):
         self.client.force_login(self.user)

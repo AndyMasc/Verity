@@ -12,9 +12,8 @@ from unittest import mock
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
-from django.utils import timezone
 
-from ..models import ReimbursementPackage, _external_payer_distinct_id
+from ..models import external_payer_distinct_id
 from ._helpers import _package, _record, _user
 
 User = get_user_model()
@@ -49,8 +48,8 @@ class _CaptureMixin:
 
 class ExternalPayerIdentityTests(TestCase):
     def test_hash_is_stable_and_hides_the_address(self):
-        first = _external_payer_distinct_id("Sam.Example@ACME.com ")
-        second = _external_payer_distinct_id("sam.example@acme.com")
+        first = external_payer_distinct_id("Sam.Example@ACME.com ")
+        second = external_payer_distinct_id("sam.example@acme.com")
         self.assertEqual(first, second, "same payer must land on one person")
         self.assertNotIn("sam", first.lower())
         self.assertTrue(first.startswith("external-payer-"))
@@ -101,7 +100,7 @@ class RecipientPaidCaptureTests(_CaptureMixin, TestCase):
             (n, d, p) for n, d, p in captured if n == "recipient_paid_reimbursement"
         )
         self.assertEqual(props["payer_type"], "external")
-        self.assertEqual(distinct_id, _external_payer_distinct_id("outside@acme.com"))
+        self.assertEqual(distinct_id, external_payer_distinct_id("outside@acme.com"))
         self.assertNotIn("outside@acme.com", distinct_id)
 
     def test_both_events_share_the_money_properties(self):
@@ -127,15 +126,25 @@ class PayPageViewedTests(_CaptureMixin, TestCase):
         self.package = _package(self.creator, recipient_email="outside@acme.com")
         self.package.records.add(_record(self.creator, balance=Decimal("75.00")))
 
-    def test_external_pay_page_view_is_unattributed_but_captured(self):
+    def test_external_pay_page_carries_a_client_side_capture(self):
+        """The view is captured in the browser, not on the server.
+
+        An unverified external payer has no server-side identity, so capturing
+        here would drop the event; the browser's anonymous id is what PostHog
+        later merges once the payer verifies.
+        """
         captured = self._captured()
         response = self.client.get(f"/reimbursements/pay/{self.package.uuid}/")
         self.assertEqual(response.status_code, 200)
 
-        viewed = [(d, p) for n, d, p in captured if n == "reimbursement_package_viewed"]
-        self.assertEqual(len(viewed), 1, "the pay page is the recipient's first step")
-        distinct_id, props = viewed[0]
-        self.assertIsNone(distinct_id, "an unverified visitor is not a person yet")
-        self.assertEqual(props["audience"], "recipient")
-        self.assertEqual(props["payer_type"], "external")
-        self.assertTrue(props["requires_verification"])
+        self.assertNotIn(
+            "reimbursement_package_viewed_by_recipient",
+            [name for name, _, _ in captured],
+            "the pay page must not capture on the server",
+        )
+        body = response.content.decode()
+        self.assertIn("reimbursement_package_viewed_by_recipient", body)
+        self.assertIn("posthog.capture", body)
+        self.assertIn('"audience": "recipient"', body)
+        self.assertIn('"payer_type": "external"', body)
+        self.assertIn('"requires_verification": true', body)

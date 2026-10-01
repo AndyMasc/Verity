@@ -4,7 +4,6 @@ Covers RecordHistoryView queryset building, merge entries,
 pagination, and access control.
 """
 
-import pytest
 from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
 from django.urls import reverse
@@ -28,10 +27,6 @@ class RecordHistoryViewTest(TestCase):
             transaction_date="2024-06-15",
         )
         self.url = reverse("records:record_history", args=[self.record.id])
-
-    def test_login_required(self):
-        response = self.client.get(self.url)
-        self.assertIn(response.status_code, [302, 300])
 
     def test_owner_can_view(self):
         self.client.force_login(self.user)

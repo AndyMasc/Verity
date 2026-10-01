@@ -285,8 +285,7 @@ def bulk_hard_delete_record(
     """
     if len(record_ids) > BULK_LIMIT:
         raise BulkLimitExceededError(
-            f"Bulk operations are limited to {BULK_LIMIT} records. "
-            f"Received {len(record_ids)}."
+            f"Bulk operations are limited to {BULK_LIMIT} records. Received {len(record_ids)}."
         )
 
     cutoff = timezone.now().date() - datetime.timedelta(days=365 * RETENTION_YEARS)

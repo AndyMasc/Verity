@@ -89,10 +89,7 @@ def _notify_recipient(*, shares: list[RecordShare], actor) -> None:
     else:
         plain_title = shares[0].record.title or "Untitled record"
         subject = f'{plain_actor} shared a record with you: "{plain_title}"'
-        db_message = (
-            f'{plain_actor} shared the record "{plain_title}" with you '
-            f"({rows[0]['amount']})."
-        )
+        db_message = f'{plain_actor} shared the record "{plain_title}" with you ({rows[0]["amount"]}).'
         webpush_url = rows[0]["url"]
 
     template_context = {

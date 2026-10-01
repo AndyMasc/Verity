@@ -58,7 +58,7 @@ def make_record(user, **overrides):
 
 
 def aged_record(user, title, days_old, is_active=True):
-    """Create a record back-dated past ``days_old`` (date_added is auto_now_add)."""
+    """Create a record back-dated past days_old (date_added is auto_now_add)."""
     record = make_record(user, title=title, is_active=is_active)
     Record.objects.filter(pk=record.pk).update(
         date_added=timezone.now().date() - datetime.timedelta(days=days_old)
@@ -317,9 +317,11 @@ class PlaidWebhookSyncTests(TestCase):
 
             return sync_and_convert_for_item_task.fn(item.id)
 
-        with patch("plaid_integration.tasks.client") as client, patch(
-            "plaid_integration.services.dispatch_sync", side_effect=run_sync_now
-        ), patch("plaid_integration.tasks.try_match_plaid_record"):
+        with (
+            patch("plaid_integration.tasks.client") as client,
+            patch("plaid_integration.services.dispatch_sync", side_effect=run_sync_now),
+            patch("plaid_integration.tasks.try_match_plaid_record"),
+        ):
             client.transactions_sync.return_value = page
             self.post_webhook()
 
@@ -342,9 +344,11 @@ class PlaidWebhookSyncTests(TestCase):
 
             return sync_and_convert_for_item_task.fn(item.id)
 
-        with patch("plaid_integration.tasks.client") as client, patch(
-            "plaid_integration.services.dispatch_sync", side_effect=run_sync_now
-        ), patch("plaid_integration.tasks.try_match_plaid_record"):
+        with (
+            patch("plaid_integration.tasks.client") as client,
+            patch("plaid_integration.services.dispatch_sync", side_effect=run_sync_now),
+            patch("plaid_integration.tasks.try_match_plaid_record"),
+        ):
             client.transactions_sync.side_effect = plaid.ApiException(
                 status=400, reason="Bad Request", http_resp=plaid_error_response(body)
             )

@@ -1,8 +1,8 @@
 """JSON-safe dramatiq message payloads and encoding.
 
-Kept separate from ``core.tasks`` because ``DRAMATIQ_ENCODER`` is
+Kept separate from core.tasks because DRAMATIQ_ENCODER is
 resolved by django-dramatiq during app configuration setup — before
-``dramatiq.set_broker`` runs. Importing a module that registers actors
+dramatiq.set_broker runs. Importing a module that registers actors
 at that point would register them on the default StubBroker, which is
 discarded once the real broker is configured.
 """

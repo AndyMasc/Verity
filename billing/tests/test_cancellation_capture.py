@@ -16,9 +16,9 @@ from djstripe.models import Customer, Price, Product, Subscription, Subscription
 
 from .. import metadata
 from ..webhooks import (
-    _clear_cancel_intent,
-    _mark_cancel_intent,
-    _read_cancel_intent,
+    clear_cancel_intent,
+    mark_cancel_intent,
+    read_cancel_intent,
     _capture_subscription_cancelled,
     handle_subscription_changed,
     handle_subscription_deleted,
@@ -102,15 +102,15 @@ class CancellationCaptureTests(TestCase):
 
     def test_system_cancellation_is_not_churn(self):
         self._add_item("sub_sys", metadata.VERITY_PRO)
-        _mark_cancel_intent("sub_sys", "system")
-        self.addCleanup(_clear_cancel_intent, "sub_sys")
+        mark_cancel_intent("sub_sys", "system")
+        self.addCleanup(clear_cancel_intent, "sub_sys")
         self.assertEqual(self._captured("sub_sys"), {})
 
     def test_cancel_type_uses_recorded_intent(self):
         """The deleted event can no longer say "period_end", so the intent is used."""
         self._add_item("sub_ct", metadata.VERITY_PRO)
-        _mark_cancel_intent("sub_ct", "period_end")
-        self.addCleanup(_clear_cancel_intent, "sub_ct")
+        mark_cancel_intent("sub_ct", "period_end")
+        self.addCleanup(clear_cancel_intent, "sub_ct")
         events = self._captured(
             "sub_ct", {"id": "sub_ct", "cancel_at_period_end": False}
         )
@@ -153,7 +153,7 @@ class CancellationDedupeTests(TestCase):
             subscription=sub,
             price=price,
         )
-        self.addCleanup(_clear_cancel_intent, "sub_dedupe")
+        self.addCleanup(clear_cancel_intent, "sub_dedupe")
 
     def test_scheduled_cancellation_recorded_at_intent(self):
         with mock.patch("billing.webhooks._capture_subscription_cancelled") as capture:
@@ -169,10 +169,10 @@ class CancellationDedupeTests(TestCase):
                 )
             )
         capture.assert_called_once()
-        self.assertEqual(_read_cancel_intent("sub_dedupe"), "period_end")
+        self.assertEqual(read_cancel_intent("sub_dedupe"), "period_end")
 
     def test_deletion_does_not_repeat_a_recorded_cancellation(self):
-        _mark_cancel_intent("sub_dedupe", "period_end")
+        mark_cancel_intent("sub_dedupe", "period_end")
         with mock.patch("billing.webhooks._capture_subscription_cancelled") as capture:
             handle_subscription_deleted(
                 event=mock.Mock(
@@ -203,7 +203,7 @@ class CancellationDedupeTests(TestCase):
         capture.assert_called_once()
 
     def test_marker_is_cleared_after_deletion(self):
-        _mark_cancel_intent("sub_dedupe", "period_end")
+        mark_cancel_intent("sub_dedupe", "period_end")
         # The cleanup is deferred with transaction.on_commit, which TestCase
         # rolls back rather than runs, so execute the queued callbacks here.
         with self.captureOnCommitCallbacks(execute=True):
@@ -218,5 +218,5 @@ class CancellationDedupeTests(TestCase):
                     }
                 )
             )
-        self.assertIsNone(_read_cancel_intent("sub_dedupe"))
+        self.assertIsNone(read_cancel_intent("sub_dedupe"))
         cache.delete("billing:cancel-intent:sub_dedupe")

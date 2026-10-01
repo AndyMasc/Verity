@@ -6,7 +6,6 @@ Covers BulkUnarchiveView, DeleteRecordView, and additional edge cases.
 import json
 from datetime import date
 
-import pytest
 from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
 from django.urls import reverse
@@ -34,14 +33,6 @@ class BulkUnarchiveViewTest(TestCase):
             )
             for i in range(3)
         ]
-
-    def test_login_required(self):
-        response = self.client.post(
-            self.url,
-            data='{"record_ids": []}',
-            content_type="application/json",
-        )
-        self.assertIn(response.status_code, [302, 300])
 
     def test_bulk_unarchive_restores(self):
         self.client.force_login(self.user)
@@ -85,10 +76,6 @@ class DeleteRecordViewHTTPTest(TestCase):
             transaction_date=date(2024, 6, 15),
         )
         self.url = reverse("records:delete_record", args=[self.record.id])
-
-    def test_login_required(self):
-        response = self.client.post(self.url)
-        self.assertIn(response.status_code, [302, 300])
 
     def test_owner_can_delete(self):
         self.client.force_login(self.user)

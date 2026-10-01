@@ -79,9 +79,7 @@
             !function(t,e){var o,n,p,r;e.__SV||(window.posthog && window.posthog.__loaded)||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}p||((p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",p.onerror=function(){p=null},(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r));var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],Object.defineProperty(u,"toString",{configurable:!0,enumerable:!0,writable:!0,value:function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e}}),Object.defineProperty(u.people,"toString",{configurable:!0,enumerable:!0,writable:!0,value:function(){return u.toString(1)+".people (stub)"}}),o="mu yu bu Su init Vu Gu zu Uu Ku il Wu Yu ju rh oh ah uh hh dh capture getExtension Zu pu gh calculateEventProperties ph register register_once register_for_session unregister unregister_for_session Hu mh getFeatureFlag getFeatureFlagPayload getFeatureFlagResult getAllFeatureFlags isFeatureEnabled reloadFeatureFlags updateFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSurveysLoaded onSessionId getSurveys getActiveMatchingSurveys renderSurvey displaySurvey cancelPendingSurvey canRenderSurvey canRenderSurveyAsync wh identify setPersonProperties unsetPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset kh shutdown setIdentity clearIdentity get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException addExceptionStep captureLog startExceptionAutocapture stopExceptionAutocapture loadToolbar get_property getSessionProperty yh ih createPersonProfile setInternalOrTestUser bh xu Cu opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing get_explicit_consent_status is_capturing clear_opt_in_out_capturing th debug nl Os getPageViewId captureTraceFeedback captureTraceMetric Du".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
             var CookieConsent = null;
             try {
-                // Must match STORAGE_KEY in core/cookie_consent.html, which is
-                // the only writer. Reading a different key leaves this null, so
-                // identify() never runs and no person properties are set.
+                // Must match STORAGE_KEY in core/cookie_consent.html.
                 CookieConsent = window.localStorage.getItem('cookie_consent');
             } catch (e) {}
             posthog.init('phc_BkNC3Tjg86pMvgnkCaxcvY7UrvGa2eg4B7fcYBZsBG3E', {
@@ -116,10 +114,21 @@
                 }
             </script>
         {% endif %}
+        {% if viewed_event %}
+            {{ viewed_props|json_script:"ph-viewed-props" }}
+            <script>
+                (function () {
+                    var el = document.getElementById('ph-viewed-props');
+                    if (!window.posthog || !el) return;
+                    window.posthog.capture('{{ viewed_event|escapejs }}', JSON.parse(el.textContent));
+                })();
+            </script>
+        {% endif %}
         <title>{% block title %}Verity{% endblock %}</title>
         {% block head %}
         {% endblock %}
-        {% block extra_head %}{% endblock %}
+        {% block extra_head %}
+        {% endblock %}
     </head>
     <body class="font-sans bg-zinc-50 dark:bg-black text-zinc-950 dark:text-zinc-50 min-h-screen antialiased selection:bg-zinc-900/10 dark:selection:bg-zinc-100/10"
           {% if user.is_authenticated %}x-data="{ open: $persist(true) }"{% endif %}>
@@ -156,16 +165,11 @@
         {% endif %}
         <main {% if user.is_authenticated %} x-cloak class="relative z-10 transition-all duration-300 ease-out" :class="open ? 'sm:pl-72' : 'sm:pl-0'" {% endif %}>
             <div class="px-4 sm:px-6 lg:px-8">
-                {% block content %}
-                {% endblock %}
+                {% block content %}{% endblock %}
             </div>
         </main>
     </body>
     <script>
-        // htmx:afterRequest is the only event that fires for *every* completed
-        // request. Autosave replies 204 with an empty body, so nothing swaps and
-        // neither oobBeforeSwap nor afterOnLoad ever runs — without this the
-        // HX-Trigger toast header is read by nobody and saves look silent.
         document.addEventListener('htmx:afterRequest', handleHtmxTriggers);
         document.addEventListener('htmx:oobBeforeSwap', handleHtmxTriggers);
         document.addEventListener('htmx:afterOnLoad', handleHtmxTriggers);
@@ -175,8 +179,6 @@
             if (!xhr || xhr._verityTriggersHandled) return;
             const triggerHeader = xhr.getResponseHeader('HX-Trigger');
             if (!triggerHeader) return;
-            // Several of the events above can fire for one request; show the
-            // toast once.
             xhr._verityTriggersHandled = true;
             try {
                 const triggers = JSON.parse(triggerHeader);
@@ -199,9 +201,6 @@
             }
         }
 
-        // Clear a stale autosave error summary as soon as the user edits again,
-        // so a fixed record stops showing "Not saved yet". Scoped by element id
-        // because this listener lives on document.body.
         document.body.addEventListener('htmx:beforeRequest', function (evt) {
             var elt = evt.detail && evt.detail.elt;
             if (!elt || elt.id !== 'record-form') return;

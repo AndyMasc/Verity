@@ -506,6 +506,9 @@ DRAMATIQ_BROKER = {
     "MIDDLEWARE": [
         "dramatiq.middleware.prometheus.Prometheus",
         "dramatiq.middleware.CurrentMessage",
+        # Reports worker failures to error tracking. Listed right after
+        # CurrentMessage so the actor context is set before anything raises.
+        "core.middleware_error_tracking.ErrorTracking",
         "dramatiq.middleware.AgeLimit",
         "dramatiq.middleware.TimeLimit",
         "dramatiq.middleware.Callbacks",

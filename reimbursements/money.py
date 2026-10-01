@@ -15,7 +15,7 @@ The calculator instead builds the application fee bottom-up:
     application_fee = estimated_stripe_fees + platform_net_margin
 
 so the platform's NET revenue after Stripe billing is guaranteed to be at
-least ``PLATFORM_NET_PERCENT x total`` (floored at ``PLATFORM_NET_MIN_USD``),
+least PLATFORM_NET_PERCENT x total (floored at PLATFORM_NET_MIN_USD),
 and the connected account keeps everything above that — the maximum take-home
 any charge structure can offer once Stripe's costs are paid.
 
@@ -96,7 +96,7 @@ class PlatformFeeCalculator:
 
     @staticmethod
     def compute(total_cents: int, payer_currency: str, rates) -> int:
-        """Compute the application fee for a ``total_cents`` payment."""
+        """Compute the application fee for a total_cents payment."""
         if total_cents <= 0:
             return 0
 

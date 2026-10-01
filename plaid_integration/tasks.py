@@ -214,7 +214,7 @@ def _process_sync_page(
     folder_cache: dict[str, Folder],
     stats: dict[str, int],
 ) -> tuple[str, bool]:
-    """Apply one Transactions Sync page atomically; return ``(next_cursor, has_more)``."""
+    """Apply one Transactions Sync page atomically; return (next_cursor, has_more)."""
     with db_transaction.atomic():
         for txn in data.get("removed", []):
             stats["removed"] += Record.objects.filter(

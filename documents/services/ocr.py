@@ -295,9 +295,6 @@ def extract(document_id: int) -> dict[str, Any]:
         return final_data
 
     except Exception as exc:
-        logger.warning(
-            "OCR attempt failed for doc %s: %s", document_id, exc, exc_info=True
-        )
         if _is_final_attempt():
             mark_ocr_failed(document_id, str(exc))
         raise

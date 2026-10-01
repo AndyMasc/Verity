@@ -248,21 +248,6 @@ class RecordDetailView(LoginRequiredMixin, UpdateView):
             return ["records/partials/record_form_partial.html"]
         return [self.template_name]
 
-    def get(self, request, *args, **kwargs):
-        response = super().get(request, *args, **kwargs)
-        if (
-            self.request.headers.get("HX-Request") != "true"
-            and posthog_client is not None
-        ):
-            posthog_client.capture(
-                "record_viewed",
-                properties={
-                    "record_type": self.object.record_type,
-                    "is_plaid_record": self.object.is_plaid_record,
-                },
-            )
-        return response
-
     def get_queryset(self):
         return Record.objects.visible_to(self.request.user).with_documents()
 
@@ -362,10 +347,6 @@ class RecordDetailView(LoginRequiredMixin, UpdateView):
             status=200 if is_htmx else 422,
         )
         if is_htmx:
-            # The template names #record-errors out of band, so this applies only
-            # the error summary. HX-Reswap keeps htmx from replacing the form the
-            # user is typing into, which would cost them their focus and cursor
-            # on every attempt.
             response["HX-Reswap"] = "none"
             names = ", ".join(label for label, _ in blocking)
             response["HX-Trigger"] = json.dumps(
@@ -389,8 +370,6 @@ class HardDeleteRecordView(LoginRequiredMixin, View):
     @method_decorator(ratelimit(key="user", rate="5/m", method="POST", block=True))
     def post(self, request, pk: int) -> HttpResponse:
         record = get_object_or_404(Record, pk=pk, user=request.user)
-        # "Record.can_hard_delete" is the single definition of the retention
-        # rule; re-deriving the cutoff here is what let the two drift apart.
         if not record.can_hard_delete:
             resp = htmx_response(
                 request,

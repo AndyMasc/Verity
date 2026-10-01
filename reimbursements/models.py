@@ -149,7 +149,7 @@ class StripeAccount(models.Model):
         return self.is_active
 
 
-def _external_payer_distinct_id(email: str) -> str:
+def external_payer_distinct_id(email: str) -> str:
     """A stable id for a payer who has no account.
     The address is hashed rather than sent, so the analytics
     identifier is not a copy of a real one and cannot be reversed to it.
@@ -196,7 +196,7 @@ def _capture_recipient_paid(locked, payer, shared) -> None:
         return
     posthog_client.capture(
         "recipient_paid_reimbursement",
-        distinct_id=_external_payer_distinct_id(email),
+        distinct_id=external_payer_distinct_id(email),
         properties={**properties, "payer_type": "external"},
     )
 

@@ -49,12 +49,8 @@ def _record_item_error(plaid_item: PlaidItem, code: str, message: str) -> None:
 
 def public_token_exchange(public_token: str) -> tuple[str, str]:
     """Exchange a Plaid public token for a long-lived access token and item ID."""
-    try:
-        request = ItemPublicTokenExchangeRequest(public_token=public_token)
-        response = _plaid_dict(plaid_client.item_public_token_exchange(request))
-    except plaid.ApiException:
-        logger.exception("Plaid rejected the public token exchange")
-        raise
+    request = ItemPublicTokenExchangeRequest(public_token=public_token)
+    response = _plaid_dict(plaid_client.item_public_token_exchange(request))
     return response["access_token"], response["item_id"]
 
 

@@ -66,7 +66,7 @@ def verify_turnstile_token(
 ) -> dict[str, Any]:
     """Verify a Turnstile token with Cloudflare's siteverify endpoint.
 
-    ``request`` is optional and only used to attach ``remoteip`` (an optional
+    request is optional and only used to attach remoteip (an optional
     siteverify parameter) when it can be derived reliably from the request.
 
     In tests and local developer setups without a real Turnstile secret, return a

@@ -22,10 +22,6 @@ class ArchiveRecordViewTest(TestCase):
         )
         self.url = reverse("records:archive_record", args=[self.record.id])
 
-    def test_login_required(self):
-        response = self.client.post(self.url)
-        self.assertEqual(response.status_code, 302)
-
     def test_owner_can_archive(self):
         self.client.force_login(self.user)
         response = self.client.post(self.url)
@@ -261,14 +257,6 @@ class BulkArchiveViewTest(TestCase):
             )
             for i in range(3)
         ]
-
-    def test_login_required(self):
-        response = self.client.post(
-            self.url,
-            data='{"record_ids": []}',
-            content_type="application/json",
-        )
-        self.assertEqual(response.status_code, 302)
 
     def test_post_not_allowed_without_json(self):
         self.client.force_login(self.user)

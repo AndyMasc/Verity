@@ -2,7 +2,7 @@
 
 The verification logic is identical across signup, login, and the public
 reimbursement forms — only the Turnstile *action* differs — so subclasses
-just set ``turnstile_action``.
+just set turnstile_action.
 """
 
 import logging
