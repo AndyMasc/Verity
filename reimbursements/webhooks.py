@@ -469,6 +469,29 @@ def _handle_payment_failure(event):
         )
         return
 
+    if posthog_client is not None:
+        # The payer's funnel needs its drop-off step: without it, a failed
+        # payment and an abandoned checkout are indistinguishable in PostHog.
+        payer_id = getattr(payment, "payer_id", None)
+        properties = {
+            "package_uuid": str(getattr(payment.package, "uuid", "")),
+            "failure_reason": failure_message,
+            "stripe_event": event["type"],
+            "payer_type": "registered" if payer_id else "external",
+            "amount_paid": float(payment.amount_paid or 0),
+            "payer_currency": payment.payer_currency,
+        }
+        if payer_id:
+            posthog_client.capture(
+                "reimbursement_payment_failed",
+                distinct_id=str(payer_id),
+                properties=properties,
+            )
+        else:
+            posthog_client.capture(
+                "reimbursement_payment_failed", properties=properties
+            )
+
     _revert_package_payment(
         payment,
         event=event["type"],

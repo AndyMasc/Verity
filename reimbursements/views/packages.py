@@ -89,6 +89,29 @@ class PackageDetailView(LoginRequiredMixin, DetailView):
     slug_field = "uuid"
     slug_url_kwarg = "package_uuid"
 
+    def get(self, request, *args, **kwargs):
+        response = super().get(request, *args, **kwargs)
+        package = self.object
+        if posthog_client is not None and package is not None:
+            # The signed-in side of the same funnel the public pay page reports on.
+            posthog_client.capture(
+                "reimbursement_package_viewed",
+                distinct_id=str(request.user.pk),
+                properties={
+                    "audience": (
+                        "creator"
+                        if package.creator_id == request.user.pk
+                        else "recipient"
+                    ),
+                    "payer_type": "registered",
+                    "record_count": package.records.count(),
+                    "total_amount": float(package.total_amount),
+                    "currency": package.currency,
+                    "status": package.status,
+                },
+            )
+        return response
+
     def get_queryset(self):
         return (
             super()

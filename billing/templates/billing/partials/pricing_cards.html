@@ -9,76 +9,58 @@
     </h1>
     <p class="mt-2.5 text-md text-zinc-600 dark:text-zinc-400">
         Choose a plan that works for you.
-        <a
-            href="{% url 'docs:pricing_doc' %}"
-            class="font-medium text-zinc-900 underline decoration-zinc-300 underline-offset-4 transition-colors hover:text-indigo-600 hover:decoration-indigo-600 dark:text-zinc-200 dark:decoration-zinc-700 dark:hover:text-white dark:hover:decoration-white"
-        >
+        <a href="{% url 'docs:pricing_doc' %}"
+           class="font-medium text-zinc-900 underline decoration-zinc-300 underline-offset-4 transition-colors hover:text-indigo-600 hover:decoration-indigo-600 dark:text-zinc-200 dark:decoration-zinc-700 dark:hover:text-white dark:hover:decoration-white">
             Learn more.
         </a>
     </p>
 </header>
 <div class="mb-10 flex w-full justify-center">
     <div class="inline-flex items-center gap-1 rounded-full border border-zinc-200 bg-zinc-100/80 p-1 shadow-inner backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-900/80">
-        <button
-            type="button"
-            @click="selectedCategory = 'base_plan'"
-            :class="selectedCategory === 'base_plan' ? 'bg-white text-zinc-900 border border-zinc-200/80 shadow-xs dark:bg-zinc-800 dark:text-zinc-100 dark:border-zinc-700/60' : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200 border border-transparent'"
-            class="rounded-full px-4 py-1.5 text-xs font-medium tracking-tight transition-all duration-200"
-        >
+        <button type="button"
+                @click="selectedCategory = 'base_plan'"
+                :class="selectedCategory === 'base_plan' ? 'bg-white text-zinc-900 border border-zinc-200/80 shadow-xs dark:bg-zinc-800 dark:text-zinc-100 dark:border-zinc-700/60' : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200 border border-transparent'"
+                class="rounded-full px-4 py-1.5 text-xs font-medium tracking-tight transition-all duration-200">
             Base Plans
         </button>
-        <button
-            type="button"
-            @click="selectedCategory = 'storage_plan'"
-            :class="selectedCategory === 'storage_plan' ? 'bg-white text-zinc-900 border border-zinc-200/80 shadow-xs dark:bg-zinc-800 dark:text-zinc-100 dark:border-zinc-700/60' : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200 border border-transparent'"
-            class="rounded-full px-4 py-1.5 text-xs font-medium tracking-tight transition-all duration-200"
-        >
+        <button type="button"
+                @click="selectedCategory = 'storage_plan'"
+                :class="selectedCategory === 'storage_plan' ? 'bg-white text-zinc-900 border border-zinc-200/80 shadow-xs dark:bg-zinc-800 dark:text-zinc-100 dark:border-zinc-700/60' : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200 border border-transparent'"
+                class="rounded-full px-4 py-1.5 text-xs font-medium tracking-tight transition-all duration-200">
             Storage Packs
         </button>
     </div>
 </div>
-<form
-    method="post"
-    action="{% url 'create_checkout_session' %}"
-    class="w-full"
-    x-data="{ selectedBasePrice: null, selectedStoragePrice: null, get selectedPlanCount() { return (this.selectedBasePrice ? 1 : 0) + (this.selectedStoragePrice ? 1 : 0); } }"
->
+<form method="post"
+      action="{% url 'create_checkout_session' %}"
+      class="w-full"
+      x-data="{ selectedBasePrice: null, selectedStoragePrice: null, get selectedPlanCount() { return (this.selectedBasePrice ? 1 : 0) + (this.selectedStoragePrice ? 1 : 0); } }">
     {% csrf_token %}
     <input type="hidden" name="base_price_id" :value="selectedBasePrice">
     <input type="hidden" name="storage_price_id" :value="selectedStoragePrice">
     <div class="relative mx-auto grid w-full max-w-5xl grid-cols-1 grid-rows-1">
         <!-- BASE PLANS -->
-        <div
-            x-show="selectedCategory === 'base_plan'"
-            x-cloak
-            x-transition:enter="transition ease-out duration-300 transform"
-            x-transition:enter-start="opacity-0 -translate-x-8"
-            x-transition:enter-end="opacity-100 translate-x-0"
-            x-transition:leave="transition ease-in duration-200 transform"
-            x-transition:leave-start="opacity-100 translate-x-0"
-            x-transition:leave-end="opacity-0 -translate-x-8"
-            class="col-start-1 row-start-1 flex h-auto w-full flex-wrap items-stretch justify-center gap-5"
-        >
+        <div x-show="selectedCategory === 'base_plan'"
+             x-cloak
+             x-transition:enter="transition ease-out duration-300 transform"
+             x-transition:enter-start="opacity-0 -translate-x-8"
+             x-transition:enter-end="opacity-100 translate-x-0"
+             x-transition:leave="transition ease-in duration-200 transform"
+             x-transition:leave-start="opacity-100 translate-x-0"
+             x-transition:leave-end="opacity-0 -translate-x-8"
+             class="col-start-1 row-start-1 flex h-auto w-full flex-wrap items-stretch justify-center gap-5">
             {% for product in base_plans %}
                 {% with price_id=product.checkout_price_id %}
-                    <div
-                        {% if price_id and not product.already_active %}
-                            @click="selectedBasePrice = selectedBasePrice === '{{ price_id }}' ? null : '{{ price_id }}'"
-                        {% endif %}
-                        :class="selectedBasePrice === '{{ price_id }}' ? 'border-indigo-500/50 ring-1 ring-indigo-500/30 bg-indigo-50/30 dark:bg-indigo-950/20 dark:border-indigo-500/40 shadow-xs' : '{% if product.recommended %}border-indigo-300/60 bg-white/90 dark:border-indigo-500/30 dark:bg-zinc-900/60{% else %}border-zinc-200/90 bg-white/70 dark:border-zinc-800/80 dark:bg-zinc-900/40 hover:border-zinc-300 dark:hover:border-zinc-700/80 hover:bg-white dark:hover:bg-zinc-900/70 shadow-xs{% endif %}'"
-                        class="group relative flex flex-col justify-between rounded-3xl border p-6 backdrop-blur-md transition-all duration-200 w-full md:w-[calc(50%-0.65rem)] lg:w-[calc(33.333%-0.9rem)] max-w-sm overflow-hidden {% if price_id and not product.already_active %}cursor-pointer{% else %}cursor-default{% endif %}"
-                    >
+                    <div {% if price_id and not product.already_active %} @click="selectedBasePrice = selectedBasePrice === '{{ price_id }}' ? null : '{{ price_id }}'" {% endif %}
+                         :class="selectedBasePrice === '{{ price_id }}' ? 'border-indigo-500/50 ring-1 ring-indigo-500/30 bg-indigo-50/30 dark:bg-indigo-950/20 dark:border-indigo-500/40 shadow-xs' : '{% if product.recommended %}border-indigo-300/60 bg-white/90 dark:border-indigo-500/30 dark:bg-zinc-900/60{% else %}border-zinc-200/90 bg-white/70 dark:border-zinc-800/80 dark:bg-zinc-900/40 hover:border-zinc-300 dark:hover:border-zinc-700/80 hover:bg-white dark:hover:bg-zinc-900/70 shadow-xs{% endif %}'"
+                         class="group relative flex flex-col justify-between rounded-3xl border p-6 backdrop-blur-md transition-all duration-200 w-full md:w-[calc(50%-0.65rem)] lg:w-[calc(33.333%-0.9rem)] max-w-sm overflow-hidden {% if price_id and not product.already_active %}cursor-pointer{% else %}cursor-default{% endif %}">
                         <div class="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-indigo-500/30 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 {% if product.recommended %}opacity-100{% endif %}">
                         </div>
                         <div>
                             <div class="mb-4 flex items-center justify-between">
-                                <h3 class="text-xl font-medium tracking-tight text-zinc-900 dark:text-zinc-100">
-                                    {{ product.name }}
-                                </h3>
+                                <h3 class="text-xl font-medium tracking-tight text-zinc-900 dark:text-zinc-100">{{ product.name }}</h3>
                                 {% if product.recommended %}
-                                    <span
-                                        class="inline-flex items-center gap-1 rounded-full border border-indigo-500/20 bg-indigo-500/10 px-2 py-0.5 text-[10px] font-medium text-indigo-600 dark:border-indigo-400/20 dark:bg-indigo-400/10 dark:text-indigo-300"
-                                    >
+                                    <span class="inline-flex items-center gap-1 rounded-full border border-indigo-500/20 bg-indigo-500/10 px-2 py-0.5 text-[10px] font-medium text-indigo-600 dark:border-indigo-400/20 dark:bg-indigo-400/10 dark:text-indigo-300">
                                         Recommended
                                     </span>
                                 {% endif %}
@@ -88,44 +70,30 @@
                                     {% if product.prices %}
                                         {% for price in product.prices.all %}
                                             {% if price.active and price.recurring.interval == "month" %}
-                                                <span
-                                                    class="text-2xl font-semibold tracking-tight text-zinc-900 tabular-nums dark:text-zinc-100"
-                                                >
+                                                <span class="text-2xl font-semibold tracking-tight text-zinc-900 tabular-nums dark:text-zinc-100">
                                                     {{ price.human_readable_price }}
                                                 </span>
                                             {% endif %}
                                         {% endfor %}
                                     {% else %}
-                                        <span
-                                            class="text-2xl font-semibold tracking-tight text-zinc-900 tabular-nums dark:text-zinc-100"
-                                        >$0.00 USD/month</span>
+                                        <span class="text-2xl font-semibold tracking-tight text-zinc-900 tabular-nums dark:text-zinc-100">$0.00 USD/month</span>
                                     {% endif %}
                                 </div>
-                                <p class="mt-2 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
-                                    {{ product.description|linebreaksbr }}
-                                </p>
+                                <p class="mt-2 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">{{ product.description|linebreaksbr }}</p>
                             </div>
                             <div class="mb-6 space-y-3">
                                 {% if product.features_list %}
                                     <ul class="space-y-2.5 text-xs font-normal text-zinc-600 dark:text-zinc-300">
                                         {% for feature in product.features_list %}
                                             <li class="flex items-start gap-2.5">
-                                                <svg
-                                                    class="mt-0.5 h-3.5 w-3.5 shrink-0 text-indigo-600 dark:text-indigo-400"
-                                                    fill="none"
-                                                    viewBox="0 0 24 24"
-                                                    stroke="currentColor"
-                                                    stroke-width="2.5"
-                                                >
-                                                    <path
-                                                        stroke-linecap="round"
-                                                        stroke-linejoin="round"
-                                                        d="M4.5 12.75l6 6 9-13.5"
-                                                    />
+                                                <svg class="mt-0.5 h-3.5 w-3.5 shrink-0 text-indigo-600 dark:text-indigo-400"
+                                                     fill="none"
+                                                     viewBox="0 0 24 24"
+                                                     stroke="currentColor"
+                                                     stroke-width="2.5">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                                                 </svg>
-                                                <span
-                                                    class="leading-relaxed text-zinc-700 dark:text-zinc-300"
-                                                >{{ feature }}</span>
+                                                <span class="leading-relaxed text-zinc-700 dark:text-zinc-300">{{ feature }}</span>
                                             </li>
                                         {% endfor %}
                                     </ul>
@@ -139,14 +107,10 @@
                                         <span class="font-normal">Current plan</span>
                                     </div>
                                 {% else %}
-                                    <div
-                                        type="button"
-                                        :class="selectedBasePrice === '{{ price_id }}' ? 'bg-indigo-600 text-white border border-indigo-600 dark:bg-indigo-600 dark:border-indigo-500' : 'bg-zinc-100 hover:bg-zinc-200/70 text-zinc-800 border border-zinc-200/70 dark:bg-zinc-800/60 dark:hover:bg-zinc-800 dark:text-zinc-200 dark:border-zinc-700/60'"
-                                        class="w-full rounded-lg px-3 py-2 text-center text-xs font-medium tracking-tight transition-all duration-150"
-                                    >
-                                        <span
-                                            x-text="selectedBasePrice === '{{ price_id }}' ? 'Selected' : 'Select Plan'"
-                                        ></span>
+                                    <div type="button"
+                                         :class="selectedBasePrice === '{{ price_id }}' ? 'bg-indigo-600 text-white border border-indigo-600 dark:bg-indigo-600 dark:border-indigo-500' : 'bg-zinc-100 hover:bg-zinc-200/70 text-zinc-800 border border-zinc-200/70 dark:bg-zinc-800/60 dark:hover:bg-zinc-800 dark:text-zinc-200 dark:border-zinc-700/60'"
+                                         class="w-full rounded-lg px-3 py-2 text-center text-xs font-medium tracking-tight transition-all duration-150">
+                                        <span x-text="selectedBasePrice === '{{ price_id }}' ? 'Selected' : 'Select Plan'"></span>
                                     </div>
                                 {% endif %}
                             </div>
@@ -156,60 +120,45 @@
             {% endfor %}
         </div>
         <!-- STORAGE PLANS -->
-        <div
-            x-show="selectedCategory === 'storage_plan'"
-            x-cloak
-            x-transition:enter="transition ease-out duration-300 transform"
-            x-transition:enter-start="opacity-0 translate-x-8"
-            x-transition:enter-end="opacity-100 translate-x-0"
-            x-transition:leave="transition ease-in duration-200 transform"
-            x-transition:leave-start="opacity-100 translate-x-0"
-            x-transition:leave-end="opacity-0 translate-x-8"
-            class="col-start-1 row-start-1 flex h-auto w-full flex-wrap items-stretch justify-center gap-5"
-        >
+        <div x-show="selectedCategory === 'storage_plan'"
+             x-cloak
+             x-transition:enter="transition ease-out duration-300 transform"
+             x-transition:enter-start="opacity-0 translate-x-8"
+             x-transition:enter-end="opacity-100 translate-x-0"
+             x-transition:leave="transition ease-in duration-200 transform"
+             x-transition:leave-start="opacity-100 translate-x-0"
+             x-transition:leave-end="opacity-0 translate-x-8"
+             class="col-start-1 row-start-1 flex h-auto w-full flex-wrap items-stretch justify-center gap-5">
             {% for product in storage_plans %}
                 {% with price_id=product.checkout_price_id %}
-                    <div
-                        {% if price_id %}
-                            data-pro-only="{% if product.pro_only %}true{% else %}false{% endif %}
+                    <div {% if price_id %} data-pro-only="{% if product.pro_only %}true{% else %}false{% endif %}
                          "
-                            {% if not product.pro_only and not product.already_active %}
-                                @click="selectedStoragePrice = selectedStoragePrice === '{{ price_id }}' ? null : '{{ price_id }}'"
-                            {% endif %}
-                        {% endif %}
-                        :class="selectedStoragePrice === '{{ price_id }}' ? 'border-indigo-500/50 ring-1 ring-indigo-500/30 bg-indigo-50/30 dark:bg-indigo-950/20 dark:border-indigo-500/40 shadow-xs' : 'border-zinc-200/90 bg-white/70 dark:border-zinc-800/80 dark:bg-zinc-900/40 hover:border-zinc-300 dark:hover:border-zinc-700/80 hover:bg-white dark:hover:bg-zinc-900/70 shadow-xs'"
-                        class="group relative flex flex-col justify-between rounded-3xl border p-6 backdrop-blur-md transition-all duration-200 w-full md:min-h-[550px] md:w-[calc(50%-0.65rem)] lg:w-[calc(33.333%-0.9rem)] max-w-sm overflow-hidden {% if product.pro_only or product.already_active %}cursor-default{% else %}cursor-pointer{% endif %}"
-                    >
+                         {% if not product.pro_only and not product.already_active %} @click="selectedStoragePrice = selectedStoragePrice === '{{ price_id }}' ? null : '{{ price_id }}'" {% endif %}
+                         {% endif %}
+                         :class="selectedStoragePrice === '{{ price_id }}' ? 'border-indigo-500/50 ring-1 ring-indigo-500/30 bg-indigo-50/30 dark:bg-indigo-950/20 dark:border-indigo-500/40 shadow-xs' : 'border-zinc-200/90 bg-white/70 dark:border-zinc-800/80 dark:bg-zinc-900/40 hover:border-zinc-300 dark:hover:border-zinc-700/80 hover:bg-white dark:hover:bg-zinc-900/70 shadow-xs'"
+                         class="group relative flex flex-col justify-between rounded-3xl border p-6 backdrop-blur-md transition-all duration-200 w-full md:min-h-[550px] md:w-[calc(50%-0.65rem)] lg:w-[calc(33.333%-0.9rem)] max-w-sm overflow-hidden {% if product.pro_only or product.already_active %}cursor-default{% else %}cursor-pointer{% endif %}">
                         <div class="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-indigo-500/30 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100">
                         </div>
                         <div>
                             <div class="mb-4 flex items-center justify-between">
-                                <h3 class="text-xl font-medium tracking-tight text-zinc-900 dark:text-zinc-100">
-                                    {{ product.name }}
-                                </h3>
+                                <h3 class="text-xl font-medium tracking-tight text-zinc-900 dark:text-zinc-100">{{ product.name }}</h3>
                             </div>
                             <div class="mb-5 border-b border-zinc-200/70 pb-5 dark:border-zinc-800/80">
                                 <div class="flex items-baseline gap-1">
                                     {% if product.prices %}
                                         {% for price in product.prices.all %}
                                             {% if price.active and price.recurring.interval == "month" %}
-                                                <span
-                                                    class="text-2xl font-semibold tracking-tight text-zinc-900 tabular-nums dark:text-zinc-100"
-                                                >
+                                                <span class="text-2xl font-semibold tracking-tight text-zinc-900 tabular-nums dark:text-zinc-100">
                                                     {{ price.human_readable_price }}
                                                 </span>
                                             {% endif %}
                                         {% endfor %}
                                     {% else %}
-                                        <span
-                                            class="text-3xl font-semibold tracking-tight text-zinc-900 tabular-nums dark:text-zinc-100"
-                                        >Free</span>
+                                        <span class="text-3xl font-semibold tracking-tight text-zinc-900 tabular-nums dark:text-zinc-100">Free</span>
                                     {% endif %}
                                 </div>
                                 {% if product.description %}
-                                    <p class="mt-2 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
-                                        {{ product.description }}
-                                    </p>
+                                    <p class="mt-2 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">{{ product.description }}</p>
                                 {% endif %}
                             </div>
                             <div class="mb-6 space-y-3">
@@ -217,22 +166,14 @@
                                     <ul class="space-y-2.5 text-xs font-normal text-zinc-600 dark:text-zinc-300">
                                         {% for feature in product.features_list %}
                                             <li class="flex items-start gap-2.5">
-                                                <svg
-                                                    class="mt-0.5 h-3.5 w-3.5 shrink-0 text-indigo-600 dark:text-indigo-400"
-                                                    fill="none"
-                                                    viewBox="0 0 24 24"
-                                                    stroke="currentColor"
-                                                    stroke-width="2.5"
-                                                >
-                                                    <path
-                                                        stroke-linecap="round"
-                                                        stroke-linejoin="round"
-                                                        d="M4.5 12.75l6 6 9-13.5"
-                                                    />
+                                                <svg class="mt-0.5 h-3.5 w-3.5 shrink-0 text-indigo-600 dark:text-indigo-400"
+                                                     fill="none"
+                                                     viewBox="0 0 24 24"
+                                                     stroke="currentColor"
+                                                     stroke-width="2.5">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                                                 </svg>
-                                                <span
-                                                    class="leading-relaxed text-zinc-700 dark:text-zinc-300"
-                                                >{{ feature }}</span>
+                                                <span class="leading-relaxed text-zinc-700 dark:text-zinc-300">{{ feature }}</span>
                                             </li>
                                         {% endfor %}
                                     </ul>
@@ -250,14 +191,10 @@
                                         <span class="font-normal">Pro users only</span>
                                     </div>
                                 {% else %}
-                                    <div
-                                        type="button"
-                                        :class="selectedStoragePrice === '{{ price_id }}' ? 'bg-indigo-600 text-white border border-indigo-600 dark:bg-indigo-600 dark:border-indigo-500' : 'bg-zinc-100 hover:bg-zinc-200/70 text-zinc-800 border border-zinc-200/70 dark:bg-zinc-800/60 dark:hover:bg-zinc-800 dark:text-zinc-200 dark:border-zinc-700/60'"
-                                        class="w-full rounded-lg px-3 py-2 text-center text-xs font-medium tracking-tight transition-all duration-150"
-                                    >
-                                        <span
-                                            x-text="selectedStoragePrice === '{{ price_id }}' ? 'Selected' : 'Select Pack'"
-                                        ></span>
+                                    <div type="button"
+                                         :class="selectedStoragePrice === '{{ price_id }}' ? 'bg-indigo-600 text-white border border-indigo-600 dark:bg-indigo-600 dark:border-indigo-500' : 'bg-zinc-100 hover:bg-zinc-200/70 text-zinc-800 border border-zinc-200/70 dark:bg-zinc-800/60 dark:hover:bg-zinc-800 dark:text-zinc-200 dark:border-zinc-700/60'"
+                                         class="w-full rounded-lg px-3 py-2 text-center text-xs font-medium tracking-tight transition-all duration-150">
+                                        <span x-text="selectedStoragePrice === '{{ price_id }}' ? 'Selected' : 'Select Pack'"></span>
                                     </div>
                                 {% endif %}
                             </div>
@@ -269,20 +206,16 @@
     </div>
     <div class="mt-10 flex flex-col items-center">
         {% if request.user.is_authenticated %}
-            <button
-                type="submit"
-                :disabled="!selectedBasePrice && !selectedStoragePrice"
-                :class="(!selectedBasePrice && !selectedStoragePrice) ? 'opacity-40 cursor-not-allowed bg-zinc-100 text-zinc-400 border border-zinc-200 dark:bg-zinc-800/50 dark:text-zinc-600 dark:border-zinc-800' : 'bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white border border-zinc-900 dark:border-zinc-200 shadow-xs active:scale-[0.99]'"
-                class="w-full max-w-xs rounded-4xl px-5 py-2.5 text-sm font-semibold tracking-tight transition-all duration-150"
-            >
+            <button type="submit"
+                    :disabled="!selectedBasePrice && !selectedStoragePrice"
+                    :class="(!selectedBasePrice && !selectedStoragePrice) ? 'opacity-40 cursor-not-allowed bg-zinc-100 text-zinc-400 border border-zinc-200 dark:bg-zinc-800/50 dark:text-zinc-600 dark:border-zinc-800' : 'bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white border border-zinc-900 dark:border-zinc-200 shadow-xs active:scale-[0.99]'"
+                    class="w-full max-w-xs rounded-4xl px-5 py-2.5 text-sm font-semibold tracking-tight transition-all duration-150">
                 Continue to checkout
                 <span x-text="selectedPlanCount > 0 ? `- ${selectedPlanCount} plan(s)` : ''"></span>
             </button>
         {% else %}
-            <a
-                href="{% url 'account_signup' %}"
-                class="w-full max-w-xs cursor-pointer rounded-4xl border border-zinc-900 bg-zinc-900 px-5 py-2.5 text-center text-sm font-semibold tracking-tight text-white shadow-xs transition-all duration-150 hover:bg-zinc-800 active:scale-[0.99] dark:border-zinc-200 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
-            >
+            <a href="{% url 'account_signup' %}"
+               class="w-full max-w-xs cursor-pointer rounded-4xl border border-zinc-900 bg-zinc-900 px-5 py-2.5 text-center text-sm font-semibold tracking-tight text-white shadow-xs transition-all duration-150 hover:bg-zinc-800 active:scale-[0.99] dark:border-zinc-200 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white">
                 Sign up to subscribe
             </a>
         {% endif %}
@@ -295,10 +228,8 @@
     <div class="mt-6 flex justify-center">
         <form method="post" action="{% url 'portal_session' %}">
             {% csrf_token %}
-            <button
-                type="submit"
-                class="text-xs font-medium text-zinc-500 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200"
-            >
+            <button type="submit"
+                    class="text-xs font-medium text-zinc-500 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200">
                 Manage active subscription
             </button>
         </form>

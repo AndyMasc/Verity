@@ -2,13 +2,9 @@
     {% for document in documents %}
         <div class="group flex py-4 pr-2 pl-3 transition-colors duration-150 hover:bg-zinc-50/80 sm:grid sm:grid-cols-[minmax(0,1fr)_150px_130px_90px_44px] sm:items-center sm:gap-4 sm:px-4 sm:py-2.5 dark:hover:bg-zinc-800/40">
             <!-- Desktop: title / source / date / type / delete -->
-            <a
-                href="{% url 'documents:view_document' document.pk %}"
-                class="hidden min-w-0 items-center gap-3 pr-3 sm:flex"
-            >
-                <span
-                    class="shrink-0 px-2 py-1 rounded-lg w-full truncate max-w-35 flex items-center justify-center text-[10px] font-bold {% if document.did_ocr %} bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 border border-zinc-900 dark:border-zinc-100 {% else %} bg-zinc-100 text-zinc-600 dark:bg-zinc-800/80 dark:text-zinc-300 border border-zinc-200/80 dark:border-zinc-700/50 {% endif %}"
-                >
+            <a href="{% url 'documents:view_document' document.pk %}"
+               class="hidden min-w-0 items-center gap-3 pr-3 sm:flex">
+                <span class="shrink-0 px-2 py-1 rounded-lg w-full truncate max-w-35 flex items-center justify-center text-[10px] font-bold {% if document.did_ocr %} bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 border border-zinc-900 dark:border-zinc-100 {% else %} bg-zinc-100 text-zinc-600 dark:bg-zinc-800/80 dark:text-zinc-300 border border-zinc-200/80 dark:border-zinc-700/50 {% endif %}">
                     {% if document.did_ocr %}OCR{% else %}File{% endif %}
                 </span>
                 <div class="min-w-0 flex-1">
@@ -36,76 +32,56 @@
                 {% if document.file_extension %}{{ document.file_extension|upper }}{% else %}—{% endif %}
             </div>
             <div class="relative z-20 hidden justify-center transition-opacity duration-150 group-hover:opacity-100 focus-within:opacity-100 sm:flex sm:opacity-0">
-                <form
-                    action="{% url 'documents:delete_document' document.pk %}"
-                    method="POST"
-                    onsubmit="return confirm('Delete this document permanently?')"
-                    class="inline"
-                >
+                <form action="{% url 'documents:delete_document' document.pk %}"
+                      method="POST"
+                      onsubmit="return confirm('Delete this document permanently?')"
+                      class="inline">
                     {% csrf_token %}
-                    <button
-                        type="submit"
-                        class="cursor-pointer rounded-lg p-1.5 text-zinc-500 transition-all hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 dark:hover:text-rose-400"
-                        title="Delete document"
-                    >
-                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"
-                            />
+                    <button type="submit"
+                            class="cursor-pointer rounded-lg p-1.5 text-zinc-500 transition-all hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 dark:hover:text-rose-400"
+                            title="Delete document">
+                        <svg class="h-4 w-4"
+                             fill="none"
+                             viewBox="0 0 24 24"
+                             stroke-width="2"
+                             stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
                         </svg>
                     </button>
                 </form>
             </div>
             <!-- Mobile: stacked layout -->
-            <a
-                href="{% url 'documents:view_document' document.pk %}"
-                class="flex min-w-0 flex-1 items-center gap-3 sm:hidden"
-            >
-                <span
-                    class="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold max-w-8 truncate {% if document.did_ocr %} bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 border border-zinc-900 dark:border-zinc-100 {% else %} bg-zinc-100 text-zinc-600 dark:bg-zinc-800/80 dark:text-zinc-300 border border-zinc-200/80 dark:border-zinc-700/50 {% endif %}"
-                >
+            <a href="{% url 'documents:view_document' document.pk %}"
+               class="flex min-w-0 flex-1 items-center gap-3 sm:hidden">
+                <span class="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold max-w-8 truncate {% if document.did_ocr %} bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 border border-zinc-900 dark:border-zinc-100 {% else %} bg-zinc-100 text-zinc-600 dark:bg-zinc-800/80 dark:text-zinc-300 border border-zinc-200/80 dark:border-zinc-700/50 {% endif %}">
                     {% if document.did_ocr %}OCR{% else %}{{ document.file_extension|upper|default:"File" }}{% endif %}
                 </span>
                 <div class="min-w-0 flex-1">
                     <div class="flex items-center justify-between gap-2">
-                        <span
-                            class="truncate text-sm font-medium text-zinc-950 dark:text-zinc-50"
-                        >{{ document.title }}</span>
-                        <span
-                            class="shrink-0 text-xs font-medium text-zinc-600 dark:text-zinc-400"
-                        >{{ document.date_added|date:"M d, y" }}</span>
+                        <span class="truncate text-sm font-medium text-zinc-950 dark:text-zinc-50">{{ document.title }}</span>
+                        <span class="shrink-0 text-xs font-medium text-zinc-600 dark:text-zinc-400">{{ document.date_added|date:"M d, y" }}</span>
                     </div>
                     <div class="mt-0.5 flex items-center justify-between gap-2 text-xs text-zinc-600 dark:text-zinc-400">
-                        <span
-                            class="truncate"
-                        >{% if document.associated_record %}{{ document.associated_record.title }}{% else %}Unlinked{% endif %}</span>
-                        <span
-                            class="shrink-0"
-                        >{% if document.file_extension %}{{ document.file_extension|upper }}{% else %}—{% endif %}</span>
+                        <span class="truncate">{% if document.associated_record %}{{ document.associated_record.title }}{% else %}Unlinked{% endif %}</span>
+                        <span class="shrink-0">{% if document.file_extension %}{{ document.file_extension|upper }}{% else %}—{% endif %}</span>
                     </div>
                 </div>
             </a>
             <div class="relative z-20 flex items-center pr-1 sm:hidden">
-                <form
-                    action="{% url 'documents:delete_document' document.pk %}"
-                    method="POST"
-                    onsubmit="return confirm('Delete this document permanently?')"
-                    class="inline"
-                >
+                <form action="{% url 'documents:delete_document' document.pk %}"
+                      method="POST"
+                      onsubmit="return confirm('Delete this document permanently?')"
+                      class="inline">
                     {% csrf_token %}
-                    <button
-                        type="submit"
-                        class="cursor-pointer rounded-lg p-1.5 text-zinc-500 transition-all hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 dark:hover:text-rose-400"
-                        title="Delete document"
-                    >
-                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"
-                            />
+                    <button type="submit"
+                            class="cursor-pointer rounded-lg p-1.5 text-zinc-500 transition-all hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 dark:hover:text-rose-400"
+                            title="Delete document">
+                        <svg class="h-4 w-4"
+                             fill="none"
+                             viewBox="0 0 24 24"
+                             stroke-width="2"
+                             stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
                         </svg>
                     </button>
                 </form>

@@ -142,11 +142,13 @@
                 </p>
             </div>
             {% if not upgrade_required and plaid_items %}
-                <button
-                    id="plaid-link-btn"
-                    class="shadow-2xs inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg-white px-4 py-2 text-xs font-semibold text-zinc-900 transition-all hover:bg-zinc-100 hover:shadow-xs active:scale-[0.98] dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
-                >
-                    <svg class="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <button id="plaid-link-btn"
+                        class="shadow-2xs inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg-white px-4 py-2 text-xs font-semibold text-zinc-900 transition-all hover:bg-zinc-100 hover:shadow-xs active:scale-[0.98] dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white">
+                    <svg class="size-3.5"
+                         fill="none"
+                         viewBox="0 0 24 24"
+                         stroke="currentColor"
+                         stroke-width="2.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                     </svg>
                     Connect Bank
@@ -156,29 +158,21 @@
         {% if upgrade_required %}
             <div class="shadow-2xs relative overflow-hidden rounded-3xl border border-zinc-200/80 bg-gradient-to-b from-zinc-50 to-zinc-100/60 p-8 text-center sm:p-12 dark:border-zinc-800 dark:from-zinc-900/60 dark:to-zinc-950">
                 <div class="shadow-2xs mx-auto mb-4 flex size-12 items-center justify-center rounded-2xl border border-zinc-200 bg-white text-zinc-800 dark:border-zinc-700/60 dark:bg-zinc-800 dark:text-zinc-200">
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke-width="1.5"
-                        stroke="currentColor"
-                        class="size-6"
-                    >
-                        <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            d="M12 9.75v6.75m0 0-3-3m3 3 3-3m-8.25 6a4.5 4.5 0 0 1-1.41-8.775 5.25 5.25 0 0 1 10.233-2.33 3 3 0 0 1 3.758 3.848A3.752 3.752 0 0 1 18 19.5H6.75Z"
-                        />
+                    <svg xmlns="http://www.w3.org/2000/svg"
+                         fill="none"
+                         viewBox="0 0 24 24"
+                         stroke-width="1.5"
+                         stroke="currentColor"
+                         class="size-6">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9.75v6.75m0 0-3-3m3 3 3-3m-8.25 6a4.5 4.5 0 0 1-1.41-8.775 5.25 5.25 0 0 1 10.233-2.33 3 3 0 0 1 3.758 3.848A3.752 3.752 0 0 1 18 19.5H6.75Z" />
                     </svg>
                 </div>
                 <h2 class="text-base font-semibold text-zinc-900 dark:text-zinc-100">Bank Transaction Sync</h2>
                 <p class="mx-auto mt-1 max-w-sm text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
                     Automated transaction syncing is available exclusively on Pro plans.
                 </p>
-                <a
-                    href="{% url 'pricing_page' %}"
-                    class="mt-6 inline-block rounded-full bg-zinc-900 px-5 py-2.5 text-xs font-medium text-zinc-50 transition-all hover:bg-zinc-800 active:scale-[0.98] dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
-                >
+                <a href="{% url 'pricing_page' %}"
+                   class="mt-6 inline-block rounded-full bg-zinc-900 px-5 py-2.5 text-xs font-medium text-zinc-50 transition-all hover:bg-zinc-800 active:scale-[0.98] dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white">
                     Upgrade to Pro
                 </a>
             </div>
@@ -189,10 +183,12 @@
                     <span><strong>Sync Error:</strong> {{ sync_error }}</span>
                 </div>
             {% endif %}
-            <div id="bank-list" class="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+            <div id="bank-list"
+                 class="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
                 {% if plaid_items %}
                     {% for item in plaid_items %}
-                        <div id="item-{{ item.item_id }}" class="bank-card-wrap group flex flex-col">
+                        <div id="item-{{ item.item_id }}"
+                             class="bank-card-wrap group flex flex-col">
                             <div class="bank-card {% cycle 'card-onyx' 'card-midnight' 'card-graphite' 'card-merlot' 'card-forest' 'card-espresso' %}">
                                 <div class="flex items-start justify-between">
                                     <div class="chip">
@@ -200,16 +196,12 @@
                                     </div>
                                     <div class="flex items-center gap-2">
                                         {% if item.last_error_code %}
-                                            <span
-                                                class="flex items-center gap-1.5 rounded-full border border-amber-400/25 bg-amber-400/15 px-3 py-1 text-[11px] font-medium text-amber-300 backdrop-blur-md"
-                                            >
+                                            <span class="flex items-center gap-1.5 rounded-full border border-amber-400/25 bg-amber-400/15 px-3 py-1 text-[11px] font-medium text-amber-300 backdrop-blur-md">
                                                 <span class="status-dot animate-pulse bg-amber-400"></span> Action
                                                 needed
                                             </span>
                                         {% else %}
-                                            <span
-                                                class="flex items-center gap-1.5 rounded-full border border-emerald-400/25 bg-emerald-400/15 px-3 py-1 text-[11px] font-medium text-emerald-300 backdrop-blur-md"
-                                            >
+                                            <span class="flex items-center gap-1.5 rounded-full border border-emerald-400/25 bg-emerald-400/15 px-3 py-1 text-[11px] font-medium text-emerald-300 backdrop-blur-md">
                                                 <span class="status-dot bg-emerald-400"></span> Connected
                                             </span>
                                         {% endif %}
@@ -222,82 +214,50 @@
                                 </div>
                                 <div class="flex items-end justify-between border-t border-white/10 pt-3">
                                     <div class="leading-tight">
-                                        <div class="text-xs font-semibold text-white/80">
-                                            {{ item.records.all|length }} Records Active
-                                        </div>
+                                        <div class="text-xs font-semibold text-white/80">{{ item.records.all|length }} Records Active</div>
                                     </div>
                                 </div>
                                 {% if item.last_error_code %}
                                     <div class="absolute right-0 bottom-0 left-0 flex items-center gap-1.5 border-t border-amber-400/30 bg-amber-500/25 px-4 py-2 text-[10px] text-amber-100 backdrop-blur-md">
-                                        <span
-                                            class="font-bold tracking-wider uppercase"
-                                        >{{ item.last_error_code }}:</span> {{ item.last_error_message }}
+                                        <span class="font-bold tracking-wider uppercase">{{ item.last_error_code }}:</span> {{ item.last_error_message }}
                                     </div>
                                 {% endif %}
                             </div>
                             <div class="mt-3.5 grid grid-cols-3 gap-2">
-                                <button
-                                    class="action-btn sync-btn shadow-2xs cursor-pointer border border-zinc-200/80 bg-zinc-100/80 text-zinc-700 hover:bg-zinc-200 hover:text-zinc-900 active:scale-95 dark:border-zinc-800/80 dark:bg-zinc-900/80 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white"
-                                    data-item-id="{{ item.item_id }}"
-                                    data-csrf="{{ csrf_token }}"
-                                >
-                                    <svg
-                                        class="size-3.5"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        stroke="currentColor"
-                                        stroke-width="2"
-                                    >
-                                        <path
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"
-                                        />
+                                <button class="action-btn sync-btn shadow-2xs cursor-pointer border border-zinc-200/80 bg-zinc-100/80 text-zinc-700 hover:bg-zinc-200 hover:text-zinc-900 active:scale-95 dark:border-zinc-800/80 dark:bg-zinc-900/80 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white"
+                                        data-item-id="{{ item.item_id }}"
+                                        data-csrf="{{ csrf_token }}">
+                                    <svg class="size-3.5"
+                                         fill="none"
+                                         viewBox="0 0 24 24"
+                                         stroke="currentColor"
+                                         stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
                                     </svg>
                                     Sync
                                 </button>
-                                <button
-                                    class="action-btn update-btn shadow-2xs cursor-pointer border border-zinc-200/80 bg-zinc-100/80 text-zinc-700 hover:bg-zinc-200 hover:text-zinc-900 active:scale-95 dark:border-zinc-800/80 dark:bg-zinc-900/80 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white"
-                                    data-item-id="{{ item.item_id }}"
-                                    data-csrf="{{ csrf_token }}"
-                                >
-                                    <svg
-                                        class="size-3.5"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        stroke="currentColor"
-                                        stroke-width="2"
-                                    >
-                                        <path
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 0 1 0 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 0 1 0-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.28Z"
-                                        />
-                                        <path
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
-                                        />
+                                <button class="action-btn update-btn shadow-2xs cursor-pointer border border-zinc-200/80 bg-zinc-100/80 text-zinc-700 hover:bg-zinc-200 hover:text-zinc-900 active:scale-95 dark:border-zinc-800/80 dark:bg-zinc-900/80 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white"
+                                        data-item-id="{{ item.item_id }}"
+                                        data-csrf="{{ csrf_token }}">
+                                    <svg class="size-3.5"
+                                         fill="none"
+                                         viewBox="0 0 24 24"
+                                         stroke="currentColor"
+                                         stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 0 1 0 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 0 1 0-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                                     </svg>
                                     Update
                                 </button>
-                                <button
-                                    class="action-btn disconnect-btn shadow-2xs cursor-pointer border border-red-500/20 bg-red-500/10 text-red-600 transition-all hover:bg-red-600 hover:text-white active:scale-95 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-600 dark:hover:text-white"
-                                    data-item-id="{{ item.item_id }}"
-                                    data-csrf="{{ csrf_token }}"
-                                >
-                                    <svg
-                                        class="size-3.5"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        stroke="currentColor"
-                                        stroke-width="2"
-                                    >
-                                        <path
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636"
-                                        />
+                                <button class="action-btn disconnect-btn shadow-2xs cursor-pointer border border-red-500/20 bg-red-500/10 text-red-600 transition-all hover:bg-red-600 hover:text-white active:scale-95 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-600 dark:hover:text-white"
+                                        data-item-id="{{ item.item_id }}"
+                                        data-csrf="{{ csrf_token }}">
+                                    <svg class="size-3.5"
+                                         fill="none"
+                                         viewBox="0 0 24 24"
+                                         stroke="currentColor"
+                                         stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" />
                                     </svg>
                                     Unlink
                                 </button>
@@ -307,34 +267,31 @@
                 {% else %}
                     <div class="col-span-full rounded-3xl border border-dashed border-zinc-300 bg-zinc-50/50 px-6 py-16 text-center dark:border-zinc-800 dark:bg-zinc-900/20">
                         <div class="shadow-2xs mx-auto mb-4 flex size-12 items-center justify-center rounded-2xl border border-zinc-200 bg-white text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
-                            <svg
-                                class="size-6"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                                stroke-width="1.5"
-                            >
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z"
-                                />
+                            <svg class="size-6"
+                                 fill="none"
+                                 viewBox="0 0 24 24"
+                                 stroke="currentColor"
+                                 stroke-width="1.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z" />
                             </svg>
                         </div>
                         <h3 class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">No linked bank accounts</h3>
                         <p class="mx-auto mt-1 mb-6 max-w-xs text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
                             Connect your institution via Plaid to automatically stream live transactions.
                         </p>
-                        <button
-                            id="plaid-link-btn"
-                            class="shadow-2xs inline-flex cursor-pointer items-center gap-2 rounded-full bg-zinc-900 px-5 py-2.5 text-xs font-semibold text-zinc-50 transition-all hover:bg-zinc-800 active:scale-[0.98] dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
-                        >
-                            <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <button id="plaid-link-btn"
+                                class="shadow-2xs inline-flex cursor-pointer items-center gap-2 rounded-full bg-zinc-900 px-5 py-2.5 text-xs font-semibold text-zinc-50 transition-all hover:bg-zinc-800 active:scale-[0.98] dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white">
+                            <svg class="size-4"
+                                 fill="none"
+                                 viewBox="0 0 24 24"
+                                 stroke="currentColor"
+                                 stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                             </svg>
                             Connect Bank
                         </button>
-                        <p id="plaid-status" class="mt-4 hidden text-xs font-medium text-zinc-500"></p>
+                        <p id="plaid-status"
+                           class="mt-4 hidden text-xs font-medium text-zinc-500"></p>
                     </div>
                 {% endif %}
             </div>

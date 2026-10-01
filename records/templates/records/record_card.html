@@ -1,19 +1,13 @@
 {% load form_tags %}
-<div
-    data-record-id="{{ record.pk }}"
-    data-record-active="{% if record.is_active %}true{% else %}false{% endif %}"
-    data-record-permanent="{% if record.can_hard_delete %}true{% else %}false{% endif %}"
-    class="group relative rounded-lg border-b border-zinc-100 bg-transparent transition-colors duration-150 last:border-none hover:bg-zinc-50/80 dark:border-zinc-800/30 dark:hover:bg-zinc-800/40"
->
-    <a
-        href="{% url 'records:record_detail' record.pk %}"
-        class="hidden grid-cols-[32px_minmax(0,1fr)_160px_110px_90px_100px] items-center gap-4 px-4 py-3 sm:grid"
-    >
+<div data-record-id="{{ record.pk }}"
+     data-record-active="{% if record.is_active %}true{% else %}false{% endif %}"
+     data-record-permanent="{% if record.can_hard_delete %}true{% else %}false{% endif %}"
+     class="group relative rounded-lg border-b border-zinc-100 bg-transparent transition-colors duration-150 last:border-none hover:bg-zinc-50/80 dark:border-zinc-800/30 dark:hover:bg-zinc-800/40">
+    <a href="{% url 'records:record_detail' record.pk %}"
+       class="hidden grid-cols-[32px_minmax(0,1fr)_160px_110px_90px_100px] items-center gap-4 px-4 py-3 sm:grid">
         {% include "records/partials/select_checkbox.html" with select_id=record.pk %}
         <div class="flex min-w-0 items-center gap-3">
-            <span
-                class="shrink-0 px-2 py-1 rounded-lg w-full max-w-35 flex tracking-wide items-center justify-center {{ record.badge_classes }} border"
-            >
+            <span class="shrink-0 px-2 py-1 rounded-lg w-full max-w-35 flex tracking-wide items-center justify-center {{ record.badge_classes }} border">
                 <p class="truncate text-[10px] font-bold">{{ record.get_record_type_display|upper }}</p>
             </span>
             <div class="min-w-0 flex-1">
@@ -39,16 +33,13 @@
             {% if record.transaction_date %}{{ record.transaction_date|date:"M d" }}{% else %}{{ record.date_added|date:"M d" }}{% endif %}
         </div>
         <div class="truncate text-right text-sm font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">
-            {% if record.balance %}{{ record.balance|currency_format:record.currency }}{% else %}<span
-                    class="font-normal text-zinc-500 dark:text-zinc-400"
-                >—</span>{% endif %}
+            {% if record.balance %}{{ record.balance|currency_format:record.currency }}{% else %}<span class="font-normal text-zinc-500 dark:text-zinc-400">—</span>{% endif %}
         </div>
     </a>
-    <a href="{% url 'records:record_detail' record.pk %}" class="flex items-center gap-2 py-3 pr-4 pl-1 sm:hidden">
+    <a href="{% url 'records:record_detail' record.pk %}"
+       class="flex items-center gap-2 py-3 pr-4 pl-1 sm:hidden">
         {% include "records/partials/select_checkbox.html" with select_id=record.pk %}
-        <span
-            class="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold {{ record.badge_classes }} border"
-        >
+        <span class="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold {{ record.badge_classes }} border">
             {{ record.get_record_type_display|slice:":2"|upper }}
         </span>
         <div class="min-w-0 flex-1">
@@ -60,9 +51,7 @@
             </div>
             <div class="mt-0.5 flex items-center justify-between gap-2 text-xs text-zinc-600 dark:text-zinc-400">
                 <span class="truncate">{{ record.merchant|default:record.get_record_type_display }}</span>
-                <span
-                    class="shrink-0"
-                >{% if record.transaction_date %}{{ record.transaction_date|date:"M d" }}{% else %}{{ record.date_added|date:"M d" }}{% endif %}</span>
+                <span class="shrink-0">{% if record.transaction_date %}{{ record.transaction_date|date:"M d" }}{% else %}{{ record.date_added|date:"M d" }}{% endif %}</span>
             </div>
         </div>
     </a>

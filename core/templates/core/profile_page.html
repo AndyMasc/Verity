@@ -8,17 +8,13 @@
     {% webpush_header %}
 {% endblock extra_head %}
 {% block content %}
-    <div
-        x-data="{ currentTab: $persist('general') }"
-        class="mx-auto max-w-6xl px-4 py-12 text-zinc-900 sm:px-6 lg:px-8 dark:text-zinc-100"
-        x-cloak
-    >
+    <div x-data="{ currentTab: $persist('general') }"
+         class="mx-auto max-w-6xl px-4 py-12 text-zinc-900 sm:px-6 lg:px-8 dark:text-zinc-100"
+         x-cloak>
         <div class="relative mb-10 border-b border-zinc-200/80 pb-8 dark:border-zinc-800/80">
             <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h1 class="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-white">
-                        Account Settings
-                    </h1>
+                    <h1 class="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-white">Account Settings</h1>
                     <p class="mt-1.5 text-sm text-zinc-600 dark:text-zinc-400">
                         Manage your profile details, platform preferences, and security settings.
                     </p>
@@ -28,126 +24,84 @@
         <div class="grid grid-cols-1 items-start gap-8 md:grid-cols-4">
             <aside class="space-y-6 md:col-span-1">
                 <nav class="space-y-1">
-                    <button
-                        @click="currentTab = 'general'"
-                        :class="currentTab === 'general' ? 'border-l-2 font-bold translate-x-5' : 'text-zinc-600 dark:text-zinc-400 hover:translate-x-1'"
-                        class="flex w-full cursor-pointer items-center gap-3 px-3.5 py-2.5 text-left text-xs transition-all duration-200"
-                    >
-                        <svg
-                            class="size-4 shrink-0 opacity-80"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                            stroke-width="1.75"
-                        >
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"
-                            />
+                    <button @click="currentTab = 'general'"
+                            :class="currentTab === 'general' ? 'border-l-2 font-bold translate-x-5' : 'text-zinc-600 dark:text-zinc-400 hover:translate-x-1'"
+                            class="flex w-full cursor-pointer items-center gap-3 px-3.5 py-2.5 text-left text-xs transition-all duration-200">
+                        <svg class="size-4 shrink-0 opacity-80"
+                             fill="none"
+                             viewBox="0 0 24 24"
+                             stroke="currentColor"
+                             stroke-width="1.75">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
                         </svg>
                         General Info
                     </button>
-                    <button
-                        @click="currentTab = 'preferences'"
-                        :class="currentTab === 'preferences' ? 'border-l-2 font-bold translate-x-5' : 'text-zinc-600 dark:text-zinc-400 hover:translate-x-1'"
-                        class="flex w-full cursor-pointer items-center gap-3 px-3.5 py-2.5 text-left text-xs transition-all duration-200"
-                    >
-                        <svg
-                            class="size-4 shrink-0 opacity-80"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                            stroke-width="1.75"
-                        >
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 18H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 12h9.75"
-                            />
+                    <button @click="currentTab = 'preferences'"
+                            :class="currentTab === 'preferences' ? 'border-l-2 font-bold translate-x-5' : 'text-zinc-600 dark:text-zinc-400 hover:translate-x-1'"
+                            class="flex w-full cursor-pointer items-center gap-3 px-3.5 py-2.5 text-left text-xs transition-all duration-200">
+                        <svg class="size-4 shrink-0 opacity-80"
+                             fill="none"
+                             viewBox="0 0 24 24"
+                             stroke="currentColor"
+                             stroke-width="1.75">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 18H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 12h9.75" />
                         </svg>
                         Preferences
                     </button>
-                    <button
-                        @click="currentTab = 'notifications'"
-                        :class="currentTab === 'notifications' ? 'border-l-2 font-bold translate-x-5' : 'text-zinc-600 dark:text-zinc-400 hover:translate-x-1'"
-                        class="flex w-full cursor-pointer items-center gap-3 px-3.5 py-2.5 text-left text-xs transition-all duration-200"
-                    >
-                        <svg
-                            class="size-4 shrink-0 opacity-80"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                            stroke-width="1.75"
-                        >
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0"
-                            />
+                    <button @click="currentTab = 'notifications'"
+                            :class="currentTab === 'notifications' ? 'border-l-2 font-bold translate-x-5' : 'text-zinc-600 dark:text-zinc-400 hover:translate-x-1'"
+                            class="flex w-full cursor-pointer items-center gap-3 px-3.5 py-2.5 text-left text-xs transition-all duration-200">
+                        <svg class="size-4 shrink-0 opacity-80"
+                             fill="none"
+                             viewBox="0 0 24 24"
+                             stroke="currentColor"
+                             stroke-width="1.75">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
                         </svg>
                         Notifications
                     </button>
-                    <button
-                        @click="currentTab = 'security'"
-                        :class="currentTab === 'security' ? 'border-l-2 font-bold translate-x-5' : 'text-zinc-600 dark:text-zinc-400 hover:translate-x-1'"
-                        class="flex w-full cursor-pointer items-center gap-3 px-3.5 py-2.5 text-left text-xs transition-all duration-200"
-                    >
-                        <svg
-                            class="size-4 shrink-0 opacity-80"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                            stroke-width="1.75"
-                        >
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.57-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.286zm0 13.036h.008v.008H12v-.008z"
-                            />
+                    <button @click="currentTab = 'security'"
+                            :class="currentTab === 'security' ? 'border-l-2 font-bold translate-x-5' : 'text-zinc-600 dark:text-zinc-400 hover:translate-x-1'"
+                            class="flex w-full cursor-pointer items-center gap-3 px-3.5 py-2.5 text-left text-xs transition-all duration-200">
+                        <svg class="size-4 shrink-0 opacity-80"
+                             fill="none"
+                             viewBox="0 0 24 24"
+                             stroke="currentColor"
+                             stroke-width="1.75">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.57-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.286zm0 13.036h.008v.008H12v-.008z" />
                         </svg>
                         Security & Access
                     </button>
                 </nav>
             </aside>
             <main class="min-h-[450px] md:col-span-3">
-                <div
-                    x-show="currentTab === 'general'"
-                    x-transition:enter="transition ease-out duration-150"
-                    x-transition:enter-start="opacity-0 translate-y-0.5"
-                    x-transition:enter-end="opacity-100 translate-y-0"
-                    class="space-y-4"
-                >
+                <div x-show="currentTab === 'general'"
+                     x-transition:enter="transition ease-out duration-150"
+                     x-transition:enter-start="opacity-0 translate-y-0.5"
+                     x-transition:enter-end="opacity-100 translate-y-0"
+                     class="space-y-4">
                     <div class="rounded-xl border border-zinc-200 bg-zinc-100/50 p-5 dark:border-zinc-900 dark:bg-zinc-900/40">
                         <h3 class="text-xs font-medium text-zinc-500 dark:text-zinc-400">General Information</h3>
                         <div class="mt-4 grid grid-cols-1 gap-5 sm:grid-cols-2">
                             {% if user.username %}
                                 <div>
                                     <span class="block text-[11px] text-zinc-500 dark:text-zinc-500">Username</span>
-                                    <span
-                                        class="mt-0.5 block text-xs font-medium text-zinc-900 dark:text-zinc-200"
-                                    >{{ user.username }}</span>
+                                    <span class="mt-0.5 block text-xs font-medium text-zinc-900 dark:text-zinc-200">{{ user.username }}</span>
                                 </div>
                             {% endif %}
                             <div>
                                 <span class="block text-[11px] text-zinc-500 dark:text-zinc-500">Primary email</span>
-                                <span
-                                    class="mt-0.5 block text-xs font-medium text-zinc-900 dark:text-zinc-200"
-                                >{{ user.email }}</span>
+                                <span class="mt-0.5 block text-xs font-medium text-zinc-900 dark:text-zinc-200">{{ user.email }}</span>
                             </div>
                         </div>
                         <div class="mt-5 grid grid-cols-1 gap-5 border-t border-zinc-200/60 pt-5 sm:grid-cols-2 dark:border-zinc-800/60">
                             <div>
                                 <span class="block text-[11px] text-zinc-500 dark:text-zinc-500">Date joined</span>
-                                <span
-                                    class="mt-0.5 block text-xs text-zinc-700 dark:text-zinc-400"
-                                >{{ user.date_joined|date:"F d, Y" }}</span>
+                                <span class="mt-0.5 block text-xs text-zinc-700 dark:text-zinc-400">{{ user.date_joined|date:"F d, Y" }}</span>
                             </div>
                             <div>
                                 <span class="block text-[11px] text-zinc-500 dark:text-zinc-500">Last login</span>
-                                <span
-                                    class="mt-0.5 block text-xs text-zinc-700 dark:text-zinc-400"
-                                >{{ user.last_login|date:"F d, Y \a\t H:i" }}</span>
+                                <span class="mt-0.5 block text-xs text-zinc-700 dark:text-zinc-400">{{ user.last_login|date:"F d, Y \a\t H:i" }}</span>
                             </div>
                         </div>
                     </div>
@@ -155,57 +109,41 @@
                         <h3 class="text-xs font-medium text-zinc-500 dark:text-zinc-400">Subscription plan</h3>
                         <div class="mt-4 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
                             <div class="space-y-1">
-                                <span
-                                    class="text-xs font-medium text-zinc-900 dark:text-zinc-100"
-                                >{{ plan_name }}</span>
+                                <span class="text-xs font-medium text-zinc-900 dark:text-zinc-100">{{ plan_name }}</span>
                                 {% if not is_subscribed %}
-                                    <p class="text-[11px] text-zinc-500 dark:text-zinc-500">
-                                        Upgrade to unlock advanced features.
-                                    </p>
+                                    <p class="text-[11px] text-zinc-500 dark:text-zinc-500">Upgrade to unlock advanced features.</p>
                                 {% endif %}
                                 {% if storage_pack_requires_paid_base %}
                                     <div class="mt-2 inline-flex items-center gap-1.5 rounded-md border border-amber-500/20 bg-amber-500/5 px-2.5 py-1 text-[11px] text-amber-700 dark:border-amber-400/20 dark:bg-amber-400/10 dark:text-amber-400">
-                                        <svg
-                                            class="size-3 shrink-0"
-                                            viewBox="0 0 24 24"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            stroke-width="2"
-                                            aria-hidden="true"
-                                        >
-                                            <path
-                                                stroke-linecap="round"
-                                                stroke-linejoin="round"
-                                                d="M12 9v4m0 4h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"
-                                            />
+                                        <svg class="size-3 shrink-0"
+                                             viewBox="0 0 24 24"
+                                             fill="none"
+                                             stroke="currentColor"
+                                             stroke-width="2"
+                                             aria-hidden="true">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" />
                                         </svg>
                                         <span>Pro-only storage packs are disabled until a paid Pro plan is active
-                                            again.</span>
+                                        again.</span>
                                     </div>
                                 {% endif %}
                             </div>
                             <div class="flex shrink-0 items-center gap-2">
                                 {% if is_subscribed %}
-                                    <a
-                                        href="{% url 'pricing_page' %}"
-                                        class="rounded-lg bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-zinc-800 active:scale-[0.98] dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
-                                    >
+                                    <a href="{% url 'pricing_page' %}"
+                                       class="rounded-lg bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-zinc-800 active:scale-[0.98] dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200">
                                         Change plan
                                     </a>
                                     <form method="post" action="{% url 'portal_session' %}">
                                         {% csrf_token %}
-                                        <button
-                                            type="submit"
-                                            class="cursor-pointer rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 transition hover:bg-zinc-50 active:scale-[0.98] dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800/80"
-                                        >
+                                        <button type="submit"
+                                                class="cursor-pointer rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 transition hover:bg-zinc-50 active:scale-[0.98] dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800/80">
                                             Billing portal
                                         </button>
                                     </form>
                                 {% else %}
-                                    <a
-                                        href="{% url 'pricing_page' %}"
-                                        class="rounded-lg bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-zinc-800 active:scale-[0.98] dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
-                                    >
+                                    <a href="{% url 'pricing_page' %}"
+                                       class="rounded-lg bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-zinc-800 active:scale-[0.98] dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200">
                                         Upgrade plan
                                     </a>
                                 {% endif %}
@@ -219,43 +157,31 @@
                                 Download a complete backup of your data in Excel format.
                             </p>
                         </div>
-                        <a
-                            href="{% url 'accounting:export_all_to_excel' %}"
-                            class="inline-flex w-full shrink-0 items-center justify-center rounded-lg bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-zinc-800 active:scale-[0.98] sm:w-auto dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
-                        >
-                            <svg
-                                class="mr-1.5 size-3.5 opacity-70"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                                stroke-width="2"
-                            >
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"
-                                />
+                        <a href="{% url 'accounting:export_all_to_excel' %}"
+                           class="inline-flex w-full shrink-0 items-center justify-center rounded-lg bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-zinc-800 active:scale-[0.98] sm:w-auto dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200">
+                            <svg class="mr-1.5 size-3.5 opacity-70"
+                                 fill="none"
+                                 viewBox="0 0 24 24"
+                                 stroke="currentColor"
+                                 stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
                             </svg>
                             Download records
                         </a>
                     </div>
                 </div>
-                <div
-                    x-show="currentTab === 'preferences'"
-                    x-transition:enter="transition ease-out duration-150"
-                    x-transition:enter-start="opacity-0 translate-y-0.5"
-                    x-transition:enter-end="opacity-100 translate-y-0"
-                    class="space-y-4"
-                >
+                <div x-show="currentTab === 'preferences'"
+                     x-transition:enter="transition ease-out duration-150"
+                     x-transition:enter-start="opacity-0 translate-y-0.5"
+                     x-transition:enter-end="opacity-100 translate-y-0"
+                     class="space-y-4">
                     <div class="rounded-xl border border-zinc-200 bg-zinc-100/50 dark:border-zinc-900 dark:bg-zinc-900/40">
-                        <form
-                            hx-post="{% url 'core:profile_page' %}"
-                            hx-target="#UserSettingsForm"
-                            hx-swap="outerHTML"
-                            hx-trigger="change"
-                            hx-include="this"
-                            method="POST"
-                        >
+                        <form hx-post="{% url 'core:profile_page' %}"
+                              hx-target="#UserSettingsForm"
+                              hx-swap="outerHTML"
+                              hx-trigger="change"
+                              hx-include="this"
+                              method="POST">
                             {% csrf_token %}
                             {{ form.enable_push_notifications.as_hidden }}
                             {{ form.enable_email_notifications.as_hidden }}
@@ -263,22 +189,18 @@
                         </form>
                     </div>
                 </div>
-                <div
-                    x-show="currentTab === 'notifications'"
-                    x-transition:enter="transition ease-out duration-150"
-                    x-transition:enter-start="opacity-0 translate-y-0.5"
-                    x-transition:enter-end="opacity-100 translate-y-0"
-                    class="space-y-4"
-                >
+                <div x-show="currentTab === 'notifications'"
+                     x-transition:enter="transition ease-out duration-150"
+                     x-transition:enter-start="opacity-0 translate-y-0.5"
+                     x-transition:enter-end="opacity-100 translate-y-0"
+                     class="space-y-4">
                     <div class="rounded-xl border border-zinc-200 bg-zinc-100/50 dark:border-zinc-900 dark:bg-zinc-900/40">
-                        <form
-                            hx-post="{% url 'core:profile_page' %}"
-                            hx-target="#UserSettingsForm"
-                            hx-swap="outerHTML"
-                            hx-trigger="change"
-                            hx-include="this"
-                            method="POST"
-                        >
+                        <form hx-post="{% url 'core:profile_page' %}"
+                              hx-target="#UserSettingsForm"
+                              hx-swap="outerHTML"
+                              hx-trigger="change"
+                              hx-include="this"
+                              method="POST">
                             {% csrf_token %}
                             {{ form.auto_archive_expired_records.as_hidden }}
                             {{ form.auto_delete_archived_records.as_hidden }}
@@ -288,14 +210,11 @@
                             <div class="divide-y divide-zinc-200/60 dark:divide-zinc-800/60">
                                 <div class="flex items-center justify-between px-5 py-3.5">
                                     <div class="flex flex-col pr-4">
-                                        <label
-                                            for="{{ form.enable_push_notifications.id_for_label }}"
-                                            class="cursor-pointer text-xs font-medium text-zinc-900 select-none dark:text-zinc-200"
-                                        >
+                                        <label for="{{ form.enable_push_notifications.id_for_label }}"
+                                               class="cursor-pointer text-xs font-medium text-zinc-900 select-none dark:text-zinc-200">
                                             {{ form.enable_push_notifications.label }}
                                         </label>
-                                        <span class="mt-0.5 text-[11px] text-zinc-500 dark:text-zinc-500"
-                                        >Receive real-time push alerts on your browser.</span>
+                                        <span class="mt-0.5 text-[11px] text-zinc-500 dark:text-zinc-500">Receive real-time push alerts on your browser.</span>
                                     </div>
                                     <div class="flex items-center">
                                         {% render_field form.enable_push_notifications class="size-4 rounded border-zinc-300 text-zinc-900 focus:ring-0 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 cursor-pointer" %}
@@ -303,14 +222,11 @@
                                 </div>
                                 <div class="flex items-center justify-between px-5 py-3.5">
                                     <div class="flex flex-col pr-4">
-                                        <label
-                                            for="{{ form.enable_email_notifications.id_for_label }}"
-                                            class="cursor-pointer text-xs font-medium text-zinc-900 select-none dark:text-zinc-200"
-                                        >
+                                        <label for="{{ form.enable_email_notifications.id_for_label }}"
+                                               class="cursor-pointer text-xs font-medium text-zinc-900 select-none dark:text-zinc-200">
                                             {{ form.enable_email_notifications.label }}
                                         </label>
-                                        <span class="mt-0.5 text-[11px] text-zinc-500 dark:text-zinc-500"
-                                        >Receive notifications via email.</span>
+                                        <span class="mt-0.5 text-[11px] text-zinc-500 dark:text-zinc-500">Receive notifications via email.</span>
                                     </div>
                                     <div class="flex items-center">
                                         {% render_field form.enable_email_notifications class="size-4 rounded border-zinc-300 text-zinc-900 focus:ring-0 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 cursor-pointer" %}
@@ -321,13 +237,9 @@
                     </div>
                     <div class="flex flex-col items-start justify-between gap-4 rounded-xl border border-zinc-200 bg-zinc-100/50 p-5 sm:flex-row sm:items-center dark:border-zinc-900 dark:bg-zinc-900/40">
                         <div class="space-y-0.5">
-                            <h4 class="text-xs font-medium text-zinc-900 dark:text-zinc-200">
-                                Push notification devices
-                            </h4>
+                            <h4 class="text-xs font-medium text-zinc-900 dark:text-zinc-200">Push notification devices</h4>
                             <p class="text-[11px] text-zinc-500 dark:text-zinc-500">
-                                You currently have <span
-                                    class="font-medium text-zinc-700 dark:text-zinc-300"
-                                >{{ webpush_subscription_count }}</span> registered
+                                You currently have <span class="font-medium text-zinc-700 dark:text-zinc-300">{{ webpush_subscription_count }}</span> registered
                                 subscription{{ webpush_subscription_count|pluralize }}.
                             </p>
                         </div>
@@ -336,179 +248,118 @@
                         </div>
                     </div>
                 </div>
-                <div
-                    x-show="currentTab === 'security'"
-                    x-transition:enter="transition ease-out duration-150"
-                    x-transition:enter-start="opacity-0 translate-y-0.5"
-                    x-transition:enter-end="opacity-100 translate-y-0"
-                >
+                <div x-show="currentTab === 'security'"
+                     x-transition:enter="transition ease-out duration-150"
+                     x-transition:enter-start="opacity-0 translate-y-0.5"
+                     x-transition:enter-end="opacity-100 translate-y-0">
                     <div class="divide-y divide-zinc-200/60 overflow-hidden rounded-xl border border-zinc-200 bg-zinc-100/50 dark:divide-zinc-800/60 dark:border-zinc-900 dark:bg-zinc-900/40">
                         {% url 'account_email' as email_url %}
                         {% if email_url %}
-                            <a
-                                href="{{ email_url }}"
-                                class="group flex items-center justify-between p-4 px-5 transition-colors hover:bg-zinc-200/50 dark:hover:bg-zinc-900/60"
-                            >
+                            <a href="{{ email_url }}"
+                               class="group flex items-center justify-between p-4 px-5 transition-colors hover:bg-zinc-200/50 dark:hover:bg-zinc-900/60">
                                 <div class="flex items-center gap-3">
                                     <div class="rounded-lg border border-zinc-200 bg-white p-2 text-zinc-500 dark:border-zinc-900 dark:bg-zinc-900/40">
-                                        <svg
-                                            class="size-4"
-                                            fill="none"
-                                            viewBox="0 0 24 24"
-                                            stroke-width="1.5"
-                                            stroke="currentColor"
-                                        >
-                                            <path
-                                                stroke-linecap="round"
-                                                stroke-linejoin="round"
-                                                d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75"
-                                            />
+                                        <svg class="size-4"
+                                             fill="none"
+                                             viewBox="0 0 24 24"
+                                             stroke-width="1.5"
+                                             stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
                                         </svg>
                                     </div>
                                     <div>
-                                        <span class="block text-xs font-medium text-zinc-900 dark:text-zinc-200"
-                                        >Email addresses</span>
-                                        <span class="mt-0.5 block text-[11px] text-zinc-500 dark:text-zinc-500"
-                                        >Add, verify, or update your registered email addresses.</span>
+                                        <span class="block text-xs font-medium text-zinc-900 dark:text-zinc-200">Email addresses</span>
+                                        <span class="mt-0.5 block text-[11px] text-zinc-500 dark:text-zinc-500">Add, verify, or update your registered email addresses.</span>
                                     </div>
                                 </div>
-                                <svg
-                                    class="size-4 text-zinc-400 transition-transform duration-150 group-hover:translate-x-0.5 dark:text-zinc-600"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                    stroke-width="1.5"
-                                >
-                                    <path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        d="M8.25 4.5l7.5 7.5-7.5 7.5"
-                                    />
+                                <svg class="size-4 text-zinc-400 transition-transform duration-150 group-hover:translate-x-0.5 dark:text-zinc-600"
+                                     fill="none"
+                                     viewBox="0 0 24 24"
+                                     stroke="currentColor"
+                                     stroke-width="1.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
                                 </svg>
                             </a>
                         {% endif %}
                         {% if user.has_usable_password %}
                             {% url 'account_change_password' as pwd_url %}
                             {% if pwd_url %}
-                                <a
-                                    href="{{ pwd_url }}"
-                                    class="group flex items-center justify-between p-4 px-5 transition-colors hover:bg-zinc-200/50 dark:hover:bg-zinc-900/60"
-                                >
+                                <a href="{{ pwd_url }}"
+                                   class="group flex items-center justify-between p-4 px-5 transition-colors hover:bg-zinc-200/50 dark:hover:bg-zinc-900/60">
                                     <div class="flex items-center gap-3">
                                         <div class="rounded-lg border border-zinc-200 bg-white p-2 text-zinc-500 dark:border-zinc-900 dark:bg-zinc-900/40">
-                                            <svg
-                                                class="size-4"
-                                                fill="none"
-                                                viewBox="0 0 24 24"
-                                                stroke-width="1.5"
-                                                stroke="currentColor"
-                                            >
-                                                <path
-                                                    stroke-linecap="round"
-                                                    stroke-linejoin="round"
-                                                    d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z"
-                                                />
+                                            <svg class="size-4"
+                                                 fill="none"
+                                                 viewBox="0 0 24 24"
+                                                 stroke-width="1.5"
+                                                 stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
                                             </svg>
                                         </div>
                                         <div>
-                                            <span class="block text-xs font-medium text-zinc-900 dark:text-zinc-200"
-                                            >Password</span>
-                                            <span class="mt-0.5 block text-[11px] text-zinc-500 dark:text-zinc-500"
-                                            >Update your password to keep your account secure.</span>
+                                            <span class="block text-xs font-medium text-zinc-900 dark:text-zinc-200">Password</span>
+                                            <span class="mt-0.5 block text-[11px] text-zinc-500 dark:text-zinc-500">Update your password to keep your account secure.</span>
                                         </div>
                                     </div>
-                                    <svg
-                                        class="size-4 text-zinc-400 transition-transform duration-150 group-hover:translate-x-0.5 dark:text-zinc-600"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        stroke="currentColor"
-                                        stroke-width="1.5"
-                                    >
-                                        <path
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            d="M8.25 4.5l7.5 7.5-7.5 7.5"
-                                        />
+                                    <svg class="size-4 text-zinc-400 transition-transform duration-150 group-hover:translate-x-0.5 dark:text-zinc-600"
+                                         fill="none"
+                                         viewBox="0 0 24 24"
+                                         stroke="currentColor"
+                                         stroke-width="1.5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
                                     </svg>
                                 </a>
                             {% endif %}
                         {% endif %}
-                        <a
-                            href="{% url 'socialaccount_connections' %}"
-                            class="group flex items-center justify-between p-4 px-5 transition-colors hover:bg-zinc-200/50 dark:hover:bg-zinc-900/60"
-                        >
+                        <a href="{% url 'socialaccount_connections' %}"
+                           class="group flex items-center justify-between p-4 px-5 transition-colors hover:bg-zinc-200/50 dark:hover:bg-zinc-900/60">
                             <div class="flex items-center gap-3">
                                 <div class="rounded-lg border border-zinc-200 bg-white p-2 text-zinc-500 dark:border-zinc-900 dark:bg-zinc-900/40 dark:text-zinc-400">
-                                    <svg
-                                        class="size-4"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        stroke-width="1.5"
-                                        stroke="currentColor"
-                                    >
-                                        <path
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244"
-                                        />
+                                    <svg class="size-4"
+                                         fill="none"
+                                         viewBox="0 0 24 24"
+                                         stroke-width="1.5"
+                                         stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
                                     </svg>
                                 </div>
                                 <div>
-                                    <span class="block text-xs font-medium text-zinc-900 dark:text-zinc-200"
-                                    >Connected accounts</span>
-                                    <span class="mt-0.5 block text-[11px] text-zinc-500 dark:text-zinc-500"
-                                    >Manage single sign-on (SSO) providers.</span>
+                                    <span class="block text-xs font-medium text-zinc-900 dark:text-zinc-200">Connected accounts</span>
+                                    <span class="mt-0.5 block text-[11px] text-zinc-500 dark:text-zinc-500">Manage single sign-on (SSO) providers.</span>
                                 </div>
                             </div>
-                            <svg
-                                class="size-4 text-zinc-400 transition-transform duration-150 group-hover:translate-x-0.5 dark:text-zinc-600"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                                stroke-width="1.5"
-                            >
+                            <svg class="size-4 text-zinc-400 transition-transform duration-150 group-hover:translate-x-0.5 dark:text-zinc-600"
+                                 fill="none"
+                                 viewBox="0 0 24 24"
+                                 stroke="currentColor"
+                                 stroke-width="1.5">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
                             </svg>
                         </a>
                         {% url 'account_logout' as logout_url %}
                         {% if logout_url %}
-                            <a
-                                href="{{ logout_url }}"
-                                class="group flex items-center justify-between p-4 px-5 transition-colors hover:bg-rose-500/5 dark:hover:bg-rose-500/10"
-                            >
+                            <a href="{{ logout_url }}"
+                               class="group flex items-center justify-between p-4 px-5 transition-colors hover:bg-rose-500/5 dark:hover:bg-rose-500/10">
                                 <div class="flex items-center gap-3">
                                     <div class="rounded-lg border border-rose-200/60 bg-rose-50/50 p-2 text-rose-600 dark:border-rose-900/30 dark:bg-rose-950/30 dark:text-rose-400">
-                                        <svg
-                                            class="size-4"
-                                            fill="none"
-                                            viewBox="0 0 24 24"
-                                            stroke-width="1.5"
-                                            stroke="currentColor"
-                                        >
-                                            <path
-                                                stroke-linecap="round"
-                                                stroke-linejoin="round"
-                                                d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75"
-                                            />
+                                        <svg class="size-4"
+                                             fill="none"
+                                             viewBox="0 0 24 24"
+                                             stroke-width="1.5"
+                                             stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75" />
                                         </svg>
                                     </div>
                                     <div>
-                                        <span class="block text-xs font-medium text-rose-600 dark:text-rose-400"
-                                        >Sign out</span>
+                                        <span class="block text-xs font-medium text-rose-600 dark:text-rose-400">Sign out</span>
                                     </div>
                                 </div>
-                                <svg
-                                    class="size-4 text-rose-300 transition-transform duration-150 group-hover:translate-x-0.5 dark:text-rose-800"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                    stroke-width="1.5"
-                                >
-                                    <path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        d="M8.25 4.5l7.5 7.5-7.5 7.5"
-                                    />
+                                <svg class="size-4 text-rose-300 transition-transform duration-150 group-hover:translate-x-0.5 dark:text-rose-800"
+                                     fill="none"
+                                     viewBox="0 0 24 24"
+                                     stroke="currentColor"
+                                     stroke-width="1.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
                                 </svg>
                             </a>
                         {% endif %}

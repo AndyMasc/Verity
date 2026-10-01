@@ -1,16 +1,10 @@
-<div
-    x-data="{ selectedRecord: null }"
-    @click="if ($event.target.closest('[data-record-id]')) selectedRecord = $event.target.closest('[data-record-id]').dataset.recordId"
-    class="divide-y divide-zinc-200/60 dark:divide-zinc-800/50"
->
+<div x-data="{ selectedRecord: null }"
+     @click="if ($event.target.closest('[data-record-id]')) selectedRecord = $event.target.closest('[data-record-id]').dataset.recordId"
+     class="divide-y divide-zinc-200/60 dark:divide-zinc-800/50">
     {% for record in records %}
-        <div
-            data-record-id="{{ record.pk }}"
-            :class="selectedRecord === '{{ record.pk }}' ? 'ring-2 ring-inset ring-zinc-300 dark:ring-zinc-600 bg-zinc-50/50 dark:bg-white/[0.01]' : ''"
-            class="transition-all duration-200"
-        >
-            {% include 'records/record_card.html' with list_view=True %}
-        </div>
+        <div data-record-id="{{ record.pk }}"
+             :class="selectedRecord === '{{ record.pk }}' ? 'ring-2 ring-inset ring-zinc-300 dark:ring-zinc-600 bg-zinc-50/50 dark:bg-white/[0.01]' : ''"
+             class="transition-all duration-200">{% include 'records/record_card.html' with list_view=True %}</div>
     {% empty %}
         {% include 'core/partials/empty_state.html' with empty_title="No matching records found for this query." %}
     {% endfor %}

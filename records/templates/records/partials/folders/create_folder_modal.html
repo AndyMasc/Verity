@@ -1,54 +1,46 @@
-<div
-    class="fixed inset-0 z-50 flex items-center justify-center bg-zinc-900/40 p-4 backdrop-blur-sm dark:bg-black/60"
-    id="create-folder-modal"
-    hx-on:click="if(event.target === this) this.remove()"
->
+<div class="fixed inset-0 z-50 flex items-center justify-center bg-zinc-900/40 p-4 backdrop-blur-sm dark:bg-black/60"
+     id="create-folder-modal"
+     hx-on:click="if(event.target === this) this.remove()">
     <div class="w-full max-w-md overflow-hidden rounded-2xl border border-black/5 bg-white/90 shadow-2xl backdrop-blur-2xl dark:border-white/10 dark:bg-zinc-900/90">
         <div class="flex items-center justify-between border-b border-black/[0.04] p-6 dark:border-white/[0.04]">
             <div>
                 <h2 class="text-sm font-semibold text-zinc-950 dark:text-zinc-50">Create New Folder</h2>
-                <p class="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
-                    Group related records in a searchable workspace.
-                </p>
+                <p class="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">Group related records in a searchable workspace.</p>
             </div>
-            <button
-                type="button"
-                onclick="document.getElementById('create-folder-modal').remove()"
-                class="cursor-pointer rounded-lg p-1 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
-            >
-                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+            <button type="button"
+                    onclick="document.getElementById('create-folder-modal').remove()"
+                    class="cursor-pointer rounded-lg p-1 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-200">
+                <svg class="h-4 w-4"
+                     fill="none"
+                     viewBox="0 0 24 24"
+                     stroke-width="2"
+                     stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
                 </svg>
             </button>
         </div>
-        <form
-            hx-post="{% url 'records:create_folder' %}"
-            hx-target="#directory-results-container"
-            hx-target-error="#modal-container"
-            hx-swap="innerHTML"
-            class="space-y-4 p-6"
-        >
+        <form hx-post="{% url 'records:create_folder' %}"
+              hx-target="#directory-results-container"
+              hx-target-error="#modal-container"
+              hx-swap="innerHTML"
+              class="space-y-4 p-6">
             {% csrf_token %}
             <div class="space-y-1.5">
-                <label for="{{ form.name.id_for_label }}" class="text-xs font-medium text-zinc-600 dark:text-zinc-400"
-                >Folder Name</label>
+                <label for="{{ form.name.id_for_label }}"
+                       class="text-xs font-medium text-zinc-600 dark:text-zinc-400">Folder Name</label>
                 {{ form.name }}
                 {% if form.name.errors %}
                     <p class="mt-1 text-xs font-medium text-red-500">{{ form.name.errors.0 }}</p>
                 {% endif %}
             </div>
             <div class="flex items-center justify-end gap-2 border-t border-black/[0.04] pt-3 dark:border-white/[0.04]">
-                <button
-                    type="button"
-                    onclick="document.getElementById('create-folder-modal').remove()"
-                    class="cursor-pointer rounded-xl border border-zinc-200/50 bg-zinc-50 px-3.5 py-2 text-xs font-medium text-zinc-700 transition-all duration-200 hover:bg-zinc-100 dark:border-zinc-700/40 dark:bg-zinc-800/40 dark:text-zinc-300 dark:hover:bg-zinc-800"
-                >
+                <button type="button"
+                        onclick="document.getElementById('create-folder-modal').remove()"
+                        class="cursor-pointer rounded-xl border border-zinc-200/50 bg-zinc-50 px-3.5 py-2 text-xs font-medium text-zinc-700 transition-all duration-200 hover:bg-zinc-100 dark:border-zinc-700/40 dark:bg-zinc-800/40 dark:text-zinc-300 dark:hover:bg-zinc-800">
                     Cancel
                 </button>
-                <button
-                    type="submit"
-                    class="inline-flex cursor-pointer items-center gap-2 rounded-2xl bg-zinc-900 px-3.5 py-2 text-xs font-medium text-white shadow-xs transition-all duration-200 hover:bg-zinc-800 active:scale-[0.98] dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white"
-                >
+                <button type="submit"
+                        class="inline-flex cursor-pointer items-center gap-2 rounded-2xl bg-zinc-900 px-3.5 py-2 text-xs font-medium text-white shadow-xs transition-all duration-200 hover:bg-zinc-800 active:scale-[0.98] dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white">
                     Create
                 </button>
             </div>

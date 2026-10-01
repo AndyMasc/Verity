@@ -1,14 +1,11 @@
 {# Expects: is_paginated, page_obj. Optional: pagination_url (next-page URL), pagination_target, pagination_include, pagination_indicator. #}
 {% if is_paginated and page_obj.has_next %}
-    <div
-        id="infinite-scroll-trigger"
-        class="h-0 overflow-hidden"
-        hx-get="{% if pagination_url %}{{ pagination_url }}{% else %}{% querystring page=page_obj.next_page_number %}{% endif %}"
-        hx-trigger="intersect once"
-        hx-target="{{ pagination_target|default:'#query-results-container' }}"
-        hx-swap="beforeend"
-        hx-include="{{ pagination_include|default:'#filter-form, #search' }}"
-        hx-indicator="{{ pagination_indicator|default:'#infinite-scroll-loading' }}"
-    >
-    </div>
+    <div id="infinite-scroll-trigger"
+         class="h-0 overflow-hidden"
+         hx-get="{% if pagination_url %}{{ pagination_url }}{% else %}{% querystring page=page_obj.next_page_number %}{% endif %}"
+         hx-trigger="intersect once"
+         hx-target="{{ pagination_target|default:'#query-results-container' }}"
+         hx-swap="beforeend"
+         hx-include="{{ pagination_include|default:'#filter-form, #search' }}"
+         hx-indicator="{{ pagination_indicator|default:'#infinite-scroll-loading' }}"></div>
 {% endif %}

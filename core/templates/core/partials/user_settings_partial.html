@@ -1,11 +1,10 @@
 {% load widget_tweaks %}
-<div id="UserSettingsForm" class="divide-y divide-zinc-100 dark:divide-zinc-800/60">
+<div id="UserSettingsForm"
+     class="divide-y divide-zinc-100 dark:divide-zinc-800/60">
     <div class="flex items-start justify-between gap-5 px-6 py-4 transition-all duration-200 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/10">
         <div class="flex flex-col pr-4">
-            <label
-                for="{{ form.default_currency.id_for_label }}"
-                class="cursor-pointer text-xs font-medium text-zinc-800 select-none dark:text-zinc-200"
-            >
+            <label for="{{ form.default_currency.id_for_label }}"
+                   class="cursor-pointer text-xs font-medium text-zinc-800 select-none dark:text-zinc-200">
                 {{ form.default_currency.label }}
             </label>
             <span class="mt-0.5 text-[11px] text-zinc-500 dark:text-zinc-400">
@@ -19,10 +18,8 @@
     </div>
     <div class="flex items-start justify-between px-6 py-4 transition-all duration-200 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/10">
         <div class="flex flex-col pr-4">
-            <label
-                for="{{ form.auto_archive_expired_records.id_for_label }}"
-                class="cursor-pointer text-xs font-medium text-zinc-800 select-none dark:text-zinc-200"
-            >
+            <label for="{{ form.auto_archive_expired_records.id_for_label }}"
+                   class="cursor-pointer text-xs font-medium text-zinc-800 select-none dark:text-zinc-200">
                 {{ form.auto_archive_expired_records.label }}
             </label>
             <span class="mt-0.5 text-[11px] text-zinc-500 dark:text-zinc-400">
@@ -35,10 +32,8 @@
     </div>
     <div class="flex items-start justify-between px-6 py-4 transition-all duration-200 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/10">
         <div class="flex flex-col pr-4">
-            <label
-                for="{{ form.auto_delete_archived_records.id_for_label }}"
-                class="cursor-pointer text-xs font-medium text-zinc-800 select-none dark:text-zinc-200"
-            >
+            <label for="{{ form.auto_delete_archived_records.id_for_label }}"
+                   class="cursor-pointer text-xs font-medium text-zinc-800 select-none dark:text-zinc-200">
                 {{ form.auto_delete_archived_records.label }}
             </label>
             <span class="mt-0.5 text-[11px] text-zinc-500 dark:text-zinc-400">
@@ -51,10 +46,8 @@
     </div>
     <div class="flex items-start justify-between px-6 py-4 transition-all duration-200 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/10">
         <div class="flex flex-col pr-4">
-            <label
-                for="{{ form.expiring_notifications_advance_time.id_for_label }}"
-                class="cursor-pointer text-xs font-medium text-zinc-800 select-none dark:text-zinc-200"
-            >
+            <label for="{{ form.expiring_notifications_advance_time.id_for_label }}"
+                   class="cursor-pointer text-xs font-medium text-zinc-800 select-none dark:text-zinc-200">
                 {{ form.expiring_notifications_advance_time.label }}
             </label>
             <span class="mt-0.5 text-[11px] text-zinc-500 dark:text-zinc-400">
@@ -67,10 +60,8 @@
     </div>
     <div class="flex items-start justify-between px-6 py-4 transition-all duration-200 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/10">
         <div class="flex flex-col pr-4">
-            <label
-                for="{{ form.auto_create_and_organize_folders.id_for_label }}"
-                class="cursor-pointer text-xs font-medium text-zinc-800 select-none dark:text-zinc-200"
-            >
+            <label for="{{ form.auto_create_and_organize_folders.id_for_label }}"
+                   class="cursor-pointer text-xs font-medium text-zinc-800 select-none dark:text-zinc-200">
                 {{ form.auto_create_and_organize_folders.label }}
             </label>
             <span class="mt-0.5 text-[11px] text-zinc-500 dark:text-zinc-400">
