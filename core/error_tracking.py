@@ -14,7 +14,10 @@ from dramatiq.middleware import Middleware
 
 _MAX_TEXT = 2000
 _MAX_ARG = 200
-# Reporting a failure that itself fails would otherwise recurse.
+# "posthog" is skipped on purpose: a failure to report would otherwise recurse
+# into another failure to report, and core.posthog_logs owns that namespace for
+# PostHog's logs product. This handler covers WARNING and above only; the INFO
+# structured logs exported there never reach it.
 _INTERNAL = ("posthog", "core.error_tracking")
 
 

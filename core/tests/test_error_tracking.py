@@ -110,10 +110,22 @@ class LogCaptureTests(SimpleTestCase):
         self.handler.emit(self._record("failed", exc_info=exc_info))
         self.client.capture_exception.assert_called_once()
 
-    def test_own_log_records_are_ignored(self):
-        """Otherwise a failure to report recurses into another failure to report."""
-        self.handler.emit(self._record("send failed", name="posthog.client"))
+    def test_posthog_namespace_is_ignored(self):
+        """A failure to report would recurse into another failure to report."""
+        for name in ("posthog.client", "posthog.export"):
+            with self.subTest(name=name):
+                self.handler.emit(self._record("send failed", name=name))
         self.client.capture.assert_not_called()
+
+    def test_posthog_export_is_not_wired_to_this_handler(self):
+        """core.posthog_logs owns that logger and stops it propagating at runtime.
+
+        Settings must not attach error_tracking to it, or the same record would
+        be both exported to PostHog logs and reported as an error.
+        """
+        from django.conf import settings
+
+        self.assertNotIn("posthog.export", settings.LOGGING.get("loggers", {}))
 
     def test_handler_errors_never_propagate(self):
         self.client.capture.side_effect = RuntimeError("posthog down")

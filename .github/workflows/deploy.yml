@@ -1,13 +1,24 @@
 name: Deploy
+
+# Manual only. This template is not wired to a deploy mechanism yet, and
+# ./deploy.sh does not exist, so triggering it on push would just go red.
+# Replace the Deploy step below, then switch this back to push on main.
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Branch or tag to deploy
+        required: true
+        default: main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
 
       - name: Resolve PostHog release
         id: posthog-release
@@ -21,5 +32,6 @@ jobs:
       - name: Deploy
         env:
           POSTHOG_RELEASE_ID: ${{ steps.posthog-release.outputs.release-id }}
-        # Your deploy command. It must pass POSTHOG_RELEASE_ID to your app.
-        run: ./deploy.sh
+        # TODO: no deploy mechanism is wired up. See README or your host's
+        # config for how the image actually gets rolled out.
+        run: echo "Deploy not configured. POSTHOG_RELEASE_ID=$POSTHOG_RELEASE_ID"
