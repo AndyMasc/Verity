@@ -6,7 +6,7 @@ services:
       dockerfile: Dockerfile
     image: verity-workers-wck7vb:latest # Specific name of built image so others can reuse it
     restart: always
-# Uvicorn is async, so 2-4 workers can handle lots of concurrent requests.
+
     command:
       - sh
       - -c
@@ -15,7 +15,7 @@ services:
         set -e
         python manage.py migrate --noinput --skip-checks
         python manage.py collectstatic --noinput --skip-checks
-        exec python -O -m uvicorn Verity.asgi:application --host 0.0.0.0 --port 8000 --workers 2 --lifespan off --timeout-keep-alive 5 --log-level warning
+        exec python -O -m uvicorn Verity.asgi:application --host 0.0.0.0 --port 8000 --workers 4 --lifespan off --timeout-keep-alive 5 --log-level warning
     expose:
       - "8000"
     ports:
@@ -49,9 +49,9 @@ services:
       restart_policy:
         condition: any
 
-  # Background worker for handling Dramatiq actors/tasks.
-  # Builds its own image from the Dockerfile (no dependency on web's image name),
-  # so this compose stays valid if the Dokploy app is ever recreated under a new name.
+  # Background worker for the queue-bound actors: payment verification, record
+  # organisation, periodic maintenance. These are blocked on 3rd party services
+  # so threads scale well and the GIL is not the limit.
   worker:
     build:
       context: .
@@ -59,7 +59,7 @@ services:
     restart: always
     environment:
       - MALLOC_ARENA_MAX=2
-    command: sh -c "cd /app && python manage.py rundramatiq --skip-checks --processes 2 --threads 8 -Q default ocr-tasks maintenance"
+    command: sh -c "cd /app && python manage.py rundramatiq --skip-checks --processes 2 --threads 8 -Q default maintenance"
     healthcheck:
       test:
         [
@@ -88,6 +88,53 @@ services:
         reservations:
           cpus: '1.0'
           memory: 1024M
+      update_config:
+        order: start-first
+        failure_action: rollback
+      restart_policy:
+        condition: any
+
+  # OCR runs in its own pool on purpose. tasks
+  # sleeps in a loop for up to 240s waiting on Gemini, so
+  # every extra OCR thread is parked doing nothing. Sharing one pool with
+  # the default queue meant a burst of documents could park all threads and stall
+  # tasks behind it.
+  worker_ocr:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    environment:
+      - MALLOC_ARENA_MAX=2
+    command: sh -c "cd /app && python manage.py rundramatiq --skip-checks --processes 1 --threads 2 -Q ocr-tasks"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import sys; sys.exit(0 if b'rundramatiq' in open('/proc/1/cmdline','rb').read() else 1)",
+        ]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+    env_file:
+      - .env
+    networks:
+      - dokploy-network
+    depends_on:
+      web:
+        condition: service_started
+    deploy:
+      replicas: 1 # One pool is enough: the Gemini quota is the bottleneck, not us.
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 256M
       update_config:
         order: start-first
         failure_action: rollback
