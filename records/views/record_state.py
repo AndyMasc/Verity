@@ -4,8 +4,8 @@ Each action creates an AuditLog entry and, for HTMX requests, returns
 a 204 response so the client can update the UI without a full page reload.
 """
 
-import logging
 import json
+import logging
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
