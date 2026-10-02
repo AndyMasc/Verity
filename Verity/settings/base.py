@@ -111,7 +111,6 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "core.middleware.PostHogSessionIdMiddleware",  # Must follow the PostHog context
     "django.contrib.messages.middleware.MessageMiddleware",
     "simple_history.middleware.HistoryRequestMiddleware",
     "core.middleware.HtmxMessageMiddleware",  # Send messages without reload
@@ -120,6 +119,7 @@ MIDDLEWARE = [
     "core.middleware.TimezoneMiddleware",  # Get user timezone via cookie
     "allauth.account.middleware.AccountMiddleware",
     "posthog.integrations.django.PosthogContextMiddleware",
+    "core.middleware.PostHogSessionIdMiddleware",  # Must follow the PostHog context
 ]
 
 if not DEBUG:

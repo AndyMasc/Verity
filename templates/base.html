@@ -86,24 +86,29 @@
                 person_profiles: 'identified_only',
                 persistence: CookieConsent === 'allowed' ? 'localStorage+cookie' : 'memory',
                 tracing_headers: ['veritypay.app'],
+                capture_exceptions: true,
+                session_recording: {
+                    maskAllInputs: true,
+                    maskInputOptions: {
+                        'password': true,
+                    }
+                }
             })
 
-            // The browser SDK is the only thing that knows the PostHog session id. Mirror it into a first-party cookie so backend captures (login, view events) can be linked to this session recording.
+            // Only the browser SDK knows the PostHog session id. Mirror it into a cookie so backend captures can be linked to session recordings.
             posthog.onSessionId(function (sessionId) {
                 if (!sessionId) return;
 
-                document.cookie = 'verity_ph_session=' + encodeURIComponent(sessionId) +
+                document.cookie = 'posthog_session_cookie=' + encodeURIComponent(sessionId) +
                     '; path=/; max-age=1800; samesite=lax' +
                     (window.location.protocol === 'https:' ? '; secure' : '');
             });
         </script>
         {% if user.is_authenticated %}
             <script>
-                // PostHog is third-party analytics, so identification follows cookie
-                // consent.
                 if (CookieConsent === 'allowed') {
                     posthog.identify(
-                        "{{ user.pk|escapejs }}", // Distinct ID: Uses a stable identifier - user ID - to link events across sessions.
+                        "{{ user.pk|escapejs }}",
                     {
                         email: "{{ user.email|escapejs }}",
                         name: "{{ user.username|escapejs }}",

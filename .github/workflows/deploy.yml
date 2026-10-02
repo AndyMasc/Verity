@@ -1,0 +1,25 @@
+name: Deploy
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve PostHog release
+        id: posthog-release
+        uses: PostHog/resolve-release@v1
+        with:
+          api-key: ${{ secrets.POSTHOG_CLI_API_KEY }}
+          project-id: ${{ vars.POSTHOG_PROJECT_ID }}
+          # For EU cloud:
+          # host: https://eu.posthog.com
+
+      - name: Deploy
+        env:
+          POSTHOG_RELEASE_ID: ${{ steps.posthog-release.outputs.release-id }}
+        # Your deploy command. It must pass POSTHOG_RELEASE_ID to your app.
+        run: ./deploy.sh

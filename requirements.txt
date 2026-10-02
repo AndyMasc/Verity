@@ -45,7 +45,7 @@ dill==0.4.1
 distlib==0.4.3
 distro==1.9.0
 dj-stripe==2.11.0
-Django==6.0.7
+Django==6.0.8
 django-allauth==65.18.0
 django-allauth-ui==1.8.1
 django-anymail==15.2
@@ -150,7 +150,7 @@ networkx==3.6.1
 nodeenv==1.10.0
 nulltype==2.3.1
 numpy==2.5.0
-oauthlib==3.3.1
+oauthlib==4.0.0
 odfpy==1.4.1
 opencv-python-headless==4.13.0.92
 opentelemetry-api==1.44.0
@@ -195,7 +195,7 @@ pydantic==2.13.4
 pydantic_core==2.46.4
 pygls==2.1.1
 Pygments==2.20.0
-PyJWT==2.13.0
+PyJWT==2.15.0
 pyparsing==3.3.2
 pypdfium2==5.13.0
 pytailwindcss==0.3.1
@@ -275,7 +275,7 @@ tzdata==2026.2
 tzlocal==5.4.4
 unidiff==1.0.1
 uritemplate==4.2.0
-urllib3==2.7.0
+urllib3==2.8.0
 uv==0.11.28
 uvicorn==0.34.0
 uvicorn-worker==0.3.0

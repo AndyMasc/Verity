@@ -2,16 +2,20 @@ import json
 import logging
 from unittest.mock import patch
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
 from django.contrib.messages.storage.fallback import FallbackStorage
 from django.http import HttpRequest, HttpResponse
-from django.test import TestCase, override_settings
+from django.test import SimpleTestCase, TestCase, override_settings
 from django.utils import timezone
 
-from core.middleware import HtmxMessageMiddleware
+from posthog import new_context
+from posthog.contexts import get_context_session_id
+
+from core.middleware import HtmxMessageMiddleware, PostHogSessionIdMiddleware
 
 
 class HtmxMessageMiddlewareTest(TestCase):
@@ -195,3 +199,61 @@ class HtmxMessageMiddlewareDetailedTest(TestCase):
         middleware = HtmxMessageMiddleware(lambda req: response)
         middleware(request)
         self.assertNotIn("HX-Trigger", response)
+
+
+class PostHogSessionIdMiddlewareTest(SimpleTestCase):
+    """Session linking, which fails silently if the middleware order slips."""
+
+    CONTEXT_MW = "posthog.integrations.django.PosthogContextMiddleware"
+    SESSION_MW = "core.middleware.PostHogSessionIdMiddleware"
+
+    def _request(self, cookies=None, headers=None):
+        request = HttpRequest()
+        request.COOKIES = cookies or {}
+        request.META = {
+            f"HTTP_{key.upper().replace('-', '_')}": value
+            for key, value in (headers or {}).items()
+        }
+        return request
+
+    def _session_seen(self, request):
+        seen = {}
+
+        def get_response(req):
+            seen["session_id"] = get_context_session_id()
+            return HttpResponse()
+
+        # Stands in for PosthogContextMiddleware, the only thing that opens a
+        # context. posthog.set_context_session() does nothing without one.
+        with new_context():
+            PostHogSessionIdMiddleware(get_response)(request)
+        return seen["session_id"]
+
+    def test_must_be_listed_after_the_posthog_context_middleware(self):
+        order = settings.MIDDLEWARE
+        self.assertLess(
+            order.index(self.CONTEXT_MW),
+            order.index(self.SESSION_MW),
+            "set_context_session is a no-op unless a context is already open, "
+            "so cookie-based session ids are dropped when this runs first",
+        )
+
+    def test_cookie_supplies_the_session_id(self):
+        request = self._request(cookies={"posthog_session_cookie": "sess_COOKIE"})
+        self.assertEqual(self._session_seen(request), "sess_COOKIE")
+
+    def test_tracing_header_is_left_to_the_context_middleware(self):
+        request = self._request(
+            cookies={"posthog_session_cookie": "sess_COOKIE"},
+            headers={"X-POSTHOG-SESSION-ID": "sess_HEADER"},
+        )
+        self.assertIsNone(self._session_seen(request))
+
+    def test_malformed_cookie_is_ignored(self):
+        for bad in ("sess has spaces", "sess;drop=1", "x" * 65, ""):
+            with self.subTest(bad=bad):
+                request = self._request(cookies={"posthog_session_cookie": bad})
+                self.assertIsNone(self._session_seen(request))
+
+    def test_absent_cookie_is_not_an_error(self):
+        self.assertIsNone(self._session_seen(self._request()))

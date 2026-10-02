@@ -99,20 +99,16 @@ class PostHogSessionIdMiddleware:
     mirrors its session ID into a first-party cookie; this reads that cookie and
     sets it on the request's PostHog context, which the Python SDK merges onto
     every event captured during the request.
-
-    Must be listed *after* posthog.integrations.django.PosthogContextMiddleware
-    in MIDDLEWARE: that middleware opens a fresh context per request, so a
-    session ID set before it would be discarded.
     """
 
-    COOKIE_NAME = "verity_ph_session"
+    COOKIE_NAME = "posthog_session_cookie"
     SESSION_ID_PATTERN = re.compile(r"^[0-9A-Za-z_-]{1,64}$")
 
     def __init__(self, get_response: Callable[[HttpRequest], HttpResponse]) -> None:
         self.get_response = get_response
 
     def __call__(self, request: HttpRequest) -> HttpResponse:
-        # The X-POSTHOG-SESSION-ID header (set by the SDK's `tracing_headers`
+        # The X-POSTHOG-SESSION-ID header (set by the SDK's tracing_headers
         # option) is handled by the PostHog context middleware and wins here.
         if "X-POSTHOG-SESSION-ID" not in request.headers:
             session_id = request.COOKIES.get(self.COOKIE_NAME, "")
