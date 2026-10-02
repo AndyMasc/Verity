@@ -94,7 +94,9 @@
                     }
                 }
             })
-
+            if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+                posthog.opt_out_capturing();
+            }
             // Only the browser SDK knows the PostHog session id. Mirror it into a cookie so backend captures can be linked to session recordings.
             posthog.onSessionId(function (sessionId) {
                 if (!sessionId) return;
