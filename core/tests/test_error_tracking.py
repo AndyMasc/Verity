@@ -7,6 +7,8 @@ from django.test import SimpleTestCase
 
 from core.error_tracking import ErrorTracking, LogCapture
 
+logger = logging.getLogger("billing.test")
+
 
 class FakeMessage:
     def __init__(self, args=None):
@@ -73,7 +75,7 @@ class ErrorTrackingTests(SimpleTestCase):
 
 class LogCaptureTests(SimpleTestCase):
     def setUp(self):
-        self.handler = LogCapture()
+        self.handler = LogCapture(level=logging.WARNING)
         patcher = mock.patch("core.apps.posthog_client", mock.Mock())
         self.client = patcher.start()
         self.addCleanup(patcher.stop)
@@ -91,14 +93,34 @@ class LogCaptureTests(SimpleTestCase):
             exc_info=exc_info,
         )
 
-    def test_warning_without_exception_is_captured_as_event(self):
+    def test_warning_becomes_an_error_not_an_analytics_event(self):
         self.handler.emit(self._record("no PackagePayment for session abc"))
-        args, kwargs = self.client.capture.call_args
-        self.assertEqual(args[0], "log_error")
-        props = kwargs["properties"]
-        self.assertEqual(props["level"], "WARNING")
-        self.assertEqual(props["message"], "no PackagePayment for session abc")
-        self.assertEqual(props["logger"], "billing.webhooks")
+        self.client.capture.assert_not_called()
+        args, kwargs = self.client.capture_exception.call_args
+        exc = args[0]
+        self.assertIsInstance(exc, RuntimeError)
+        self.assertEqual(str(exc), "no PackagePayment for session abc")
+        self.assertEqual(kwargs["properties"]["level"], "WARNING")
+        self.assertEqual(kwargs["properties"]["logger"], "billing.webhooks")
+
+    def test_logging_inside_except_keeps_the_original_traceback(self):
+        """The common shape: caught, logged without exc_info, execution continues."""
+        try:
+            raise ValueError("stripe said no")
+        except ValueError:
+            logger.warning("could not sync payment for order 1")
+
+        self.client.capture_exception.assert_called_once()
+        exc = self.client.capture_exception.call_args.args[0]
+        self.assertIsInstance(exc, ValueError)
+        self.assertEqual(str(exc), "stripe said no")
+        self.assertIsNotNone(exc.__traceback__)
+
+    def test_info_and_below_are_not_reported(self):
+        for level in (logging.DEBUG, logging.INFO):
+            with self.subTest(level=level):
+                self.handler.emit(self._record("chatter", level=level))
+        self.client.capture_exception.assert_not_called()
 
     def test_record_with_exception_keeps_the_traceback(self):
         import sys
@@ -128,7 +150,7 @@ class LogCaptureTests(SimpleTestCase):
         self.assertNotIn("posthog.export", settings.LOGGING.get("loggers", {}))
 
     def test_handler_errors_never_propagate(self):
-        self.client.capture.side_effect = RuntimeError("posthog down")
+        self.client.capture_exception.side_effect = RuntimeError("posthog down")
         self.handler.handle(self._record("something failed"))
 
     def test_handler_is_wired_where_propagate_is_off(self):

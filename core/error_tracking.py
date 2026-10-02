@@ -8,6 +8,7 @@ becomes an exception either, so "LogCapture" reports those from the log stream.
 from __future__ import annotations
 
 import logging
+import sys
 from typing import Any
 
 from dramatiq.middleware import Middleware
@@ -16,8 +17,7 @@ _MAX_TEXT = 2000
 _MAX_ARG = 200
 # "posthog" is skipped on purpose: a failure to report would otherwise recurse
 # into another failure to report, and core.posthog_logs owns that namespace for
-# PostHog's logs product. This handler covers WARNING and above only; the INFO
-# structured logs exported there never reach it.
+# PostHog's logs product.
 _INTERNAL = ("posthog", "core.error_tracking")
 
 
@@ -75,26 +75,37 @@ class ErrorTracking(Middleware):
 
 
 class LogCapture(logging.Handler):
-    """Forward warning and error log records to error tracking."""
+    """Forward warning and error log records to error tracking. The level
+    is checked here as well so that attaching this handler without
+    a level cannot turn every debug line into an error.
+    """
 
     def emit(self, record: logging.LogRecord) -> None:
         try:
+            if record.levelno < logging.WARNING:
+                return
             if record.name.split(".")[0] in _INTERNAL:
                 return
             client = _client()
             if client is None:
                 return
-            properties = {
-                "level": record.levelname,
-                "logger": record.name,
-                "message": _text(record.getMessage()),
-                "module": record.module,
-                "line": record.lineno,
-            }
-            if record.exc_info and record.exc_info[1] is not None:
-                client.capture_exception(record.exc_info[1], properties=properties)
-            else:
-                client.capture("log_error", properties=properties)
+
+            # Logging from inside an except block leaves the original exception
+            # live in sys.exc_info() even when the call passed no exc_info, so a
+            # caught failure still reports with its traceback.
+            exc = record.exc_info[1] if record.exc_info else sys.exc_info()[1]
+            if exc is None:
+                exc = RuntimeError(record.getMessage())
+
+            client.capture_exception(
+                exc,
+                properties={
+                    "level": record.levelname,
+                    "logger": record.name,
+                    "module": record.module,
+                    "line": record.lineno,
+                },
+            )
         except Exception:
             self.handleError(record)
 

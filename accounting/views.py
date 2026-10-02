@@ -5,6 +5,7 @@ from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.views.decorators.http import require_POST
 from django_ratelimit.decorators import ratelimit
 
+from core.apps import posthog_client
 from records.models import Record
 from Verity.views import parse_record_ids
 
@@ -14,6 +15,17 @@ logger = logging.getLogger(__name__)
 
 
 XLSX_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+
+def _capture_export(request: HttpRequest, event: str, count: int) -> None:
+    """Record that a user pulled their records out as a spreadsheet."""
+    if posthog_client is None:
+        return
+    posthog_client.capture(
+        event,
+        distinct_id=str(request.user.pk),
+        properties={"record_count": count},
+    )
 
 
 def _xlsx_response(excel_data: bytes) -> HttpResponse:
@@ -32,6 +44,7 @@ def ExportExcelAll(request: HttpRequest) -> HttpResponse:
         logger.exception("Failed to export records for user %s", request.user.pk)
         return HttpResponse("Export failed. Please try again later.", status=500)
 
+    _capture_export(request, "all_records_exported", queryset.count())
     return _xlsx_response(excel_data)
 
 
@@ -61,4 +74,6 @@ def ExportSelectedExcel(request: HttpRequest) -> HttpResponse:
         )
         return HttpResponse("Export failed. Please try again later.", status=500)
 
+    exported = queryset.count()
+    _capture_export(request, "selected_records_exported", exported)
     return _xlsx_response(excel_data)
