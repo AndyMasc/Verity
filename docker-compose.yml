@@ -15,6 +15,7 @@ services:
         set -e
         python manage.py migrate --noinput --skip-checks
         python manage.py collectstatic --noinput --skip-checks
+        python manage.py tailwind build --minify
         exec python -O -m uvicorn Verity.asgi:application --host 0.0.0.0 --port 8000 --workers 4 --lifespan off --timeout-keep-alive 5 --log-level warning
     expose:
       - "8000"
@@ -34,8 +35,8 @@ services:
       start_period: 30s
       retries: 3
     deploy:
-      replicas: 1 # Scale web for traffic. Before raising this, move `migrate` out of the
-                  # command into a pre-deploy one-shot (concurrent migrates race).
+      replicas: 1 # Scale web for traffic. Before raising this, move migrate and tailwind build
+                  # out of the command into a pre-deploy one-shot (concurrent migrates race).
       resources:
         limits:
           cpus: '2.0'
