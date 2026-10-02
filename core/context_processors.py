@@ -18,14 +18,9 @@ WEBPUSH_STATUS_CACHE_TTL = 300
 
 
 def webpush_status(request: HttpRequest) -> dict[str, Any]:
-    """Add webpush subscription status to the template context.
+    """Expose webpush availability and the user's subscription count.
 
-    Returns "webpush_enabled" (bool) and "webpush_subscription_count"
-    (int) so templates can conditionally show subscribe/unsubscribe UI.
-
-    The count is cached per-user to avoid a query on every page load.
-    The cache is invalidated when webpush subscriptions change (see
-    "core.signals").
+    The count is cached per user; see core.signals for the invalidation.
     """
     subscription_count = 0
     if request.user.is_authenticated:

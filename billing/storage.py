@@ -1,10 +1,8 @@
 """Storage accounting: O(1) per-user byte usage via a denormalized counter.
 
-Usage checks used to run a "SUM(file_size)" over every document on each
-request, which grows linearly with the user's document count. Instead the
-documents layer maintains "CustomUser.storage_used_bytes" transactionally at
-every mutation point (upload confirm, permanent delete, bulk cleanup), and the
-checks here read that single row.
+The documents layer maintains "CustomUser.storage_used_bytes" transactionally
+at every mutation point (upload confirm, permanent delete, bulk cleanup), and
+the checks here read that single row.
 
 The counter is kept in sync by signals on "DocumentData" ("pre_save" /
 "post_save" / "post_delete") so every lifecycle transition — including bulk

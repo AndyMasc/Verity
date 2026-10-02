@@ -11,17 +11,25 @@ from typing import Any, ClassVar
 from django.contrib import admin, messages
 
 from .models import Folder, Record, RecordShare
+from .services import hard_delete_record
 
 
 @admin.action(description="Hard-delete selected records (permanent)")
 def hard_delete_records(modeladmin, request, queryset):  # noqa: ARG001
-    """Permanently delete selected records. Superuser-only action."""
+    """Permanently delete selected records. Superuser-only action.
+
+    Deliberately skips the seven-year retention gate: this is the path for
+    honouring a user's own deletion request, which must not wait out retention.
+    Everything else is delegated to "hard_delete_record" so an admin deletion is
+    audited, atomic, and cleans up the record's documents and their stored
+    objects exactly as a self-service deletion does.
+    """
     if not request.user.is_superuser:
         messages.error(request, "Only superusers can hard-delete records.")
         return
     count = queryset.count()
     for record in queryset:
-        record.hard_delete()
+        hard_delete_record(request.user, record)
     messages.success(request, f"Permanently deleted {count} record(s).")
 
 
@@ -55,24 +63,20 @@ class RecordAdmin(admin.ModelAdmin):
         return actions
 
     def delete_model(self, request, obj):
+        # Superusers get the audited, document-cleaning path; everyone else is
+        # limited to the reversible soft delete.
         if request.user.is_superuser:
-            obj.hard_delete()
+            hard_delete_record(request.user, obj)
         else:
             obj.delete()
 
     def delete_queryset(self, request, queryset):
         if request.user.is_superuser:
             for obj in queryset:
-                obj.hard_delete()
+                hard_delete_record(request.user, obj)
         else:
             for obj in queryset:
                 obj.delete()
-
-    def get_deleted_objects(self, queryset, request):
-        deleted, protected, perms_needed, view_only = super().get_deleted_objects(
-            queryset, request
-        )
-        return deleted, protected, perms_needed, view_only
 
     def has_delete_permission(self, request, obj=None):  # noqa: ARG002
         return request.user.is_superuser

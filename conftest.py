@@ -93,6 +93,34 @@ def _locmem_cache(settings):  # type: ignore[no-untyped-def]
     cache.clear()
 
 
+@pytest.fixture(autouse=True)
+def _no_posthog_events(monkeypatch, settings):
+    """Stop the test suite from emitting real analytics.
+
+    pytest runs against "Verity.settings.local", which reads .env -- including a
+    real POSTHOG_PROJECT_TOKEN and POSTHOG_HOST. "CoreConfig.ready" therefore
+    builds a live client and publishes it as "settings.POSTHOG_MW_CLIENT", so
+    every view a test renders enqueues a genuine event into the live PostHog
+    project, and the SDK flushes the batch on shutdown.
+
+    Nulling "core.apps.posthog_client" is not enough: modules bind it with
+    "from core.apps import posthog_client", copying the reference at import
+    time. Replacing the client's own "capture" is what actually guarantees
+    nothing is queued, and therefore nothing is ever sent.
+    """
+    from core import apps as core_apps
+
+    def _swallow(*args, **kwargs) -> None:
+        """Stand in for the network entry points so nothing is queued or sent."""
+
+    client = core_apps.posthog_client
+    if client is not None:
+        monkeypatch.setattr(client, "capture", _swallow, raising=False)
+        monkeypatch.setattr(client, "send", _swallow, raising=False)
+    monkeypatch.setattr(core_apps, "posthog_client", None)
+    settings.POSTHOG_MW_CLIENT = None
+
+
 @pytest.fixture
 def other_user(db) -> User:  # type: ignore[no-untyped-def]  # noqa: ARG001
     """Create a second test user for isolation tests."""

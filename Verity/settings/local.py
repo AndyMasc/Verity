@@ -28,9 +28,9 @@ for _var, _host in [
 
 INSTALLED_APPS.extend(["django_browser_reload", "debug_toolbar"])  # noqa: F405
 
-MIDDLEWARE.insert(
+MIDDLEWARE.insert(  # noqa: F405
     -1, "django_browser_reload.middleware.BrowserReloadMiddleware"
-)  # noqa: F405
+)
 MIDDLEWARE.insert(-1, "debug_toolbar.middleware.DebugToolbarMiddleware")  # noqa: F405
 
 CSRF_TRUSTED_ORIGINS = [env("NGROK_HTTPS_TUNNEL_URL", default="http://localhost:8000")]
@@ -54,7 +54,6 @@ STATIC_URL = "/static/"
 INTERNAL_IPS = [
     "127.0.0.1",
 ]
-CACHALOT_ENABLED = False
 
 CONTENT_SECURITY_POLICY = {
     "DIRECTIVES": {

@@ -1,15 +1,22 @@
-{% load form_tags %}
-Record Shared With You
+{% if multiple %}{{ record_count }} Records Shared With You{% else %}Record Shared With You{% endif %}
 
 Hi {{ recipient_name }},
 
-{{ actor_name }} shared the record "{{ title }}" with you{% if amount %} for {{ amount|currency_format:currency }}{% endif %}.
+{% if multiple %}
+{{ actor_name }} shared {{ record_count }} records with you.
+{% else %}
+{{ actor_name }} shared the record "{{ rows.0.title }}" with you for {{ rows.0.amount }}.
+{% endif %}
 
-You can now view and edit this record. Your changes are tracked in the
-record history so your edits are attributed to you.
+You can now view{% if can_edit %} and edit{% endif %} these records.{% if can_edit %} Changes are
+tracked in the record history so your edits are attributed to you.{% endif %}
 
+{% for row in rows %}- {{ row.title }}{% if row.merchant %} ({{ row.merchant }}){% endif %} - {{ row.date|date:"M j, Y" }} - {{ row.amount }}
+  {{ row.url }}
+{% endfor %}
+{% if not multiple %}
 View record: {{ record_url }}
-
+{% endif %}
 ---
 Sent via Verity
 ---

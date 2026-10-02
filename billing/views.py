@@ -217,9 +217,6 @@ def create_checkout_session(request: HttpRequest) -> HttpResponse:
                 },
             )
         return HttpResponseRedirect(checkout_session.url)
-    except stripe.error.StripeError as e:
-        logger.error("Stripe error creating checkout session: %s", e)
-        return HttpResponseBadRequest("Unable to start checkout. Please try again.")
-    except Exception:
-        logger.exception("Unexpected error creating checkout session")
+    except Exception as e:
+        logger.error("Could not create checkout session: %s", e, exc_info=True)
         return HttpResponseBadRequest("Unable to start checkout. Please try again.")

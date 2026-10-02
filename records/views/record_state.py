@@ -5,6 +5,7 @@ a 204 response so the client can update the UI without a full page reload.
 """
 
 import json
+import logging
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -23,10 +24,13 @@ from ..models import Record
 from ..services import (
     BulkLimitExceededError,
     archive_record,
+    bulk_hard_delete_record,
     bulk_toggle_archive,
     soft_delete_record,
     unarchive_record,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class ArchiveRecord(LoginRequiredMixin, View):
@@ -94,30 +98,50 @@ def _bulk_response(
     count: int,
     *,
     verb: str,
+    requested: int | None = None,
+    skip_reason: str = "they must be in the opposite state, and be yours",
 ) -> HttpResponse:
-    """Build an HTMX-compatible response for a bulk archive/unarchive operation."""
+    """Build the response for a bulk state change.
+
+    "requested" is the number of records the client asked for; when fewer than
+    that were actually changed the response says so, so the toast can report
+    "N of M" instead of a bare count.
+    """
+    requested = requested if requested is not None else count
+    skipped = max(requested - count, 0)
     if count == 0:
         return JsonResponse(
             {
-                "error": f"No records were {verb}. Only the owner can archive "
-                "a record, and it must be in the opposite state.",
+                "error": f"No records were {verb} — {skip_reason}.",
+                "count": 0,
+                "skipped": skipped,
             },
             status=400,
         )
     if request.headers.get("HX-Request") == "true":
         response = HttpResponse(status=200)
+        text = f"{count} record{'s' if count != 1 else ''} {verb}."
+        if skipped:
+            text += f" {skipped} skipped — {skip_reason}."
         response["HX-Trigger"] = json.dumps(
             {
                 "recordChanged": {},
                 "showToast": {
-                    "text": f"{count} record{'s' if count != 1 else ''} {verb}.",
-                    "tags": "success",
+                    "text": text,
+                    "tags": "success" if not skipped else "warning",
                 },
             }
         )
         return response
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-        return JsonResponse({"success": True, "count": count, "verb": verb})
+        return JsonResponse(
+            {
+                "success": True,
+                "count": count,
+                "skipped": skipped,
+                "verb": verb,
+            }
+        )
     return redirect("records:view_all_records")
 
 
@@ -176,3 +200,35 @@ def BulkUnarchiveView(request: HttpRequest) -> HttpResponse:
             "record_unarchived", properties={"bulk": True, "record_count": count}
         )
     return _bulk_response(request, count, verb="restored")
+
+
+@login_required
+@ratelimit(key="user", rate="10/m", method="POST", block=True)
+@require_POST
+def BulkHardDeleteView(request: HttpRequest) -> HttpResponse:
+    """Permanently delete selected records that are past the retention window.
+
+    Accepts a JSON body with "{"record_ids": [1, 2, 3]}". Records the user
+    does not own, or that are still inside the seven-year window, are skipped
+    and reported back so the confirmation can say what actually happened.
+    """
+    record_ids, error = parse_record_ids(request)
+    if error:
+        return error
+
+    try:
+        count = bulk_hard_delete_record(record_ids=record_ids, user=request.user)  # type: ignore[arg-type]
+    except BulkLimitExceededError as exc:
+        logger.error("Error occurred while hard deleting records: %s", exc)
+        return HttpResponse(
+            json.dumps({"error": str(exc)}), status=400, content_type="application/json"
+        )
+
+    invalidate_dashboard_cache(request.user.id)
+    return _bulk_response(
+        request,
+        count,
+        verb="permanently deleted",
+        requested=len(record_ids),
+        skip_reason="they are not past the 7-year retention window, or are not yours",
+    )

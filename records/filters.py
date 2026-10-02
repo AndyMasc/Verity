@@ -29,8 +29,6 @@ class RecordFilter(django_filters.FilterSet):
     expiring_soon = django_filters.BooleanFilter(
         method="filter_expiring_soon",
         label="Expiring within 30 days",
-        field_name="is_expiring_soon",
-        lookup_expr="exact",
         widget=forms.Select(choices=[(False, "Current"), (True, "Expiring Soon")]),
     )
 
@@ -56,7 +54,6 @@ class RecordFilter(django_filters.FilterSet):
     this_month = django_filters.BooleanFilter(
         method="filter_this_month",
         label="Records from this month",
-        field_name="this_month_records",
         widget=forms.Select(choices=[(False, "All Time"), (True, "This Month")]),
     )
 
@@ -80,9 +77,7 @@ class RecordFilter(django_filters.FilterSet):
         super().__init__(*args, **kwargs)
 
         if self.request and self.request.user.is_authenticated:
-            folder_filter = self.filters.get("folder") or self.base_filters.get(
-                "folder"
-            )
+            folder_filter = self.filters.get("folder")
             if folder_filter:
                 cache_key = f"folder_choices_{self.request.user.id}"
                 user_folders = cache.get(cache_key)
@@ -118,9 +113,7 @@ class RecordFilter(django_filters.FilterSet):
             else:
                 filtered = list(all_choices)
 
-            type_filter = self.filters.get("record_type") or self.base_filters.get(
-                "record_type"
-            )
+            type_filter = self.filters.get("record_type")
             if type_filter:
                 type_filter.extra["choices"] = [("", "All Types"), *filtered]
 

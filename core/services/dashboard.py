@@ -26,13 +26,8 @@ def invalidate_dashboard_cache(user_id: int) -> None:
     cache.delete(f"dashboard:{user_id}")
 
 
-async def _fetch_records(queryset) -> list:
+async def _fetch(queryset) -> list:
     """Evaluate an async queryset into a concrete list."""
-    return [r async for r in queryset]
-
-
-async def _fetch_values_list(queryset) -> list:
-    """Evaluate a values_list queryset into a list of tuples asynchronously."""
     return [row async for row in queryset]
 
 
@@ -55,10 +50,28 @@ async def _fetch_unread_notifications_count(user) -> int:
     ).acount()
 
 
+# Fields the dashboard templates touch, so each stat query stays a partial load.
+DASHBOARD_RECORD_FIELDS = (
+    "id",
+    "title",
+    "merchant",
+    "balance",
+    "currency",
+    "expiry_date",
+    "date_added",
+    "last_edited",
+    "user_id",
+    "is_active",
+    "record_type",
+    "transaction_date",
+    "notes",
+    "nickname",
+    "payment_method",
+)
+
+
 def _convert_total(raw_items: list[tuple], to_currency: str) -> float:
     """Convert and sum a list of (amount, currency) tuples to a target currency."""
-    if not raw_items:
-        return 0.0
     from core.exchange_rates import convert_batch
 
     return float(convert_batch(raw_items, to_currency))
@@ -82,8 +95,9 @@ async def get_dashboard_context(user) -> dict:
     user_settings = await sync_to_async(UserSettings.objects.get_or_create)(user=user)
     user_currency = user_settings[0].default_currency
 
-    all_user_records = Record.objects.visible_to(user)  # type: ignore
-    active_records_qs = all_user_records.active()
+    active_records_qs = (
+        Record.objects.visible_to(user).active().only(*DASHBOARD_RECORD_FIELDS)  # type: ignore
+    )
 
     (
         merge_count,
@@ -100,57 +114,21 @@ async def get_dashboard_context(user) -> dict:
         MergeLog.objects.filter(
             plaid_record__user=user, undone_at__isnull=True
         ).acount(),
-        _fetch_values_list(
+        _fetch(
             active_records_qs.filter(
                 transaction_date__gte=start_of_month,
                 transaction_date__lte=now,
                 balance__isnull=False,
             ).values_list("balance", "currency")
         ),
-        _fetch_records(
-            active_records_qs.order_by("-last_edited").only(
-                "id",
-                "title",
-                "merchant",
-                "balance",
-                "currency",
-                "expiry_date",
-                "date_added",
-                "last_edited",
-                "user_id",
-                "is_active",
-                "record_type",
-                "transaction_date",
-                "notes",
-                "nickname",
-                "payment_method",
-            )[:5]
-        ),
-        _fetch_records(
+        _fetch(active_records_qs.order_by("-last_edited")[:5]),
+        _fetch(
             active_records_qs.filter(
                 expiry_date__gte=now.date(), expiry_date__lte=expiring_cutoff.date()
-            )
-            .order_by("expiry_date")
-            .only(
-                "id",
-                "title",
-                "merchant",
-                "balance",
-                "currency",
-                "expiry_date",
-                "date_added",
-                "last_edited",
-                "user_id",
-                "is_active",
-                "record_type",
-                "transaction_date",
-                "notes",
-                "nickname",
-                "payment_method",
-            )
+            ).order_by("expiry_date")
         ),
         get_webpush_warning(user),
-        _fetch_values_list(
+        _fetch(
             PackagePayment.objects.filter(
                 package__creator=user,
                 is_completed=True,
@@ -177,7 +155,7 @@ async def get_dashboard_context(user) -> dict:
                 ),
             )
         )(),
-        _fetch_values_list(
+        _fetch(
             PackagePayment.objects.filter(
                 package__recipient=user,
                 is_completed=True,
@@ -188,7 +166,7 @@ async def get_dashboard_context(user) -> dict:
     )
 
     # asyncio.gather unions heterogeneous coroutine results; pin the real types
-    # so downstream arithmetic/subscripting is checked properly.
+    # so downstream arithmetic/subscripting stays checked.
     merge_count = cast(int, merge_count)
     monthly_expense_rows = cast(list[tuple[str, str]], monthly_expense_rows)
     recent_records = cast(list, recent_records)

@@ -118,6 +118,21 @@ class PackageDetailView(LoginRequiredMixin, DetailView):
         context["is_recipient"] = package.recipient == self.request.user
         context["is_payer"] = package.paid_by == self.request.user
         context["can_delete"] = package.can_delete(self.request.user)
+
+        is_sender = package.creator_id == self.request.user.pk
+        context["viewed_event"] = (
+            "reimbursement_package_viewed_by_sender"
+            if is_sender
+            else "reimbursement_package_viewed_by_recipient"
+        )
+        context["viewed_props"] = {
+            "audience": "creator" if is_sender else "recipient",
+            "payer_type": "registered",
+            "record_count": package.records.count(),
+            "total_amount": float(package.total_amount),
+            "currency": package.currency,
+            "status": package.status,
+        }
         return context
 
 

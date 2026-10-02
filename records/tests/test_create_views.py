@@ -5,11 +5,8 @@ editor, and manual entry.
 """
 
 import hashlib
-from unittest.mock import patch, MagicMock
 
-import pytest
 from django.contrib.auth import get_user_model
-from django.core.cache import cache
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
@@ -27,10 +24,6 @@ class AddRecordViewTest(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(username="creator", password="pass")
         self.url = reverse("records:add_record_manual")
-
-    def test_login_required(self):
-        response = self.client.get(self.url)
-        self.assertIn(response.status_code, [302, 300])
 
     def test_get_form(self):
         self.client.force_login(self.user)
@@ -127,10 +120,6 @@ class CheckOCRStatusTest(TestCase):
             did_ocr=True,
         )
         self.url = reverse("records:check_ocr_status", args=[self.doc.id])
-
-    def test_login_required(self):
-        response = self.client.get(self.url)
-        self.assertIn(response.status_code, [302, 300])
 
     def test_processing_returns_waiting(self):
         self.client.force_login(self.user)

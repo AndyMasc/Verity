@@ -5,6 +5,7 @@ from django.template.loader import render_to_string
 from django.utils.html import escape
 
 from core.currencies import format_currency
+from core.services.notifications import build_site_context
 from core.tasks import EmailTaskPayload, send_background_email
 
 
@@ -16,12 +17,6 @@ def build_package_url(package_uuid: str) -> str:
 def build_pay_url(package_uuid: str) -> str:
     site_url = getattr(settings, "SITE_URL", "http://localhost:8000")
     return f"{site_url}/reimbursements/pay/{package_uuid}/"
-
-
-def _site_context() -> dict:
-    from core.services.notifications import build_site_context
-
-    return build_site_context()
 
 
 def send_package_created_notification(package, recipient=None) -> None:
@@ -53,7 +48,7 @@ def send_package_created_notification(package, recipient=None) -> None:
             "currency": currency,
             "package_url": package_url,
             "records": package.records.filter(is_active=True),
-            **_site_context(),
+            **build_site_context(),
         }
         html_body = render_to_string(
             "reimbursements/email/package_created_message.html", template_context
@@ -86,7 +81,7 @@ def send_package_created_notification(package, recipient=None) -> None:
         "currency": currency,
         "package_url": package_url,
         "records": package.records.filter(is_active=True),
-        **_site_context(),
+        **build_site_context(),
     }
 
     html_body = render_to_string(
@@ -135,7 +130,7 @@ def send_package_paid_notification(package, payer) -> None:
         "amount": amount,
         "currency": currency,
         "package_url": package_url,
-        **_site_context(),
+        **build_site_context(),
     }
 
     html_body = render_to_string(

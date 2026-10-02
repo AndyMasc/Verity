@@ -49,13 +49,12 @@ class PasswordlessSignupFormTurnstileTest(TestCase):
     def test_verify_turnstile_with_request(self):
         from django.test import RequestFactory
 
-        from core.forms import verify_turnstile_token
-
         request = RequestFactory().post("/accounts/signup/")
         with (
-            patch("core.forms.turnstile_enabled", return_value=True),
+            patch("core.turnstile_forms.turnstile_enabled", return_value=True),
             patch(
-                "core.forms.verify_turnstile_token", return_value={"success": True}
+                "core.turnstile_forms.verify_turnstile_token",
+                return_value={"success": True},
             ) as mock_verify,
         ):
             form = self._form(
@@ -72,9 +71,10 @@ class PasswordlessSignupFormTurnstileTest(TestCase):
     def test_verify_turnstile_without_request_does_not_raise(self):
         # Regression: allauth's SignupView does not pass `request` to the form.
         with (
-            patch("core.forms.turnstile_enabled", return_value=True),
+            patch("core.turnstile_forms.turnstile_enabled", return_value=True),
             patch(
-                "core.forms.verify_turnstile_token", return_value={"success": True}
+                "core.turnstile_forms.verify_turnstile_token",
+                return_value={"success": True},
             ) as mock_verify,
         ):
             form = self._form(
@@ -89,8 +89,8 @@ class PasswordlessSignupFormTurnstileTest(TestCase):
 
     def test_turnstile_disabled_skips_verification(self):
         with (
-            patch("core.forms.turnstile_enabled", return_value=False),
-            patch("core.forms.verify_turnstile_token") as mock_verify,
+            patch("core.turnstile_forms.turnstile_enabled", return_value=False),
+            patch("core.turnstile_forms.verify_turnstile_token") as mock_verify,
         ):
             form = self._form(
                 {
@@ -125,9 +125,10 @@ class PasswordlessLoginFormTurnstileTest(TestCase):
 
         request = RequestFactory().post("/accounts/login/")
         with (
-            patch("core.forms.turnstile_enabled", return_value=True),
+            patch("core.turnstile_forms.turnstile_enabled", return_value=True),
             patch(
-                "core.forms.verify_turnstile_token", return_value={"success": True}
+                "core.turnstile_forms.verify_turnstile_token",
+                return_value={"success": True},
             ) as mock_verify,
         ):
             form, valid = self._clean(
@@ -147,9 +148,10 @@ class PasswordlessLoginFormTurnstileTest(TestCase):
 
         request = RequestFactory().post("/accounts/login/")
         with (
-            patch("core.forms.turnstile_enabled", return_value=True),
+            patch("core.turnstile_forms.turnstile_enabled", return_value=True),
             patch(
-                "core.forms.verify_turnstile_token", return_value={"success": True}
+                "core.turnstile_forms.verify_turnstile_token",
+                return_value={"success": True},
             ) as mock_verify,
         ):
             form = PasswordlessLoginForm(
@@ -165,8 +167,8 @@ class PasswordlessLoginFormTurnstileTest(TestCase):
 
         request = RequestFactory().post("/accounts/login/")
         with (
-            patch("core.forms.turnstile_enabled", return_value=False),
-            patch("core.forms.verify_turnstile_token") as mock_verify,
+            patch("core.turnstile_forms.turnstile_enabled", return_value=False),
+            patch("core.turnstile_forms.verify_turnstile_token") as mock_verify,
         ):
             form, valid = self._clean({"login": "bob@example.com"}, request)
             self.assertTrue(valid)

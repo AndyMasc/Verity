@@ -1,9 +1,8 @@
 """Forms for reimbursements payment verification.
 
-Handles email verification and code verification with Turnstile CAPTCHA protection.
+Handles email verification and code verification with Turnstile CAPTCHA
+protection (see core.turnstile_forms.TurnstileProtectedForm).
 """
-
-import logging
 
 from django import forms
 
@@ -11,23 +10,14 @@ from core.turnstile import (
     ACTION_CHECKOUT,
     ACTION_REQUEST_VERIFICATION,
     ACTION_VERIFY_CODE,
-    turnstile_enabled,
-    verify_turnstile_token,
 )
+from core.turnstile_forms import TurnstileProtectedForm
 
-logger = logging.getLogger(__name__)
 
+class RequestVerificationCodeForm(TurnstileProtectedForm):
+    """Request a verification code for a reimbursement payment."""
 
-class RequestVerificationCodeForm(forms.Form):
-    """Form to request a verification code for reimbursement payment.
-
-    Includes Turnstile CAPTCHA protection to prevent spam verification requests.
-    """
-
-    def __init__(self, *args, request=None, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.request = request
-        self.fields["cf_turnstile_response"].required = turnstile_enabled()
+    turnstile_action = ACTION_REQUEST_VERIFICATION
 
     email = forms.EmailField(
         label="Recipient Email",
@@ -42,49 +32,16 @@ class RequestVerificationCodeForm(forms.Form):
         ),
     )
 
-    cf_turnstile_response = forms.CharField(
-        widget=forms.HiddenInput(),
-        required=True,
-        label="",
-    )
-
-    def clean_cf_turnstile_response(self):
-        """Verify the Turnstile token when it is enabled."""
-        token = self.cleaned_data.get("cf_turnstile_response", "").strip()
-
-        if not turnstile_enabled():
-            return token
-
-        if not token:
-            raise forms.ValidationError(
-                "Bot verification required. Please refresh and try again.",
-                code="turnstile_missing",
-            )
-
-        result = verify_turnstile_token(
-            token, ACTION_REQUEST_VERIFICATION, self.request
-        )
-
-        if not result.get("success"):
-            logger.warning("Turnstile verification failed on code request: %s", result)
-            raise forms.ValidationError(
-                result.get("message", "Bot verification failed. Please try again."),
-                code="turnstile_failed",
-            )
-
-        return token
-
-
-class VerifyEmailCodeForm(forms.Form):
-    """Form to verify the emailed verification code.
-
-    Includes Turnstile CAPTCHA protection to prevent brute force code attacks.
-    """
-
     def __init__(self, *args, request=None, **kwargs):
-        super().__init__(*args, **kwargs)
         self.request = request
-        self.fields["cf_turnstile_response"].required = turnstile_enabled()
+        super().__init__(*args, **kwargs)
+        self.order_fields(["email", "cf_turnstile_response"])
+
+
+class VerifyEmailCodeForm(TurnstileProtectedForm):
+    """Verify the emailed verification code."""
+
+    turnstile_action = ACTION_VERIFY_CODE
 
     email = forms.EmailField(
         widget=forms.HiddenInput(),
@@ -106,70 +63,17 @@ class VerifyEmailCodeForm(forms.Form):
         ),
     )
 
-    cf_turnstile_response = forms.CharField(
-        widget=forms.HiddenInput(),
-        required=True,
-        label="",
-    )
-
-    def clean_cf_turnstile_response(self):
-        """Verify the Turnstile token when it is enabled."""
-        token = self.cleaned_data.get("cf_turnstile_response", "").strip()
-
-        if not turnstile_enabled():
-            return token
-
-        if not token:
-            raise forms.ValidationError(
-                "Bot verification required. Please refresh and try again.",
-                code="turnstile_missing",
-            )
-
-        result = verify_turnstile_token(token, ACTION_VERIFY_CODE, self.request)
-
-        if not result.get("success"):
-            logger.warning("Turnstile verification failed on code verify: %s", result)
-            raise forms.ValidationError(
-                result.get("message", "Bot verification failed. Please try again."),
-                code="turnstile_failed",
-            )
-
-        return token
+    def __init__(self, *args, request=None, **kwargs):
+        self.request = request
+        super().__init__(*args, **kwargs)
+        self.order_fields(["email", "code", "cf_turnstile_response"])
 
 
-class CheckoutTurnstileForm(forms.Form):
+class CheckoutTurnstileForm(TurnstileProtectedForm):
     """Protect the final public checkout submission with Turnstile."""
 
+    turnstile_action = ACTION_CHECKOUT
+
     def __init__(self, *args, request=None, **kwargs):
-        super().__init__(*args, **kwargs)
         self.request = request
-        self.fields["cf_turnstile_response"].required = turnstile_enabled()
-
-    cf_turnstile_response = forms.CharField(
-        widget=forms.HiddenInput(),
-        required=True,
-        label="",
-    )
-
-    def clean_cf_turnstile_response(self):
-        token = self.cleaned_data.get("cf_turnstile_response", "").strip()
-
-        if not turnstile_enabled():
-            return token
-
-        if not token:
-            raise forms.ValidationError(
-                "Bot verification required. Please refresh and try again.",
-                code="turnstile_missing",
-            )
-
-        result = verify_turnstile_token(token, ACTION_CHECKOUT, self.request)
-
-        if not result.get("success"):
-            logger.warning("Turnstile verification failed on checkout: %s", result)
-            raise forms.ValidationError(
-                result.get("message", "Bot verification failed. Please try again."),
-                code="turnstile_failed",
-            )
-
-        return token
+        super().__init__(*args, **kwargs)

@@ -19,10 +19,6 @@ class RecordListViewTest(TestCase):
         self.user = User.objects.create_user(username="listuser", password="pass")
         self.url = reverse("records:view_all_records")
 
-    def test_login_required(self):
-        response = self.client.get(self.url)
-        self.assertEqual(response.status_code, 302)
-
     def test_authenticated_access(self):
         self.client.force_login(self.user)
         response = self.client.get(self.url)

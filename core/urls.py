@@ -1,17 +1,23 @@
-"""URL configuration for the core application.
+"""URL configuration for the core application (all routes namespaced "core")."""
 
-All routes live under the "core" namespace. The root path serves the landing
-page for unauthenticated visitors and redirects to the dashboard for logged-in
-users.
-"""
-
+from django.contrib.auth.decorators import login_required
 from django.urls import path
 
 from . import views
 
 
+@login_required
 def trigger_error(request):
-    pass
+    """Raise a 500 on demand so error reporting can be verified end to end.
+
+    Restricted to logged-in staff: an unauthenticated version lets anyone
+    flood the error quota and pollute the dashboards.
+    """
+    if not request.user.is_staff:
+        from django.http import HttpResponseForbidden
+
+        return HttpResponseForbidden()
+    raise Exception("Intentional error triggered.")
 
 
 app_name = "core"
@@ -38,5 +44,5 @@ urlpatterns = [
     path("privacy_policy/", views.privacy_policy, name="privacy_policy"),
     path("profile_page/", views.ProfilePageView.as_view(), name="profile_page"),
     path("health/", views.health_check, name="health_check"),
-    path("glitchtip-debug/", trigger_error),
+    path("trigger-error/", trigger_error),
 ]

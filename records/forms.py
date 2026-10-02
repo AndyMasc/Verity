@@ -5,6 +5,7 @@ business-requirement rules (e.g. notes and payment method are mandatory for
 expense receipts and invoices).
 """
 
+import re
 from typing import ClassVar
 
 from django import forms
@@ -18,6 +19,21 @@ from .models import Folder, Record
 CURRENCY_WIDGET_ATTRS = {
     "class": "w-full text-xs font-semibold bg-transparent border-transparent focus:outline-hidden cursor-pointer",
 }
+
+
+class FlushTextarea(forms.Textarea):
+    """A textarea whose value starts at the first character, not the fourth.
+
+    Django 6 renders textareas from a template that puts a newline and four
+    spaces of indentation before the value. The HTML parser discards a single
+    newline straight after the opening tag but keeps the spaces, so every
+    textarea opens visibly indented -- the cursor and the first word both sit
+    four columns in from the text that follows it.
+    """
+
+    def render(self, name, value, attrs=None, renderer=None):
+        html = super().render(name, value, attrs, renderer)
+        return re.sub(r"(<textarea[^>]*>)\s*", r"\1", html, count=1)
 
 
 class FolderForm(forms.ModelForm):
@@ -56,7 +72,7 @@ def _with_maxlength(field: forms.Field, limit: int) -> None:
 
 class BaseRecordForm(forms.ModelForm):
     title = forms.CharField(max_length=255, required=True)
-    products = forms.CharField(required=False, widget=forms.Textarea)
+    products = forms.CharField(required=False, widget=FlushTextarea)
     merchant = forms.CharField(max_length=255, required=True)
     balance = forms.DecimalField(max_digits=10, decimal_places=2, required=True)
     transaction_date = forms.DateField(
@@ -73,7 +89,7 @@ class BaseRecordForm(forms.ModelForm):
         required=False,
         max_length=500,
         label="Business Purpose / Notes",
-        widget=forms.Textarea,
+        widget=FlushTextarea,
     )
     payment_method = forms.CharField(
         max_length=255,
@@ -217,18 +233,11 @@ class RecordUpdateForm(BaseRecordForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        instance = self.instance
-        if not instance or not instance.pk:
-            instance = None
-        user = getattr(instance, "user", None)
-        self.setup_folder_field(user)
+        instance = self.instance if self.instance.pk else None
+        self.setup_folder_field(getattr(instance, "user", None))
 
-        payment_field = self.fields.get("payment_method")
-        is_plaid_record = False
-        if instance:
-            is_plaid_record = getattr(instance, "is_plaid_record", False)
-        if is_plaid_record and payment_field:
-            payment_field.disabled = True
+        if instance and instance.is_plaid_record:
+            self.fields["payment_method"].disabled = True
 
 
 class ManualMergeForm(forms.Form):

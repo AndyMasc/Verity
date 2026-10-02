@@ -16,7 +16,6 @@
             <div class="flex min-w-0 items-center gap-2.5">
                 <span class="flex h-5 min-w-[20px] items-center justify-center rounded-md border border-zinc-200 bg-zinc-100 px-1.5 text-[11px] font-semibold text-zinc-900 tabular-nums dark:border-white/[0.08] dark:bg-white/[0.06] dark:text-zinc-200"
                       x-text="selectedIds.length"></span>
-                <span class="text-[13px] font-medium whitespace-nowrap text-zinc-600 dark:text-zinc-400">selected</span>
             </div>
             <div class="scrollbar-none flex items-center gap-1 overflow-x-auto">
                 <button type="button"
@@ -24,16 +23,26 @@
                         class="rounded-lg px-2.5 py-1 text-[13px] font-medium whitespace-nowrap transition-all duration-200 hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-white/[0.06] dark:hover:text-zinc-200"
                         x-text="allVisibleSelected ? 'Deselect' : 'Select All'"></button>
                 <button type="button"
+                        x-show="canArchive"
                         @click="bulkArchive()"
                         :disabled="archiving"
                         class="rounded-lg px-2.5 py-1 text-[13px] font-medium whitespace-nowrap transition-all duration-200 hover:bg-zinc-100 hover:text-zinc-900 disabled:opacity-40 dark:hover:bg-white/[0.06] dark:hover:text-zinc-200">
                     <span x-text="archiving ? 'Archiving...' : 'Archive'"></span>
                 </button>
                 <button type="button"
+                        x-show="canRestore"
                         @click="bulkUnarchive()"
                         :disabled="unarchiving"
                         class="rounded-lg px-2.5 py-1 text-[13px] font-medium whitespace-nowrap transition-all duration-200 hover:bg-zinc-100 hover:text-zinc-900 disabled:opacity-40 dark:hover:bg-white/[0.06] dark:hover:text-zinc-200">
                     <span x-text="unarchiving ? 'Restoring...' : 'Restore'"></span>
+                </button>
+                <button type="button"
+                        x-show="canHardDelete"
+                        @click="bulkHardDelete()"
+                        :disabled="hardDeleting"
+                        :title="selectedPermanentCount < selectedIds.length ? selectedPermanentCount + ' of ' + selectedIds.length + ' selected are past the 7-year retention window' : 'Permanently delete'"
+                        class="rounded-lg px-2.5 py-1 text-[13px] font-medium whitespace-nowrap text-red-600 transition-all duration-200 hover:bg-red-500/10 disabled:opacity-40 dark:text-red-400 dark:hover:bg-red-500/10">
+                    <span x-text="hardDeleting ? 'Deleting...' : 'Delete'"></span>
                 </button>
                 <button type="button"
                         @click="exportSelected()"
@@ -59,7 +68,6 @@
             <div class="flex items-center gap-2">
                 <span class="flex h-5 min-w-[20px] items-center justify-center rounded-md border border-zinc-200 bg-zinc-100 px-1.5 text-[11px] font-semibold text-zinc-900 tabular-nums dark:border-white/[0.08] dark:bg-white/[0.06] dark:text-zinc-200"
                       x-text="selectedIds.length"></span>
-                <span class="pr-2 text-[13px] font-medium whitespace-nowrap text-zinc-600 dark:text-zinc-400">selected</span>
             </div>
             <div class="h-4 w-px bg-zinc-200 dark:bg-white/[0.08]"></div>
             <div class="flex items-center gap-1">
@@ -68,16 +76,26 @@
                         class="rounded-lg px-2.5 py-1 text-[13px] font-medium whitespace-nowrap transition-all duration-200 hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-white/[0.06] dark:hover:text-zinc-200"
                         x-text="allVisibleSelected ? 'Deselect' : 'Select All'"></button>
                 <button type="button"
+                        x-show="canArchive"
                         @click="bulkArchive()"
                         :disabled="archiving"
                         class="rounded-lg px-2.5 py-1 text-[13px] font-medium whitespace-nowrap transition-all duration-200 hover:bg-zinc-100 hover:text-zinc-900 disabled:opacity-40 dark:hover:bg-white/[0.06] dark:hover:text-zinc-200">
                     <span x-text="archiving ? 'Archiving...' : 'Archive'"></span>
                 </button>
                 <button type="button"
+                        x-show="canRestore"
                         @click="bulkUnarchive()"
                         :disabled="unarchiving"
                         class="rounded-lg px-2.5 py-1 text-[13px] font-medium whitespace-nowrap transition-all duration-200 hover:bg-zinc-100 hover:text-zinc-900 disabled:opacity-40 dark:hover:bg-white/[0.06] dark:hover:text-zinc-200">
                     <span x-text="unarchiving ? 'Restoring...' : 'Restore'"></span>
+                </button>
+                <button type="button"
+                        x-show="canHardDelete"
+                        @click="bulkHardDelete()"
+                        :disabled="hardDeleting"
+                        :title="selectedPermanentCount < selectedIds.length ? selectedPermanentCount + ' of ' + selectedIds.length + ' selected are past the 7-year retention window' : 'Permanently delete'"
+                        class="rounded-lg px-2.5 py-1 text-[13px] font-medium whitespace-nowrap text-red-600 transition-all duration-200 hover:bg-red-500/10 disabled:opacity-40 dark:text-red-400 dark:hover:bg-red-500/10">
+                    <span x-text="hardDeleting ? 'Deleting...' : 'Delete'"></span>
                 </button>
                 <button type="button"
                         @click="exportSelected()"
@@ -259,7 +277,34 @@
                               rows="3"
                               placeholder="colleague@example.com, team@example.com"
                               class="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3.5 py-2.5 text-[14px] text-zinc-900 placeholder-zinc-500 transition-all duration-200 focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900 focus:outline-none dark:border-white/[0.08] dark:bg-white/[0.03] dark:text-zinc-100 dark:placeholder-zinc-600 dark:focus:border-white dark:focus:ring-white/40"></textarea>
-                    <p class="mt-1.5 text-[12px] text-zinc-500 dark:text-zinc-400">Comma-separated emails of registered Verity users. Requires the Pro plan.</p>
+                    <p class="mt-1.5 text-[12px] text-zinc-500 dark:text-zinc-400">
+                        Comma-separated emails of registered Verity users. Requires the Pro plan.
+                    </p>
+                </div>
+                <div>
+                    <label class="mb-1.5 block text-[11px] font-semibold tracking-wider text-zinc-600 uppercase dark:text-zinc-400">Access</label>
+                    <div class="flex flex-wrap items-center gap-4 text-[13px] text-zinc-600 dark:text-zinc-400">
+                        <label class="inline-flex items-center gap-1.5">
+                            <input type="radio"
+                                   x-model="sharePermission"
+                                   value="edit"
+                                   class="accent-indigo-500">
+                            Can edit
+                        </label>
+                        <label class="inline-flex items-center gap-1.5">
+                            <input type="radio"
+                                   x-model="sharePermission"
+                                   value="view"
+                                   class="accent-indigo-500">
+                            View only
+                        </label>
+                        <label class="inline-flex items-center gap-1.5">
+                            <input type="checkbox"
+                                   x-model="shareIncludeDocuments"
+                                   class="accent-indigo-500">
+                            Include documents
+                        </label>
+                    </div>
                 </div>
             </div>
             <div class="flex items-center justify-end gap-2.5 border-t border-zinc-100 bg-zinc-50/50 px-6 py-4 dark:border-white/[0.04] dark:bg-white/[0.01]">

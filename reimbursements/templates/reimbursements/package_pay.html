@@ -25,7 +25,8 @@
                         This reimbursement request is backed by Verity.
                     </h1>
                     <p class="mt-4 text-base text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
-                        This request is evidence backed by a purchase record in Verity. Not just an unverified message asking for money. <span class="font-semibold text-zinc-950 dark:text-zinc-100"><a href="{% url 'account_signup' %}"
+                        This request is evidence backed by a purchase record in Verity. Not just an unverified message
+                        asking for money. <span class="font-semibold text-zinc-950 dark:text-zinc-100"><a href="{% url 'account_signup' %}"
    class="font-semibold text-black hover:underline dark:text-white">Sign up to view them.</a></span>
                     </p>
                     <div class="mt-5 inline-flex items-center gap-4 border-t border-zinc-200/80 py-5 text-xs backdrop-blur-md dark:border-zinc-800/80">
@@ -50,7 +51,8 @@
                             </div>
                             {% if verify_step == "email" %}
                                 <p class="mb-6 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
-                                    For security, this reimbursement can only be accessed by the intended recipient. Enter your destination email address to receive a secure one-time code.
+                                    For security, this reimbursement can only be accessed by the intended recipient.
+                                    Enter your destination email address to receive a secure one-time code.
                                 </p>
                                 <form method="post"
                                       action="{% url 'reimbursements:pay-request-code' package.uuid %}"
@@ -157,7 +159,9 @@
                                 </svg>
                             </div>
                             <h1 class="mb-2 text-xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">Request already paid</h1>
-                            <p class="text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">This reimbursement package has already been settled and closed.</p>
+                            <p class="text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
+                                This reimbursement package has already been settled and closed.
+                            </p>
                         </div>
                     {% elif state == "expired" %}
                         <div class="rounded-3xl border border-zinc-200/80 bg-white/80 p-6 text-center shadow-xl shadow-zinc-950/5 backdrop-blur-2xl sm:p-12 dark:border-zinc-800 dark:bg-zinc-900/45">
@@ -171,7 +175,10 @@
                                 </svg>
                             </div>
                             <h1 class="mb-2 text-xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">Link has expired</h1>
-                            <p class="text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">This secure payment link is no longer active. Please request a refreshed link from the sender.</p>
+                            <p class="text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
+                                This secure payment link is no longer active. Please request a refreshed link from the
+                                sender.
+                            </p>
                         </div>
                     {% else %}
                         <div class="overflow-hidden rounded-2xl border border-zinc-200/80 bg-white/80 shadow-xl shadow-zinc-950/5 backdrop-blur-2xl dark:border-zinc-800 dark:bg-zinc-900/60">

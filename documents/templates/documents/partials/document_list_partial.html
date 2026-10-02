@@ -34,7 +34,7 @@
             <div class="relative z-20 hidden justify-center transition-opacity duration-150 group-hover:opacity-100 focus-within:opacity-100 sm:flex sm:opacity-0">
                 <form action="{% url 'documents:delete_document' document.pk %}"
                       method="POST"
-                      onsubmit="return confirm('Delete this document permanently?');"
+                      onsubmit="return confirm('Delete this document permanently?')"
                       class="inline">
                     {% csrf_token %}
                     <button type="submit"
@@ -70,7 +70,7 @@
             <div class="relative z-20 flex items-center pr-1 sm:hidden">
                 <form action="{% url 'documents:delete_document' document.pk %}"
                       method="POST"
-                      onsubmit="return confirm('Delete this document permanently?');"
+                      onsubmit="return confirm('Delete this document permanently?')"
                       class="inline">
                     {% csrf_token %}
                     <button type="submit"

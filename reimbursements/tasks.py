@@ -1,7 +1,6 @@
 import logging
 
 import dramatiq
-import stripe
 from django.db import transaction
 from periodiq import cron
 
@@ -70,15 +69,7 @@ def _sync_payment_from_stripe(payment, *, source: str) -> bool:
     Returns True when the payment was settled and applied. Raises on Stripe
     API failure so the caller can trigger a retry.
     """
-    try:
-        session = services.retrieve_checkout_session(payment.stripe_checkout_session_id)
-    except stripe.error.StripeError as e:
-        logger.warning(
-            "sync_payment_status: failed to retrieve session %s — %s",
-            payment.stripe_checkout_session_id,
-            e,
-        )
-        raise
+    session = services.retrieve_checkout_session(payment.stripe_checkout_session_id)
 
     if session.payment_status != "paid":
         return False

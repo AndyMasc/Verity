@@ -1,14 +1,13 @@
 """Plaid webhook handler and JWT signature verification."""
 
-import datetime
 import hashlib
 import json
 import logging
-from typing import Any
 
 import jwt
 import requests
 from django.conf import settings
+from django.core.cache import cache
 from django.http import (
     HttpRequest,
     HttpResponse,
@@ -23,57 +22,88 @@ from ..services import route_webhook
 
 logger: logging.Logger = logging.getLogger(__name__)
 
-PLAID_JWKS_URL = "https://plaid.com/auth/v1/webhook_public_key"
-_jwks_cache: dict[str, Any] = {}
-_jwks_fetched_at: float | None = None
-
 WEBHOOK_MAX_BODY_SIZE = 1024 * 100
+KEY_CACHE_TTL = 3600
+_KEY_CACHE_PREFIX = "plaid:webhook_key:"
 
 
-def _get_plaid_jwk(kid: str, max_age: int = 3600) -> dict[str, Any] | None:
-    """Fetch and cache a Plaid JSON Web Key by key ID."""
-    global _jwks_cache, _jwks_fetched_at
-    now = datetime.datetime.now(datetime.UTC).timestamp()
-    if not _jwks_fetched_at or (now - _jwks_fetched_at) > max_age:
-        try:
-            resp = requests.get(PLAID_JWKS_URL, timeout=10)
-            resp.raise_for_status()
-            keys = resp.json().get("keys", [])
-            _jwks_cache = {k["kid"]: k for k in keys}
-            _jwks_fetched_at = now
-        except Exception:
-            logger.exception("Failed to fetch Plaid JWKS")
-            return None
-    return _jwks_cache.get(kid)
+def _fetch_signing_key(kid: str) -> dict | None:
+    """Fetch Plaid's signing key for "kid".
+
+    Plaid serves the key from an authenticated POST that requires the key id,
+    which is the "kid" carried in the webhook's JWT header.
+    """
+    host = settings.PLAID_ENV.lower()
+    try:
+        response = requests.post(
+            f"https://{host}.plaid.com/webhook_verification_key/get",
+            json={
+                "client_id": settings.PLAID_CLIENT_ID,
+                "secret": settings.PLAID_SECRET,
+                "key_id": kid,
+            },
+            timeout=10,
+        )
+        response.raise_for_status()
+        return response.json().get("key")
+    except (requests.RequestException, OSError, ValueError, KeyError) as exc:
+        # Any failure to obtain a trusted key means we cannot verify, so this
+        # fails closed and is never cached.
+        logger.error("Could not fetch Plaid signing key for kid=%s: %s", kid, exc)
+        return None
+
+
+def _signing_key(kid: str) -> dict | None:
+    """Return Plaid's signing key for "kid", cached per key id.
+
+    Caching per kid means a rotation costs one extra fetch rather than
+    thrashing a single slot between the outgoing and incoming key. Failures
+    are never cached, so a transient outage self-heals on the next webhook
+    instead of blocking verification for the full TTL.
+    """
+    cache_key = f"{_KEY_CACHE_PREFIX}{kid}"
+    cached = cache.get(cache_key)
+    if cached:
+        return cached
+
+    jwk = _fetch_signing_key(kid)
+    if jwk:
+        cache.set(cache_key, jwk, KEY_CACHE_TTL)
+    return jwk
 
 
 def verify_plaid_webhook(body: bytes, plaid_verification: str | None) -> bool:
-    """Verify the JWT signature and body hash of an incoming Plaid webhook."""
+    """Verify a Plaid webhook's JWT signature and body hash.
+
+    Plaid signs with ES256; the algorithm is read from the key rather than
+    hardcoded so a token can never dictate its own verification algorithm.
+    """
     if not plaid_verification:
         logger.warning("Missing Plaid-Verification header")
         return False
+
     try:
         kid = jwt.get_unverified_header(plaid_verification).get("kid", "")
-        jwk = _get_plaid_jwk(kid)
+        jwk = _signing_key(kid)
         if not jwk:
-            logger.warning("No Plaid JWK found for kid=%s", kid)
+            logger.warning("No Plaid signing key available for kid=%s", kid)
             return False
 
-        public_key = jwt.algorithms.RSAAlgorithm.from_jwk(json.dumps(jwk))
+        key = jwt.PyJWK.from_dict(jwk)
         claims = jwt.decode(
             plaid_verification,
-            public_key,
-            algorithms=["RS256"],
+            key.key,
+            algorithms=[key.algorithm_name],
             options={"verify_iat": True, "verify_exp": True},
         )
-        body_hash = hashlib.sha256(body).hexdigest()
-        if claims.get("request_body_sha256") != body_hash:
-            logger.warning("Plaid webhook body hash mismatch")
-            return False
-        return True
-    except jwt.PyJWTError as e:
-        logger.warning("Plaid webhook JWT verification failed: %s", e)
+    except (jwt.PyJWTError, ValueError, TypeError, KeyError) as exc:
+        logger.warning("Plaid webhook JWT verification failed: %s", exc)
         return False
+
+    if claims.get("request_body_sha256") != hashlib.sha256(body).hexdigest():
+        logger.warning("Plaid webhook body hash mismatch")
+        return False
+    return True
 
 
 @csrf_exempt

@@ -12,19 +12,18 @@
             {% for share in shares %}
                 <li class="group flex items-center justify-between gap-3 py-2.5 px-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.04] hover:border-white/[0.08] transition-all duration-200 {% if not share.is_active %}opacity-60{% endif %}">
                     <div class="flex min-w-0 items-center gap-3">
-                        <div class="flex size-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-700 text-[11px] font-bold text-white uppercase shadow-sm shadow-indigo-500/20">
-                            {{ share.user.email|slice:":1" }}
-                        </div>
                         <div class="min-w-0">
                             <p class="truncate text-xs font-medium text-zinc-200 transition-colors group-hover:text-white">
-                                {{ share.user.get_full_name|default:share.user.email }}
+                                {{ share.user.username }}
                             </p>
                             <p class="truncate text-[10px] text-zinc-500">{{ share.user.email }}</p>
                             <p class="truncate text-[10px] text-zinc-500">
                                 {{ share.get_permission_display }}
                                 {% if share.include_documents %}&middot; documents{% endif %}
                                 {% if share.purpose %}&middot; {{ share.get_purpose_display|lower }}{% endif %}
-                                {% if share.revoked_at %}&middot; revoked {{ share.revoked_at|date:"M d, Y" }}{% elif share.expires_at %}&middot; until {{ share.expires_at|date:"M d, Y" }}{% endif %}
+                                {% if share.revoked_at %}&middot; revoked
+                                    {{ share.revoked_at|date:"M d, Y" }}{% elif share.expires_at %}&middot; until
+                                    {{ share.expires_at|date:"M d, Y" }}{% endif %}
                             </p>
                         </div>
                     </div>
@@ -33,7 +32,7 @@
                         {% if can_grant and share.is_active %}
                             <form method="POST"
                                   action="{% url 'records:record_share_revoke' record.pk share.pk %}"
-                                  onsubmit="return confirm('Revoke access for {{ share.user.email }}? This cannot be undone.');">
+                                  onsubmit="return confirm('Revoke access for {{ share.user.email }}? This cannot be undone.')">
                                 {% csrf_token %}
                                 <button type="submit"
                                         class="rounded-lg bg-rose-500/0 px-2.5 py-1 text-[11px] font-medium text-rose-400/80 transition-all duration-200 hover:bg-rose-500/10 hover:text-rose-300">
@@ -51,52 +50,9 @@
         </div>
     {% endif %}
     {% if can_grant %}
-        <form method="POST"
-              action="{% url 'records:record_share' record.pk %}"
-              class="space-y-3 border-t border-white/[0.06] pt-4"
-              onsubmit="var b = this.querySelector('button[type=submit]'); b.disabled = true; b.innerHTML = '&#8230;';">
-            {% csrf_token %}
-            <label for="share-emails"
-                   class="block text-[11px] font-semibold tracking-wider text-zinc-500 uppercase dark:text-zinc-400">
-                Share with a user
-            </label>
-            <div class="flex gap-2">
-                <input id="share-emails"
-                       type="email"
-                       name="emails"
-                       multiple
-                       placeholder="test@example.com"
-                       class="min-w-0 flex-1 rounded-xl border border-white/[0.06] bg-white/[0.03] px-3.5 py-2 text-sm text-zinc-100 placeholder-zinc-600 transition-all duration-200 outline-none focus:border-indigo-500/40 focus:ring-2 focus:ring-indigo-500/40">
-                <button type="submit"
-                        class="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-indigo-600/20 transition-all duration-200 hover:bg-indigo-500 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50">
-                    Share
-                </button>
-            </div>
-            <div class="flex items-center gap-4 text-[11px] text-zinc-400">
-                <label class="inline-flex items-center gap-1.5">
-                    <input type="radio"
-                           name="permission"
-                           value="edit"
-                           checked
-                           class="accent-indigo-500">
-                    Can edit
-                </label>
-                <label class="inline-flex items-center gap-1.5">
-                    <input type="radio" name="permission" value="view" class="accent-indigo-500">
-                    View only
-                </label>
-                <label class="inline-flex items-center gap-1.5">
-                    <input type="checkbox"
-                           name="include_documents"
-                           checked
-                           class="accent-indigo-500">
-                    Include documents
-                </label>
-            </div>
-            <p class="text-[10px] leading-relaxed text-zinc-500">
-                Recipients see only this record. View-only recipients cannot edit; edits by editors are attributed in record history.
-            </p>
-        </form>
+        <p class="border-t border-white/[0.06] pt-4 text-[11px] leading-relaxed text-zinc-500">
+            To share this record, select it on the records list and use the share action.
+        </p>
     {% elif can_share_feature is False %}
         <div class="rounded-xl border border-rose-500/20 bg-rose-500/10 p-3">
             <p class="text-[11px] font-medium text-rose-400">Record sharing is a Pro feature.</p>

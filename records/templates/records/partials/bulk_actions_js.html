@@ -1,6 +1,6 @@
 {# bulk_action_js.html #}
 <style>
-    [data-optimistic-removed="true"] {
+    [data-optimistic-removed='true'] {
         display: none;
     }
 </style>
@@ -10,6 +10,7 @@
             selectedIds: [],
             archiving: false,
             unarchiving: false,
+            hardDeleting: false,
             exporting: false,
             creatingPackage: false,
             showPackageModal: false,
@@ -22,6 +23,8 @@
             emailCheckTimeout: null,
             showShareModal: false,
             shareEmails: '',
+            sharePermission: 'edit',
+            shareIncludeDocuments: true,
             sharing: false,
             shareError: '',
 
@@ -35,6 +38,38 @@
                 return [...new Set(
                     [...container.querySelectorAll('[data-record-id]')].map(el => el.dataset.recordId)
                 )];
+            },
+
+            // Eligibility is read from the rendered cards so the bar only
+            // offers an action that at least one selected record supports.
+            _selectedCards() {
+                return this.selectedIds
+                    .map(id => document.querySelector(`[data-record-id="${id}"]`))
+                    .filter(Boolean);
+            },
+
+            get selectedActiveCount() {
+                return this._selectedCards().filter(c => c.dataset.recordActive === 'true').length;
+            },
+
+            get selectedArchivedCount() {
+                return this._selectedCards().filter(c => c.dataset.recordActive === 'false').length;
+            },
+
+            get selectedPermanentCount() {
+                return this._selectedCards().filter(c => c.dataset.recordPermanent === 'true').length;
+            },
+
+            get canArchive() {
+                return this.selectedActiveCount > 0;
+            },
+
+            get canRestore() {
+                return this.selectedArchivedCount > 0;
+            },
+
+            get canHardDelete() {
+                return this.selectedPermanentCount > 0;
             },
 
             get allVisibleSelected() {
@@ -85,6 +120,8 @@
             openShareModal() {
                 this.shareEmails = '';
                 this.shareError = '';
+                this.sharePermission = 'edit';
+                this.shareIncludeDocuments = true;
                 this.showShareModal = true;
             },
 
@@ -110,6 +147,8 @@
                         body: JSON.stringify({
                             record_ids: this.selectedIds.map(Number),
                             emails: emails.join(', '),
+                            permission: this.sharePermission,
+                            include_documents: this.shareIncludeDocuments,
                         }),
                     });
                     const data = await response.json().catch(() => null);
@@ -248,10 +287,78 @@
                 }, 2000);
             },
 
+            async hardDeleteOne(id) {
+                if (!confirm('Permanently delete this record? This cannot be undone.')) return;
+                try {
+                    const response = await fetch("{% url 'records:bulk_hard_delete' %}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': this._getCsrfToken(),
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        body: JSON.stringify({ record_ids: [Number(id)] }),
+                    });
+                    const data = await response.json().catch(() => ({}));
+                    if (response.ok && data.count === 1) {
+                        this._optimisticRemove([id]);
+                        this._toast('Record permanently deleted.', 25);
+                    } else {
+                        this._toast(data.error || 'Only records past the 7-year retention window can be permanently deleted.', 40);
+                    }
+                } catch {
+                    this._toast('A network error occurred.', 40);
+                }
+                this._triggerCrossTabSync();
+            },
+
+            async bulkHardDelete() {
+                const eligible = this.selectedPermanentCount;
+                if (!eligible) return;
+                const total = this.selectedIds.length;
+                const confirmText = eligible === total
+                    ? 'Permanently delete ' + total + ' record(s)? This cannot be undone.'
+                    : 'Permanently delete ' + eligible + ' of ' + total + ' selected record(s)? '
+                      + (total - eligible) + ' are not past the 7-year retention window and will be kept. This cannot be undone.';
+                if (!confirm(confirmText)) return;
+
+                const ids = [...this.selectedIds];
+                this.selectedIds = [];
+                this.hardDeleting = true;
+                try {
+                    const response = await fetch("{% url 'records:bulk_hard_delete' %}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': this._getCsrfToken(),
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        body: JSON.stringify({ record_ids: ids.map(Number) }),
+                    });
+                    const data = await response.json().catch(() => ({}));
+                    if (response.ok && typeof data.count === 'number') {
+                        const skipped = typeof data.skipped === 'number' ? data.skipped : ids.length - data.count;
+                        this._toast(
+                            skipped
+                                ? 'Permanently deleted ' + data.count + ' of ' + ids.length
+                                  + ' records — ' + skipped + ' skipped, not past the 7-year retention window.'
+                                : 'Permanently deleted ' + data.count + ' record' + (data.count === 1 ? '' : 's') + '.',
+                            skipped ? 30 : 25
+                        );
+                    } else {
+                        this._toast(data.error || 'Failed to delete records.', 40);
+                    }
+                } catch {
+                    this._toast('A network error occurred.', 40);
+                } finally {
+                    this.hardDeleting = false;
+                }
+                this._triggerCrossTabSync();
+            },
+
             async bulkArchive() {
                 if (!confirm('Archive ' + this.selectedIds.length + ' record(s)?')) return;
                 const ids = [...this.selectedIds];
-                this._optimisticRemove(ids);
                 this.selectedIds = [];
                 this.archiving = true;
                 try {
@@ -267,9 +374,9 @@
                     const data = await response.json().catch(() => ({}));
                     if (response.ok && typeof data.count === 'number') {
                         if (data.count === ids.length) {
+                            this._optimisticRemove(ids);
                             this._toast('Archived ' + data.count + ' record' + (data.count === 1 ? '' : 's') + '.', 25);
                         } else {
-                            this._rollbackOptimisticRemove(ids);
                             this._toast(
                                 'Archived ' + data.count + ' of ' + ids.length + ' records — the rest were skipped.',
                                 30
@@ -277,10 +384,8 @@
                         }
                     } else {
                         this._toast(data.error || 'Failed to archive records.', 40);
-                        this._rollbackOptimisticRemove(ids);
                     }
                 } catch {
-                    this._rollbackOptimisticRemove(ids);
                     this._toast('A network error occurred.', 40);
                 } finally {
                     this.archiving = false;

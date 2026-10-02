@@ -12,7 +12,6 @@ from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
 from django.conf import settings
-from django.contrib.auth import get_user_model
 from django.contrib.sites.models import Site
 from django.templatetags.static import static
 
@@ -22,8 +21,6 @@ if TYPE_CHECKING:
     from django.contrib.auth.models import AbstractUser
 
 logger = logging.getLogger(__name__)
-
-User = get_user_model()
 
 
 def _base_payload() -> dict:
@@ -119,33 +116,20 @@ def send_email_notification(
 
 
 def _user_can_receive_push(user: AbstractUser) -> bool:
-    """Check whether the user has push notifications enabled and at least one subscription.
+    """Whether push is enabled and the user has at least one subscription."""
+    from webpush.models import PushInformation
 
-    Returns False when the user has no settings, when push is disabled, or
-    when the webpush module is unavailable.
-    """
-    if not hasattr(user, "settings"):
-        return False
     if not user.settings.enable_push_notifications:
         return False
-    try:
-        from webpush.models import PushInformation
-
-        return PushInformation.objects.filter(user=user).exists()
-    except ImportError:
-        logger.error("webpush module not available for push notification check")
-        return False
+    return PushInformation.objects.filter(user=user).exists()
 
 
 def _user_can_receive_email(user: AbstractUser) -> bool:
-    """Check whether the user has email notifications enabled.
+    """Whether email notifications are enabled for the user.
 
-    Refreshes the settings from the database to avoid returning a stale value
-    when the preference was recently toggled.
+    Refreshes first because the auth backend caches a related instance, so a
+    just-toggled preference would otherwise read as stale.
     """
-    if not hasattr(user, "settings"):
-        return False
-    # Refresh from DB to avoid stale cached value
     user.settings.refresh_from_db()
     return user.settings.enable_email_notifications
 

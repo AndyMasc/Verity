@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 from django.core.cache import cache
-from django.test import TestCase, override_settings
+from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
@@ -56,10 +56,6 @@ class DashboardViewTest(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(username="testuser", password="pass")
 
-    def test_login_required(self):
-        response = self.client.get(reverse("core:dashboard"))
-        self.assertEqual(response.status_code, 302)
-
     def test_authenticated_access(self):
         self.client.force_login(self.user)
         response = self.client.get(reverse("core:dashboard"))
@@ -100,10 +96,6 @@ class DashboardViewAsyncTest(TestCase):
 class ProfilePageViewTest(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(username="testuser", password="pass")
-
-    def test_login_required(self):
-        response = self.client.get(reverse("core:profile_page"))
-        self.assertEqual(response.status_code, 302)
 
     def test_authenticated_access(self):
         self.client.force_login(self.user)

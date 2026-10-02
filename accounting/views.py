@@ -13,6 +13,15 @@ from .services import export_records_to_excel
 logger = logging.getLogger(__name__)
 
 
+XLSX_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+
+def _xlsx_response(excel_data: bytes) -> HttpResponse:
+    response = HttpResponse(excel_data, content_type=XLSX_CONTENT_TYPE)
+    response["Content-Disposition"] = 'attachment; filename="Record_export.xlsx"'
+    return response
+
+
 @login_required
 @ratelimit(key="user", rate="5/h", method="GET", block=True)
 def ExportExcelAll(request: HttpRequest) -> HttpResponse:
@@ -23,12 +32,7 @@ def ExportExcelAll(request: HttpRequest) -> HttpResponse:
         logger.exception("Failed to export records for user %s", request.user.pk)
         return HttpResponse("Export failed. Please try again later.", status=500)
 
-    response = HttpResponse(
-        excel_data,
-        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    )
-    response["Content-Disposition"] = 'attachment; filename="Record_export.xlsx"'
-    return response
+    return _xlsx_response(excel_data)
 
 
 @login_required
@@ -57,9 +61,4 @@ def ExportSelectedExcel(request: HttpRequest) -> HttpResponse:
         )
         return HttpResponse("Export failed. Please try again later.", status=500)
 
-    response = HttpResponse(
-        excel_data,
-        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    )
-    response["Content-Disposition"] = 'attachment; filename="Record_export.xlsx"'
-    return response
+    return _xlsx_response(excel_data)

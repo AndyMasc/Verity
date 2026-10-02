@@ -1,0 +1,24 @@
+<div class="relative -m-2 flex h-9 w-9 shrink-0 items-center justify-center"
+     @click.stop>
+    {% if not record.is_active %}
+        <span class="pointer-events-none absolute top-0.5 right-0.5 size-1.5 rounded-full bg-zinc-400 ring-2 ring-white dark:bg-zinc-600 dark:ring-zinc-950"
+              title="Archived"></span>
+    {% endif %}
+    <label class="absolute inset-0 flex cursor-pointer items-center justify-center">
+        <input type="checkbox"
+               value="{{ select_id }}"
+               :checked="selectedIds.includes('{{ select_id }}')"
+               @change="toggleSelect('{{ select_id }}')"
+               class="sr-only">
+        <span class="flex h-4.5 w-4.5 items-center justify-center rounded-md border shadow-xs transition-colors"
+              :class="selectedIds.includes('{{ select_id }}') ? 'border-zinc-900 bg-zinc-900 dark:border-white dark:bg-white' : 'border-zinc-400 bg-white hover:border-zinc-600 dark:border-zinc-600 dark:bg-zinc-900'">
+            <svg class="h-3 w-3 text-white dark:text-zinc-950"
+                 fill="none"
+                 viewBox="0 0 24 24"
+                 stroke-width="3"
+                 stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+            </svg>
+        </span>
+    </label>
+</div>

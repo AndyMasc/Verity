@@ -81,14 +81,9 @@ class SyncTransactionsView(APIView):
         """Trigger transaction sync (direct background task in Prod, sandbox webhook in Sandbox)."""
         item_id: str | None = request.data.get("item_id")
 
-        try:
-            if item_id:
-                plaid_item = PlaidItem.objects.get(user=request.user, item_id=item_id)
-            else:
-                plaid_item = PlaidItem.objects.filter(user=request.user).first()
-                if not plaid_item:
-                    raise PlaidItem.DoesNotExist
-        except PlaidItem.DoesNotExist:
+        items = PlaidItem.objects.filter(user=request.user)
+        plaid_item = items.filter(item_id=item_id).first() if item_id else items.first()
+        if plaid_item is None:
             return Response(
                 {"error": "No Plaid link found for the specified item"},
                 status=400,

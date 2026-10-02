@@ -34,18 +34,12 @@ _merge_mode_labels = {"plaid": "Bank Transaction", "doc": "Uploaded Receipt"}
 
 
 def _get_merge_candidate_qs(request: HttpRequest, mode: str) -> QuerySet[Record]:
-    """Return a cached queryset of merge candidates filtered by "mode".
+    """Return a queryset of merge candidates filtered by "mode".
 
-    "mode" must be ""plaid"" (bank transactions) or ""doc"" (uploaded
-    receipts). The queryset is cached on the request object to avoid
-    duplicate queries within a single view.
+    "mode" must be "plaid" (bank transactions) or "doc" (uploaded receipts).
     """
     if mode not in ("plaid", "doc"):
         raise ValueError("Invalid mode")
-    cache_attr = f"_merge_qs_{mode}"
-    cached = getattr(request, cache_attr, None)
-    if cached is not None:
-        return cached
     qs = (
         Record.objects.for_user(request.user)
         .filter(is_active=True)
@@ -55,7 +49,6 @@ def _get_merge_candidate_qs(request: HttpRequest, mode: str) -> QuerySet[Record]
         qs = qs.filter(plaid_transaction_id__isnull=False)
     else:
         qs = qs.filter(plaid_transaction_id__isnull=True)
-    setattr(request, cache_attr, qs)
     return qs
 
 

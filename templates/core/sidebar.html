@@ -319,9 +319,9 @@
                                                 {% if monthly_scan_limit %}
                                                     <span class="font-semibold text-zinc-800 dark:text-zinc-200">{{ scan_usage_count|default:0 }}/{{ monthly_scan_limit }}</span>
                                                     {% if is_fair_use_approaching %}
-                                                        <span class="ml-2 text-xs text-zinc-600 dark:text-zinc-400">⚠️ approaching fair use limit</span>
+                                                        <span class="ml-2 text-xs text-zinc-600 dark:text-zinc-400">Approaching usage limit</span>
                                                     {% elif is_fair_use_exceeded %}
-                                                        <span class="ml-2 text-xs text-rose-500 dark:text-rose-400">⚠️ fair use limit exceeded</span>
+                                                        <span class="ml-2 text-xs text-rose-500 dark:text-rose-400">Usage limit exceeded</span>
                                                     {% endif %}
                                                 {% else %}
                                                     <span class="inline-flex items-center gap-1 font-semibold">

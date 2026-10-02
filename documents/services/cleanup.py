@@ -1,9 +1,4 @@
-"""Document cleanup service for bulk deletion, orphan removal, and reconciliation.
-
-Encapsulates the business logic for document lifecycle cleanup: batch DB + R2
-deletion, orphaned document removal after grace periods, and stale upload
-reconciliation.
-"""
+"""Document lifecycle cleanup: batch DB + R2 deletion, orphans, stale uploads."""
 
 import logging
 from datetime import timedelta

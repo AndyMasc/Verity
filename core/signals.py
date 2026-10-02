@@ -148,11 +148,9 @@ def _on_reimbursement_package_change(sender, instance, **kwargs):  # noqa: ARG00
 @receiver(post_save, sender="reimbursements.PackagePayment")
 @receiver(post_delete, sender="reimbursements.PackagePayment")
 def _on_package_payment_change(sender, instance, **kwargs):  # noqa: ARG001
-    from reimbursements.models import PackagePayment
-
-    row = (
-        PackagePayment.objects.filter(pk=instance.pk)
-        .values_list("package__creator_id", "package__recipient_id")
-        .first()
-    )
-    _invalidate_dashboard_for(row or ())
+    # Read the package off the in-memory instance. Re-querying by pk finds
+    # nothing on post_delete, so deletes would never invalidate the cache.
+    # A cascade-deleted package is covered by the package signal above.
+    package = getattr(instance, "package", None)
+    if package is not None:
+        _invalidate_dashboard_for((package.creator_id, package.recipient_id))

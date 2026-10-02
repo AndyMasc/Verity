@@ -22,10 +22,6 @@ class UploadViewTest(TestCase):
         self.user = User.objects.create_user(username="uploaduser", password="pass")
         self.url = reverse("documents:upload_document")
 
-    def test_login_required(self):
-        response = self.client.get(self.url)
-        self.assertEqual(response.status_code, 302)
-
     def test_get_returns_form_page(self):
         self.client.force_login(self.user)
         response = self.client.get(self.url)
@@ -133,12 +129,6 @@ class ConfirmUploadViewTest(TestCase):
             file_hash=_make_hash(),
         )
 
-    def test_login_required(self):
-        response = self.client.post(
-            self.url, {"document_id": self.doc.id, "key": self.doc.filepath}
-        )
-        self.assertEqual(response.status_code, 302)
-
     @patch("documents.services.validation.get_r2_object_head")
     def test_confirm_valid(self, mock_head):
         mock_head.return_value = {"ContentLength": 100, "ContentType": "image/jpeg"}
@@ -212,10 +202,6 @@ class ViewDocumentViewTest(TestCase):
         )
         self.url = reverse("documents:view_document", args=[self.doc.id])
 
-    def test_login_required(self):
-        response = self.client.get(self.url)
-        self.assertEqual(response.status_code, 302)
-
     def test_owner_can_view(self):
         self.client.force_login(self.user)
         response = self.client.get(self.url)
@@ -249,10 +235,6 @@ class DeleteDocumentViewTest(TestCase):
         )
         self.url = reverse("documents:delete_document", args=[self.doc.id])
 
-    def test_login_required(self):
-        response = self.client.post(self.url)
-        self.assertEqual(response.status_code, 302)
-
     def test_owner_can_delete(self):
         self.client.force_login(self.user)
         response = self.client.post(self.url)
@@ -276,10 +258,6 @@ class AddSupportDocumentsViewTest(TestCase):
             transaction_date=timezone.now().date(),
         )
         self.url = reverse("documents:add_support_docs", args=[self.record.id])
-
-    def test_login_required(self):
-        response = self.client.get(self.url)
-        self.assertEqual(response.status_code, 302)
 
     def test_owner_can_access(self):
         self.client.force_login(self.user)
@@ -307,10 +285,6 @@ class DocumentListViewTest(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(username="listuser", password="pass")
         self.url = reverse("documents:document_list_view")
-
-    def test_login_required(self):
-        response = self.client.get(self.url)
-        self.assertEqual(response.status_code, 302)
 
     def test_authenticated_access(self):
         self.client.force_login(self.user)

@@ -1,9 +1,9 @@
-"""Fuzzy matching engine that pairs Plaid bank transactions with uploaded receipts.
+"""Pairs Plaid bank transactions with uploaded receipts.
 
-Uses rapidfuzz for text similarity and tolerances on balance and date fields
-to score candidate pairs. High-scoring pairs are automatically merged, while
-users can also trigger merges manually through the UI. Every merge creates a
-MergeLog snapshot that supports undo and receipt replacement.
+Scoring blends balance, date, merchant and title proximity. Above
+MERGE_SCORE_THRESHOLD a pair is merged: the document record's editable fields
+move onto the Plaid row, the document is deactivated, and a MergeLog snapshot
+is written so the merge can be undone.
 """
 
 import logging
@@ -27,30 +27,29 @@ MATCH_LOOKAHEAD_DAYS = 14
 MERGE_SCORE_THRESHOLD = 55
 MAX_MATCH_CANDIDATES = 2000
 
-
-def _normalize(text: str) -> str:
-    return text.lower().strip()
+PLAID_RESTORE_FIELDS = [
+    "products",
+    "notes",
+    "record_type",
+    "folder_id",
+    "payment_method",
+]
 
 
 def _similarity(a: str, b: str) -> float:
     if not a or not b:
         return 0.0
-    a = _normalize(a)
-    b = _normalize(b)
+    a = a.lower().strip()
+    b = b.lower().strip()
     if len(a) < 3 or len(b) < 3:
         return float(a == b)
     max_len = max(len(a), len(b))
-    if max_len > 0 and abs(len(a) - len(b)) / max_len > 0.6:
+    if abs(len(a) - len(b)) / max_len > 0.6:
         return 0.0
     return rapidfuzz.fuzz.ratio(a, b) / 100.0
 
 
-def _balance_diff(a: Decimal | None, b: Decimal | None) -> Decimal | None:
-    if a is None or b is None:
-        return None
-    return abs(Decimal(a) - Decimal(b))
-
-
+# (threshold, points), best band first.
 _BALANCE_BANDS: tuple[tuple[Decimal, int], ...] = (
     (Decimal("0"), 40),
     (BALANCE_TOLERANCE, 30),
@@ -75,135 +74,105 @@ _TITLE_BANDS: tuple[tuple[float, int], ...] = (
 )
 
 
-def _score_at_most(value, bands) -> int:
-    """Return points for the highest band ``value`` does not exceed."""
+def _band_score(value, bands, *, at_least: bool) -> int:
+    """Return the points for the first band that "value" reaches (or does not exceed)."""
     for threshold, points in bands:
-        if value <= threshold:
-            return points
-    return 0
-
-
-def _score_at_least(value, bands) -> int:
-    """Return points for the highest band ``value`` reaches or exceeds."""
-    for threshold, points in bands:
-        if value >= threshold:
+        if (value >= threshold) if at_least else (value <= threshold):
             return points
     return 0
 
 
 def calculate_match_score(record_a: Record, record_b: Record) -> int:
-    """Return a composite score (0-120) measuring how likely two records refer to the same purchase.
-
-    Scores are derived from balance proximity, date proximity, merchant
-    similarity, and title similarity. A score above "MERGE_SCORE_THRESHOLD"
-    (55) indicates a probable match.
-    """
+    """Composite match score; at or above MERGE_SCORE_THRESHOLD means probable."""
     score = 0
 
-    diff = _balance_diff(record_a.balance, record_b.balance)
-    if diff is not None:
-        score += _score_at_most(diff, _BALANCE_BANDS)
+    a_balance, b_balance = record_a.balance, record_b.balance
+    if a_balance is not None and b_balance is not None:
+        score += _band_score(abs(a_balance - b_balance), _BALANCE_BANDS, at_least=False)
 
-    if record_a.transaction_date and record_b.transaction_date:
-        date_diff = abs((record_a.transaction_date - record_b.transaction_date).days)
-        score += _score_at_most(date_diff, _DATE_BANDS)
+    a_date, b_date = record_a.transaction_date, record_b.transaction_date
+    if a_date and b_date:
+        score += _band_score(abs((a_date - b_date).days), _DATE_BANDS, at_least=False)
 
-    if record_a.merchant and record_b.merchant:
-        score += _score_at_least(
-            _similarity(record_a.merchant, record_b.merchant), _MERCHANT_BANDS
-        )
-
-    if record_a.title and record_b.title:
-        score += _score_at_least(
-            _similarity(record_a.title, record_b.title), _TITLE_BANDS
-        )
+    score += _band_score(
+        _similarity(record_a.merchant, record_b.merchant),
+        _MERCHANT_BANDS,
+        at_least=True,
+    )
+    score += _band_score(
+        _similarity(record_a.title, record_b.title), _TITLE_BANDS, at_least=True
+    )
 
     return score
 
 
-def _apply_date_window(qs: QuerySet[Record], record: Record) -> QuerySet[Record]:
-    if record.transaction_date:
-        window_start = record.transaction_date - timedelta(days=MATCH_LOOKAHEAD_DAYS)
-        window_end = record.transaction_date + timedelta(days=MATCH_LOOKAHEAD_DAYS)
-        return qs.filter(transaction_date__range=(window_start, window_end))
-    return qs
+def _candidates(source: Record, *, candidates_are_plaid: bool) -> QuerySet[Record]:
+    """Same user's active records on the opposite side of a merge, in the date window.
+
+    A "source" with no transaction_date has no window to search, so every
+    active candidate of the same user is considered (still capped by
+    MAX_MATCH_CANDIDATES).
+    """
+    qs = Record.objects.filter(
+        user=source.user,
+        is_active=True,
+        plaid_transaction_id__isnull=not candidates_are_plaid,
+    ).exclude(pk=source.pk)
+
+    if source.transaction_date:
+        qs = qs.filter(
+            transaction_date__range=(
+                source.transaction_date - timedelta(days=MATCH_LOOKAHEAD_DAYS),
+                source.transaction_date + timedelta(days=MATCH_LOOKAHEAD_DAYS),
+            )
+        )
+
+    return qs.select_related("folder", "user")[:MAX_MATCH_CANDIDATES]
+
+
+def _scored_candidates(source: Record, *, candidates_are_plaid: bool):
+    """Yield "(candidate, score)" for every plausible match partner of "source"."""
+    for candidate in _candidates(
+        source, candidates_are_plaid=candidates_are_plaid
+    ).iterator(chunk_size=500):
+        yield candidate, calculate_match_score(source, candidate)
 
 
 def find_best_plaid_match(record: Record) -> Record | None:
-    """Find the highest-scoring active Plaid record that matches "record".
-
-    Searches within a date window defined by "MATCH_LOOKAHEAD_DAYS". Returns
-    "None" when no candidate exceeds the merge score threshold.
-    """
-    qs = (
-        Record.objects.filter(
-            user=record.user,
-            plaid_transaction_id__isnull=False,
-            is_active=True,
-        )
-        .exclude(pk=record.pk)
-        .select_related("folder", "user")
-    )
-    candidates = _apply_date_window(qs, record)
-
+    """Highest-scoring active Plaid record for "record", or None below threshold."""
+    best: Record | None = None
     best_score = 0
-    best_match: Record | None = None
 
-    for candidate in candidates[:MAX_MATCH_CANDIDATES].iterator(chunk_size=500):
-        score = calculate_match_score(record, candidate)
+    for candidate, score in _scored_candidates(record, candidates_are_plaid=True):
         if score > best_score:
-            best_score = score
-            best_match = candidate
-            if best_score >= 95:
-                break
+            best, best_score = candidate, score
 
-    if best_score >= MERGE_SCORE_THRESHOLD:
-        logger.info(
-            "Found plaid match for record %s: record %s (score=%d)",
-            record.pk,
-            best_match.pk,
-            best_score,
-        )
-        return best_match
+    if best is None or best_score < MERGE_SCORE_THRESHOLD:
+        return None
 
-    return None
+    logger.info(
+        "Found plaid match for record %s: record %s (score=%d)",
+        record.pk,
+        best.pk,
+        best_score,
+    )
+    return best
 
 
 def find_document_matches_for_plaid(plaid_record: Record) -> list[tuple[Record, int]]:
-    """Return all document records that score above the merge threshold against "plaid_record".
+    """Every document record scoring at or above the threshold, best first.
 
-    Results are sorted highest score first. Used both by automatic matching
-    and the manual merge search panel.
+    Used by both automatic matching and the manual merge search panel.
     """
-    qs = (
-        Record.objects.filter(
-            user=plaid_record.user,
-            plaid_transaction_id__isnull=True,
-            is_active=True,
+    matches = [
+        (candidate, score)
+        for candidate, score in _scored_candidates(
+            plaid_record, candidates_are_plaid=False
         )
-        .exclude(pk=plaid_record.pk)
-        .select_related("folder", "user")
-    )
-    doc_records = _apply_date_window(qs, plaid_record)[:MAX_MATCH_CANDIDATES]
-
-    results: list[tuple[Record, int]] = []
-
-    for candidate in doc_records.iterator(chunk_size=500):
-        score = calculate_match_score(plaid_record, candidate)
-        if score >= MERGE_SCORE_THRESHOLD:
-            results.append((candidate, score))
-
-    results.sort(key=lambda x: -x[1])
-    return results
-
-
-PLAID_RESTORE_FIELDS = [
-    "products",
-    "notes",
-    "record_type",
-    "folder_id",
-    "payment_method",
-]
+        if score >= MERGE_SCORE_THRESHOLD
+    ]
+    matches.sort(key=lambda pair: -pair[1])
+    return matches
 
 
 def _record_snapshot(record: Record) -> dict[str, Any]:
@@ -226,6 +195,7 @@ def _record_snapshot(record: Record) -> dict[str, Any]:
 
 
 def _restore_plaid_from_snapshot(locked_plaid: Record, snap: dict) -> None:
+    """Restore a Plaid record to its pre-merge state from a MergeLog snapshot. Append same data that any other Plaid record would have."""
     locked_plaid._skip_auto_match = True
     locked_plaid.products = snap.get("products", "")
     locked_plaid.notes = snap.get("notes", "")
@@ -238,6 +208,7 @@ def _restore_plaid_from_snapshot(locked_plaid: Record, snap: dict) -> None:
 
 
 def _restore_document_record(document_record: Record) -> None:
+    """Restore a document record to its pre-merge state from a MergeLog snapshot."""
     locked_doc = Record.objects.select_for_update().get(pk=document_record.pk)
     locked_doc._skip_auto_match = True
     locked_doc.is_active = True
@@ -246,7 +217,7 @@ def _restore_document_record(document_record: Record) -> None:
 
 
 def _apply_doc_fields_to_plaid(locked_plaid: Record, doc: Record) -> None:
-    locked_plaid._skip_auto_match = True
+    """Copy the document's canonical data onto the Plaid row."""
     if doc.products:
         locked_plaid.products = doc.products
     if doc.notes:
@@ -265,39 +236,38 @@ def merge_document_into_plaid(
     document_record: Record,
     document: DocumentData | None = None,
 ) -> Record | None:
-    """Merge a document record into a Plaid transaction inside an atomic transaction.
+    """Merge a document record into its Plaid transaction, atomically.
 
-    Transfers editable fields (products, notes, record_type, folder) from the
-    document record onto the Plaid record, re-associates any DocumentData, and
-    creates a MergeLog snapshot for undo support. Returns the locked Plaid
-    record on success, or "None" if the document is no longer mergeable.
+    Moves the document's details onto the Plaid row, re-points any attached
+    DocumentData at the Plaid row, deactivates the document record, and writes
+    a MergeLog snapshot so the merge can be undone. Returns the locked Plaid
+    record, or None if either row vanished or the document is no longer
+    mergeable (already inactive, or itself merged into a Plaid row).
     """
-    locked_plaid = Record.objects.select_for_update().get(pk=plaid_record.pk)
-    fresh_doc = Record.objects.select_for_update().get(pk=document_record.pk)
-    if not fresh_doc.is_active or fresh_doc.plaid_transaction_id is not None:
-        logger.warning(
-            "Document record %s is no longer mergable (is_active=%s, plaid_id=%r), skipping",
-            document_record.pk,
-            fresh_doc.is_active,
-            fresh_doc.plaid_transaction_id,
-        )
+    try:
+        locked_plaid = Record.objects.select_for_update().get(pk=plaid_record.pk)
+        fresh_doc = Record.objects.select_for_update().get(pk=document_record.pk)
+    except Record.DoesNotExist:
+        return None
+
+    if (
+        not fresh_doc.is_active or fresh_doc.plaid_transaction_id is not None
+    ):  # Skip if the document is already inactive or merged into a Plaid row
         return None
 
     plaid_snapshot = _record_snapshot(locked_plaid)
     document_snapshot = _record_snapshot(fresh_doc)
 
+    # Suppress the post_save auto-match hook: this save is the merge.
     locked_plaid._skip_auto_match = True
     fresh_doc._skip_auto_match = True
 
-    doc_document_ids = list(
-        DocumentData.objects.filter(associated_record=fresh_doc).values_list(
-            "pk", flat=True
-        )
-    )
-    DocumentData.objects.filter(associated_record=fresh_doc).update(
+    attached = list(DocumentData.objects.filter(associated_record=fresh_doc))
+    DocumentData.objects.filter(pk__in=[d.pk for d in attached]).update(
         associated_record=locked_plaid
     )
-    document_snapshot["document_ids"] = doc_document_ids
+    # Undo re-points these back at the document record.
+    document_snapshot["document_ids"] = [d.pk for d in attached]
 
     _apply_doc_fields_to_plaid(locked_plaid, fresh_doc)
 
@@ -307,27 +277,21 @@ def merge_document_into_plaid(
     MergeLog.objects.create(
         plaid_record=locked_plaid,
         document_record=fresh_doc,
-        document=document,
+        document=document or (attached[0] if attached else None),
         plaid_snapshot=plaid_snapshot,
         document_snapshot=document_snapshot,
     )
 
-    logger.info(
-        "Merged document record %s into plaid record %s",
-        fresh_doc.pk,
-        locked_plaid.pk,
-    )
-
-    return locked_plaid
+    return locked_plaid  # Return the locked Plaid record.
 
 
 @db_transaction.atomic
 def undo_merge(merge_log: MergeLog) -> Record | None:
-    """Reverse a previously completed merge, restoring both records to their pre-merge state.
+    """Reverse a merge, restoring both records to their pre-merge state.
 
-    Operates inside an atomic block with "select_for_update" to prevent
-    concurrent modifications. Returns the restored document record, or
-    "None" if the merge was already undone.
+    Returns the restored document record, or None if the merge was already
+    undone. The whole reversal runs under select_for_update so a concurrent
+    merge cannot interleave.
     """
     merge_log = MergeLog.objects.select_for_update().get(pk=merge_log.pk)
     if merge_log.undone_at:
@@ -335,29 +299,24 @@ def undo_merge(merge_log: MergeLog) -> Record | None:
 
     plaid_record = merge_log.plaid_record
     document_record = merge_log.document_record
-    document = merge_log.document
-
-    if document_record is None:
-        logger.warning(
-            "Cannot restore document record for merge %s — document_record was deleted",
-            merge_log.pk,
-        )
 
     if plaid_record and plaid_record.is_active:
-        locked_plaid = Record.objects.select_for_update().get(pk=plaid_record.pk)
-        _restore_plaid_from_snapshot(locked_plaid, merge_log.plaid_snapshot)
+        _restore_plaid_from_snapshot(
+            Record.objects.select_for_update().get(pk=plaid_record.pk),
+            merge_log.plaid_snapshot,
+        )
 
     if document_record:
         _restore_document_record(document_record)
 
-    doc_ids: list[int] | None = merge_log.document_snapshot.get("document_ids")
-    if doc_ids and plaid_record and document_record:
+    doc_ids = merge_log.document_snapshot.get("document_ids")
+    if doc_ids:
         DocumentData.objects.filter(pk__in=doc_ids).update(
             associated_record=document_record
         )
-    elif document and document_record:
-        document.associated_record = document_record
-        document.save(update_fields=["associated_record"])
+    elif merge_log.document and document_record:
+        merge_log.document.associated_record = document_record
+        merge_log.document.save(update_fields=["associated_record"])
 
     merge_log.undone_at = timezone.now()
     merge_log.save(update_fields=["undone_at"])
@@ -370,41 +329,23 @@ def try_match_document_record(
     document_record: Record,
     document: DocumentData | None = None,
 ) -> Record | None:
-    """Attempt to automatically merge a newly created document record with its best Plaid match.
-
-    Returns the merged Plaid record on success, or "None" when no match is
-    found.
-    """
+    """Auto-merge a newly created document record into its best Plaid match."""
     plaid_match = find_best_plaid_match(document_record)
     if plaid_match is None:
         return None
-
     return merge_document_into_plaid(plaid_match, document_record, document)
 
 
 def try_match_plaid_record(plaid_record: Record) -> list[Record]:
-    """Attempt to automatically merge all matching document records into a Plaid transaction.
+    """Auto-merge every matching document record into a Plaid transaction.
 
-    Called when a new Plaid record is saved. Returns a list of document records
-    that were successfully merged.
+    Returns the document records that were successfully merged. Re-running is
+    safe: a document record that was already merged is inactive and so is no
+    longer a candidate.
     """
-    matches = find_document_matches_for_plaid(plaid_record)
-    if not matches:
-        return []
-
-    doc_ids = [doc.pk for doc, _score in matches]
-    docs_by_record = {
-        dr: doc
-        for doc in DocumentData.objects.filter(associated_record_id__in=doc_ids)
-        if (dr := doc.associated_record_id)
-    }
-
-    merged: list[Record] = []
-
-    for doc_record, _score in matches:
-        document = docs_by_record.get(doc_record.pk)
-        result = merge_document_into_plaid(plaid_record, doc_record, document)
-        if result is not None:
-            merged.append(doc_record)
-
+    merged = [
+        doc_record
+        for doc_record, _score in find_document_matches_for_plaid(plaid_record)
+        if merge_document_into_plaid(plaid_record, doc_record) is not None
+    ]
     return merged

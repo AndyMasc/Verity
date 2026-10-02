@@ -23,7 +23,7 @@
                 </td>
             </tr>
         </table>
-        <p style="margin-bottom: 20px;">
+        <p style="margin-bottom: 20px">
             {% blocktrans %}
                 If you do not recognize this change then please take proper security precautions immediately.
                 The change to your account originates from:
@@ -54,14 +54,14 @@
                            background-color: #fafafa;
                            font-weight: 600;
                            color: #18181b">{% trans "Browser" %}</td>
-                <td style="padding: 12px 16px; border-bottom: 1px solid #f4f4f5;">{{ user_agent }}</td>
+                <td style="padding: 12px 16px; border-bottom: 1px solid #f4f4f5">{{ user_agent }}</td>
             </tr>
             <tr>
                 <td style="padding: 12px 16px;
                            background-color: #fafafa;
                            font-weight: 600;
                            color: #18181b">{% trans "Date" %}</td>
-                <td style="padding: 12px 16px;">{{ timestamp|date:"jS F Y H:i T" }}</td>
+                <td style="padding: 12px 16px">{{ timestamp|date:"jS F Y H:i T" }}</td>
             </tr>
         </table>
     {% endautoescape %}

@@ -54,6 +54,8 @@ def send_background_email(payload: EmailTaskPayload | dict):
     try:
         email.send()
     except AnymailRequestsAPIError as exc:
+        # A permanent rejection is swallowed: the actor has no useful retry, and
+        # no exception escapes, so this line is the only record it happened.
         if _is_permanent_email_error(exc):
             logger.error(
                 "Email permanently rejected (%s) to %s: %s",
@@ -62,9 +64,6 @@ def send_background_email(payload: EmailTaskPayload | dict):
                 exc,
             )
             return
-        raise
-    except Exception:
-        logger.exception("Email send failed to %s", payload.recipient_list)
         raise
 
 

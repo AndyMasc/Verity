@@ -65,15 +65,3 @@ def currency_format(amount, currency_code: str) -> str:
     Usage: "{{ record.balance|currency_format:record.currency }}"
     """
     return _format_currency(amount, str(currency_code).lower())
-
-
-@register.filter
-def index(sequence, i: int):
-    """Return "sequence[i]" — safe list indexing in templates.
-
-    Usage: "{{ my_list|index:forloop.counter0 }}"
-    """
-    try:
-        return sequence[int(i)]
-    except (IndexError, TypeError, ValueError):
-        return ""

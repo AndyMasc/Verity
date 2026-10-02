@@ -8,6 +8,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.cache import cache
+from django.core.exceptions import NON_FIELD_ERRORS
 from django.db import transaction
 from django.db.models import Count, Q
 from django.http import HttpResponse
@@ -247,28 +248,14 @@ class RecordDetailView(LoginRequiredMixin, UpdateView):
             return ["records/partials/record_form_partial.html"]
         return [self.template_name]
 
-    def get(self, request, *args, **kwargs):
-        response = super().get(request, *args, **kwargs)
-        if (
-            self.request.headers.get("HX-Request") != "true"
-            and posthog_client is not None
-        ):
-            posthog_client.capture(
-                "record_viewed",
-                properties={
-                    "record_type": self.object.record_type,
-                    "is_plaid_record": self.object.is_plaid_record,
-                },
-            )
-        return response
-
     def get_queryset(self):
         return Record.objects.visible_to(self.request.user).with_documents()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        seven_years_ago = timezone.now() - timedelta(days=365 * 7)
-        context["seven_years_ago_unix"] = seven_years_ago.timestamp()
+        # The seven-year retention rule lives on the model as
+        # "Record.can_hard_delete"; the template reads that instead of
+        # re-deriving a cutoff here.
 
         if self.object.user_id != self.request.user.pk:
             share = (
@@ -348,17 +335,24 @@ class RecordDetailView(LoginRequiredMixin, UpdateView):
     def form_invalid(self, form):
         messages.error(self.request, "An error was left in a record")
         is_htmx = self.request.headers.get("HX-Request") == "true"
+        blocking = [
+            (str(form[name].label), f"id_{name}")
+            for name in form.errors
+            if name != NON_FIELD_ERRORS
+        ]
         response = render(
             self.request,
             self.get_template_names(),
-            self.get_context_data(form=form),
+            self.get_context_data(form=form, blocking=blocking or None),
             status=200 if is_htmx else 422,
         )
         if is_htmx:
+            response["HX-Reswap"] = "none"
+            names = ", ".join(label for label, _ in blocking)
             response["HX-Trigger"] = json.dumps(
                 {
                     "showToast": {
-                        "text": "An error was left in a record",
+                        "text": f"Not saved \u2014 {names} required",
                         "tags": "error",
                     }
                 }
@@ -376,8 +370,7 @@ class HardDeleteRecordView(LoginRequiredMixin, View):
     @method_decorator(ratelimit(key="user", rate="5/m", method="POST", block=True))
     def post(self, request, pk: int) -> HttpResponse:
         record = get_object_or_404(Record, pk=pk, user=request.user)
-        seven_years_ago = timezone.now() - timedelta(days=365 * 7)
-        if record.date_added > seven_years_ago.date():
+        if not record.can_hard_delete:
             resp = htmx_response(
                 request,
                 toast="This record is not old enough for permanent deletion.",

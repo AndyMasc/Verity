@@ -1,16 +1,29 @@
 """Tests for the Stripe webhook integration and webhook pipeline resilience."""
 
+import threading
+import time
+from concurrent.futures import ThreadPoolExecutor
+
+from django.db import OperationalError
 from decimal import Decimal
 from unittest import mock
 from unittest.mock import patch
 
 import stripe
-from django.test import TestCase
+from django.test import TestCase, TransactionTestCase
 
 from records.models import AuditLog
 
-from reimbursements.models import PackagePayment, ReimbursementPackage
-from reimbursements.webhooks import apply_paid_session, process_stripe_event
+from reimbursements.models import (
+    PackagePayment,
+    ProcessedStripeEvent,
+    ReimbursementPackage,
+)
+from reimbursements.webhooks import (
+    _EVENT_HANDLERS,
+    apply_paid_session,
+    process_stripe_event,
+)
 
 from ._helpers import _FakeSession, _package, _user
 
@@ -689,3 +702,134 @@ class ApplyPaidSessionTest(TestCase):
             AuditLog.objects.filter(details__event="payment_synced").count(), 0
         )
         mock_notify.assert_not_called()
+
+
+class WebhookIdempotencyTest(TestCase):
+    """The event claim must be taken before the handler does anything.
+
+    Check-then-act let two concurrent deliveries both pass the existence
+    check and both run the handler: the loser's database work rolled back,
+    but the notification it had already enqueued and the refund it had
+    already requested from Stripe did not.
+    """
+
+    def _event(self, event_id):
+        return {
+            "id": event_id,
+            "type": "checkout.session.completed",
+            "data": {"object": {"id": "cs_missing", "payment_status": "paid"}},
+        }
+
+    def test_claim_is_recorded_before_the_handler_runs(self):
+        observed = []
+
+        def handler(event_data):
+            observed.append(
+                ProcessedStripeEvent.objects.filter(event_id=event_data["id"]).exists()
+            )
+
+        with patch.dict(_EVENT_HANDLERS, {"checkout.session.completed": handler}):
+            process_stripe_event(self._event("evt_claim"))
+
+        self.assertEqual(observed, [True])
+
+    def test_redelivery_is_a_clean_skip(self):
+        """A duplicate must not raise, so Stripe gets a 200 and stops retrying."""
+        calls = []
+
+        with patch.dict(
+            _EVENT_HANDLERS,
+            {"checkout.session.completed": lambda e: calls.append(e["id"])},
+        ):
+            process_stripe_event(self._event("evt_dup"))
+            process_stripe_event(self._event("evt_dup"))
+            process_stripe_event(self._event("evt_dup"))
+
+        self.assertEqual(calls, ["evt_dup"])
+        self.assertEqual(
+            ProcessedStripeEvent.objects.filter(event_id="evt_dup").count(), 1
+        )
+
+    def test_a_failed_handler_does_not_consume_the_event(self):
+        """The claim rolls back with the handler, so Stripe can retry."""
+        with patch.dict(
+            _EVENT_HANDLERS,
+            {"checkout.session.completed": mock.Mock(side_effect=RuntimeError("boom"))},
+        ):
+            with self.assertRaises(RuntimeError):
+                process_stripe_event(self._event("evt_retry"))
+
+        self.assertFalse(
+            ProcessedStripeEvent.objects.filter(event_id="evt_retry").exists()
+        )
+
+    def test_an_unhandled_event_type_is_still_claimed(self):
+        """Unknown types are recorded so a redelivery stays a no-op."""
+        process_stripe_event(self._event("evt_unknown_type"))
+        self.assertTrue(
+            ProcessedStripeEvent.objects.filter(event_id="evt_unknown_type").exists()
+        )
+
+
+def _is_transient_lock(exc: BaseException) -> bool:
+    return isinstance(exc, OperationalError) and "locked" in str(exc).lower()
+
+
+class ConcurrentWebhookDeliveryTest(TransactionTestCase):
+    """Two real workers delivering one event must produce exactly one action."""
+
+    def _event(self, event_id):
+        return {
+            "id": event_id,
+            "type": "checkout.session.completed",
+            "data": {"object": {"id": "cs_missing", "payment_status": "paid"}},
+        }
+
+    def test_concurrent_delivery_runs_the_handler_exactly_once(self):
+        calls = []
+        lock = threading.Lock()
+        start = threading.Barrier(2)
+        errors = []
+
+        def handler(event_data):
+            with lock:
+                calls.append(event_data["id"])
+
+        def deliver():
+            from django.db import connection
+
+            try:
+                start.wait(timeout=15)
+                for _ in range(5):
+                    try:
+                        process_stripe_event(self._event("evt_race"))
+                    except OperationalError as exc:
+                        # SQLite serialises writers with a table lock, so the
+                        # losing delivery can hit a transient lock instead of a
+                        # clean IntegrityError. Production is PostgreSQL, where
+                        # the unique-key conflict is reliable. Retry briefly.
+                        if "locked" not in str(exc).lower():
+                            raise
+                        time.sleep(0.1)
+                    else:
+                        break
+            except Exception as exc:  # noqa: BLE001 - asserted below
+                errors.append(exc)
+            finally:
+                connection.close()
+
+        with patch.dict(_EVENT_HANDLERS, {"checkout.session.completed": handler}):
+            with ThreadPoolExecutor(max_workers=2) as pool:
+                futures = [pool.submit(deliver) for _ in range(2)]
+                for f in futures:
+                    f.result()
+
+        self.assertEqual(
+            [e for e in errors if not _is_transient_lock(e)],
+            [],
+            "a duplicate delivery must not raise",
+        )
+        self.assertEqual(len(calls), 1, f"handler ran {len(calls)} times")
+        self.assertEqual(
+            ProcessedStripeEvent.objects.filter(event_id="evt_race").count(), 1
+        )

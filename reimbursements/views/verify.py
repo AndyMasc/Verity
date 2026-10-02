@@ -18,13 +18,15 @@ from django.utils.decorators import method_decorator
 from django.views import View
 from django_ratelimit.decorators import ratelimit
 
+from core.apps import posthog_client
+
 from .. import services
 from ..forms import (
     CheckoutTurnstileForm,
     RequestVerificationCodeForm,
     VerifyEmailCodeForm,
 )
-from ..models import ReimbursementPackage
+from ..models import ReimbursementPackage, external_payer_distinct_id
 from ..verification import send_verification_code, verify_code
 
 _VERIFIED_SESSION_PREFIX = "_reimbursement_verified"
@@ -70,12 +72,14 @@ class PackagePayView(View):
             deleted_at__isnull=True,
         )
 
+        verified = _verified_in_session(request, package)
+
         if package.status == ReimbursementPackage.Status.PAID:
             return self._render(request, package, state="paid")
         if package.is_expired:
             return self._render(request, package, state="expired")
 
-        if not _verified_in_session(request, package):
+        if not verified:
             step = request.GET.get("step", "email")
             if step not in ("email", "code"):
                 step = "email"
@@ -84,7 +88,7 @@ class PackagePayView(View):
                 request, package, state="verify", verify_step=step, email=email
             )
 
-        services.activate_queued_package(package)
+        package.activate()
         package.refresh_from_db()
         if package.status == ReimbursementPackage.Status.PAID:
             return self._render(request, package, state="paid")
@@ -108,6 +112,18 @@ class PackagePayView(View):
             "package": package,
             "is_public": True,
             "email": "",
+            "viewed_event": "reimbursement_package_viewed_by_recipient",
+            "viewed_props": {
+                "audience": "recipient",
+                "payer_type": (
+                    "registered" if request.user.is_authenticated else "external"
+                ),
+                "record_count": package.records.count(),
+                "total_amount": float(package.total_amount),
+                "currency": package.currency,
+                "status": package.status,
+                "requires_verification": not _verified_in_session(request, package),
+            },
             **extra,
         }
         return render(request, self.template_name, context)
@@ -180,6 +196,17 @@ class VerifyEmailCodeView(View):
             return redirect(_code_step_url(pay_url, email))
 
         _mark_verified_in_session(request, package)
+        # The step that turns an anonymous visitor into a known payer, so the
+        # recipient funnel has a middle step between "viewed" and "paid".
+        if posthog_client is not None:
+            posthog_client.capture(
+                "reimbursement_recipient_verified",
+                distinct_id=external_payer_distinct_id(email),
+                properties={
+                    "package_uuid": str(package.uuid),
+                    "payer_type": "external",
+                },
+            )
         return redirect(pay_url)
 
 
@@ -224,7 +251,7 @@ class PayPackageCheckoutView(View):
             payer = None
             payer_currency = package.currency
 
-        services.activate_queued_package(package)
+        package.activate()
 
         outcome = services.create_package_checkout(
             package=package,
@@ -238,4 +265,15 @@ class PayPackageCheckoutView(View):
         if outcome.error:
             messages.error(request, outcome.error)
             return redirect(pay_url)
+        # The external payer reaches Stripe through here, so without this the
+        # checkout-started event only ever described signed-in payers.
+        if posthog_client is not None:
+            posthog_client.capture(
+                "reimbursement_checkout_started",
+                properties={
+                    "record_count": package.records.count(),
+                    "payer_currency": payer_currency,
+                    "payer_type": "registered" if payer else "external",
+                },
+            )
         return redirect(outcome.redirect_url)

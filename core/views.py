@@ -6,10 +6,10 @@ caches the result to reduce database load on repeated visits.
 
 import json
 import logging
-import time as _time
 from inspect import iscoroutine
 from typing import Any
 
+import dramatiq
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -45,51 +45,61 @@ def index(request: HttpRequest) -> HttpResponse:
 
 
 def privacy_policy(_request: HttpRequest) -> HttpResponse:
-    """Render the static privacy policy page via docs app."""
-    from django.shortcuts import redirect
-
+    """Redirect to the static privacy policy page served by the docs app."""
     return redirect("docs:privacy_policy", permanent=True)
 
 
+@require_GET
+@ratelimit(key="ip", rate="60/m", method="GET", block=True)
 def health_check(request: HttpRequest) -> JsonResponse:  # noqa: ARG001
-    """Return service health status for database and cache connectivity.
+    """Return service health status for database, cache, and message queue connectivity.
 
-    Returns 200 when all checks pass, 503 otherwise. Designed to be called
-    by load balancers and uptime monitors.
+    Protected against DoS via IP-based rate limiting.
     """
-    start = _time.monotonic()
+    # Database Check
     db_ok = True
-    db_ms = 0
     try:
         with connection.cursor() as cursor:
             cursor.execute("SELECT 1")
-        db_ms = round((_time.monotonic() - start) * 1000, 1)
     except DatabaseError:
+        logger.exception("Health check failed on Database")
         db_ok = False
 
+    # Redis Cache Check
     redis_ok = True
-    redis_ms = 0
     try:
-        redis_start = _time.monotonic()
         cache.set("health_check_ping", "ok", timeout=5)
         if cache.get("health_check_ping") != "ok":
-            raise ConnectionError("Cache ping failed")
-        redis_ms = round((_time.monotonic() - redis_start) * 1000, 1)
+            raise ConnectionError("Cache ping value mismatch")
     except Exception:
+        logger.exception("Health check failed on Cache")
         redis_ok = False
 
-    healthy = db_ok and redis_ok
+    # Message Queue Broker Check
+    mq_broker_ok = True
+    try:
+        broker = dramatiq.get_broker()
+        client = getattr(broker, "client", None)
+        if client and callable(getattr(client, "ping", None)):
+            client.ping()
+    except Exception:
+        logger.exception("Health check failed on Message Queue")
+        mq_broker_ok = False
+
+    healthy = db_ok and redis_ok and mq_broker_ok
     status = 200 if healthy else 503
+
     return JsonResponse(
         {
             "status": "healthy" if healthy else "unhealthy",
             "database": {
                 "status": "connected" if db_ok else "disconnected",
-                "ms": db_ms,
             },
             "cache": {
                 "status": "connected" if redis_ok else "disconnected",
-                "ms": redis_ms,
+            },
+            "message_queue": {
+                "status": "connected" if mq_broker_ok else "disconnected",
             },
             "version": getattr(settings, "APP_VERSION", "unknown"),
         },
@@ -125,11 +135,7 @@ def safe_webpush_save_info(request: HttpRequest) -> HttpResponse:
 
 
 class DashboardView(LoginRequiredMixin, TemplateView):
-    """Main dashboard displaying record summaries, expenses, and alerts.
-
-    Aggregates data asynchronously and caches the result per user for
-    "DASHBOARD_CACHE_TTL" seconds to keep page loads fast.
-    """
+    """Dashboard of record summaries, expenses, and alerts (cached per user)."""
 
     template_name = "core/dashboard.html"
 
@@ -225,6 +231,7 @@ class ProfilePageView(LoginRequiredMixin, UpdateView):
 
 
 @require_GET
+@login_required
 @ratelimit(key="user", rate="30/m", method="GET", block=True)
 def expense_chart_data(request: HttpRequest) -> JsonResponse:
     """Return monthly expense aggregates for the expense chart.
@@ -263,6 +270,7 @@ class NotificationListView(LoginRequiredMixin, ListView):
 
 
 @require_POST
+@login_required
 def notification_delete(request: HttpRequest, notification_id: int) -> HttpResponse:
     """Delete a single notification. Only the recipient may delete."""
     notification = get_object_or_404(
@@ -275,6 +283,7 @@ def notification_delete(request: HttpRequest, notification_id: int) -> HttpRespo
 
 
 @require_POST
+@login_required
 def notification_mark_read(request: HttpRequest, notification_id: int) -> HttpResponse:
     """Toggle read/unread on a single notification."""
     notification = get_object_or_404(
@@ -292,6 +301,7 @@ def notification_mark_read(request: HttpRequest, notification_id: int) -> HttpRe
 
 
 @require_POST
+@login_required
 def notification_mark_all_read(request: HttpRequest) -> HttpResponse:
     """Mark all unread notifications as read."""
     count = Notification.objects.filter(recipient=request.user, is_read=False).update(

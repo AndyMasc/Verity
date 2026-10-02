@@ -10,6 +10,7 @@ and simple derived state.
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import uuid
 from dataclasses import dataclass
@@ -146,6 +147,58 @@ class StripeAccount(models.Model):
             ]
         )
         return self.is_active
+
+
+def external_payer_distinct_id(email: str) -> str:
+    """A stable id for a payer who has no account.
+    The address is hashed rather than sent, so the analytics
+    identifier is not a copy of a real one and cannot be reversed to it.
+    """
+    normalised = email.strip().lower()
+    digest = hashlib.sha256(normalised.encode()).hexdigest()[:32]
+    return f"external-payer-{digest}"
+
+
+def _capture_recipient_paid(locked, payer, shared) -> None:
+    """Record the payment from the payer's side of the funnel.
+
+    A registered payer is a real PostHog person. An external payer is not, so
+    the event is attributed to a hash of the verified address instead of being
+    dropped - otherwise every external payment would be an unattributed event
+    and the recipient funnel would only ever describe signed-in users.
+    """
+    from core.apps import posthog_client
+
+    if posthog_client is None:
+        return
+
+    properties = {
+        **shared,
+        "package_uuid": str(locked.uuid),
+        "paid_in_user_currency": True,
+    }
+    if payer is not None:
+        posthog_client.capture(
+            "recipient_paid_reimbursement",
+            distinct_id=str(payer.pk),
+            properties={**properties, "payer_type": "registered"},
+        )
+        return
+
+    email = (
+        getattr(getattr(locked, "email_verification", None), "email", "")
+        or locked.recipient_email
+    )
+    if not email:
+        # Nothing identifies this payer, so leave the event anonymous rather
+        # than attributing it to the wrong person.
+        posthog_client.capture("recipient_paid_reimbursement", properties=properties)
+        return
+    posthog_client.capture(
+        "recipient_paid_reimbursement",
+        distinct_id=external_payer_distinct_id(email),
+        properties={**properties, "payer_type": "external"},
+    )
 
 
 class ReimbursementPackage(models.Model):
@@ -327,16 +380,24 @@ class ReimbursementPackage(models.Model):
         from core.apps import posthog_client
 
         if self.status == self.Status.PAID and posthog_client is not None:
+            record_count = self.records.filter(is_active=True).count()
+            # "reimbursement_paid" is the funder's view of the payout.
+            # "recipient_paid_reimbursement" is the payer's: the same moment seen
+            # from the person whose money actually left, which is the only side
+            # that exists for an external payer with no account to be a person in
+            # PostHog. Both are emitted so neither audience is inferred.
+            shared = {
+                "currency": record_currency,
+                "total_amount": float(converted),
+                "record_count": record_count,
+                "payer_is_registered": payer is not None,
+            }
             posthog_client.capture(
                 "reimbursement_paid",
                 distinct_id=str(self.creator_id),
-                properties={
-                    "currency": record_currency,
-                    "total_amount": float(converted),
-                    "record_count": self.records.filter(is_active=True).count(),
-                    "payer_is_registered": payer is not None,
-                },
+                properties=shared,
             )
+            _capture_recipient_paid(locked, payer, shared)
 
         if payer_record is not None and posthog_client is not None:
             # System-generated, not something the payer asked for, so it counts

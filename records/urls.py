@@ -23,11 +23,6 @@ urlpatterns = [
         name="record_shares_panel",
     ),
     path(
-        "record_detail/<int:pk>/shares/add/",
-        share_views.ShareRecordView.as_view(),
-        name="record_share",
-    ),
-    path(
         "record_detail/<int:pk>/shares/<int:share_pk>/revoke/",
         share_views.RevokeShareView.as_view(),
         name="record_share_revoke",
@@ -99,6 +94,11 @@ urlpatterns = [
         "bulk-archive/",
         views.BulkArchiveView,
         name="bulk_archive",
+    ),
+    path(
+        "bulk-hard-delete/",
+        views.BulkHardDeleteView,
+        name="bulk_hard_delete",
     ),
     path(
         "bulk-unarchive/",

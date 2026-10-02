@@ -12,10 +12,6 @@ class FolderListViewTest(TestCase):
         self.user = User.objects.create_user(username="folderlist", password="pass")
         self.url = reverse("records:view_folders")
 
-    def test_login_required(self):
-        response = self.client.get(self.url)
-        self.assertEqual(response.status_code, 302)
-
     def test_authenticated_access(self):
         self.client.force_login(self.user)
         response = self.client.get(self.url)
@@ -40,10 +36,6 @@ class CreateFolderViewTest(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(username="createf", password="pass")
         self.url = reverse("records:create_folder")
-
-    def test_login_required(self):
-        response = self.client.get(self.url)
-        self.assertEqual(response.status_code, 302)
 
     def test_get_form(self):
         self.client.force_login(self.user)

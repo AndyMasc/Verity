@@ -23,10 +23,8 @@ jobs:
           cache: pip
       - name: Install dependencies
         run: pip install -r requirements.txt
-      - name: Black lint
-        run: black .
-      - name: Ruff format check
-        run: ruff format --check .
+      - name: Black
+        run: black --check .
       - name: Mypy
         run: mypy .
       - name: Bandit (security)
@@ -38,7 +36,7 @@ jobs:
     name: Tests (PostgreSQL + Valkey + LavinMQ)
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    
+
     # These run temporarily on the GitHub server just for tests
     services:
       postgres:
@@ -104,7 +102,6 @@ jobs:
       STRIPE_SECRET_KEY: sk_test_ci
       STRIPE_PUBLISHABLE_KEY: pk_test_ci
       DJSTRIPE_FOREIGN_KEY_TO_FIELD: djstripe_id
-      SENTRY_DSN: https://example.com
 
     steps:
       - uses: actions/checkout@v4

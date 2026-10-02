@@ -165,6 +165,27 @@ class FindBestPlaidMatchTest(TestCase):
         match = find_best_plaid_match(self.doc)
         self.assertEqual(match.pk, self.plaid.pk)
 
+    def test_a_very_high_score_does_not_cut_off_better_candidates(self):
+        """The search must return the true best match, not the first strong one.
+
+        Two near-identical candidates both clear any early-exit bar, but only
+        one is the better match; the exact-amount one must win.
+        """
+        make_plaid_record(self.user, "Duplicate Lookalike", balance=Decimal("100.01"))
+        match = find_best_plaid_match(self.doc)
+        self.assertEqual(match.pk, self.plaid.pk)
+        self.assertEqual(match.balance, self.plaid.balance)
+
+    def test_undated_source_still_matches(self):
+        """A record with no transaction date has no window, so nothing may be excluded."""
+        self.doc.transaction_date = None
+        self.doc.save(update_fields=["transaction_date"])
+        self.plaid.transaction_date = None
+        self.plaid.save(update_fields=["transaction_date"])
+
+        match = find_best_plaid_match(self.doc)
+        self.assertEqual(match.pk, self.plaid.pk)
+
 
 class FindDocumentMatchesForPlaidTest(TestCase):
     def setUp(self):

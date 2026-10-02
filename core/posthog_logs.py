@@ -1,4 +1,15 @@
-"""Dedicated OpenTelemetry log export for purpose-written PostHog logs only."""
+"""Dedicated OpenTelemetry log export for purpose-written PostHog logs only.
+
+This is not a second copy of core.error_tracking.LogCapture, it covers a
+different level of logging. That handler takes every WARNING and above from the
+app and reports them to error tracking, where they keep their traceback. This
+one exports the INFO-level structured logs written deliberately to the
+"posthog.export" logger, as queryable records in PostHog's logs product.
+
+The two cannot double-report: this logger sets propagate = False below, so
+records sent here never reach root and LogCapture never sees them. LogCapture
+in turn skips the "posthog" namespace for the same reason.
+"""
 
 import atexit
 import logging

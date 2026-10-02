@@ -5,6 +5,7 @@ from djstripe.models import Customer, Price, Product, Subscription, Subscription
 
 from .. import entitlements, features, metadata
 from ..models import CustomUser
+from .helpers import add_subscription
 
 
 class EntitlementTests(TestCase):
@@ -19,36 +20,7 @@ class EntitlementTests(TestCase):
         )
 
     def _add_subscription(self, status="active", product_id=None):
-        sub = Subscription.objects.create(
-            id=f"sub_ent_{status}",
-            livemode=False,
-            created=timezone.now(),
-            customer=self.customer,
-            stripe_data={"status": status},
-        )
-        if product_id is not None:
-            product = Product.objects.create(
-                id=product_id,
-                livemode=False,
-                active=True,
-                name="Test",
-            )
-            price = Price.objects.create(
-                id=f"price_{product_id}",
-                livemode=False,
-                active=True,
-                product=product,
-                currency="usd",
-            )
-            SubscriptionItem.objects.create(
-                id=f"si_{product_id}",
-                livemode=False,
-                created=timezone.now(),
-                subscription=sub,
-                price=price,
-            )
-        self.user.subscription = sub
-        self.user.save()
+        add_subscription(self.user, self.customer, status=status, product_id=product_id)
 
     def test_free_plan_features(self):
         self.assertEqual(entitlements.get_plan(self.user), "free")
@@ -163,12 +135,12 @@ class ScanUsageTests(TestCase):
         self.assertEqual(entitlements.get_monthly_scan_count(self.user), 2)
 
     def test_free_user_can_scan_under_limit(self):
-        for _ in range(entitlements.FREE_MONTHLY_SCAN_LIMIT - 1):
+        for _ in range(features.FREE_MONTHLY_SCAN_LIMIT - 1):
             entitlements.record_scan(self.user)
         self.assertTrue(entitlements.can_scan(self.user))
 
     def test_free_user_blocked_at_limit(self):
-        for _ in range(entitlements.FREE_MONTHLY_SCAN_LIMIT):
+        for _ in range(features.FREE_MONTHLY_SCAN_LIMIT):
             entitlements.record_scan(self.user)
         self.assertFalse(entitlements.can_scan(self.user))
 
@@ -226,9 +198,7 @@ class ContextProcessorTests(TestCase):
         ctx = subscription_status(self._request())
         self.assertEqual(ctx["plan_name"], metadata.STORAGE_UPGRADE_10.name)
         self.assertEqual(entitlements.get_plan(self.user), "free")
-        self.assertEqual(
-            ctx["monthly_scan_limit"], entitlements.FREE_MONTHLY_SCAN_LIMIT
-        )
+        self.assertEqual(ctx["monthly_scan_limit"], features.FREE_MONTHLY_SCAN_LIMIT)
         self.assertNotIn(features.UNLIMITED_SCANS, entitlements.get_features(self.user))
         self.assertTrue(ctx["storage_pack_requires_paid_base"])
 
@@ -244,36 +214,7 @@ class ContextProcessorTests(TestCase):
         self.assertEqual(ctx["monthly_scan_limit"], features.PRO_SCAN_LIMIT)
 
     def _add_subscription(self, status="active", product_id=None):
-        sub = Subscription.objects.create(
-            id=f"sub_cp_{status}",
-            livemode=False,
-            created=timezone.now(),
-            customer=self.customer,
-            stripe_data={"status": status},
-        )
-        if product_id is not None:
-            product = Product.objects.create(
-                id=product_id,
-                livemode=False,
-                active=True,
-                name="Test",
-            )
-            price = Price.objects.create(
-                id=f"price_{product_id}",
-                livemode=False,
-                active=True,
-                product=product,
-                currency="usd",
-            )
-            SubscriptionItem.objects.create(
-                id=f"si_{product_id}",
-                livemode=False,
-                created=timezone.now(),
-                subscription=sub,
-                price=price,
-            )
-        self.user.subscription = sub
-        self.user.save()
+        add_subscription(self.user, self.customer, status=status, product_id=product_id)
 
 
 class StorageLimitTests(TestCase):

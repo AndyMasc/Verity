@@ -11,7 +11,7 @@ from documents.models import DocumentData
 from billing.tests.helpers import give_pro_subscription
 from records.models import AuditLog, Record, RecordShare
 from records import shares as share_services
-from records.notifications import send_record_shared_notification
+from records.notifications import send_records_shared_notification
 
 User = get_user_model()
 
@@ -40,10 +40,17 @@ class SharingTestCase(TestCase):
             currency="usd",
         )
 
-    def _share(self, emails):
-        return share_services.share_record_with_users(
-            record=self.record, owner=self.owner, emails=emails
+    def _share(self, emails, **config):
+        """Share via the bulk service, which is now the only grant path."""
+        recipients, unknown = share_services.resolve_recipients(emails)
+        shared = share_services.grant_shares(
+            record=self.record,
+            owner=self.owner,
+            recipients=recipients,
+            config=share_services.ShareConfig(**config) if config else None,
         )
+        share_services.notify_share_recipients(shares=shared, actor=self.owner)
+        return shared, unknown
 
     def _detail_post(self, user, data):
         self.client.force_login(user)
@@ -105,9 +112,10 @@ class TestShareService(SharingTestCase):
             == 1
         )
 
-    def test_self_share_rejected(self):
-        with self.assertRaises(share_services.SelfShareError):
-            self._share([self.owner.email])
+    def test_self_share_is_skipped(self):
+        shared, _ = self._share([self.owner.email])
+        assert shared == []
+        assert not RecordShare.objects.filter(record=self.record).exists()
 
     def test_unknown_emails_returned_not_shared(self):
         shared, unknown = self._share([self.recipient.email, "ghost@acme.com"])
@@ -120,8 +128,10 @@ class TestShareService(SharingTestCase):
     def test_non_owner_cannot_share(self):
         self._share([self.stranger.email])
         with self.assertRaises(share_services.NotOwnerError):
-            share_services.share_record_with_users(
-                record=self.record, owner=self.stranger, emails=[self.recipient.email]
+            share_services.grant_shares(
+                record=self.record,
+                owner=self.stranger,
+                recipients=[self.recipient],
             )
 
     def test_revoke_removes_access_and_audits(self):
@@ -283,20 +293,26 @@ class TestShareViews(SharingTestCase):
     def test_free_user_cannot_grant(self):
         self.client.force_login(self.owner)
         response = self.client.post(
-            reverse("records:record_share", args=[self.record.pk]),
-            {"emails": self.recipient.email},
+            reverse("records:bulk_share"),
+            data=json.dumps(
+                {"record_ids": [self.record.pk], "emails": self.recipient.email}
+            ),
+            content_type="application/json",
         )
-        assert response.status_code == 302
+        assert response.status_code == 403
         assert not RecordShare.objects.filter(record=self.record).exists()
 
     def test_pro_user_can_grant(self):
         give_pro_subscription(self.owner)
         self.client.force_login(self.owner)
         response = self.client.post(
-            reverse("records:record_share", args=[self.record.pk]),
-            {"emails": self.recipient.email},
+            reverse("records:bulk_share"),
+            data=json.dumps(
+                {"record_ids": [self.record.pk], "emails": self.recipient.email}
+            ),
+            content_type="application/json",
         )
-        assert response.status_code == 302
+        assert response.status_code == 200
         assert RecordShare.objects.filter(
             record=self.record, user=self.recipient
         ).exists()
@@ -362,37 +378,175 @@ class TestShareViews(SharingTestCase):
         assert data["shared"] == 0
         assert data["self_skipped"] == 1
 
+    def test_bulk_share_still_reaches_others_when_owner_is_in_the_list(self):
+        """A self-addressed entry must not abort the whole batch."""
+        give_pro_subscription(self.owner)
+        self.client.force_login(self.owner)
+        response = self.client.post(
+            reverse("records:bulk_share"),
+            data=json.dumps(
+                {
+                    "record_ids": [self.record.pk],
+                    "emails": f"{self.owner.email}, {self.recipient.email}",
+                }
+            ),
+            content_type="application/json",
+        )
+        assert response.status_code == 200, response.content
+        data = response.json()
+        assert data["shared"] == 1
+        assert data["recipients"] == 1
+        assert data["self_skipped"] == 1
+        assert RecordShare.objects.filter(
+            record=self.record, user=self.recipient
+        ).exists()
+
+    def test_bulk_share_honours_view_only_permission(self):
+        """The access options moved here with the single-share form."""
+        give_pro_subscription(self.owner)
+        self.client.force_login(self.owner)
+        self.client.post(
+            reverse("records:bulk_share"),
+            data=json.dumps(
+                {
+                    "record_ids": [self.record.pk],
+                    "emails": self.recipient.email,
+                    "permission": "view",
+                }
+            ),
+            content_type="application/json",
+        )
+        share = RecordShare.objects.get(record=self.record, user=self.recipient)
+        assert share.permission == "view"
+
+    def test_bulk_share_can_withhold_documents(self):
+        give_pro_subscription(self.owner)
+        self.client.force_login(self.owner)
+        self.client.post(
+            reverse("records:bulk_share"),
+            data=json.dumps(
+                {
+                    "record_ids": [self.record.pk],
+                    "emails": self.recipient.email,
+                    "include_documents": False,
+                }
+            ),
+            content_type="application/json",
+        )
+        share = RecordShare.objects.get(record=self.record, user=self.recipient)
+        assert share.include_documents is False
+
+    def test_bulk_share_rejects_an_unknown_permission(self):
+        give_pro_subscription(self.owner)
+        self.client.force_login(self.owner)
+        self.client.post(
+            reverse("records:bulk_share"),
+            data=json.dumps(
+                {
+                    "record_ids": [self.record.pk],
+                    "emails": self.recipient.email,
+                    "permission": "superuser",
+                }
+            ),
+            content_type="application/json",
+        )
+        share = RecordShare.objects.get(record=self.record, user=self.recipient)
+        assert share.permission == RecordShare.Permission.EDIT
+
+    @mock.patch("records.views.shares.posthog_client")
+    def test_single_record_share_still_fires_record_shared(self, mock_ph):
+        """The one-record funnel must keep its original analytics event."""
+        give_pro_subscription(self.owner)
+        self.client.force_login(self.owner)
+        self.client.post(
+            reverse("records:bulk_share"),
+            data=json.dumps(
+                {
+                    "record_ids": [self.record.pk],
+                    "emails": self.recipient.email,
+                    "permission": "view",
+                    "include_documents": False,
+                }
+            ),
+            content_type="application/json",
+        )
+        events = [c.args[0] for c in mock_ph.capture.call_args_list]
+        assert "record_shared" in events
+        assert "records_shared_in_bulk" not in events
+
+    @mock.patch("records.views.shares.posthog_client")
+    def test_multi_record_share_fires_the_bulk_event(self, mock_ph):
+        give_pro_subscription(self.owner)
+        second = Record.objects.create(
+            user=self.owner, title="Second", record_type="expense_receipt"
+        )
+        self.client.force_login(self.owner)
+        self.client.post(
+            reverse("records:bulk_share"),
+            data=json.dumps(
+                {
+                    "record_ids": [self.record.pk, second.pk],
+                    "emails": self.recipient.email,
+                }
+            ),
+            content_type="application/json",
+        )
+        events = [c.args[0] for c in mock_ph.capture.call_args_list]
+        assert "records_shared_in_bulk" in events
+
+    def test_bulk_share_ignores_records_they_do_not_own(self):
+        give_pro_subscription(self.owner)
+        stranger_record = Record.objects.create(
+            user=self.stranger, title="Not yours", record_type="expense_receipt"
+        )
+        self.client.force_login(self.owner)
+        response = self.client.post(
+            reverse("records:bulk_share"),
+            data=json.dumps(
+                {
+                    "record_ids": [self.record.pk, stranger_record.pk],
+                    "emails": self.recipient.email,
+                }
+            ),
+            content_type="application/json",
+        )
+        assert response.status_code == 200, response.content
+        data = response.json()
+        assert data["shared"] == 1
+        assert data["records"] == 1
+        assert not RecordShare.objects.filter(record=stranger_record).exists()
+
 
 class TestShareNotifications(SharingTestCase):
     """The share service must notify only for new grants, never for duplicates,
     and never let notification failures affect the grant itself."""
 
-    @mock.patch("records.notifications.send_record_shared_notification")
+    @mock.patch("records.notifications.send_records_shared_notification")
     def test_share_notifies_recipient_once(self, mock_notify):
         shares, _ = self._share([self.recipient.email])
-        mock_notify.assert_called_once_with(
-            record=self.record, share=shares[0], actor=self.owner
-        )
+        mock_notify.assert_called_once_with(shares=shares, actor=self.owner)
 
-    @mock.patch("records.notifications.send_record_shared_notification")
+    @mock.patch("records.notifications.send_records_shared_notification")
     def test_duplicate_share_does_not_re_notify(self, mock_notify):
         self._share([self.recipient.email])
         mock_notify.assert_called_once()
         self._share([self.recipient.email])
         assert mock_notify.call_count == 1  # no re-notification
 
-    @mock.patch("records.notifications.send_record_shared_notification")
+    @mock.patch("records.notifications.send_records_shared_notification")
     def test_multi_recipient_notifies_each(self, mock_notify):
         stranger = User.objects.create_user(
             username="tom", email="tom@acme.com", password="pass"
         )
         shares, _ = self._share([self.recipient.email, stranger.email])
-        assert mock_notify.call_count == 2
-        notified = {c.kwargs["share"].user for c in mock_notify.call_args_list}
+        # One batched call carries every recipient's share; the fan-out into one
+        # email per recipient happens inside the notifier.
+        mock_notify.assert_called_once()
+        notified = {s.user for s in mock_notify.call_args.kwargs["shares"]}
         assert notified == {self.recipient, stranger}
 
     @mock.patch(
-        "records.notifications.send_record_shared_notification",
+        "records.notifications.send_records_shared_notification",
         side_effect=Exception("broker down"),
     )
     def test_notification_failure_never_fails_the_grant(self, mock_notify):
@@ -412,9 +566,7 @@ class TestShareNotificationPayload(SharingTestCase):
     @mock.patch("core.services.notifications.send_multi_channel_notification")
     def test_payload_channels_subject_and_message(self, mock_send):
         shares, _ = self._share([self.recipient.email])
-        send_record_shared_notification(
-            record=self.record, share=shares[0], actor=self.owner
-        )
+        send_records_shared_notification(shares=shares, actor=self.owner)
 
         call = mock_send.call_args
         kwargs = call.kwargs
@@ -425,9 +577,97 @@ class TestShareNotificationPayload(SharingTestCase):
         payload = kwargs["webpush_payload"]
         assert payload["head"] == "Record Shared"
         assert "Acme invoice" in payload["body"]
-        assert f"/record_detail/{self.record.pk}/" in payload["url"]
+        assert payload["url"].endswith(
+            reverse("records:record_detail", args=[self.record.pk])
+        )
         assert "Acme invoice" in kwargs["html_body"]
         assert "Acme invoice" in kwargs["text_body"]
+
+
+class TestBulkShareDigestNotification(SharingTestCase):
+    """A bulk share sends one email per recipient listing every shared record."""
+
+    def setUp(self):
+        super().setUp()
+        self.others = [
+            Record.objects.create(
+                user=self.owner,
+                title=f"Invoice {n}",
+                merchant=f"Merc {n}",
+                balance="10.00",
+                record_type=Record.RecordTypes.EXPENSE_RECEIPT,
+                currency="usd",
+            )
+            for n in range(3)
+        ]
+        self.all_records = [self.record, *self.others]
+        self.granted = share_services.grant_shares(
+            record=self.record,
+            owner=self.owner,
+            recipients=[self.recipient],
+        )
+        for record in self.others:
+            self.granted.extend(
+                share_services.grant_shares(
+                    record=record, owner=self.owner, recipients=[self.recipient]
+                )
+            )
+
+    @mock.patch("core.services.notifications.send_multi_channel_notification")
+    def test_one_email_per_recipient_covers_every_record(self, mock_send):
+        stranger = User.objects.create_user(
+            username="tom", email="tom@acme.com", password="pass"
+        )
+        shares = list(self.granted)
+        for record in self.all_records:
+            shares.extend(
+                share_services.grant_shares(
+                    record=record, owner=self.owner, recipients=[stranger]
+                )
+            )
+
+        send_records_shared_notification(shares=shares, actor=self.owner)
+
+        # Two recipients, so exactly two messages -- not one per record.
+        assert mock_send.call_count == 2
+        recipients = {c.kwargs["user"] for c in mock_send.call_args_list}
+        assert recipients == {self.recipient, stranger}
+
+    @mock.patch("core.services.notifications.send_multi_channel_notification")
+    def test_single_email_lists_all_records(self, mock_send):
+        send_records_shared_notification(shares=self.granted, actor=self.owner)
+
+        assert mock_send.call_count == 1
+        kwargs = mock_send.call_args.kwargs
+        # Every shared record is named in one message.
+        for record in self.all_records:
+            assert record.title in kwargs["html_body"]
+            assert record.title in kwargs["text_body"]
+            assert record.merchant in kwargs["html_body"]
+        assert f"{len(self.all_records)} records" in kwargs["subject"]
+        assert "shared 4 records" in kwargs["db_message"]
+
+    def test_record_url_resolves_to_a_real_route(self):
+        """The emailed link must resolve; a hand-written path 404s."""
+        from urllib.parse import urlparse
+
+        from django.urls import resolve
+
+        from records.notifications import build_record_url
+
+        match = resolve(urlparse(build_record_url(self.record.pk)).path)
+        assert match.kwargs["pk"] == self.record.pk
+
+    @mock.patch("core.services.notifications.send_multi_channel_notification")
+    def test_single_record_keeps_original_subject(self, mock_send):
+        send_records_shared_notification(shares=self.granted[:1], actor=self.owner)
+
+        kwargs = mock_send.call_args.kwargs
+        assert "Acme invoice" in kwargs["subject"]
+        assert kwargs["webpush_payload"]["head"] == "Record Shared"
+        assert kwargs["webpush_payload"]["url"].endswith(
+            reverse("records:record_detail", args=[self.record.pk])
+        )
 
 
 class TestSharedDocuments(SharingTestCase):

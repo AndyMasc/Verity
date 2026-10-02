@@ -8,6 +8,7 @@ and an audit log that captures every significant mutation.
 from __future__ import annotations
 
 import calendar
+import contextlib
 import datetime
 import re
 from decimal import Decimal, InvalidOperation
@@ -23,7 +24,7 @@ from simple_history.models import HistoricalRecords
 
 from core.currencies import CURRENCY_CHOICES, DEFAULT_CURRENCY
 
-from .constants import RECORD_TYPE_COLOR_MAP
+from .constants import RECORD_TYPE_COLOR_MAP, RETENTION_YEARS
 
 if TYPE_CHECKING:
     from django.contrib.auth.models import AbstractUser
@@ -146,12 +147,11 @@ class RecordQuerySet(models.QuerySet):
         return self.active().filter(expiry_date__lt=timezone.now().date())
 
     def smart_search(self, search_query: str) -> RecordQuerySet:
-        """Search across text, numeric, and date fields with natural-language heuristics.
+        """Free-text search over text, numbers, and dates.
 
-        Accepts free-text queries that are matched against titles, merchants,
-        products, notes, record types, balances, and dates (including relative
-        terms like "today" or month names). Returns an empty queryset when the
-        query is blank after stripping.
+        Matches titles, merchants, products, notes, record types, balances and
+        dates (including relative terms like "today" or month names). A blank
+        query returns the queryset unfiltered.
         """
         if not (search_query := search_query.strip()):
             return self
@@ -196,12 +196,10 @@ class RecordQuerySet(models.QuerySet):
             start, end = _month_range(timezone.now().date().year, _MONTH_MAP[lower])
 
         elif _ISO_DATE_RE.match(search_query):
-            try:
+            with contextlib.suppress(ValueError):
                 start = end = datetime.date.fromisoformat(search_query)
-            except ValueError:
-                start = end = None
 
-        if start is not None and end is not None:
+        if start is not None:
             conditions |= reduce(
                 or_,
                 (Q(**{f"{f}__range": (start, end)}) for f in _DATE_FIELDS),
@@ -408,6 +406,19 @@ class Record(models.Model):
                 timezone.now().date() + datetime.timedelta(days=days)
             )
         return False
+
+    @property
+    def can_hard_delete(self) -> bool:
+        """True when this record is old enough to be permanently deleted.
+
+        The single definition of the seven-year retention rule: the detail
+        view, the bulk action, the list template and the nightly purge all
+        defer to this, so the gate cannot drift between them.
+        """
+        if self.date_added is None:
+            return False
+        cutoff = timezone.now().date() - datetime.timedelta(days=365 * RETENTION_YEARS)
+        return self.date_added <= cutoff
 
 
 class MergeLog(models.Model):

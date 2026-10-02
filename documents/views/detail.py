@@ -129,7 +129,7 @@ class DeleteDocument(LoginRequiredMixin, View):
             pk=document_id,
         )
         record = document.associated_record
-        result = DocumentDeletionService.soft_delete(document)
+        result = DocumentDeletionService.delete(document)
 
         if not result.success:
             if request.headers.get("HX-Request") == "true":

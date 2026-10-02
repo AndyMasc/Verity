@@ -31,7 +31,8 @@ BUCKET = settings.R2_STORAGE_BUCKET_NAME
 
 
 @lru_cache(maxsize=1)
-def _get_s3_client():
+def get_s3_client():
+    """Return the cached S3-compatible client for R2 operations."""
     return boto3.client(
         service_name="s3",
         endpoint_url=settings.R2_S3_ENDPOINT_URL,
@@ -46,11 +47,6 @@ def _get_s3_client():
             retries={"max_attempts": 3, "mode": "standard"},
         ),
     )
-
-
-def get_s3_client():
-    """Return the cached S3-compatible client for R2 operations."""
-    return _get_s3_client()
 
 
 def generate_upload_key(user_id: int, extension: str) -> str:

@@ -16,7 +16,7 @@ from core.apps import posthog_client
 from records.models import Record
 
 from ..models import DocumentData, DocumentStatus
-from ..services import ConfirmUploadService, UploadService
+from ..services import DocumentUploadService, UploadService
 
 logger = logging.getLogger(__name__)
 
@@ -112,17 +112,18 @@ class ConfirmUploadView(LoginRequiredMixin, View):
                     status=409,
                 )
 
-            service = ConfirmUploadService(document=document, key=key)
+            service = DocumentUploadService(document=document, key=key)
             try:
                 result = service.confirm()
             except Exception as exc:
-                logger.exception(
-                    "Unexpected error confirming upload for doc %s", document_id
-                )
                 if posthog_client is not None:
                     posthog_client.capture(
                         "document_upload_failed",
-                        properties={"error_type": type(exc).__name__},
+                        properties={
+                            "source": "server",
+                            "stage": "confirm",
+                            "error_type": type(exc).__name__,
+                        },
                     )
                 raise
 
@@ -130,20 +131,18 @@ class ConfirmUploadView(LoginRequiredMixin, View):
                 if posthog_client is not None:
                     posthog_client.capture(
                         "document_upload_failed",
-                        properties={"error_type": result.error},
+                        properties={
+                            "source": "server",
+                            "stage": "validate",
+                            "error_type": result.error,
+                        },
                     )
                 return JsonResponse({"error": result.error}, status=result.status_code)
 
         if document.associated_record_id is None:
             from records.services import kickoff_ocr_scan
 
-            warning = kickoff_ocr_scan(request.user, document)
-            if warning:
-                logger.info(
-                    "OCR scan skipped for user %s: %s",
-                    request.user.pk,
-                    warning,
-                )
+            kickoff_ocr_scan(request.user, document)
 
         if posthog_client is not None:
             posthog_client.capture(

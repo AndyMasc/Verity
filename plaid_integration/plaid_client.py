@@ -10,16 +10,13 @@ from django.conf import settings
 from plaid.api import plaid_api
 
 PLAID_ENV_MAP = {
-    "sandbox": plaid.Environment.Sandbox,
+    "sandbox": "https://sandbox.plaid.com",
     "development": "https://development.plaid.com",
-    "production": plaid.Environment.Production,
+    "production": "https://production.plaid.com",
 }
 
-env_name = settings.PLAID_ENV.lower()
-host = PLAID_ENV_MAP.get(env_name, plaid.Environment.Sandbox)
-
 configuration = plaid.Configuration(
-    host=host,
+    host=PLAID_ENV_MAP.get(settings.PLAID_ENV.lower(), PLAID_ENV_MAP["sandbox"]),
     api_key={
         "clientId": settings.PLAID_CLIENT_ID,
         "secret": settings.PLAID_SECRET,

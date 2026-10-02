@@ -1,33 +1,11 @@
 {% load form_tags %}
 <div data-record-id="{{ record.pk }}"
+     data-record-active="{% if record.is_active %}true{% else %}false{% endif %}"
+     data-record-permanent="{% if record.can_hard_delete %}true{% else %}false{% endif %}"
      class="group relative rounded-lg border-b border-zinc-100 bg-transparent transition-colors duration-150 last:border-none hover:bg-zinc-50/80 dark:border-zinc-800/30 dark:hover:bg-zinc-800/40">
     <a href="{% url 'records:record_detail' record.pk %}"
        class="hidden grid-cols-[32px_minmax(0,1fr)_160px_110px_90px_100px] items-center gap-4 px-4 py-3 sm:grid">
-        <div class="relative h-5 w-5" @click.stop>
-            <span class="absolute inset-0 flex items-center justify-center transition-opacity duration-150"
-                  :class="selectedIds.includes('{{ record.pk }}') ? 'opacity-100' : ''">
-                <span class="w-2 h-2 rounded-full {% if not record.is_active %}bg-zinc-400 dark:bg-zinc-600{% elif record.expiry_date %}bg-amber-500 dark:bg-amber-600{% else %}bg-zinc-900 dark:bg-zinc-100{% endif %}"></span>
-            </span>
-            <label class="absolute inset-0 flex cursor-pointer items-center justify-center transition-opacity duration-150"
-                   :class="selectedIds.includes('{{ record.pk }}') ? 'opacity-100' : 'opacity-100'">
-                <input type="checkbox"
-                       value="{{ record.pk }}"
-                       :checked="selectedIds.includes('{{ record.pk }}')"
-                       @change="toggleSelect('{{ record.pk }}')"
-                       class="sr-only">
-                <span class="flex h-4.5 w-4.5 items-center justify-center rounded-md border shadow-xs transition-colors"
-                      :class="selectedIds.includes('{{ record.pk }}') ? 'border-zinc-900 dark:border-white bg-zinc-900 dark:bg-white' : 'border-zinc-400 dark:border-zinc-600 bg-white dark:bg-zinc-900 hover:border-zinc-500 dark:hover:border-zinc-400'">
-                    <svg class="h-3 w-3"
-                         :class="selectedIds.includes('{{ record.pk }}') ? 'text-white dark:text-zinc-950 opacity-100' : 'opacity-0'"
-                         fill="none"
-                         viewBox="0 0 24 24"
-                         stroke-width="3"
-                         stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
-                    </svg>
-                </span>
-            </label>
-        </div>
+        {% include "records/partials/select_checkbox.html" with select_id=record.pk %}
         <div class="flex min-w-0 items-center gap-3">
             <span class="shrink-0 px-2 py-1 rounded-lg w-full max-w-35 flex tracking-wide items-center justify-center {{ record.badge_classes }} border">
                 <p class="truncate text-[10px] font-bold">{{ record.get_record_type_display|upper }}</p>
@@ -37,7 +15,11 @@
                     {{ record.title }}
                 </p>
                 <p class="mt-0.5 truncate text-[11px] text-zinc-500 dark:text-zinc-400">
-                    {% if record.merchant %}{{ record.merchant }}{% endif %}{% if record.merchant and record.notes %} · {% endif %}{% if record.notes %}<span class="italic">{{ record.notes }}</span>{% endif %}
+                    {% if record.merchant %}{{ record.merchant }}{% endif %}
+                    {% if record.merchant and record.notes %}
+                        ·
+                    {% endif %}
+                    {% if record.notes %}<span class="italic">{{ record.notes }}</span>{% endif %}
                 </p>
             </div>
         </div>
@@ -55,14 +37,15 @@
         </div>
     </a>
     <a href="{% url 'records:record_detail' record.pk %}"
-       class="flex items-center gap-3 py-3 pr-4 pl-3 sm:hidden">
+       class="flex items-center gap-2 py-3 pr-4 pl-1 sm:hidden">
+        {% include "records/partials/select_checkbox.html" with select_id=record.pk %}
         <span class="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold {{ record.badge_classes }} border">
             {{ record.get_record_type_display|slice:":2"|upper }}
         </span>
         <div class="min-w-0 flex-1">
             <div class="flex items-center justify-between gap-2">
                 <span class="truncate text-sm font-medium text-zinc-950 dark:text-zinc-50">{{ record.title }}</span>
-                <span class="shrink-0 text-sm font-semibold text-zinc-950 dark:text-zinc-50">
+                <span class="shrink-0 text-sm font-semibold text-zinc-950 tabular-nums dark:text-zinc-50">
                     {% if record.balance %}{{ record.balance|currency_format:record.currency }}{% else %}—{% endif %}
                 </span>
             </div>

@@ -19,70 +19,70 @@
                name="cf_turnstile_response"
                value="">
         <script>
-                    (function() {
-                        'use strict';
-                        var SITEKEY = '{{ turnstile_sitekey }}';
-                        var WIDGET_ID = 'signup-turnstile-widget';
-                        var RESPONSE_ID = 'cf_turnstile_response';
-                        var widgetId = null;
+            (function() {
+                'use strict';
+                var SITEKEY = '{{ turnstile_sitekey }}';
+                var WIDGET_ID = 'signup-turnstile-widget';
+                var RESPONSE_ID = 'cf_turnstile_response';
+                var widgetId = null;
 
-                        function findAuthForm() {
-                            var forms = Array.prototype.slice.call(document.querySelectorAll('form[method="post"]'));
-                            for (var i = 0; i < forms.length; i++) {
-                                var f = forms[i];
-                                if (f.querySelector('input[type="email"], input[name="email"], input[name="login"]')) {
-                                    return f;
-                                }
-                                var action = (f.getAttribute('action') || '').toLowerCase();
-                                if (action.indexOf('signup') !== -1) return f;
-                            }
-                            return forms[0] || null;
+                function findAuthForm() {
+                    var forms = Array.prototype.slice.call(document.querySelectorAll('form[method="post"]'));
+                    for (var i = 0; i < forms.length; i++) {
+                        var f = forms[i];
+                        if (f.querySelector('input[type="email"], input[name="email"], input[name="login"]')) {
+                            return f;
                         }
+                        var action = (f.getAttribute('action') || '').toLowerCase();
+                        if (action.indexOf('signup') !== -1) return f;
+                    }
+                    return forms[0] || null;
+                }
 
-                        function init() {
-                            if (!window.turnstile || typeof window.turnstile.render !== 'function') {
-                                setTimeout(init, 200);
-                                return;
+                function init() {
+                    if (!window.turnstile || typeof window.turnstile.render !== 'function') {
+                        setTimeout(init, 200);
+                        return;
+                    }
+
+                    var form = findAuthForm();
+                    var input = document.getElementById(RESPONSE_ID);
+                    var el = document.getElementById(WIDGET_ID);
+                    if (!form || !input || !el) {
+                        setTimeout(init, 100);
+                        return;
+                    }
+                    if (!form.contains(input)) form.appendChild(input);
+                    if (form.dataset.turnstileAttached === '1') return;
+                    form.dataset.turnstileAttached = '1';
+
+                    widgetId = window.turnstile.render(el, {
+                        sitekey: SITEKEY,
+                        action: '{{ turnstile_actions.signup }}',
+                        callback: function (token) { input.value = token || ''; },
+                        'expired-callback': function () { input.value = ''; },
+                        'error-callback': function () { input.value = ''; },
+                    });
+
+                    form.addEventListener('submit', function (event) {
+                        if (!input.value) {
+                            event.preventDefault();
+                            alert('Please complete the robot verification and try again');
+                            if (widgetId) {
+                                try { window.turnstile.reset(widgetId); } catch (_) {}
                             }
-
-                            var form = findAuthForm();
-                            var input = document.getElementById(RESPONSE_ID);
-                            var el = document.getElementById(WIDGET_ID);
-                            if (!form || !input || !el) {
-                                setTimeout(init, 100);
-                                return;
-                            }
-                            if (!form.contains(input)) form.appendChild(input);
-                            if (form.dataset.turnstileAttached === '1') return;
-                            form.dataset.turnstileAttached = '1';
-
-                            widgetId = window.turnstile.render(el, {
-                                sitekey: SITEKEY,
-                                action: '{{ turnstile_actions.signup }}',
-                                callback: function (token) { input.value = token || ''; },
-                                'expired-callback': function () { input.value = ''; },
-                                'error-callback': function () { input.value = ''; },
-                            });
-
-                            form.addEventListener('submit', function (event) {
-                                if (!input.value) {
-                                    event.preventDefault();
-                                    alert('Please complete the robot verification and try again');
-                                    if (widgetId) {
-                                        try { window.turnstile.reset(widgetId); } catch (_) {}
-                                    }
-                                    return false;
-                                }
-                                return true;
-                            });
+                            return false;
                         }
+                        return true;
+                    });
+                }
 
-                        if (document.readyState === 'loading') {
-                            document.addEventListener('DOMContentLoaded', init);
-                        } else {
-                            init();
-                        }
-                    })();
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', init);
+                } else {
+                    init();
+                }
+            })();
         </script>
         {% /form %}
     {% endif %}
@@ -96,13 +96,17 @@
         <div class="flex flex-col gap-2">{% include "socialaccount/snippets/provider_list.html" with process="connect" %}</div>
         {% include "socialaccount/snippets/login_extra.html" %}
     {% endif %}
-    <div class="mt-6 text-center text-sm text-zinc-600 dark:text-zinc-400">Already have an account? <a href="{{ login_url }}"
-    class="font-medium text-zinc-900 hover:underline dark:text-zinc-100">Sign in</a></div>
+    <div class="mt-6 text-center text-sm text-zinc-600 dark:text-zinc-400">
+        Already have an account? <a href="{{ login_url }}"
+    class="font-medium text-zinc-900 hover:underline dark:text-zinc-100">Sign in</a>
+    </div>
     <div class="mt-8 flex justify-center">
         <div id="signup-turnstile-widget"></div>
     </div>
-    <div class="mt-2 text-center text-xs text-zinc-600 dark:text-zinc-400">By signing up, you agree to our <span class="whitespace-nowrap"><a href="{% url 'docs:terms_of_service' %}"
+    <div class="mt-2 text-center text-xs text-zinc-600 dark:text-zinc-400">
+        By signing up, you agree to our <span class="whitespace-nowrap"><a href="{% url 'docs:terms_of_service' %}"
    class="underline underline-offset-2">ToS</a> and <a href="{% url 'docs:privacy_policy' %}"
-    class="underline underline-offset-2">privacy policy.</a></span></div>
+    class="underline underline-offset-2">privacy policy.</a></span>
+    </div>
     {% /container %}
 {% endblock %}

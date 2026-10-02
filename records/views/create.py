@@ -21,7 +21,6 @@ from .. import services
 from ..forms import AddRecordForm
 from ..matching import try_match_document_record
 
-logger = logging.getLogger(__name__)
 posthog_log_logger = logging.getLogger("posthog.export")
 posthog_log_logger.propagate = False
 

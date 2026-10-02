@@ -1,16 +1,12 @@
-"""Django settings module for ``collectstatic`` during the Docker image build.
+"""Django settings module for collectstatic during the Docker image build.
 
 The production settings require secrets (REDIS_URL, ALLOWED_HOSTS, API keys...)
-and raise ``ImproperlyConfigured`` when absent. At image build time none exist,
+and raise ImproperlyConfigured when absent. At image build time none exist,
 yet the image must ship static files so WhiteNoise serves them under any runtime
-command. This module injects placeholders into ``os.environ`` FIRST, then boots
+command. This module injects placeholders into os.environ FIRST, then boots
 the real app settings exactly as production does (Verity.settings dispatcher).
 
-It lives outside ``Verity.settings`` on purpose: that package's __init__ imports
-the app settings before any submodule body runs, so placeholders set there are
-too late — this module's import body runs before ``Verity.settings`` is touched.
-
-Only ``collectstatic`` is ever run against these settings; no DB, cache, or
+Only collectstatic is ever run against these settings; no DB, cache, or
 external service is connected.
 """
 
@@ -18,6 +14,7 @@ import os
 
 _REQUIRED_ENV = {
     "SECRET_KEY": "staticbuild",
+    "DATABASE_URL": "postgres://staticbuild:staticbuild@localhost:5432/staticbuild",
     "GOOGLE_OAUTH_CLIENT_ID": "staticbuild",
     "GOOGLE_OAUTH_CLIENT_SECRET": "staticbuild",
     "GITHUB_OAUTH_CLIENT_ID": "staticbuild",

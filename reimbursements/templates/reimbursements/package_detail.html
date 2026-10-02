@@ -51,7 +51,8 @@
                         <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 {% if package.status == 'paid' %}bg-emerald-400 {% elif package.status == 'queued' %}bg-indigo-400 {% elif package.is_expired %}bg-zinc-400 {% else %}bg-amber-400{% endif %}"></span>
                         <span class="relative inline-flex rounded-full h-1.5 w-1.5 {% if package.status == 'paid' %}bg-emerald-500 {% elif package.status == 'queued' %}bg-indigo-500 {% elif package.is_expired %}bg-zinc-500 {% else %}bg-amber-500{% endif %}"></span>
                     </span>
-                    {% if package.status == 'paid' %}Paid{% elif package.status == 'queued' %}Awaiting Payer{% elif package.is_expired %}Expired{% else %}Pending Settlement{% endif %}
+                    {% if package.status == 'paid' %}Paid{% elif package.status == 'queued' %}Awaiting
+                        Payer{% elif package.is_expired %}Expired{% else %}Pending Settlement{% endif %}
                 </div>
                 <span class="text-zinc-400 dark:text-zinc-600">·</span>
                 <span class="text-xs text-zinc-500 tabular-nums">{{ package.created_at|date:"M d, Y" }}</span>
@@ -71,7 +72,9 @@
             </div>
             <div class="relative z-10 flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
                 <div>
-                    <p class="mb-2 text-[11px] font-semibold tracking-wider text-zinc-600 uppercase dark:text-zinc-400">Requested Amount</p>
+                    <p class="mb-2 text-[11px] font-semibold tracking-wider text-zinc-600 uppercase dark:text-zinc-400">
+                        Requested Amount
+                    </p>
                     <div class="flex flex-wrap items-baseline gap-2.5">
                         <span class="text-3xl font-semibold tracking-tighter break-all text-zinc-900 tabular-nums sm:text-4xl dark:text-zinc-50">
                             {{ converted_total|currency_format:user_currency }}
@@ -108,7 +111,9 @@
             {% if package.expires_at %}
                 <div class="rounded-xl bg-white/60 p-4 ring-1 ring-black/[0.04] backdrop-blur-md ring-inset dark:bg-zinc-900/20 dark:ring-white/[0.04]">
                     <p class="mb-1.5 text-[11px] font-semibold tracking-wider text-zinc-600 uppercase dark:text-zinc-400">Expires</p>
-                    <p class="text-[13px] font-medium text-zinc-900 tabular-nums dark:text-zinc-200">{{ package.expires_at|date:"M d, Y" }}</p>
+                    <p class="text-[13px] font-medium text-zinc-900 tabular-nums dark:text-zinc-200">
+                        {{ package.expires_at|date:"M d, Y" }}
+                    </p>
                 </div>
             {% endif %}
         </div>
@@ -232,7 +237,9 @@
                             <tfoot class="border-t border-black/[0.06] bg-zinc-50/50 dark:border-white/[0.06] dark:bg-zinc-900/45">
                                 <tr>
                                     <td colspan="3"
-                                        class="px-5 py-4 text-xs font-medium text-zinc-600 dark:text-zinc-400">Total Calculation</td>
+                                        class="px-5 py-4 text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                                        Total Calculation
+                                    </td>
                                     <td class="px-5 py-4 text-right text-xs whitespace-nowrap text-zinc-500 tabular-nums dark:text-zinc-400">
                                         {{ original_total|currency_format:package_currency }}
                                         <span class="ml-0.5 text-[10px]">{{ package_currency|upper }}</span>
@@ -300,7 +307,9 @@
                          class="w-full max-w-sm space-y-5 rounded-2xl border border-black/5 bg-white/90 p-6 shadow-[0_16px_64px_rgba(0,0,0,0.2)] backdrop-blur-2xl dark:border-white/10 dark:bg-zinc-900/90">
                         <div class="space-y-1.5">
                             <h3 class="text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">Delete package?</h3>
-                            <p class="text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">This action cannot be undone and will detach all associated records.</p>
+                            <p class="text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
+                                This action cannot be undone and will detach all associated records.
+                            </p>
                         </div>
                         <div class="flex items-center justify-end gap-2.5 pt-2">
                             <button @click="showDeleteModal = false"

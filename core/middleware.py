@@ -94,25 +94,21 @@ class PostHogSessionIdMiddleware:
     """Attaches the browser's PostHog session ID to the current PostHog context.
 
     Only the browser and mobile SDKs mint a PostHog session ID, so events
-    captured in Django (``user_logged_in``, view-level captures) arrive without
-    ``$session_id`` and cannot be used to filter session recordings. The web SDK
+    captured in Django (user_logged_in, view-level captures) arrive without
+    $session_id and cannot be used to filter session recordings. The web SDK
     mirrors its session ID into a first-party cookie; this reads that cookie and
     sets it on the request's PostHog context, which the Python SDK merges onto
     every event captured during the request.
-
-    Must be listed *after* ``posthog.integrations.django.PosthogContextMiddleware``
-    in ``MIDDLEWARE``: that middleware opens a fresh context per request, so a
-    session ID set before it would be discarded.
     """
 
-    COOKIE_NAME = "verity_ph_session"
+    COOKIE_NAME = "posthog_session_cookie"
     SESSION_ID_PATTERN = re.compile(r"^[0-9A-Za-z_-]{1,64}$")
 
     def __init__(self, get_response: Callable[[HttpRequest], HttpResponse]) -> None:
         self.get_response = get_response
 
     def __call__(self, request: HttpRequest) -> HttpResponse:
-        # The X-POSTHOG-SESSION-ID header (set by the SDK's `tracing_headers`
+        # The X-POSTHOG-SESSION-ID header (set by the SDK's tracing_headers
         # option) is handled by the PostHog context middleware and wins here.
         if "X-POSTHOG-SESSION-ID" not in request.headers:
             session_id = request.COOKIES.get(self.COOKIE_NAME, "")
@@ -136,10 +132,17 @@ class HtmxMessageMiddleware:
     def __call__(self, request: HttpRequest) -> HttpResponse:
         response = self.get_response(request)
 
-        if not self._should_attach_messages(request, response):
+        # Skip full-page responses: a redirect or refresh would carry the header
+        # to a request that never renders the messages.
+        if request.headers.get("HX-Request") != "true":
+            return response
+        if "HX-Redirect" in response or "HX-Refresh" in response:
             return response
 
-        messages_list = self._build_messages_list(request)
+        messages_list = [
+            {"message": str(message.message), "level": message.level}
+            for message in get_messages(request)
+        ]
         if not messages_list:
             return response
 
@@ -147,20 +150,6 @@ class HtmxMessageMiddleware:
             response.get("HX-Trigger"), messages_list
         )
         return response
-
-    @staticmethod
-    def _should_attach_messages(request: HttpRequest, response: HttpResponse) -> bool:
-        is_htmx_request = request.headers.get("HX-Request") == "true"
-        is_full_page_response = "HX-Redirect" in response or "HX-Refresh" in response
-        return is_htmx_request and not is_full_page_response
-
-    @staticmethod
-    def _build_messages_list(request: HttpRequest) -> list[dict[str, Any]]:
-        storage = get_messages(request)
-        return [
-            {"message": str(message.message), "level": message.level}
-            for message in storage
-        ]
 
     @staticmethod
     def _build_hx_trigger(

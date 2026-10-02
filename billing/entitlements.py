@@ -25,8 +25,6 @@ PAID_ONLY_FEATURES = frozenset(
 
 PAID_FEATURES = FREE_FEATURES | PAID_ONLY_FEATURES
 
-FREE_MONTHLY_SCAN_LIMIT = features.FREE_MONTHLY_SCAN_LIMIT
-
 
 def get_plan(user) -> str:
     """Return 'paid' or 'free' based on the user's active base plan.

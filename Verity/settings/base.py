@@ -1,12 +1,7 @@
-import logging
 from pathlib import Path
 from urllib.parse import urlsplit, urlunsplit
 
 import environ
-import sentry_sdk
-from sentry_sdk.integrations.django import DjangoIntegration
-from sentry_sdk.integrations.logging import LoggingIntegration
-from sentry_sdk.utils import BadDsn
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -26,7 +21,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 ADMIN_URL = env("ADMIN_URL", default="admin/")
 
 # Database
-database_config = env.db("DATABASE_URL", default="sqlite:///db.sqlite3")
+database_config = env.db("DATABASE_URL")
 if "sqlite" in database_config["ENGINE"]:
     database_config.setdefault("OPTIONS", {})["timeout"] = 30
 else:
@@ -38,11 +33,6 @@ else:
     )
     database_config["DISABLE_SERVER_SIDE_CURSORS"] = True
 
-# Neon Postgres suspends idle computes and its pooled endpoint recycles
-# connections, so long-lived app-side connections come back dead ("SSL
-# connection has been closed unexpectedly"). Treat Neon as connectionless:
-# open fresh per request and let the pooler multiplex, and use a backend that
-# retries the transient mid-handshake drops.
 _db_host = database_config.get("HOST", "")
 _is_neon = bool(_db_host) and ".neon.tech" in _db_host
 if _is_neon:
@@ -121,7 +111,6 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "core.middleware.PostHogSessionIdMiddleware",  # Must follow the PostHog context
     "django.contrib.messages.middleware.MessageMiddleware",
     "simple_history.middleware.HistoryRequestMiddleware",
     "core.middleware.HtmxMessageMiddleware",  # Send messages without reload
@@ -130,6 +119,7 @@ MIDDLEWARE = [
     "core.middleware.TimezoneMiddleware",  # Get user timezone via cookie
     "allauth.account.middleware.AccountMiddleware",
     "posthog.integrations.django.PosthogContextMiddleware",
+    "core.middleware.PostHogSessionIdMiddleware",  # Must follow the PostHog context
 ]
 
 if not DEBUG:
@@ -320,13 +310,6 @@ AWS_QUERYSTRING_AUTH = True
 AWS_S3_VERIFY = True
 AWS_S3_MAX_MEMORY_SIZE = 5 * 1024 * 1024
 
-S3_STATIC_BUCKET_NAME = env("S3_STATIC_BUCKET_NAME", default="")
-S3_STATIC_ENDPOINT_URL = env("S3_STATIC_ENDPOINT_URL", default="")
-S3_STATIC_ACCESS_KEY_ID = env("S3_STATIC_ACCESS_KEY_ID", default="")
-S3_STATIC_SECRET_ACCESS_KEY = env("S3_STATIC_SECRET_ACCESS_KEY", default="")
-S3_STATIC_DEFAULT_ACL = None
-S3_STATIC_CDN_DOMAIN = env("S3_STATIC_CDN_DOMAIN", default="")
-
 STORAGES = {
     "default": {
         "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
@@ -386,6 +369,10 @@ LOGGING = {
         },
     },
     "handlers": {
+        "error_tracking": {
+            "()": "core.error_tracking.LogCapture",
+            "level": "WARNING",
+        },
         "console": {
             "class": "logging.StreamHandler",
             "formatter": "verbose",
@@ -393,7 +380,7 @@ LOGGING = {
         },
     },
     "root": {
-        "handlers": ["console"],
+        "handlers": ["console", "error_tracking"],
         "level": "INFO",
     },
     "loggers": {
@@ -407,10 +394,6 @@ LOGGING = {
             "level": "WARNING",
             "propagate": False,
         },
-        # Dramatiq's AMQP (pika) connections get dropped by the broker when
-        # idle for too long; dramatiq reconnects and retries so the send still
-        # succeeds, but pika logs the drops at ERROR level which would flood
-        # error tracking (Sentry/PostHog LoggingIntegration event_level).
         "pika.adapters.blocking_connection": {
             "handlers": [],
             "level": "CRITICAL",
@@ -427,12 +410,12 @@ LOGGING = {
             "propagate": False,
         },
         "documents": {
-            "handlers": ["console"],
+            "handlers": ["console", "error_tracking"],
             "level": "INFO",
             "propagate": False,
         },
         "records": {
-            "handlers": ["console"],
+            "handlers": ["console", "error_tracking"],
             "level": "INFO",
             "propagate": False,
         },
@@ -465,39 +448,12 @@ FERNET_KEYS = [
 
 # Stripe
 STRIPE_SECRET_KEY = env("STRIPE_SECRET_KEY")
-# Stripe issues different product, price and customer IDs in test vs live mode,
-# so catalog queries must be scoped to the mode this deployment runs in.
-# Derived from the key prefix so it is correct without extra configuration.
 STRIPE_LIVE_MODE = env.bool(
     "STRIPE_LIVE_MODE", default=STRIPE_SECRET_KEY.startswith("sk_live_")
 )
 STRIPE_PUBLISHABLE_KEY = env("STRIPE_PUBLISHABLE_KEY")
 DJSTRIPE_FOREIGN_KEY_TO_FIELD = env("DJSTRIPE_FOREIGN_KEY_TO_FIELD")
 DJSTRIPE_WEBHOOK_SECRET = env("STRIPE_WEBHOOK_SECRET", default="")
-
-
-# Sentry
-_is_prod = env("SENTRY_ENVIRONMENT", default="development") == "production"
-_sentry_dsn = env("SENTRY_DSN", default="")
-if _sentry_dsn:
-    try:
-        sentry_sdk.init(
-            dsn=_sentry_dsn,
-            environment=env("SENTRY_ENVIRONMENT", default="production"),
-            integrations=[
-                DjangoIntegration(),
-                # Project-wide server-side tracking
-                LoggingIntegration(
-                    level=logging.INFO,
-                    event_level=logging.WARNING,
-                ),
-            ],
-            send_default_pii=False,
-            traces_sample_rate=1.0 if not _is_prod else 0.1,
-            auto_session_tracking=False,
-        )
-    except BadDsn:
-        sentry_sdk.init(dsn="")
 
 
 # Dramatiq broker
@@ -518,6 +474,9 @@ DRAMATIQ_BROKER = {
     "MIDDLEWARE": [
         "dramatiq.middleware.prometheus.Prometheus",
         "dramatiq.middleware.CurrentMessage",
+        # Reports worker failures. After CurrentMessage so the actor context
+        # is set before anything raises.
+        "core.error_tracking.ErrorTracking",
         "dramatiq.middleware.AgeLimit",
         "dramatiq.middleware.TimeLimit",
         "dramatiq.middleware.Callbacks",

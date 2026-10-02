@@ -26,10 +26,6 @@ CACHE_TTL_EMPTY = 60  # Cache empty results briefly to avoid hammering API
 API_BASE = "https://api.frankfurter.dev"
 
 
-def _upper(code: str) -> str:
-    return code.upper()
-
-
 def _fetch_rates(base: str = "USD") -> dict[str, Decimal]:
     """Fetch all available rates from Frankfurter API v2. Returns {currency_code: rate}.
 
@@ -57,10 +53,10 @@ def _fetch_rates(base: str = "USD") -> dict[str, Decimal]:
 
 def get_rates(base: str = "USD") -> dict[str, Decimal]:
     """Get exchange rates with Redis caching."""
-    base = _upper(base)
+    base = base.upper()
     cache_key = f"{CACHE_KEY}:{base}"
 
-    # Store/retrieve as dict[str, str] to prevent Redis JSON serialization issues
+    # Cached as dict[str, str] so values survive a JSON round-trip.
     cached = cache.get(cache_key)
     if cached is not None:
         return {code: Decimal(rate) for code, rate in cached.items()}
@@ -73,16 +69,15 @@ def get_rates(base: str = "USD") -> dict[str, Decimal]:
         cache.set(cache_key, cache_data, CACHE_TTL)
         cache.set(stale_key, cache_data, CACHE_TTL_STALE)
         return raw_rates
-    else:
-        cache.set(cache_key, {}, CACHE_TTL_EMPTY)
-        stale = cache.get(stale_key)
-        if stale:
-            logger.warning(
-                "Frankfurter API unavailable — serving stale exchange rates for %s",
-                base,
-            )
-            return {code: Decimal(rate) for code, rate in stale.items()}
-        return {}
+
+    cache.set(cache_key, {}, CACHE_TTL_EMPTY)
+    stale = cache.get(stale_key)
+    if stale:
+        logger.warning(
+            "Frankfurter API unavailable — serving stale exchange rates for %s", base
+        )
+        return {code: Decimal(rate) for code, rate in stale.items()}
+    return {}
 
 
 def convert(
@@ -108,10 +103,8 @@ def convert(
     if from_rate == 0:
         return Decimal("0")
 
-    # Rates are relative to base (e.g., USD)
     converted = Decimal(str(amount)) * (to_rate / from_rate)
 
-    # Quantize based on target currency decimals
     decimals = get_currency_decimals(to_curr)
     quant_target = Decimal("1") if decimals == 0 else Decimal(f"0.{'0' * decimals}")
 
@@ -127,15 +120,14 @@ def convert_strict(
     raw unconverted number when rates are unavailable — e.g. a JPY 5,000 record
     would otherwise be charged as USD 5,000.00 during an FX outage.
     """
-    from_curr = _upper(from_curr)
-    to_curr = _upper(to_curr)
+    from_curr = from_curr.upper()
+    to_curr = to_curr.upper()
 
     if from_curr == to_curr or not amount:
         return Decimal(str(amount))
 
     from_rate = rates.get(from_curr)
     to_rate = rates.get(to_curr)
-
     if from_rate is None:
         raise ExchangeRateUnavailableError(
             f"No exchange rate available for {from_curr}"
@@ -147,10 +139,8 @@ def convert_strict(
             f"Invalid zero exchange rate for {from_curr}/{to_curr}"
         )
 
-    converted = Decimal(str(amount)) * (to_rate / from_rate)
-    decimals = get_currency_decimals(to_curr)
-    quant_target = Decimal("1") if decimals == 0 else Decimal(f"0.{'0' * decimals}")
-    return converted.quantize(quant_target, rounding=ROUND_HALF_UP)
+    # Rates are now known good, so convert() takes its normal arithmetic path.
+    return convert(amount, from_curr, to_curr, rates)
 
 
 def convert_batch(

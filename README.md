@@ -207,7 +207,10 @@ docker build -t verity .
 docker run -p 8000:8000 --env-file .env verity
 ```
 
-The production Dockerfile uses a multi-stage build with a non-root user, runs migrations at startup, and serves via gunicorn.
+### Who deploys
+
+Deployment is handled by Dokploy, which builds and rolls out the image when
+`main` is pushed. There is deliberately no GitHub deploy workflow.
 
 ### Production Checklist
 

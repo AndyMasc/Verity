@@ -7,13 +7,15 @@ notification dispatch (DB, email, and web push).
 
 from __future__ import annotations
 
+import functools
 import logging
+import operator
 from datetime import timedelta
 from typing import TYPE_CHECKING
 
 import dramatiq
-from django.contrib.auth import get_user_model
 from django.db.models import F, Q
+from django.shortcuts import get_object_or_404
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
@@ -36,8 +38,6 @@ from .models import Record
 
 logger = logging.getLogger(__name__)
 
-User = get_user_model()
-
 
 @dramatiq.actor
 def run_auto_match(record_pk: int, has_plaid: bool) -> None:
@@ -45,13 +45,10 @@ def run_auto_match(record_pk: int, has_plaid: bool) -> None:
 
     When "has_plaid" is True the record is a Plaid transaction and is matched
     against document records; otherwise it is a document record matched against
-    Plaid transactions. Failures are logged but never propagated.
+    Plaid transactions.
     """
-    try:
-        record = Record.objects.get(pk=record_pk)
-    except Record.DoesNotExist:
-        logger.warning("Auto-match skipped: record %s not found", record_pk)
-        return
+
+    record = get_object_or_404(Record, pk=record_pk)
 
     try:
         if has_plaid:
@@ -150,6 +147,22 @@ def send_expiry_notifications() -> None:
     """
     today = timezone.now().date()
 
+    # One branch per supported preference value, plus a default for users who
+    # have no settings row at all.
+    advance_conditions = [
+        Q(
+            user__settings__expiring_notifications_advance_time=str(days),
+            expiry_date__lte=today + timedelta(days=days),
+        )
+        for days in (1, 3, 7, 30)
+    ]
+    advance_conditions.append(
+        Q(
+            user__settings__isnull=True,
+            expiry_date__lte=today + timedelta(days=7),
+        )
+    )
+
     expiring_records = (
         Record.objects.filter(
             is_active=True,
@@ -157,25 +170,7 @@ def send_expiry_notifications() -> None:
             expiry_date__isnull=False,
             expiry_date__gte=F("date_added"),
         )
-        .filter(
-            Q(
-                user__settings__expiring_notifications_advance_time="1",
-                expiry_date__lte=today + timedelta(days=1),
-            )
-            | Q(
-                user__settings__expiring_notifications_advance_time="3",
-                expiry_date__lte=today + timedelta(days=3),
-            )
-            | Q(
-                user__settings__expiring_notifications_advance_time="7",
-                expiry_date__lte=today + timedelta(days=7),
-            )
-            | Q(
-                user__settings__expiring_notifications_advance_time="30",
-                expiry_date__lte=today + timedelta(days=30),
-            )
-            | Q(user__settings__isnull=True, expiry_date__lte=today + timedelta(days=7))
-        )
+        .filter(functools.reduce(operator.or_, advance_conditions))
         .select_related("user__settings")
     )
 
@@ -210,7 +205,9 @@ def send_expiry_notifications() -> None:
     Record.objects.filter(id__in=all_record_ids).update(expiry_notification_sent=True)
     logger.info("Created %d DB notifications.", len(notifications_to_create))
 
-    MAX_DISPLAY_RECORDS = 5
+    MAX_DISPLAY_RECORDS = (
+        5  # Maximum number of records to display in the email/webpush notification
+    )
     site_context = build_site_context()
     site_url = site_context["site_url"]
 

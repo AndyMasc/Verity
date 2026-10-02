@@ -66,7 +66,7 @@ def verify_turnstile_token(
 ) -> dict[str, Any]:
     """Verify a Turnstile token with Cloudflare's siteverify endpoint.
 
-    ``request`` is optional and only used to attach ``remoteip`` (an optional
+    request is optional and only used to attach remoteip (an optional
     siteverify parameter) when it can be derived reliably from the request.
 
     In tests and local developer setups without a real Turnstile secret, return a
@@ -77,7 +77,7 @@ def verify_turnstile_token(
         return _failure("Invalid token format", {})
 
     if not settings.TURNSTILE_SECRET:
-        if _test_env() or getattr(settings, "RATELIMIT_ENABLE", True) is False:
+        if _test_env():
             return _stub_result(action)
         logger.error("TURNSTILE_SECRET not configured")
         return _failure("Turnstile not configured", {})
@@ -159,6 +159,5 @@ def get_client_ip(request: HttpRequest) -> str:
     """
     x_forwarded_for = request.headers.get("x-forwarded-for")
     if x_forwarded_for:
-        ip = x_forwarded_for.split(",")[0].strip()
-        return ip
+        return x_forwarded_for.split(",")[0].strip()
     return request.META.get("REMOTE_ADDR", "")
