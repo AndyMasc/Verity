@@ -4,6 +4,7 @@ Each action creates an AuditLog entry and, for HTMX requests, returns
 a 204 response so the client can update the UI without a full page reload.
 """
 
+import logging
 import json
 
 from django.contrib.auth.decorators import login_required
@@ -28,6 +29,8 @@ from ..services import (
     soft_delete_record,
     unarchive_record,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class ArchiveRecord(LoginRequiredMixin, View):
@@ -216,6 +219,7 @@ def BulkHardDeleteView(request: HttpRequest) -> HttpResponse:
     try:
         count = bulk_hard_delete_record(record_ids=record_ids, user=request.user)  # type: ignore[arg-type]
     except BulkLimitExceededError as exc:
+        logger.error("Error occurred while hard deleting records: %s", exc)
         return HttpResponse(
             json.dumps({"error": str(exc)}), status=400, content_type="application/json"
         )

@@ -1,4 +1,6 @@
 name: Deploy
+permissions:
+  contents: write
 
 # Manual only. This template is not wired to a deploy mechanism yet, and
 # ./deploy.sh does not exist, so triggering it on push would just go red.

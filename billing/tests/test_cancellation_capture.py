@@ -27,6 +27,10 @@ from ..webhooks import (
 
 class CancellationCaptureTests(TestCase):
     def setUp(self):
+        client = mock.patch("billing.webhooks.posthog_client", mock.Mock())
+        client.start()
+        self.addCleanup(client.stop)
+
         self.customer = Customer.objects.create(
             id="cus_churn", livemode=False, created=timezone.now()
         )
