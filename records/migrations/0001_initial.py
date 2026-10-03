@@ -30,9 +30,7 @@ class Migration(migrations.Migration):
                 ("merchant", models.CharField(blank=True, max_length=255, null=True)),
                 (
                     "balance",
-                    models.DecimalField(
-                        blank=True, decimal_places=2, max_digits=10, null=True
-                    ),
+                    models.DecimalField(blank=True, decimal_places=2, max_digits=10, null=True),
                 ),
                 ("product", models.TextField()),
                 ("transaction_date", models.DateField(blank=True, null=True)),

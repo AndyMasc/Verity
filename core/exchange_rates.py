@@ -73,16 +73,12 @@ def get_rates(base: str = "USD") -> dict[str, Decimal]:
     cache.set(cache_key, {}, CACHE_TTL_EMPTY)
     stale = cache.get(stale_key)
     if stale:
-        logger.warning(
-            "Frankfurter API unavailable — serving stale exchange rates for %s", base
-        )
+        logger.warning("Frankfurter API unavailable — serving stale exchange rates for %s", base)
         return {code: Decimal(rate) for code, rate in stale.items()}
     return {}
 
 
-def convert(
-    amount: Decimal, from_curr: str, to_curr: str, rates: dict[str, Decimal]
-) -> Decimal:
+def convert(amount: Decimal, from_curr: str, to_curr: str, rates: dict[str, Decimal]) -> Decimal:
     from_curr = from_curr.upper()
     to_curr = to_curr.upper()
 
@@ -93,9 +89,7 @@ def convert(
     to_rate = rates.get(to_curr)
 
     if from_rate is None:
-        logger.warning(
-            "No exchange rate for %s — returning amount unchanged", from_curr
-        )
+        logger.warning("No exchange rate for %s — returning amount unchanged", from_curr)
         return Decimal(str(amount))
     if to_rate is None:
         logger.warning("No exchange rate for %s — returning amount unchanged", to_curr)
@@ -129,15 +123,11 @@ def convert_strict(
     from_rate = rates.get(from_curr)
     to_rate = rates.get(to_curr)
     if from_rate is None:
-        raise ExchangeRateUnavailableError(
-            f"No exchange rate available for {from_curr}"
-        )
+        raise ExchangeRateUnavailableError(f"No exchange rate available for {from_curr}")
     if to_rate is None:
         raise ExchangeRateUnavailableError(f"No exchange rate available for {to_curr}")
     if from_rate == 0 or to_rate == 0:
-        raise ExchangeRateUnavailableError(
-            f"Invalid zero exchange rate for {from_curr}/{to_curr}"
-        )
+        raise ExchangeRateUnavailableError(f"Invalid zero exchange rate for {from_curr}/{to_curr}")
 
     # Rates are now known good, so convert() takes its normal arithmetic path.
     return convert(amount, from_curr, to_curr, rates)

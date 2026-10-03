@@ -94,7 +94,9 @@
                     }
                 }
             })
-
+            if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+                posthog.opt_out_capturing();
+            }
             // Only the browser SDK knows the PostHog session id. Mirror it into a cookie so backend captures can be linked to session recordings.
             posthog.onSessionId(function (sessionId) {
                 if (!sessionId) return;
@@ -117,21 +119,10 @@
                 }
             </script>
         {% endif %}
-        {% if viewed_event %}
-            {{ viewed_props|json_script:"ph-viewed-props" }}
-            <script>
-                (function () {
-                    var el = document.getElementById('ph-viewed-props');
-                    if (!window.posthog || !el) return;
-                    window.posthog.capture('{{ viewed_event|escapejs }}', JSON.parse(el.textContent));
-                })();
-            </script>
-        {% endif %}
         <title>{% block title %}Verity{% endblock %}</title>
         {% block head %}
         {% endblock %}
-        {% block extra_head %}
-        {% endblock %}
+        {% block extra_head %}{% endblock %}
     </head>
     <body class="font-sans bg-zinc-50 dark:bg-black text-zinc-950 dark:text-zinc-50 min-h-screen antialiased selection:bg-zinc-900/10 dark:selection:bg-zinc-100/10"
           {% if user.is_authenticated %}x-data="{ open: $persist(true) }"{% endif %}>

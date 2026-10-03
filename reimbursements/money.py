@@ -65,16 +65,10 @@ class CurrencyConverter:
     """Helpers for turning a package's records into a payer-currency total."""
 
     @staticmethod
-    def get_active_record_items(
-        cache: dict, records_queryset
-    ) -> list[tuple[Decimal, str]]:
+    def get_active_record_items(cache: dict, records_queryset) -> list[tuple[Decimal, str]]:
         """Extract active record balance and currency pairs from cache or queryset."""
         if "records" in cache:
-            return [
-                (r.balance, r.currency)
-                for r in cache["records"]
-                if r.is_active and r.balance
-            ]
+            return [(r.balance, r.currency) for r in cache["records"] if r.is_active and r.balance]
         return list(
             records_queryset.filter(is_active=True)
             .exclude(balance__isnull=True)

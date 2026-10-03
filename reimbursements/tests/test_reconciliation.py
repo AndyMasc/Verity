@@ -93,9 +93,7 @@ class DailyReconciliationTest(TestCase):
 
         run_daily_reconciliation()
         self.assertTrue(
-            AuditLog.objects.filter(
-                details__drift_kind="payment_intent_missing"
-            ).exists()
+            AuditLog.objects.filter(details__drift_kind="payment_intent_missing").exists()
         )
 
     @patch("reimbursements.services.retrieve_payment_intent", return_value=_intent())

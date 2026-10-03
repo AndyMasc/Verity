@@ -35,12 +35,10 @@ def _event_object(event: Any) -> dict[str, Any]:
     return (getattr(event, "data", None) or {}).get("object") or {}
 
 
-def _subscriber_pk(
-    customer_id: str | None, client_reference_id: str | None = None
-) -> str | None:
+def _subscriber_pk(customer_id: str | None, client_reference_id: str | None = None) -> str | None:
     """Resolve the local user behind a Stripe event, or None when unlinked.
 
-    ` is the id we stamp on our own checkout sessions, so
+    The client reference ID is the id we stamp on our own checkout sessions, so
     it is the most reliable link; the customer's subscriber covers events
     that carry no session (invoices, payment intents).
     """
@@ -54,14 +52,12 @@ def _subscriber_pk(
         return None
 
     subscriber_id = (
-        Customer.objects.filter(id=customer_id)
-        .values_list("subscriber_id", flat=True)
-        .first()
+        Customer.objects.filter(id=customer_id).values_list("subscriber_id", flat=True).first()
     )
     return str(subscriber_id) if subscriber_id else None
 
 
-def _capture(event: str, distinct_id: str | None, properties: dict[str, Any]) -> None:
+def capture(event: str, distinct_id: str | None, properties: dict[str, Any]) -> None:
     """Capture a PostHog event from a Stripe webhook.
 
     Webhooks arrive server-to-server with no request context, so the distinct ID
@@ -76,7 +72,7 @@ def _capture(event: str, distinct_id: str | None, properties: dict[str, Any]) ->
         posthog_client.capture(event, properties=properties)
 
 
-def _failure_reason(failure: dict[str, Any]) -> str:
+def failure_reason(failure: dict[str, Any]) -> str:
     """Return a human-readable reason for a failed payment."""
     return failure.get("message") or failure.get("code") or "unknown"
 
@@ -93,11 +89,8 @@ def _subscription_categories(stripe_sub: dict) -> set[str]:
 
 
 # Cancellations fall into three kinds, a user cancelling at period end, a user cancelling immediately, and this app
-# tidying up after itself (e.g., user cancels pro plan, so app cancels pro only packs automatically).
-# Stripe's customer.subscription.deleted event does not
-# say which, and by the time it arrives "cancel_at_period_end" has already been
-# cleared, so the intent is recorded when we first see it and marked here when we
-# cause it.
+# tidying up after itself (e.g., user cancels pro plan, so app cancels pro only packs automatically). The intent is recorded when we
+# first see it and marked here when we cause it.
 _CANCEL_MARKER = "billing:cancel-intent:{sub_id}"
 _CANCEL_MARKER_TTL = 60 * 60 * 24
 
@@ -132,10 +125,7 @@ def _has_active_pro_storage(sub: Subscription) -> bool:
 def _cancel_storage_subscription(sub: Subscription, customer_id: str) -> None:
     """Cancel a Pro-only storage subscription and log any failure."""
     try:
-        # Marked "system" so the resulting deleted event is not reported as the
-        # user cancelling an add-on: it is a consequence of the base plan ending,
-        # and that churn is already captured against the base plan.
-        mark_cancel_intent(sub.id, "system")
+        # Marked "system" so the resulting deleted event is not reported as the user cancelling an add-on.
         services.cancel_subscription(sub.id)
     except stripe.error.StripeError as exc:
         logger.warning(
@@ -178,7 +168,7 @@ def handle_subscription_deleted(**kwargs: Any) -> None:
     _invalidate_subscription_caches_for_event(stripe_sub)
     categories = _subscription_categories(stripe_sub)
     if read_cancel_intent(sub_id) != "period_end":
-        _capture_subscription_cancelled(sub_id, stripe_sub)
+        capture_subscription_cancelled(sub_id, stripe_sub)
     if "base_plan" in categories:
         _cancel_pro_only_storage_for_customer(
             stripe_sub.get("customer"), base_subscription_id=sub_id
@@ -187,13 +177,9 @@ def handle_subscription_deleted(**kwargs: Any) -> None:
     def _clear_user_subscription() -> None:
         from .models import CustomUser
 
-        updated_count = CustomUser.objects.filter(subscription__id=sub_id).update(
-            subscription=None
-        )
+        updated_count = CustomUser.objects.filter(subscription__id=sub_id).update(subscription=None)
         if updated_count:
-            logger.info(
-                "Cleared subscription %s from %d user(s).", sub_id, updated_count
-            )
+            logger.info("Cleared subscription %s from %d user(s).", sub_id, updated_count)
 
     transaction.on_commit(_clear_user_subscription)
     transaction.on_commit(lambda: clear_cancel_intent(sub_id))
@@ -240,29 +226,19 @@ def handle_subscription_changed(**kwargs: Any) -> None:
         sub_id = stripe_sub.get("id")
         if sub_id and read_cancel_intent(sub_id) is None:
             mark_cancel_intent(sub_id, "period_end")
-            _capture_subscription_cancelled(sub_id, stripe_sub)
+            capture_subscription_cancelled(sub_id, stripe_sub)
 
     # The only place Stripe reports an item added or removed after checkout,
     # so without this an add-on bought post-signup is never seen.
-    _capture(
+    capture(
         "subscription_updated",
         _subscriber_pk(customer_id),
-        {
-            "includes_base_plan": "base_plan" in categories,
-            "includes_storage_plan": "storage_plan" in categories,
-        },
+        {"plan_types": sorted(categories)},
     )
 
 
-def _capture_subscription_cancelled(
-    sub_id: str, stripe_sub: dict | None = None
-) -> None:
+def capture_subscription_cancelled(sub_id: str, stripe_sub: dict | None = None) -> None:
     """Record churn for a cancelled subscription, split by what it covered.
-
-    Emits "base_subscription_cancelled" when the subscription carried a base
-    plan and "addon_subscription_cancelled" when it carried an add-on, so base
-    churn and add-on churn can be read separately. A subscription holding both
-    reports both, which is what actually happened.
 
     Cancellations this app performed itself are skipped: they are consequences
     of another change (a plan swap, or an add-on following its base plan out)
@@ -271,11 +247,7 @@ def _capture_subscription_cancelled(
     if posthog_client is None:
         return
 
-    sub = (
-        Subscription.objects.filter(id=sub_id)
-        .select_related("customer__subscriber")
-        .first()
-    )
+    sub = Subscription.objects.filter(id=sub_id).select_related("customer__subscriber").first()
     if sub is None:
         return
 
@@ -283,19 +255,14 @@ def _capture_subscription_cancelled(
     metas = [
         metadata.PRODUCTS[item.price.product.id]
         for item in sub.items.select_related("price__product")
-        if item.price
-        and item.price.product
-        and item.price.product.id in metadata.PRODUCTS
+        if item.price and item.price.product and item.price.product.id in metadata.PRODUCTS
     ]
-    # Skip our own cancellations: a plan swap or an add-on following its base
-    # plan out is not a user deciding to leave.
+    # Skip our own cancellations: a plan swap or an add-on following its base plan out is not a user deciding to leave.
     if read_cancel_intent(sub_id) == "system":
         return
 
     base = next((meta for meta in metas if meta.category == "base_plan"), None)
-    has_addon = any(m.category == "storage_plan" for m in metas)
-    # Recorded when the cancellation was scheduled or requested; the deleted
-    # event itself can no longer distinguish the two.
+    has_storage_pack = any(m.category == "storage_plan" for m in metas)
     cancel_type = read_cancel_intent(sub_id) or (
         "period_end" if (stripe_sub or {}).get("cancel_at_period_end") else "immediate"
     )
@@ -306,29 +273,20 @@ def _capture_subscription_cancelled(
 
     distinct_id = str(user.pk) if user is not None else None
     common = {
-        "months_active": months_active,
-        "cancel_type": cancel_type,
-        "includes_base_plan": base is not None,
-        "includes_storage_plan": has_addon,
+        "months_active": months_active,  # How long the subscription was active before cancellation.
+        "cancel_type": cancel_type,  # Whether the user cancelled immediately, at period end, or the app cancelled it automatically.
     }
-
+    plan_types = []
     if base is not None:
-        _capture(
-            "base_subscription_cancelled",
-            distinct_id,
-            {**common, "plan": base.name},
-        )
-    if has_addon:
-        _capture(
-            "addon_subscription_cancelled",
-            distinct_id,
-            {
-                **common,
-                "plan": ", ".join(
-                    m.name for m in metas if m.category == "storage_plan"
-                ),
-            },
-        )
+        plan_types.append("base_plan")
+    if has_storage_pack:
+        plan_types.append("storage_plan")
+
+    capture(
+        "subscription_cancelled",
+        distinct_id,
+        properties={**common, "plan_types": plan_types},
+    )
 
 
 @djstripe_receiver("checkout.session.completed")
@@ -336,14 +294,10 @@ def _capture_subscription_cancelled(
 def handle_checkout_settled(**kwargs: Any) -> None:
     """Track subscription checkouts Stripe actually settled.
 
-    Anyone who finishes checkout
-    without reaching the success URL is still counted. Delayed payment methods
-    settle later via checkout.session.async_payment_succeeded, so their
-    checkout.session.completed (sent unpaid) is skipped here.
+    Anyone who finishes checkout without reaching the success URL is still counted. Delayed payment methods
+    settle later via checkout.session.async_payment_succeeded, so their checkout.session.completed (sent unpaid) is skipped here.
     """
     session = _event_object(kwargs.get("event"))
-    # Package purchases are one-off payments with their own funnel
-    # (reimbursement_paid); keep them out of the subscription metrics.
     if session.get("mode") != "subscription":
         return
     # "no_payment_required" covers fully discounted checkouts.
@@ -359,14 +313,13 @@ def handle_checkout_settled(**kwargs: Any) -> None:
         )
         if category
     }
-    _capture(
+    capture(
         "subscription_checkout_completed",
         _subscriber_pk(session.get("customer"), session.get("client_reference_id")),
         {
             "amount": (session.get("amount_total") or 0) / 100,
             "currency": session.get("currency"),
-            "includes_base_plan": "base_plan" in categories,
-            "includes_storage_plan": "storage_plan" in categories,
+            "plan_types": list(categories),
         },
     )
 
@@ -378,7 +331,7 @@ def handle_checkout_expired(**kwargs: Any) -> None:
     if session.get("mode") != "subscription":
         return
 
-    _capture(
+    capture(
         "subscription_checkout_expired",
         _subscriber_pk(session.get("customer"), session.get("client_reference_id")),
         {
@@ -393,7 +346,7 @@ def handle_payment_succeeded(**kwargs: Any) -> None:
     """Track settled subscription invoices, both first payments and renewals."""
     invoice = _event_object(kwargs.get("event"))
 
-    _capture(
+    capture(
         "payment_succeeded",
         _subscriber_pk(invoice.get("customer")),
         {
@@ -415,15 +368,13 @@ def handle_checkout_payment_failed(**kwargs: Any) -> None:
         # Package purchase decline: owned by the reimbursements pipeline.
         return
 
-    _capture(
+    capture(
         "checkout_payment_failed",
         _subscriber_pk(payment_intent.get("customer")),
         {
             "amount": (payment_intent.get("amount") or 0) / 100,
             "currency": payment_intent.get("currency"),
-            "failure_reason": _failure_reason(
-                payment_intent.get("last_payment_error") or {}
-            ),
+            "failure_reason": failure_reason(payment_intent.get("last_payment_error") or {}),
         },
     )
 
@@ -438,12 +389,12 @@ def handle_payment_failed(**kwargs: Any) -> None:
 
     amount_due = invoice.get("amount_due") or invoice.get("amount") or 0
 
-    _capture(
+    capture(
         "payment_failed",
         distinct_id,
         {
             "amount": amount_due / 100,
             "currency": invoice.get("currency", "usd"),
-            "failure_reason": _failure_reason(invoice.get("last_payment_error") or {}),
+            "failure_reason": failure_reason(invoice.get("last_payment_error") or {}),
         },
     )

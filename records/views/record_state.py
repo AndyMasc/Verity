@@ -38,14 +38,11 @@ class ArchiveRecord(LoginRequiredMixin, View):
 
     @method_decorator(ratelimit(key="user", rate="30/m", method="POST", block=True))
     def post(self, request: HttpRequest, record_id: int) -> HttpResponse:
-        record = get_object_or_404(
-            Record, id=record_id, user=request.user, is_active=True
-        )
+        record = get_object_or_404(Record, id=record_id, user=request.user, is_active=True)
         archive_record(request.user, record)
         if posthog_client is not None:
             posthog_client.capture(
                 "record_archived",
-                properties={"via": "archive", "bulk": False},
             )
         if request.headers.get("HX-Request") == "true":
             response = HttpResponse(status=204)
@@ -60,9 +57,7 @@ class UnarchiveRecord(LoginRequiredMixin, View):
 
     @method_decorator(ratelimit(key="user", rate="30/m", method="POST", block=True))
     def post(self, request: HttpRequest, record_id: int) -> HttpResponse:
-        record = get_object_or_404(
-            Record, id=record_id, user=request.user, is_active=False
-        )
+        record = get_object_or_404(Record, id=record_id, user=request.user, is_active=False)
         unarchive_record(request.user, record)
         if posthog_client is not None:
             posthog_client.capture(
@@ -83,9 +78,7 @@ class DeleteRecordView(LoginRequiredMixin, View):
         record = get_object_or_404(Record, id=record_id, user=request.user)
         soft_delete_record(request.user, record)
         if posthog_client is not None:
-            posthog_client.capture(
-                "record_archived", properties={"via": "delete", "bulk": False}
-            )
+            posthog_client.capture("record_archived")
         if request.headers.get("HX-Request") == "true":
             response = HttpResponse(status=200)
             response["HX-Trigger"] = json.dumps({"recordChanged": {}})
@@ -167,10 +160,7 @@ def BulkArchiveView(request: HttpRequest) -> HttpResponse:
 
     invalidate_dashboard_cache(request.user.id)
     if posthog_client is not None and count:
-        posthog_client.capture(
-            "record_archived",
-            properties={"via": "bulk", "bulk": True, "record_count": count},
-        )
+        posthog_client.capture("record_archived")
     return _bulk_response(request, count, verb="archived")
 
 

@@ -1,6 +1,6 @@
 """Tests for the OCR pipeline service.
 
-Covers get_cache_key, set_document_status, mark_ocr_failed,
+Covers get_cache_key, set_document_status,
 fetch_from_r2, and extract (with mocked Gemini).
 """
 
@@ -18,7 +18,6 @@ from documents.services.ocr import (
     MAX_OCR_RETRIES,
     extract,
     get_cache_key,
-    mark_ocr_failed,
     set_document_status,
 )
 
@@ -68,22 +67,6 @@ class TestSetDocumentStatus:
         set_document_status(doc.id, DocumentStatus.ERROR, ocr_error="timeout")
         doc.refresh_from_db()
         assert doc.ocr_error == "timeout"
-
-
-@pytest.mark.django_db
-class TestMarkOcrFailed:
-    def test_marks_document_error_and_caches_payload(self, user):
-        doc = DocumentData.objects.create(
-            user=user,
-            filepath="users/1/doc.pdf",
-            file_hash=_make_hash(),
-            status=DocumentStatus.PROCESSING,
-        )
-        mark_ocr_failed(doc.id, "Gemini timeout")
-        doc.refresh_from_db()
-        assert doc.status == DocumentStatus.ERROR
-        assert doc.ocr_error == "Gemini timeout"
-        assert "error" in cache.get(get_cache_key(doc.id))
 
 
 class TestRenderPdfPages:
@@ -141,9 +124,7 @@ class TestExtract:
     @patch("documents.services.ocr.validate_uploaded_bytes", return_value=None)
     @patch("documents.services.ocr.process_image")
     @patch("documents.services.ocr.call_gemini", return_value={"title": "Receipt"})
-    def test_full_pipeline_success(
-        self, mock_gemini, mock_process, mock_validate, mock_r2, user
-    ):
+    def test_full_pipeline_success(self, mock_gemini, mock_process, mock_validate, mock_r2, user):
         mock_part = MagicMock()
         mock_process.return_value = mock_part
         doc = DocumentData.objects.create(
@@ -169,9 +150,7 @@ class TestExtract:
         )
         result = extract(doc.id)
         assert "error" in result
-        assert (
-            "Unable to validate" in result["error"] or "not allowed" in result["error"]
-        )
+        assert "Unable to validate" in result["error"] or "not allowed" in result["error"]
         mock_gemini.assert_not_called()
         doc.refresh_from_db()
         assert doc.status == DocumentStatus.ERROR
@@ -194,9 +173,7 @@ class TestExtract:
         "documents.services.ocr.CurrentMessage.get_current_message",
         return_value=_retry_message(retries=0),
     )
-    def test_retryable_failure_reraises_without_marking_error(
-        self, mock_msg, mock_r2, user
-    ):
+    def test_retryable_failure_reraises_without_marking_error(self, mock_msg, mock_r2, user):
         doc = DocumentData.objects.create(
             user=user,
             filepath="users/1/doc.pdf",

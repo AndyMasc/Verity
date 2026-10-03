@@ -25,9 +25,7 @@ database_config = env.db("DATABASE_URL")
 if "sqlite" in database_config["ENGINE"]:
     database_config.setdefault("OPTIONS", {})["timeout"] = 30
 else:
-    database_config.setdefault("OPTIONS", {})["sslmode"] = env(
-        "DB_SSLMODE", default="require"
-    )
+    database_config.setdefault("OPTIONS", {})["sslmode"] = env("DB_SSLMODE", default="require")
     database_config.setdefault("OPTIONS", {})["connect_timeout"] = env.int(
         "DB_CONNECT_TIMEOUT", default=15
     )
@@ -43,9 +41,7 @@ DATABASES["default"].setdefault(
     "CONN_MAX_AGE",
     env.int("DB_CONN_MAX_AGE", default=0 if _is_neon else 600),
 )
-DATABASES["default"]["CONN_HEALTH_CHECKS"] = env.bool(
-    "DB_CONN_HEALTH_CHECKS", default=True
-)
+DATABASES["default"]["CONN_HEALTH_CHECKS"] = env.bool("DB_CONN_HEALTH_CHECKS", default=True)
 
 # Apps
 INSTALLED_APPS = [
@@ -222,9 +218,7 @@ AUTH_USER_MODEL = "billing.CustomUser"
 # Turnstile (Cloudflare CAPTCHA)
 TURNSTILE_SITEKEY = env("TURNSTILE_SITEKEY", default="0x4AAAAAAE-iMWMy2QJlviQc")
 TURNSTILE_SECRET = env("TURNSTILE_SECRET", default="")
-TURNSTILE_HOSTNAMES = env.list(
-    "TURNSTILE_HOSTNAMES", default=["localhost", "127.0.0.1"]
-)
+TURNSTILE_HOSTNAMES = env.list("TURNSTILE_HOSTNAMES", default=["localhost", "127.0.0.1"])
 TURNSTILE_ENABLED = env.bool("TURNSTILE_ENABLED", default=True)
 
 # Compressor
@@ -284,13 +278,9 @@ SESSION_COOKIE_AGE = 60 * 60 * 24 * 7
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
 # Email
-EMAIL_BACKEND = (
-    "core.backends.DramatiqEmailBackend"  # Queue email sends as background tasks
-)
+EMAIL_BACKEND = "core.backends.DramatiqEmailBackend"  # Queue email sends as background tasks
 ANYMAIL = {"RESEND_API_KEY": env("RESEND_API_KEY")}
-DEFAULT_FROM_EMAIL = env(
-    "DEFAULT_FROM_EMAIL", default="Verity <notifications@veritypay.app>"
-)
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="Verity <notifications@veritypay.app>")
 
 # Storage (S3/R2) - Uploads use signed urls in Cloudflare R2
 R2_ACCESS_KEY_ID = env("R2_ACCESS_KEY_ID")
@@ -448,9 +438,7 @@ FERNET_KEYS = [
 
 # Stripe
 STRIPE_SECRET_KEY = env("STRIPE_SECRET_KEY")
-STRIPE_LIVE_MODE = env.bool(
-    "STRIPE_LIVE_MODE", default=STRIPE_SECRET_KEY.startswith("sk_live_")
-)
+STRIPE_LIVE_MODE = env.bool("STRIPE_LIVE_MODE", default=STRIPE_SECRET_KEY.startswith("sk_live_"))
 STRIPE_PUBLISHABLE_KEY = env("STRIPE_PUBLISHABLE_KEY")
 DJSTRIPE_FOREIGN_KEY_TO_FIELD = env("DJSTRIPE_FOREIGN_KEY_TO_FIELD")
 DJSTRIPE_WEBHOOK_SECRET = env("STRIPE_WEBHOOK_SECRET", default="")

@@ -103,9 +103,7 @@ def add_subscription(user, customer, status="active", product_id=None):
         stripe_data={"status": status},
     )
     if product_id is not None:
-        product = Product.objects.create(
-            id=product_id, livemode=False, active=True, name="Test"
-        )
+        product = Product.objects.create(id=product_id, livemode=False, active=True, name="Test")
         price = Price.objects.create(
             id=f"price_{product_id}",
             livemode=False,

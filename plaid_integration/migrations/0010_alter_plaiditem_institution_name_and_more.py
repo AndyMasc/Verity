@@ -27,8 +27,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="plaiditem",
             name="next_cursor",
-            field=models.CharField(
-                blank=True, db_index=True, default="", max_length=255
-            ),
+            field=models.CharField(blank=True, db_index=True, default="", max_length=255),
         ),
     ]

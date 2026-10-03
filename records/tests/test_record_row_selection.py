@@ -16,9 +16,7 @@ from records.models import Record
 
 class RecordRowSelectionTest(TestCase):
     def setUp(self):
-        self.user = get_user_model().objects.create_user(
-            username="selector", password="p"
-        )
+        self.user = get_user_model().objects.create_user(username="selector", password="p")
         self.record = Record.objects.create(
             user=self.user,
             title="Row",
@@ -26,14 +24,10 @@ class RecordRowSelectionTest(TestCase):
             transaction_date=datetime.date(2024, 6, 15),
         )
         self.client.force_login(self.user)
-        self.html = self.client.get(
-            reverse("records:view_all_records")
-        ).content.decode()
+        self.html = self.client.get(reverse("records:view_all_records")).content.decode()
 
     def test_both_desktop_and_mobile_rows_render_a_checkbox(self):
-        boxes = re.findall(
-            r'<input\b[^>]*\btype="checkbox"[^>]*\bvalue="(\d+)"', self.html
-        )
+        boxes = re.findall(r'<input\b[^>]*\btype="checkbox"[^>]*\bvalue="(\d+)"', self.html)
         self.assertEqual(
             boxes.count(str(self.record.pk)),
             2,

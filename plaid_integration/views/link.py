@@ -60,9 +60,7 @@ def plaid_connect_page(request: Request) -> HttpResponse:
             "plaid/connect.html",
             {"plaid_items": [], "upgrade_required": True},
         )
-    plaid_items = PlaidItem.objects.filter(user=request.user).prefetch_related(
-        "records"
-    )
+    plaid_items = PlaidItem.objects.filter(user=request.user).prefetch_related("records")
     return render(request, "plaid/connect.html", {"plaid_items": plaid_items})
 
 
@@ -80,9 +78,7 @@ class CreateLinkTokenView(FeatureRequiredMixin, APIView):
             return Response({"link_token": response["link_token"]})
         except plaid.ApiException:
             logger.exception("Link token creation failed for user %s", request.user.id)
-            return Response(
-                {"error": "Failed to create link token with Plaid"}, status=400
-            )
+            return Response({"error": "Failed to create link token with Plaid"}, status=400)
 
 
 class CreateUpdateLinkTokenView(FeatureRequiredMixin, APIView):
@@ -106,9 +102,7 @@ class CreateUpdateLinkTokenView(FeatureRequiredMixin, APIView):
             return Response({"link_token": response["link_token"]})
         except plaid.ApiException:
             logger.exception("Update link token creation failed for item %s", item_id)
-            return Response(
-                {"error": "Failed to create update token with Plaid"}, status=400
-            )
+            return Response({"error": "Failed to create update token with Plaid"}, status=400)
 
 
 class PublicTokenExchange(FeatureRequiredMixin, APIView):
@@ -141,27 +135,11 @@ class PublicTokenExchange(FeatureRequiredMixin, APIView):
             trigger_initial_sync(plaid_item)
             cache.delete(f"plaid_status:{request.user.id}")
             if posthog_client is not None:
-                posthog_client.capture(
-                    "bank_linked",
-                    properties={
-                        "institution_name": institution_name,
-                        "account_count": len(accounts_data),
-                    },
-                )
+                posthog_client.capture("bank_linked")
 
-            return Response(
-                {"success": "Bank linked successfully! Syncing transactions…"}
-            )
-        except Exception as exc:
-            logger.exception(
+            return Response({"success": "Bank linked successfully! Syncing transactions…"})
+        except Exception:
+            logger.exception(  # Logger automatically captures exception details and forwards to Posthog.
                 "Failed to exchange public token for user %s", request.user.id
             )
-            if posthog_client is not None:
-                posthog_client.capture(
-                    "bank_link_failed",
-                    properties={
-                        "error_type": type(exc).__name__,
-                        "provider": "plaid",
-                    },
-                )
             return Response({"error": "Failed to exchange token"}, status=400)

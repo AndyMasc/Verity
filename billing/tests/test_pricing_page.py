@@ -60,12 +60,8 @@ class CheckoutCancelUrlTests(TestCase):
 
         with (
             mock.patch("billing.views._validated_price", return_value="price_pro"),
-            mock.patch(
-                "billing.views.Customer.get_or_create", return_value=(customer, True)
-            ),
-            mock.patch(
-                "billing.services.customer_missing_in_stripe", return_value=False
-            ),
+            mock.patch("billing.views.Customer.get_or_create", return_value=(customer, True)),
+            mock.patch("billing.services.customer_missing_in_stripe", return_value=False),
             mock.patch(
                 "billing.services.create_checkout_session",
                 return_value=FakeSession(),
@@ -77,6 +73,4 @@ class CheckoutCancelUrlTests(TestCase):
 
         self.assertEqual(response.status_code, 302)
         cancel_url = create_session.call_args.kwargs["cancel_url"]
-        self.assertTrue(
-            cancel_url.endswith(reverse("pricing_page") + "?checkout=canceled")
-        )
+        self.assertTrue(cancel_url.endswith(reverse("pricing_page") + "?checkout=canceled"))

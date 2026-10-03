@@ -134,9 +134,7 @@ class ProfilePageViewTest(TestCase):
 class ExpenseChartDataTest(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(username="testuser", password="pass")
-        UserSettings.objects.update_or_create(
-            user=self.user, defaults={"default_currency": "usd"}
-        )
+        UserSettings.objects.update_or_create(user=self.user, defaults={"default_currency": "usd"})
 
     def test_excludes_soft_deleted_records_from_totals(self):
         self.client.force_login(self.user)
@@ -159,9 +157,7 @@ class ExpenseChartDataTest(TestCase):
         )
         merged_away.delete()
 
-        response = self.client.get(
-            reverse("core:expense_chart_data"), {"period": "all"}
-        )
+        response = self.client.get(reverse("core:expense_chart_data"), {"period": "all"})
         self.assertEqual(response.status_code, 200)
         total = sum(month["total"] for month in response.json()["months"])
         self.assertEqual(total, 100.00)
@@ -177,9 +173,7 @@ class ExpenseChartDataTest(TestCase):
             balance=Decimal("25.50"),
             currency="usd",
         )
-        response = self.client.get(
-            reverse("core:expense_chart_data"), {"period": "all"}
-        )
+        response = self.client.get(reverse("core:expense_chart_data"), {"period": "all"})
         total = sum(month["total"] for month in response.json()["months"])
         self.assertEqual(total, 25.50)
 
@@ -188,9 +182,7 @@ class DashboardMonthlyExpensesTest(TestCase):
     def setUp(self):
         cache.clear()
         self.user = User.objects.create_user(username="testuser", password="pass")
-        UserSettings.objects.update_or_create(
-            user=self.user, defaults={"default_currency": "usd"}
-        )
+        UserSettings.objects.update_or_create(user=self.user, defaults={"default_currency": "usd"})
 
     def test_monthly_expenses_exclude_soft_deleted_records(self):
         self.client.force_login(self.user)
@@ -216,9 +208,7 @@ class DashboardMonthlyExpensesTest(TestCase):
         response = self.client.get(reverse("core:dashboard"))
         self.assertEqual(response.status_code, 200)
         monthly_expenses = next(
-            m["value"]
-            for m in response.context["metrics"]
-            if m["label"].endswith("Expenses")
+            m["value"] for m in response.context["metrics"] if m["label"].endswith("Expenses")
         )
         self.assertEqual(float(monthly_expenses), 50.00)
 
@@ -235,17 +225,13 @@ class NotificationViewsTest(TestCase):
 
     def test_delete_accepts_post(self):
         notification = self._notification()
-        response = self.client.post(
-            reverse("core:notification-delete", args=[notification.id])
-        )
+        response = self.client.post(reverse("core:notification-delete", args=[notification.id]))
         self.assertEqual(response.status_code, 302)
         self.assertFalse(Notification.objects.filter(pk=notification.pk).exists())
 
     def test_delete_requires_post(self):
         notification = self._notification()
-        response = self.client.get(
-            reverse("core:notification-delete", args=[notification.id])
-        )
+        response = self.client.get(reverse("core:notification-delete", args=[notification.id]))
         self.assertEqual(response.status_code, 405)
         self.assertTrue(Notification.objects.filter(pk=notification.pk).exists())
 
@@ -255,7 +241,5 @@ class NotificationViewsTest(TestCase):
         response = self.client.post(reverse("core:notification-mark-all-read"))
         self.assertRedirects(response, reverse("core:notifications"))
         self.assertFalse(
-            Notification.objects.filter(
-                pk__in=[first.pk, second.pk], is_read=False
-            ).exists()
+            Notification.objects.filter(pk__in=[first.pk, second.pk], is_read=False).exists()
         )

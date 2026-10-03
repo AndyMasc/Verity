@@ -28,9 +28,7 @@ _FAKE_SESSION = SimpleNamespace(
 )
 
 
-@unittest.skipUnless(
-    connection.vendor == "postgresql", "requires PostgreSQL (select_for_update)"
-)
+@unittest.skipUnless(connection.vendor == "postgresql", "requires PostgreSQL (select_for_update)")
 class CheckoutClaimConcurrencyTest(TransactionTestCase):
     """Two simultaneous checkouts for one open package."""
 
@@ -78,8 +76,7 @@ class CheckoutClaimConcurrencyTest(TransactionTestCase):
             ),
         ):
             threads = [
-                threading.Thread(target=attempt, args=(i,), name=f"checkout-{i}")
-                for i in range(2)
+                threading.Thread(target=attempt, args=(i,), name=f"checkout-{i}") for i in range(2)
             ]
             for t in threads:
                 t.start()
@@ -87,9 +84,7 @@ class CheckoutClaimConcurrencyTest(TransactionTestCase):
                 t.join(timeout=20)
 
         for i, outcome in enumerate(outcomes):
-            self.assertNotIsInstance(
-                outcome, Exception, f"thread {i} crashed: {outcome!r}"
-            )
+            self.assertNotIsInstance(outcome, Exception, f"thread {i} crashed: {outcome!r}")
             self.assertIsNotNone(outcome, f"thread {i} produced no result")
         return outcomes, mock_create
 
@@ -146,9 +141,7 @@ class CheckoutRetryAfterStripeFailureTest(TestCase):
         self.assertEqual(PackagePayment.objects.count(), 0)
 
         mock_create.side_effect = None
-        mock_create.return_value = SimpleNamespace(
-            id="cs_retry_ok", url="https://pay/ok"
-        )
+        mock_create.return_value = SimpleNamespace(id="cs_retry_ok", url="https://pay/ok")
         second = services.create_package_checkout(
             package=self.pkg,
             payer=self.payer,

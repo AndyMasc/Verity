@@ -37,9 +37,7 @@ def pricing_page(request: HttpRequest) -> HttpResponse:
             request,
             "Checkout canceled. You were not charged. Select a plan to try again.",
         )
-    return render(
-        request, "billing/pricing_page.html", services.pricing_context(request.user)
-    )
+    return render(request, "billing/pricing_page.html", services.pricing_context(request.user))
 
 
 @login_required
@@ -70,9 +68,7 @@ def subscription_confirm(request: HttpRequest) -> HttpResponse:
         return HttpResponseBadRequest("Invalid session payload.")
 
     djstripe_subscription = Subscription.sync_from_stripe_data(subscription)
-    overlaps_cleared = subscription_holder.handle_new_subscription(
-        djstripe_subscription
-    )
+    overlaps_cleared = subscription_holder.handle_new_subscription(djstripe_subscription)
     if posthog_client is not None:
         posthog_client.capture(
             "subscription_activated",
@@ -98,9 +94,7 @@ def create_portal_session(request: HttpRequest) -> HttpResponse:
     user = cast(CustomUser, request.user)
     customer = user.customer
     if customer is None:
-        return HttpResponseBadRequest(
-            "No Stripe customer associated with this account."
-        )
+        return HttpResponseBadRequest("No Stripe customer associated with this account.")
 
     portal_session = services.create_billing_portal_session(
         customer=customer.id,
@@ -151,12 +145,8 @@ def _checkout_quantity(raw_qty: str | None, max_quantity: int = 100) -> int:
 def create_checkout_session(request: HttpRequest) -> HttpResponse:
     user = cast(CustomUser, request.user)
 
-    base_price_id = _validated_price(
-        request.POST.get("base_price_id"), "base_plan", user
-    )
-    storage_price_id = _validated_price(
-        request.POST.get("storage_price_id"), "storage_plan", user
-    )
+    base_price_id = _validated_price(request.POST.get("base_price_id"), "base_plan", user)
+    storage_price_id = _validated_price(request.POST.get("storage_price_id"), "storage_plan", user)
 
     if not base_price_id and not storage_price_id:
         return HttpResponseBadRequest("Select a valid plan to proceed to checkout.")
@@ -186,9 +176,7 @@ def create_checkout_session(request: HttpRequest) -> HttpResponse:
         # get_or_create may return a stale row whose Stripe record was deleted;
         # unlink it so a brand-new customer is created instead.
         if services.customer_missing_in_stripe(customer.id):
-            Customer.objects.filter(id=customer.id, subscriber=user).update(
-                subscriber=None
-            )
+            Customer.objects.filter(id=customer.id, subscriber=user).update(subscriber=None)
             customer, _ = Customer.get_or_create(user)
         if user.customer_id != customer.id:
             user.customer = customer
@@ -205,8 +193,7 @@ def create_checkout_session(request: HttpRequest) -> HttpResponse:
             client_reference_id=str(user.pk),
             success_url=request.build_absolute_uri(reverse("subscription_confirm"))
             + "?session_id={CHECKOUT_SESSION_ID}",
-            cancel_url=request.build_absolute_uri(reverse("pricing_page"))
-            + "?checkout=canceled",
+            cancel_url=request.build_absolute_uri(reverse("pricing_page")) + "?checkout=canceled",
         )
         if posthog_client is not None:
             posthog_client.capture(

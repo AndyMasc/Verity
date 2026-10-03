@@ -19,7 +19,7 @@ from ..webhooks import (
     clear_cancel_intent,
     mark_cancel_intent,
     read_cancel_intent,
-    _capture_subscription_cancelled,
+    capture_subscription_cancelled,
     handle_subscription_changed,
     handle_subscription_deleted,
 )
@@ -70,38 +70,32 @@ class CancellationCaptureTests(TestCase):
         )
 
     def _captured(self, sub_id: str, stripe_sub: dict | None = None):
-        with mock.patch("billing.webhooks._capture") as capture:
-            _capture_subscription_cancelled(sub_id, stripe_sub)
-        return {call.args[0]: call.args[2] for call in capture.call_args_list}
+        with mock.patch("billing.webhooks.capture") as capture:
+            capture_subscription_cancelled(sub_id, stripe_sub)
+        return {call.args[0]: call.kwargs["properties"] for call in capture.call_args_list}
 
-    def test_base_plan_only_emits_base_event(self):
+    def test_base_plan_only_is_marked_base(self):
         self._add_item("sub_base", metadata.VERITY_PRO)
         events = self._captured("sub_base")
-        self.assertEqual(set(events), {"base_subscription_cancelled"})
-        self.assertEqual(events["base_subscription_cancelled"]["plan"], "Verity Pro")
-        self.assertTrue(events["base_subscription_cancelled"]["includes_base_plan"])
-        self.assertFalse(events["base_subscription_cancelled"]["includes_storage_plan"])
+        self.assertEqual(set(events), {"subscription_cancelled"})
+        self.assertEqual(events["subscription_cancelled"]["plan_types"], ["base_plan"])
 
     def test_addon_only_emits_addon_event(self):
         """Add-on cancellations used to be dropped by the base-plan gate."""
-        addon = next(
-            m for m in metadata.PRODUCTS.values() if m.category == "storage_plan"
-        )
+        addon = next(m for m in metadata.PRODUCTS.values() if m.category == "storage_plan")
         self._add_item("sub_addon", addon)
         events = self._captured("sub_addon")
-        self.assertEqual(set(events), {"addon_subscription_cancelled"})
-        self.assertTrue(events["addon_subscription_cancelled"]["includes_storage_plan"])
-        self.assertFalse(events["addon_subscription_cancelled"]["includes_base_plan"])
+        self.assertEqual(set(events), {"subscription_cancelled"})
+        self.assertEqual(events["subscription_cancelled"]["plan_types"], ["storage_plan"])
 
-    def test_combined_subscription_emits_both(self):
+    def test_combined_subscription_lists_both_plan_types(self):
         self._add_item("sub_both", metadata.VERITY_PRO)
-        addon = next(
-            m for m in metadata.PRODUCTS.values() if m.category == "storage_plan"
-        )
+        addon = next(m for m in metadata.PRODUCTS.values() if m.category == "storage_plan")
         self._add_item("sub_both", addon)
         events = self._captured("sub_both")
         self.assertEqual(
-            set(events), {"base_subscription_cancelled", "addon_subscription_cancelled"}
+            events["subscription_cancelled"]["plan_types"],
+            ["base_plan", "storage_plan"],
         )
 
     def test_system_cancellation_is_not_churn(self):
@@ -115,12 +109,8 @@ class CancellationCaptureTests(TestCase):
         self._add_item("sub_ct", metadata.VERITY_PRO)
         mark_cancel_intent("sub_ct", "period_end")
         self.addCleanup(clear_cancel_intent, "sub_ct")
-        events = self._captured(
-            "sub_ct", {"id": "sub_ct", "cancel_at_period_end": False}
-        )
-        self.assertEqual(
-            events["base_subscription_cancelled"]["cancel_type"], "period_end"
-        )
+        events = self._captured("sub_ct", {"id": "sub_ct", "cancel_at_period_end": False})
+        self.assertEqual(events["subscription_cancelled"]["cancel_type"], "period_end")
 
 
 class CancellationDedupeTests(TestCase):
@@ -160,7 +150,7 @@ class CancellationDedupeTests(TestCase):
         self.addCleanup(clear_cancel_intent, "sub_dedupe")
 
     def test_scheduled_cancellation_recorded_at_intent(self):
-        with mock.patch("billing.webhooks._capture_subscription_cancelled") as capture:
+        with mock.patch("billing.webhooks.capture_subscription_cancelled") as capture:
             handle_subscription_changed(
                 event=mock.Mock(
                     data={
@@ -177,7 +167,7 @@ class CancellationDedupeTests(TestCase):
 
     def test_deletion_does_not_repeat_a_recorded_cancellation(self):
         mark_cancel_intent("sub_dedupe", "period_end")
-        with mock.patch("billing.webhooks._capture_subscription_cancelled") as capture:
+        with mock.patch("billing.webhooks.capture_subscription_cancelled") as capture:
             handle_subscription_deleted(
                 event=mock.Mock(
                     data={
@@ -192,7 +182,7 @@ class CancellationDedupeTests(TestCase):
         capture.assert_not_called()
 
     def test_immediate_cancellation_still_recorded(self):
-        with mock.patch("billing.webhooks._capture_subscription_cancelled") as capture:
+        with mock.patch("billing.webhooks.capture_subscription_cancelled") as capture:
             handle_subscription_deleted(
                 event=mock.Mock(
                     data={

@@ -92,9 +92,7 @@ def send_verification_code(package: ReimbursementPackage, email: str) -> bool:
     return True
 
 
-def verify_code(
-    package: ReimbursementPackage, email: str, code: str
-) -> tuple[bool, str | None]:
+def verify_code(package: ReimbursementPackage, email: str, code: str) -> tuple[bool, str | None]:
     """Validate a submitted code against the latest issued one.
 
     Returns "(True, None)" on success or "(False, user-facing error)".

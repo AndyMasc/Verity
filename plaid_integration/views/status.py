@@ -41,9 +41,7 @@ class PlaidStatusView(APIView):
             return Response(cached)
 
         plaid_items = list(
-            PlaidItem.objects.filter(user=request.user).annotate(
-                record_count=Count("records")
-            )
+            PlaidItem.objects.filter(user=request.user).annotate(record_count=Count("records"))
         )
 
         data = {
@@ -51,9 +49,7 @@ class PlaidStatusView(APIView):
             "items": [
                 {
                     "item_id": item.item_id,
-                    "created_at": (
-                        item.created_at.isoformat() if item.created_at else None
-                    ),
+                    "created_at": (item.created_at.isoformat() if item.created_at else None),
                     "has_cursor": bool(item.next_cursor),
                     "record_count": item.record_count,
                     "account_name": item.institution_name,
@@ -103,9 +99,7 @@ class SyncTransactionsView(APIView):
                     "Failed to fire Plaid sandbox webhook for item %s",
                     plaid_item.item_id,
                 )
-                return Response(
-                    {"error": "Failed to trigger sync via Plaid"}, status=502
-                )
+                return Response({"error": "Failed to trigger sync via Plaid"}, status=502)
         else:
             # Route through the atomic per-item cooldown so a user hammering
             # this button cannot overlap an in-flight webhook or periodic sync

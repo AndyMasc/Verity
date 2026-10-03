@@ -46,9 +46,7 @@ class RecordSharingSectionView(LoginRequiredMixin, View):
         can_share_feature = _can_grant_shares(request.user)
         context = {
             "record": record,
-            "shares": share_services.shares_for_viewer(
-                record=record, viewer=request.user
-            ),
+            "shares": share_services.shares_for_viewer(record=record, viewer=request.user),
             "can_grant": can_share_feature and is_owner,
             "can_share_feature": can_share_feature,
             "is_recipient": not is_owner
@@ -70,9 +68,7 @@ class BulkShareView(LoginRequiredMixin, View):
     @method_decorator(ratelimit(key="user", rate="10/m", method="POST", block=True))
     def post(self, request: HttpRequest) -> HttpResponse:
         if not _can_grant_shares(request.user):
-            return JsonResponse(
-                {"error": "Record sharing requires the Pro plan"}, status=403
-            )
+            return JsonResponse({"error": "Record sharing requires the Pro plan"}, status=403)
 
         record_ids, error = parse_record_ids(request)
         if error:
@@ -85,9 +81,7 @@ class BulkShareView(LoginRequiredMixin, View):
 
         emails = [e.strip() for e in body.get("emails", "").split(",") if e.strip()]
         if not emails:
-            return JsonResponse(
-                {"error": "At least one recipient email is required."}, status=400
-            )
+            return JsonResponse({"error": "At least one recipient email is required."}, status=400)
 
         permission = body.get("permission", RecordShare.Permission.EDIT)
         if permission not in RecordShare.Permission.values:
@@ -98,9 +92,7 @@ class BulkShareView(LoginRequiredMixin, View):
             include_documents=include_documents,
         )
 
-        owned = list(
-            Record.objects.filter(pk__in=record_ids, user=request.user).distinct()
-        )
+        owned = list(Record.objects.filter(pk__in=record_ids, user=request.user).distinct())
         if not owned:
             return JsonResponse(
                 {"error": "None of the selected records can be shared."}, status=403
@@ -125,33 +117,23 @@ class BulkShareView(LoginRequiredMixin, View):
 
         # One notification per recipient covering everything they were granted,
         # rather than one email per record.
-        share_services.notify_share_recipients(
-            shares=granted_shares, actor=request.user
-        )
+        share_services.notify_share_recipients(shares=granted_shares, actor=request.user)
 
         total_shares = len(granted_shares)
 
         if total_shares and posthog_client is not None:
-            # One record keeps the original record_shared event so the existing
-            # single-share funnel stays intact; several keep the bulk event.
-            if len(owned) == 1:
-                posthog_client.capture(
-                    "record_shared",
-                    properties={
-                        "recipient_count": len(recipients),
-                        "permission": permission,
-                        "includes_documents": include_documents,
-                    },
-                )
-            else:
-                posthog_client.capture(
-                    "records_shared_in_bulk",
-                    properties={
-                        "record_count": len(owned),
-                        "recipient_count": len(recipients),
-                        "share_count": total_shares,
-                    },
-                )
+            # One event whatever the size, with record_count carrying how many
+            # went out, so single and bulk shares are one signal to compare.
+            posthog_client.capture(
+                "record_shared",
+                properties={
+                    "record_count": len(owned),
+                    "recipient_count": len(recipients),
+                    "permission": permission,
+                    "includes_documents": include_documents,
+                },
+            )
+
         return JsonResponse(
             {
                 "success": True,

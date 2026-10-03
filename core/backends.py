@@ -27,11 +27,7 @@ class DramatiqEmailBackend(BaseEmailBackend):
         sent_count = 0
         for message in email_messages:
             html_message = next(
-                (
-                    content
-                    for content, mimetype in message.alternatives
-                    if mimetype == "text/html"
-                ),
+                (content for content, mimetype in message.alternatives if mimetype == "text/html"),
                 None,
             )
 

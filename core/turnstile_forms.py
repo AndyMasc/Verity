@@ -43,9 +43,7 @@ class TurnstileProtectedForm(forms.Form):
 
         result = verify_turnstile_token(token, self.turnstile_action, self.request)
         if not result.get("success"):
-            logger.warning(
-                "Turnstile %s verification failed: %s", self.turnstile_action, result
-            )
+            logger.warning("Turnstile %s verification failed: %s", self.turnstile_action, result)
             raise forms.ValidationError(
                 result.get("message", "Bot verification failed. Please try again."),
                 code="turnstile_failed",

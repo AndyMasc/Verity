@@ -99,9 +99,7 @@ def calculate_match_score(record_a: Record, record_b: Record) -> int:
         _MERCHANT_BANDS,
         at_least=True,
     )
-    score += _band_score(
-        _similarity(record_a.title, record_b.title), _TITLE_BANDS, at_least=True
-    )
+    score += _band_score(_similarity(record_a.title, record_b.title), _TITLE_BANDS, at_least=True)
 
     return score
 
@@ -132,9 +130,9 @@ def _candidates(source: Record, *, candidates_are_plaid: bool) -> QuerySet[Recor
 
 def _scored_candidates(source: Record, *, candidates_are_plaid: bool):
     """Yield "(candidate, score)" for every plausible match partner of "source"."""
-    for candidate in _candidates(
-        source, candidates_are_plaid=candidates_are_plaid
-    ).iterator(chunk_size=500):
+    for candidate in _candidates(source, candidates_are_plaid=candidates_are_plaid).iterator(
+        chunk_size=500
+    ):
         yield candidate, calculate_match_score(source, candidate)
 
 
@@ -166,9 +164,7 @@ def find_document_matches_for_plaid(plaid_record: Record) -> list[tuple[Record, 
     """
     matches = [
         (candidate, score)
-        for candidate, score in _scored_candidates(
-            plaid_record, candidates_are_plaid=False
-        )
+        for candidate, score in _scored_candidates(plaid_record, candidates_are_plaid=False)
         if score >= MERGE_SCORE_THRESHOLD
     ]
     matches.sort(key=lambda pair: -pair[1])
@@ -199,9 +195,7 @@ def _restore_plaid_from_snapshot(locked_plaid: Record, snap: dict) -> None:
     locked_plaid._skip_auto_match = True
     locked_plaid.products = snap.get("products", "")
     locked_plaid.notes = snap.get("notes", "")
-    locked_plaid.record_type = snap.get(
-        "record_type", Record.RecordTypes.FINANCIAL_DOCUMENT
-    )
+    locked_plaid.record_type = snap.get("record_type", Record.RecordTypes.FINANCIAL_DOCUMENT)
     locked_plaid.folder_id = snap.get("folder_id")
     locked_plaid.payment_method = snap.get("payment_method", "")
     locked_plaid.save(update_fields=PLAID_RESTORE_FIELDS)
@@ -311,9 +305,7 @@ def undo_merge(merge_log: MergeLog) -> Record | None:
 
     doc_ids = merge_log.document_snapshot.get("document_ids")
     if doc_ids:
-        DocumentData.objects.filter(pk__in=doc_ids).update(
-            associated_record=document_record
-        )
+        DocumentData.objects.filter(pk__in=doc_ids).update(associated_record=document_record)
     elif merge_log.document and document_record:
         merge_log.document.associated_record = document_record
         merge_log.document.save(update_fields=["associated_record"])
