@@ -82,9 +82,7 @@ urlpatterns = [
         views.ManualMergeModalView.as_view(),
         name="manual_merge_modal",
     ),
-    path(
-        "merges/<int:merge_id>/undo/", views.UndoMergeView.as_view(), name="undo_merge"
-    ),
+    path("merges/<int:merge_id>/undo/", views.UndoMergeView.as_view(), name="undo_merge"),
     path(
         "hard-delete/<int:pk>/",
         views.HardDeleteRecordView.as_view(),

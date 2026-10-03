@@ -65,9 +65,7 @@ def create_billing_portal_session(
 ) -> stripe.billing_portal.Session:
     """Create a Stripe billing portal session."""
     _configure()
-    return stripe.billing_portal.Session.create(
-        customer=customer, return_url=return_url
-    )
+    return stripe.billing_portal.Session.create(customer=customer, return_url=return_url)
 
 
 def cancel_subscription(subscription_id: str) -> None:
@@ -106,9 +104,7 @@ def _checkout_price_id(product: Product) -> str | None:
     candidates = [
         price
         for price in product.prices.all()
-        if price.active
-        and price.recurring
-        and price.recurring.get("interval") == "month"
+        if price.active and price.recurring and price.recurring.get("interval") == "month"
     ]
     if not candidates:
         return None
@@ -139,15 +135,11 @@ def pricing_context(user) -> dict:
     live = djstripe_settings.STRIPE_LIVE_MODE
     products = list(
         Product.objects.filter(active=True, livemode=live).prefetch_related(
-            Prefetch(
-                "prices", queryset=Price.objects.filter(active=True, livemode=live)
-            )
+            Prefetch("prices", queryset=Price.objects.filter(active=True, livemode=live))
         )
     )
     base_plan = metadata.plan_for_user(user)
-    held_product_ids = {
-        meta.stripe_id for meta in metadata.active_products_for_user(user)
-    }
+    held_product_ids = {meta.stripe_id for meta in metadata.active_products_for_user(user)}
 
     for product in products:
         _decorate_product_for_pricing(
@@ -166,9 +158,7 @@ def pricing_context(user) -> dict:
     return {
         "products": products,
         "free_plan": free_plan,
-        "has_active_subscription": bool(
-            user.is_authenticated and user.has_active_subscription
-        ),
+        "has_active_subscription": bool(user.is_authenticated and user.has_active_subscription),
         "base_plans": [p for p in products if p.category == "base_plan"],
         "storage_plans": [p for p in products if p.category == "storage_plan"],
     }

@@ -172,9 +172,7 @@ class RetentionAndHardDeleteTests(TestCase):
     ):
         from records.tasks import delete_7year_archived_records
 
-        old_archived = aged_record(
-            self.user, "Old archived", 365 * 7 + 1, is_active=False
-        )
+        old_archived = aged_record(self.user, "Old archived", 365 * 7 + 1, is_active=False)
 
         with patch("documents.tasks.delete_document.send"):
             delete_7year_archived_records()
@@ -248,9 +246,7 @@ class PlaidWebhookSyncTests(TestCase):
             headers={"kid": "kid-1"},
         )
 
-    def post_webhook(
-        self, code="SYNC_UPDATES_AVAILABLE", item_id="item-1", verify=True
-    ):
+    def post_webhook(self, code="SYNC_UPDATES_AVAILABLE", item_id="item-1", verify=True):
         body = json.dumps(
             {
                 "webhook_type": "TRANSACTIONS",
@@ -335,9 +331,7 @@ class PlaidWebhookSyncTests(TestCase):
         self.assertEqual(self.item.next_cursor, "cursor-1")
 
     def test_login_required_webhook_records_the_error_without_retrying(self):
-        body = json.dumps(
-            {"error_code": "ITEM_LOGIN_REQUIRED", "error_message": "Login required."}
-        )
+        body = json.dumps({"error_code": "ITEM_LOGIN_REQUIRED", "error_message": "Login required."})
 
         def run_sync_now(item):
             from plaid_integration.tasks import sync_and_convert_for_item_task
@@ -394,9 +388,7 @@ class ReimbursementMoneyFlowTests(TestCase):
         from reimbursements import services
 
         with patch("reimbursements.services.create_checkout_session") as create:
-            create.return_value = type(
-                "Session", (), {"id": "cs_1", "url": "https://pay.test/1"}
-            )()
+            create.return_value = type("Session", (), {"id": "cs_1", "url": "https://pay.test/1"})()
             outcome = services.create_package_checkout(
                 package=self.package,
                 payer=self.payer,
@@ -435,13 +427,10 @@ class ReimbursementMoneyFlowTests(TestCase):
         self.assertEqual(intent["application_fee_amount"], EXPECTED_FEE_CENTS)
 
         total = sum(
-            item["price_data"]["unit_amount"] * item["quantity"]
-            for item in kwargs["line_items"]
+            item["price_data"]["unit_amount"] * item["quantity"] for item in kwargs["line_items"]
         )
         self.assertEqual(total, 10_000)
-        self.assertEqual(
-            total - intent["application_fee_amount"], EXPECTED_CREATOR_CENTS
-        )
+        self.assertEqual(total - intent["application_fee_amount"], EXPECTED_CREATOR_CENTS)
 
     def test_marking_paid_marks_records_reimbursed_and_credits_the_payer(self):
         self.package.mark_as_paid(self.payer)

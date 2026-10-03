@@ -173,9 +173,7 @@ def grant_shares(
     for user in recipients:
         if user.pk == record.user_id:
             continue
-        share, granted_now = grant_access(
-            record=record, user=user, requester=owner, config=config
-        )
+        share, granted_now = grant_access(record=record, user=user, requester=owner, config=config)
         if granted_now:
             granted.append(share)
     return granted

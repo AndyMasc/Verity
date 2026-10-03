@@ -28,8 +28,6 @@ class Migration(migrations.Migration):
         ),
         migrations.AddIndex(
             model_name="documentdata",
-            index=models.Index(
-                fields=["status", "date_added"], name="idx_doc_reconcile_error"
-            ),
+            index=models.Index(fields=["status", "date_added"], name="idx_doc_reconcile_error"),
         ),
     ]

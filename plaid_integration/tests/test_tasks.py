@@ -118,9 +118,7 @@ class WebhookVerificationTest(TestCase):
 
         (url,) = post.call_args.args
         self.assertEqual(url, "https://sandbox.plaid.com/webhook_verification_key/get")
-        self.assertEqual(
-            set(post.call_args.kwargs["json"]), {"client_id", "secret", "key_id"}
-        )
+        self.assertEqual(set(post.call_args.kwargs["json"]), {"client_id", "secret", "key_id"})
 
     @patch("plaid_integration.views.webhook.requests.post")
     def test_the_tokens_kid_is_sent_as_key_id(self, post):
@@ -145,9 +143,7 @@ class WebhookVerificationTest(TestCase):
         rotated = ec.generate_private_key(ec.SECP256R1())
         post.return_value.json.return_value = {"key": plaid_jwk(rotated, "kid-2")}
         self.assertTrue(
-            verify_plaid_webhook(
-                b"body", self._token(b"body", kid="kid-2", key=rotated)
-            )
+            verify_plaid_webhook(b"body", self._token(b"body", kid="kid-2", key=rotated))
         )
         self.assertEqual(post.call_count, 2)
 
@@ -156,9 +152,7 @@ class WebhookVerificationTest(TestCase):
         with patch("plaid_integration.views.webhook.requests.post") as refetch:
             self.assertTrue(verify_plaid_webhook(b"body", self._token(b"body")))
             self.assertTrue(
-                verify_plaid_webhook(
-                    b"body", self._token(b"body", kid="kid-2", key=rotated)
-                )
+                verify_plaid_webhook(b"body", self._token(b"body", kid="kid-2", key=rotated))
             )
         self.assertEqual(refetch.call_count, 0)
 
@@ -303,9 +297,7 @@ class SyncAndConvertTaskTest(TestCase):
         self.assertEqual(result, {"error": "ITEM_LOGIN_REQUIRED"})
         self.plaid_item.refresh_from_db()
         self.assertEqual(self.plaid_item.last_error_code, "ITEM_LOGIN_REQUIRED")
-        self.assertEqual(
-            self.plaid_item.last_error_message, "A user login is required."
-        )
+        self.assertEqual(self.plaid_item.last_error_message, "A user login is required.")
 
     @patch("plaid_integration.tasks.try_match_plaid_record")
     @patch("plaid_integration.tasks.client")

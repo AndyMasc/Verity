@@ -71,16 +71,12 @@ class WebhookProbeSafetyTest(TestCase):
         )
 
         self.assertEqual(response.status_code, 400)  # missing stripe-signature
-        self.assertFalse(
-            ProcessedStripeEvent.objects.filter(event_id="evt_probe").exists()
-        )
+        self.assertFalse(ProcessedStripeEvent.objects.filter(event_id="evt_probe").exists())
         self.package_untouched()
 
     def test_get_probe_on_stripe_returns_405_but_proves_app_is_alive(self):
         """A GET-only monitor still works: any HTTP response means 'up'."""
-        response = self.client.get(
-            "/stripe/webhook/00000000-0000-0000-0000-000000000000/"
-        )
+        response = self.client.get("/stripe/webhook/00000000-0000-0000-0000-000000000000/")
         self.assertIn(response.status_code, (400, 404, 405, 500))
         self.assertIsNotNone(response.status_code)  # Django answered = app alive
 

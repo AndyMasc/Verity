@@ -35,9 +35,7 @@ class RecordFilter(django_filters.FilterSet):
     is_active = django_filters.BooleanFilter(
         field_name="is_active",
         lookup_expr="exact",
-        widget=forms.Select(
-            choices=[(None, "All"), (True, "Active"), (False, "Archived")]
-        ),
+        widget=forms.Select(choices=[(None, "All"), (True, "Active"), (False, "Archived")]),
     )
 
     record_type = django_filters.ChoiceFilter(
@@ -83,9 +81,7 @@ class RecordFilter(django_filters.FilterSet):
                 user_folders = cache.get(cache_key)
                 if user_folders is None:
                     user_folders = list(
-                        Folder.objects.filter(user=self.request.user).values_list(
-                            "id", "name"
-                        )
+                        Folder.objects.filter(user=self.request.user).values_list("id", "name")
                     )
                     cache.set(cache_key, user_folders, FILTER_CHOICES_CACHE_TTL)
                 folder_filter.extra["choices"] = [
@@ -106,9 +102,7 @@ class RecordFilter(django_filters.FilterSet):
             all_choices = Record.RecordTypes.choices
             if user_record_types:
                 filtered = [
-                    (value, label)
-                    for value, label in all_choices
-                    if value in user_record_types
+                    (value, label) for value, label in all_choices if value in user_record_types
                 ]
             else:
                 filtered = list(all_choices)
@@ -182,7 +176,5 @@ class RecordFilter(django_filters.FilterSet):
         """
         if value:
             user = self.request.user
-            return queryset.filter(
-                Q(shares__user=user) | Q(shares__shared_by=user)
-            ).distinct()
+            return queryset.filter(Q(shares__user=user) | Q(shares__shared_by=user)).distinct()
         return queryset

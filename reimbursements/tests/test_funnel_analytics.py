@@ -31,9 +31,7 @@ class _CaptureMixin:
         captured = []
 
         def _capture(event, *args, **kwargs):
-            captured.append(
-                (event, kwargs.get("distinct_id"), kwargs.get("properties") or {})
-            )
+            captured.append((event, kwargs.get("distinct_id"), kwargs.get("properties") or {}))
 
         for target in (
             "core.apps.posthog_client",
@@ -120,31 +118,51 @@ class RecipientPaidCaptureTests(_CaptureMixin, TestCase):
         )
 
 
-class PayPageViewedTests(_CaptureMixin, TestCase):
+class PackageDetailViewedTests(_CaptureMixin, TestCase):
+    """The package detail page captures in the browser, not on the server."""
+
     def setUp(self):
         self.creator = _user("funder2@example.com")
-        self.package = _package(self.creator, recipient_email="outside@acme.com")
+        self.recipient = _user("outside@acme.com")
+        self.package = _package(self.creator, recipient=self.recipient)
         self.package.records.add(_record(self.creator, balance=Decimal("75.00")))
 
-    def test_external_pay_page_carries_a_client_side_capture(self):
-        """The view is captured in the browser, not on the server.
+    def _detail(self, user):
+        self.client.force_login(user)
+        response = self.client.get(f"/reimbursements/{self.package.uuid}/")
+        self.client.logout()
+        self.assertEqual(response.status_code, 200)
+        return response.content.decode()
 
-        An unverified external payer has no server-side identity, so capturing
-        here would drop the event; the browser's anonymous id is what PostHog
-        later merges once the payer verifies.
+    def test_capture_runs_in_the_browser_only(self):
+        captured = self._captured()
+        body = self._detail(self.creator)
+        self.assertNotIn(
+            "reimbursement_package_viewed",
+            [name for name, _, _ in captured],
+            "the detail page must not capture on the server",
+        )
+        self.assertIn("reimbursement_package_viewed", body)
+        self.assertIn("posthog.capture", body)
+
+    def test_sender_and_recipient_are_a_property_not_separate_events(self):
+        for user, seen_by in ((self.creator, "sender"), (self.recipient, "recipient")):
+            with self.subTest(seen_by=seen_by):
+                self.assertIn(f'"viewed_by": "{seen_by}"', self._detail(user))
+
+    def test_pay_page_captures_in_the_browser_as_the_recipient(self):
+        """An unverified external payer has no server-side identity.
+
+        The capture has to happen in the browser, where PostHog merges the
+        anonymous id into the person once the payer verifies.
         """
         captured = self._captured()
         response = self.client.get(f"/reimbursements/pay/{self.package.uuid}/")
         self.assertEqual(response.status_code, 200)
-
         self.assertNotIn(
-            "reimbursement_package_viewed_by_recipient",
+            "reimbursement_package_viewed",
             [name for name, _, _ in captured],
-            "the pay page must not capture on the server",
         )
         body = response.content.decode()
-        self.assertIn("reimbursement_package_viewed_by_recipient", body)
-        self.assertIn("posthog.capture", body)
-        self.assertIn('"audience": "recipient"', body)
-        self.assertIn('"payer_type": "external"', body)
-        self.assertIn('"requires_verification": true', body)
+        self.assertIn("reimbursement_package_viewed", body)
+        self.assertIn('"viewed_by": "recipient"', body)

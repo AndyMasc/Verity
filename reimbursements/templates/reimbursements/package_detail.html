@@ -2,6 +2,18 @@
 {% load form_tags %}
 {% block title %}{{ package.title }} | Verity{% endblock %}
 {% block content %}
+    <script>
+        if (window.posthog) {
+            posthog.capture(
+                "reimbursement_package_viewed", {
+                {% if is_sender %}
+                    "viewed_by": "sender"
+                {% else %}
+                    "viewed_by": "recipient"
+                {% endif %}
+            });
+        }
+    </script>
     <main class="mx-auto min-h-screen w-full max-w-6xl px-4 py-6 font-sans selection:bg-zinc-900 selection:text-white sm:px-6 sm:py-10 dark:selection:bg-white dark:selection:text-zinc-900"
           x-data="packagePage()">
         <nav class="mb-6 flex items-center justify-between border-b border-black/[0.06] pb-4 sm:mb-10 sm:pb-6 dark:border-white/[0.06]">

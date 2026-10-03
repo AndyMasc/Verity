@@ -186,7 +186,7 @@
         // Ensure PostHog is loaded before capturing
         if (typeof posthog !== 'undefined') {
             posthog.capture('record_viewed', {
-                record_plan: '{{ record.pk }}',
+                record_pk: '{{ record.pk }}',
             });
         }
     </script>

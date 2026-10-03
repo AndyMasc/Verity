@@ -30,9 +30,7 @@ class MergeDocumentIntoPlaidTest(TestCase):
             self.user, "Walmart", products="Milk|Eggs", notes="Weekly groceries"
         )
         self.doc_folder = Folder.objects.create(user=self.user, name="Groceries")
-        self.plaid_with_folder = make_plaid_record(
-            self.user, "Costco", folder=self.doc_folder
-        )
+        self.plaid_with_folder = make_plaid_record(self.user, "Costco", folder=self.doc_folder)
         self.doc_with_docref = make_doc_record(
             self.user,
             "Receipt DocRef",
@@ -213,9 +211,7 @@ class UndoMergeTest(TestCase):
         import hashlib
         from documents.models import DocumentData
 
-        doc1 = make_doc_record(
-            self.user, "Doc With Files", products="Items", notes="Important"
-        )
+        doc1 = make_doc_record(self.user, "Doc With Files", products="Items", notes="Important")
         doc_data1 = DocumentData.objects.create(
             user=self.user,
             associated_record=doc1,

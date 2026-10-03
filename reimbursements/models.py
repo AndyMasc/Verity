@@ -175,7 +175,6 @@ def _capture_recipient_paid(locked, payer, shared) -> None:
     properties = {
         **shared,
         "package_uuid": str(locked.uuid),
-        "paid_in_user_currency": True,
     }
     if payer is not None:
         posthog_client.capture(
@@ -186,8 +185,7 @@ def _capture_recipient_paid(locked, payer, shared) -> None:
         return
 
     email = (
-        getattr(getattr(locked, "email_verification", None), "email", "")
-        or locked.recipient_email
+        getattr(getattr(locked, "email_verification", None), "email", "") or locked.recipient_email
     )
     if not email:
         # Nothing identifies this payer, so leave the event anonymous rather
@@ -207,9 +205,7 @@ class ReimbursementPackage(models.Model):
         OPEN = "open", "Open for Payment"
         PAID = "paid", "Fully Paid"
 
-    uuid = models.UUIDField(
-        default=uuid.uuid4, editable=False, unique=True, db_index=True
-    )
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, db_index=True)
     creator = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -222,9 +218,7 @@ class ReimbursementPackage(models.Model):
         blank=True,
         related_name="reimbursements_received",
     )
-    recipient_email = models.EmailField(
-        max_length=254, blank=True, default="", db_index=True
-    )
+    recipient_email = models.EmailField(max_length=254, blank=True, default="", db_index=True)
     title = models.CharField(max_length=255)
     currency = models.CharField(
         max_length=3,
@@ -299,9 +293,7 @@ class ReimbursementPackage(models.Model):
         """Returns True if the given user is allowed to delete this package."""
         if self.deleted_at is not None:
             return False
-        return user == self.creator or (
-            self.status == self.Status.PAID and user == self.recipient
-        )
+        return user == self.creator or (self.status == self.Status.PAID and user == self.recipient)
 
     def delete_package(self, user: User) -> bool:
         """Soft-deletes the package after revoking recipient access.
@@ -451,9 +443,7 @@ class ReimbursementPackage(models.Model):
                         title=f"Reimbursement: {self.title}",
                         merchant=self.creator.email,
                     )
-                ).update(
-                    notes=Concat("notes", models.Value(" [REFUNDED]"))
-                )
+                ).update(notes=Concat("notes", models.Value(" [REFUNDED]")))
         from core.apps import posthog_client
 
         if self.status == self.Status.OPEN and posthog_client is not None:
@@ -488,9 +478,9 @@ class ReimbursementPackage(models.Model):
     def total_amount(self) -> Decimal:
         if hasattr(self, "_annotated_total") and self._annotated_total is not None:
             return self._annotated_total
-        return self.records.filter(is_active=True).exclude(
-            balance__isnull=True
-        ).aggregate(total=Sum("balance"))["total"] or Decimal("0.00")
+        return self.records.filter(is_active=True).exclude(balance__isnull=True).aggregate(
+            total=Sum("balance")
+        )["total"] or Decimal("0.00")
 
     @property
     def display_total(self) -> Decimal:
@@ -563,15 +553,11 @@ class ReimbursementPackage(models.Model):
         """
         from . import services
 
-        payment = (
-            self.payments.filter(is_completed=False).order_by("-created_at").first()
-        )
+        payment = self.payments.filter(is_completed=False).order_by("-created_at").first()
         if not payment:
             return None
         try:
-            session = services.retrieve_checkout_session(
-                payment.stripe_checkout_session_id
-            )
+            session = services.retrieve_checkout_session(payment.stripe_checkout_session_id)
         except Exception:  # any Stripe API failure falls back to a new session
             logger.warning(
                 "Failed to retrieve existing session %s, creating new one",

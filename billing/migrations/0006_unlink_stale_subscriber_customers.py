@@ -20,12 +20,10 @@ def unlink_stale_subscriber_customers(apps, schema_editor):
     CustomUser = apps.get_model("billing", "CustomUser")
     Customer = apps.get_model("djstripe", "Customer")
 
-    for user in CustomUser.objects.exclude(customer__isnull=True).only(
-        "id", "customer_id"
-    ):
-        Customer.objects.filter(subscriber_id=user.id).exclude(
-            id=user.customer_id
-        ).update(subscriber=None)
+    for user in CustomUser.objects.exclude(customer__isnull=True).only("id", "customer_id"):
+        Customer.objects.filter(subscriber_id=user.id).exclude(id=user.customer_id).update(
+            subscriber=None
+        )
 
 
 class Migration(migrations.Migration):
@@ -34,7 +32,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(
-            unlink_stale_subscriber_customers, migrations.RunPython.noop
-        ),
+        migrations.RunPython(unlink_stale_subscriber_customers, migrations.RunPython.noop),
     ]

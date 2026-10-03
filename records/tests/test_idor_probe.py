@@ -53,18 +53,14 @@ class IDORProbe(TestCase):
 
     def test_cannot_view_another_users_record_detail(self):
         self.assertEqual(
-            self.client.get(
-                reverse("records:record_detail", args=[self.rec.pk])
-            ).status_code,
+            self.client.get(reverse("records:record_detail", args=[self.rec.pk])).status_code,
             404,
         )
 
     def test_cannot_bulk_share_another_users_records(self):
         self.client.post(
             reverse("records:bulk_share"),
-            data=json.dumps(
-                {"record_ids": [self.rec.pk], "emails": self.attacker.email}
-            ),
+            data=json.dumps({"record_ids": [self.rec.pk], "emails": self.attacker.email}),
             content_type="application/json",
         )
         self.assertFalse(
@@ -83,9 +79,7 @@ class IDORProbe(TestCase):
 
     def test_cannot_revoke_another_users_share(self):
         share = RecordShare.objects.create(record=self.rec, user=self.attacker)
-        self.client.post(
-            reverse("records:record_share_revoke", args=[self.rec.pk, share.pk])
-        )
+        self.client.post(reverse("records:record_share_revoke", args=[self.rec.pk, share.pk]))
         share.refresh_from_db()
         self.assertIsNone(share.revoked_at, "IDOR: revoked another user's share")
 
@@ -100,6 +94,4 @@ class IDORProbe(TestCase):
             r = self.client.post(
                 reverse(name, args=args), data="{}", content_type="application/json"
             )
-            self.assertIn(
-                r.status_code, (302, 401, 403), f"{name} reachable anonymously"
-            )
+            self.assertIn(r.status_code, (302, 401, 403), f"{name} reachable anonymously")

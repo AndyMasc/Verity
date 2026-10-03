@@ -58,9 +58,7 @@ class ErrorTracking(Middleware):
             properties={
                 "actor": message.actor_name,
                 "queue": message.queue_name,
-                "arguments": {
-                    str(k): _text(v, _MAX_ARG) for k, v in (message.args or {}).items()
-                },
+                "arguments": {str(k): _text(v, _MAX_ARG) for k, v in (message.args or {}).items()},
             },
         )
 

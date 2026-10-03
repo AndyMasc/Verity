@@ -24,6 +24,7 @@ from periodiq import cron
 if TYPE_CHECKING:
     from django.contrib.auth.models import AbstractUser
 
+from core.apps import posthog_client
 from core.models import Notification
 from core.services.notifications import (
     build_expiry_email_context,
@@ -37,6 +38,17 @@ from records.matching import try_match_document_record, try_match_plaid_record
 from .models import Record
 
 logger = logging.getLogger(__name__)
+
+
+def _capture_auto_match(user_id: int, count: int) -> None:
+    """Record that documents were matched to a transaction with no human involved."""
+    if posthog_client is None:
+        return
+    posthog_client.capture(
+        "record_merged",
+        distinct_id=str(user_id),
+        properties={"matched_by": "auto", "merged_count": count},
+    )
 
 
 @dramatiq.actor
@@ -59,6 +71,7 @@ def run_auto_match(record_pk: int, has_plaid: bool) -> None:
                     len(matched),
                     record_pk,
                 )
+                _capture_auto_match(record.user_id, len(matched))
         else:
             result = try_match_document_record(record)
             if result:
@@ -67,6 +80,7 @@ def run_auto_match(record_pk: int, has_plaid: bool) -> None:
                     record_pk,
                     result.pk,
                 )
+                _capture_auto_match(record.user_id, 1)
     except Exception:
         logger.exception("Auto-match failed for record %s", record_pk)
 
@@ -104,9 +118,7 @@ def delete_7year_archived_records() -> None:
     from .models import MergeLog
 
     merged_ids = set(
-        MergeLog.objects.filter(undone_at__isnull=True).values_list(
-            "document_record_id", flat=True
-        )
+        MergeLog.objects.filter(undone_at__isnull=True).values_list("document_record_id", flat=True)
     )
 
     seven_years_ago = timezone.now() - timedelta(days=365 * COMPLIANCE_RETENTION_YEARS)
@@ -117,9 +129,9 @@ def delete_7year_archived_records() -> None:
     ).exclude(pk__in=merged_ids)
 
     document_paths = list(
-        DocumentData.objects.filter(
-            associated_record__in=seven_year_expired_records
-        ).values_list("filepath", flat=True)
+        DocumentData.objects.filter(associated_record__in=seven_year_expired_records).values_list(
+            "filepath", flat=True
+        )
     )
 
     deleted_count = 0
@@ -219,8 +231,7 @@ def send_expiry_notifications() -> None:
         user_settings = user_settings_cache.get(user_id)
         auto_archive_msg = (
             "Since you have enabled auto-archiving, your records will be automatically archived once the expiry passes."
-            if user_settings
-            and getattr(user_settings, "auto_archive_expired_records", False)
+            if user_settings and getattr(user_settings, "auto_archive_expired_records", False)
             else ""
         )
 
@@ -242,17 +253,11 @@ def send_expiry_notifications() -> None:
         send_multi_channel_notification(
             user=user,
             subject="Expiring Records on Verity",
-            text_body=render_to_string(
-                "notifications/expiring_record_email.txt", context
-            ),
-            html_body=render_to_string(
-                "notifications/expiring_record_email.html", context
-            ),
+            text_body=render_to_string("notifications/expiring_record_email.txt", context),
+            html_body=render_to_string("notifications/expiring_record_email.html", context),
             webpush_payload=webpush_payload,
             send_db=True,
             db_message=f"Your record '{', '.join(r.title for r in records[:3])}' is expiring soon.",
         )
 
-    logger.info(
-        "Successfully scheduled notices for %d unique users.", len(user_records_map)
-    )
+    logger.info("Successfully scheduled notices for %d unique users.", len(user_records_map))

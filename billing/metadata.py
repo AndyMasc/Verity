@@ -158,17 +158,13 @@ def _active_subscriptions(user):
     )
     customer = getattr(user, "customer", None)
     if customer is not None:
-        subscriptions.extend(
-            customer.subscriptions.prefetch_related(items_prefetch).all()
-        )
+        subscriptions.extend(customer.subscriptions.prefetch_related(items_prefetch).all())
 
     linked_customers = Customer.objects.filter(subscriber=user).exclude(
         pk=customer.pk if customer is not None else None
     )
     for linked in linked_customers:
-        subscriptions.extend(
-            linked.subscriptions.prefetch_related(items_prefetch).all()
-        )
+        subscriptions.extend(linked.subscriptions.prefetch_related(items_prefetch).all())
 
     direct = getattr(user, "subscription", None)
     if direct is not None and not any(s.pk == direct.pk for s in subscriptions):
@@ -212,9 +208,7 @@ def _products_by_category(user) -> dict[str, ProductMetadata]:
         for meta in _metas_for_subscription(subscription)
     ]
     winners: dict[str, ProductMetadata] = {}
-    for _created, _pk, meta in sorted(
-        entries, key=lambda e: (e[0], e[1]), reverse=True
-    ):
+    for _created, _pk, meta in sorted(entries, key=lambda e: (e[0], e[1]), reverse=True):
         winners.setdefault(meta.category, meta)
     return winners
 

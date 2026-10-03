@@ -211,8 +211,7 @@ class PostHogSessionIdMiddlewareTest(SimpleTestCase):
         request = HttpRequest()
         request.COOKIES = cookies or {}
         request.META = {
-            f"HTTP_{key.upper().replace('-', '_')}": value
-            for key, value in (headers or {}).items()
+            f"HTTP_{key.upper().replace('-', '_')}": value for key, value in (headers or {}).items()
         }
         return request
 

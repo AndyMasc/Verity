@@ -91,9 +91,7 @@ class TestUploadServiceHandle:
     def test_invalid_content_type_returns_error(self, user):
         request = HttpRequest()
         request.content_type = "application/x-www-form-urlencoded"
-        request.POST = QueryDict(
-            "filename=test.pdf&file_hash=abc123&content_type=text/plain"
-        )
+        request.POST = QueryDict("filename=test.pdf&file_hash=abc123&content_type=text/plain")
         request.user = user
         svc = UploadService(request)
         result = svc.handle()
@@ -106,9 +104,7 @@ class TestUploadServiceHandle:
     def test_new_upload_returns_url(self, mock_presign, user):
         request = HttpRequest()
         request.content_type = "application/x-www-form-urlencoded"
-        request.POST = QueryDict(
-            "filename=test.pdf&file_hash=abc123&content_type=application/pdf"
-        )
+        request.POST = QueryDict("filename=test.pdf&file_hash=abc123&content_type=application/pdf")
         request.user = user
         svc = UploadService(request)
         result = svc.handle()
@@ -129,9 +125,7 @@ class TestUploadServiceHandle:
         )
         request = HttpRequest()
         request.content_type = "application/x-www-form-urlencoded"
-        request.POST = QueryDict(
-            f"filename=dup.pdf&file_hash={h}&content_type=application/pdf"
-        )
+        request.POST = QueryDict(f"filename=dup.pdf&file_hash={h}&content_type=application/pdf")
         request.user = user
         svc = UploadService(request)
         result = svc.handle()
@@ -165,9 +159,7 @@ class TestUploadServiceHandle:
     def test_creates_document_with_correct_status(self, mock_presign, user):
         request = HttpRequest()
         request.content_type = "application/x-www-form-urlencoded"
-        request.POST = QueryDict(
-            "filename=new.pdf&file_hash=abc123&content_type=application/pdf"
-        )
+        request.POST = QueryDict("filename=new.pdf&file_hash=abc123&content_type=application/pdf")
         request.user = user
         svc = UploadService(request)
         result = svc.handle()
@@ -181,9 +173,7 @@ class TestUploadServiceHandle:
     def test_sets_did_ocr_when_no_record(self, mock_presign, user):
         request = HttpRequest()
         request.content_type = "application/x-www-form-urlencoded"
-        request.POST = QueryDict(
-            "filename=new.pdf&file_hash=abc123&content_type=application/pdf"
-        )
+        request.POST = QueryDict("filename=new.pdf&file_hash=abc123&content_type=application/pdf")
         request.user = user
         svc = UploadService(request)
         result = svc.handle()
@@ -212,9 +202,7 @@ class TestUploadServiceHandle:
         )
         request = HttpRequest()
         request.content_type = "application/x-www-form-urlencoded"
-        request.POST = QueryDict(
-            f"filename=dup.pdf&file_hash={h}&content_type=application/pdf"
-        )
+        request.POST = QueryDict(f"filename=dup.pdf&file_hash={h}&content_type=application/pdf")
         request.user = user
         svc = UploadService(request)
         result = svc.handle()
@@ -281,9 +269,7 @@ class TestUploadServiceHandle:
         )
         request = HttpRequest()
         request.content_type = "application/x-www-form-urlencoded"
-        request.POST = QueryDict(
-            "filename=new.pdf&file_hash=abc123&content_type=application/pdf"
-        )
+        request.POST = QueryDict("filename=new.pdf&file_hash=abc123&content_type=application/pdf")
         request.user = user
         svc = UploadService(request)
         result = svc.handle()

@@ -142,9 +142,7 @@ def _save_records(
             last_edited=now,
             **_txn_to_record(txn, plaid_item, folder_cache),
         )
-        (to_update if txn["transaction_id"] in existing_ids else to_create).append(
-            record
-        )
+        (to_update if txn["transaction_id"] in existing_ids else to_create).append(record)
 
     if to_create:
         Record.objects.bulk_create(to_create)
@@ -173,15 +171,11 @@ def _save_records(
 def _match_records_to_documents(plaid_item: PlaidItem) -> None:
     """Match synced records to existing uploaded documents."""
     try:
-        records = Record.objects.filter(plaid_item=plaid_item, is_active=True).only(
-            "pk", "user_id"
-        )
+        records = Record.objects.filter(plaid_item=plaid_item, is_active=True).only("pk", "user_id")
         for record in records.iterator(chunk_size=500):
             try_match_plaid_record(record)
     except Exception:
-        logger.exception(
-            "Error matching records to documents for item %s", plaid_item.id
-        )
+        logger.exception("Error matching records to documents for item %s", plaid_item.id)
 
 
 def _fetch_sync_page(plaid_item: PlaidItem, cursor: str) -> dict[str, Any] | None:
@@ -248,9 +242,7 @@ def sync_and_convert_for_item_task(plaid_item_id: int | str):
     existing uploaded documents.
     """
     try:
-        plaid_item: PlaidItem = PlaidItem.objects.select_related("user").get(
-            id=plaid_item_id
-        )
+        plaid_item: PlaidItem = PlaidItem.objects.select_related("user").get(id=plaid_item_id)
     except PlaidItem.DoesNotExist:
         return {"error": f"PlaidItem {plaid_item_id} not found"}
 
@@ -267,21 +259,19 @@ def sync_and_convert_for_item_task(plaid_item_id: int | str):
 
     _match_records_to_documents(plaid_item)
 
-    # One event per sync rather than per transaction: a single sync can import
-    # hundreds of rows, and the hourly fallback task syncs items with no
-    # changes at all.
+    # One event per sync rather than per transaction: a single sync can import hundreds of rows, and the hourly fallback task syncs items with no changes at all.
     if stats["added"] and posthog_client is not None:
         posthog_client.capture(
             "record_imported",
             distinct_id=str(plaid_item.user_id),
             properties={
-                "import_source": "plaid_sync",
+                "import_source": "plaid",
                 "record_count": stats["added"],
             },
         )
     if settings.DEBUG:
         return {"status": "synced", **stats}
-    return None  # In production, returning nothing silences benign errors that Sentry produces - the result is logged in the broker's result backend if configured. Return value in dev is only for debugging and testing.
+    return None  # In production, returning nothing silences benign errors - the result is logged in the broker's result backend if configured.
 
 
 @dramatiq.actor(max_retries=3, min_backoff=2, periodic=cron("0 * * * *"))

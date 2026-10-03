@@ -26,9 +26,7 @@ class ErrorTrackingTests(SimpleTestCase):
 
     def _fail(self, message=None):
         boom = ValueError("actor blew up")
-        self.mw.after_process_message(
-            None, message or FakeMessage(), result=None, exception=boom
-        )
+        self.mw.after_process_message(None, message or FakeMessage(), result=None, exception=boom)
         return boom
 
     def test_actor_exception_is_captured(self):
@@ -47,9 +45,7 @@ class ErrorTrackingTests(SimpleTestCase):
 
     def test_skipped_message_is_reported(self):
         self.mw.after_skip_message(None, FakeMessage())
-        self.assertEqual(
-            self.client.capture.call_args.args[0], "dramatiq_message_skipped"
-        )
+        self.assertEqual(self.client.capture.call_args.args[0], "dramatiq_message_skipped")
 
     def test_no_client_is_a_no_op(self):
         with mock.patch("core.apps.posthog_client", None):
@@ -68,9 +64,7 @@ class ErrorTrackingTests(SimpleTestCase):
         """A wrong path here would fail silently."""
         from django.conf import settings
 
-        self.assertIn(
-            "core.error_tracking.ErrorTracking", settings.DRAMATIQ_BROKER["MIDDLEWARE"]
-        )
+        self.assertIn("core.error_tracking.ErrorTracking", settings.DRAMATIQ_BROKER["MIDDLEWARE"])
 
 
 class LogCaptureTests(SimpleTestCase):
@@ -80,9 +74,7 @@ class LogCaptureTests(SimpleTestCase):
         self.client = patcher.start()
         self.addCleanup(patcher.stop)
 
-    def _record(
-        self, msg, level=logging.WARNING, name="billing.webhooks", exc_info=None
-    ):
+    def _record(self, msg, level=logging.WARNING, name="billing.webhooks", exc_info=None):
         return logging.LogRecord(
             name=name,
             level=level,
@@ -158,7 +150,5 @@ class LogCaptureTests(SimpleTestCase):
         from django.conf import settings
 
         for name in ("documents", "records"):
-            self.assertIn(
-                "error_tracking", settings.LOGGING["loggers"][name]["handlers"]
-            )
+            self.assertIn("error_tracking", settings.LOGGING["loggers"][name]["handlers"])
         self.assertIn("error_tracking", settings.LOGGING["root"]["handlers"])

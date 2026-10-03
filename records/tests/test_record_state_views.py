@@ -260,9 +260,7 @@ class BulkArchiveViewTest(TestCase):
 
     def test_post_not_allowed_without_json(self):
         self.client.force_login(self.user)
-        response = self.client.post(
-            self.url, data="not json", content_type="text/plain"
-        )
+        response = self.client.post(self.url, data="not json", content_type="text/plain")
         self.assertEqual(response.status_code, 400)
 
     def test_bulk_archive_archives_records(self):
@@ -277,9 +275,7 @@ class BulkArchiveViewTest(TestCase):
         self.assertEqual(response.status_code, 200)
         for r in Record.objects.filter(pk__in=ids):
             self.assertFalse(r.is_active)
-        self.assertTrue(
-            Record.objects.filter(pk=self.records[2].pk, is_active=True).exists()
-        )
+        self.assertTrue(Record.objects.filter(pk=self.records[2].pk, is_active=True).exists())
 
     def test_bulk_archive_creates_audit_logs(self):
         self.client.force_login(self.user)
@@ -401,9 +397,7 @@ class BulkHardDeleteTests(TestCase):
         self.recent = _make_record(self.user, "Recent")
 
     def _post(self, ids, htmx=True):
-        headers = (
-            {"HX-Request": "true"} if htmx else {"x-requested-with": "XMLHttpRequest"}
-        )
+        headers = {"HX-Request": "true"} if htmx else {"x-requested-with": "XMLHttpRequest"}
         return self.client.post(
             reverse("records:bulk_hard_delete"),
             data=json.dumps({"record_ids": ids}),
@@ -461,6 +455,4 @@ class CanHardDeletePropertyTests(TestCase):
 
     def test_seven_year_old_record_can_be_hard_deleted(self):
         user = User.objects.create_user(username="propold", password="pass")
-        self.assertTrue(
-            _age_record(_make_record(user, "Old"), 365 * 7 + 1).can_hard_delete
-        )
+        self.assertTrue(_age_record(_make_record(user, "Old"), 365 * 7 + 1).can_hard_delete)

@@ -74,9 +74,7 @@ def _notify_recipient(*, shares: list[RecordShare], actor) -> None:
             "title": escape(share.record.title or "Untitled record"),
             "merchant": escape(share.record.merchant or ""),
             "date": share.record.transaction_date,
-            "amount": format_currency(
-                share.record.balance, share.record.currency or "usd"
-            ),
+            "amount": format_currency(share.record.balance, share.record.currency or "usd"),
             "url": build_record_url(share.record.pk),
         }
         for share in shares
@@ -89,7 +87,9 @@ def _notify_recipient(*, shares: list[RecordShare], actor) -> None:
     else:
         plain_title = shares[0].record.title or "Untitled record"
         subject = f'{plain_actor} shared a record with you: "{plain_title}"'
-        db_message = f'{plain_actor} shared the record "{plain_title}" with you ({rows[0]["amount"]}).'
+        db_message = (
+            f'{plain_actor} shared the record "{plain_title}" with you ({rows[0]["amount"]}).'
+        )
         webpush_url = rows[0]["url"]
 
     template_context = {
@@ -103,12 +103,8 @@ def _notify_recipient(*, shares: list[RecordShare], actor) -> None:
         **site_context,
     }
 
-    html_body = render_to_string(
-        "records/email/record_shared_message.html", template_context
-    )
-    text_body = render_to_string(
-        "records/email/record_shared_message.txt", template_context
-    )
+    html_body = render_to_string("records/email/record_shared_message.html", template_context)
+    text_body = render_to_string("records/email/record_shared_message.txt", template_context)
 
     send_multi_channel_notification(
         user=recipient,

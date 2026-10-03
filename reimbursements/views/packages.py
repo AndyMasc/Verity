@@ -46,9 +46,7 @@ class PackageListView(LoginRequiredMixin, ListView):
         sent_packages = list(context["packages"])
 
         paid_by_me = list(
-            ReimbursementPackage.objects.filter(
-                paid_by=self.request.user, deleted_at__isnull=True
-            )
+            ReimbursementPackage.objects.filter(paid_by=self.request.user, deleted_at__isnull=True)
             .with_annotated_total()
             .with_prefetched_active_records()
             .select_related("creator", "recipient", "paid_by")
@@ -117,28 +115,12 @@ class PackageDetailView(LoginRequiredMixin, DetailView):
         context["package_currency"] = package.currency
         context["is_recipient"] = package.recipient == self.request.user
         context["is_payer"] = package.paid_by == self.request.user
+        context["is_sender"] = package.creator == self.request.user
         context["can_delete"] = package.can_delete(self.request.user)
-
-        is_sender = package.creator_id == self.request.user.pk
-        context["viewed_event"] = (
-            "reimbursement_package_viewed_by_sender"
-            if is_sender
-            else "reimbursement_package_viewed_by_recipient"
-        )
-        context["viewed_props"] = {
-            "audience": "creator" if is_sender else "recipient",
-            "payer_type": "registered",
-            "record_count": package.records.count(),
-            "total_amount": float(package.total_amount),
-            "currency": package.currency,
-            "status": package.status,
-        }
         return context
 
 
-@method_decorator(
-    ratelimit(key="user", rate="10/m", method="POST", block=True), name="dispatch"
-)
+@method_decorator(ratelimit(key="user", rate="10/m", method="POST", block=True), name="dispatch")
 class PackageDeleteView(LoginRequiredMixin, View):
     def post(self, request: HttpRequest, package_uuid: str) -> HttpResponse:
         package = get_object_or_404(
@@ -154,9 +136,7 @@ class PackageDeleteView(LoginRequiredMixin, View):
                     {"error": "You do not have permission to delete this package."},
                     status=403,
                 )
-            messages.error(
-                request, "You do not have permission to delete this package."
-            )
+            messages.error(request, "You do not have permission to delete this package.")
             return redirect(
                 reverse(
                     "reimbursements:package-detail",
@@ -188,9 +168,7 @@ class PackageDeleteView(LoginRequiredMixin, View):
         messages.success(request, "Package deleted.")
 
         if request.headers.get("HX-Request"):
-            return HttpResponse(
-                headers={"HX-Redirect": reverse("reimbursements:package-list")}
-            )
+            return HttpResponse(headers={"HX-Redirect": reverse("reimbursements:package-list")})
 
         return redirect(reverse("reimbursements:package-list"))
 
@@ -202,12 +180,8 @@ def _clamp_days_valid(raw: Any) -> int:
         return 7
 
 
-@method_decorator(
-    ratelimit(key="user", rate="5/m", method="POST", block=True), name="dispatch"
-)
-class CreatePackageFromRecordsView(
-    LoginRequiredMixin, ReimbursementRequestRequiredMixin, View
-):
+@method_decorator(ratelimit(key="user", rate="5/m", method="POST", block=True), name="dispatch")
+class CreatePackageFromRecordsView(LoginRequiredMixin, ReimbursementRequestRequiredMixin, View):
     required_feature = features.QUICK_REIMBURSEMENT_REQUEST
 
     def post(self, request: HttpRequest) -> HttpResponse:
@@ -223,9 +197,7 @@ class CreatePackageFromRecordsView(
             days_valid = _clamp_days_valid(data.get("days_valid", 7))
         else:
             record_ids = [
-                int(rid)
-                for rid in request.POST.getlist("selected_records")
-                if rid.isdigit()
+                int(rid) for rid in request.POST.getlist("selected_records") if rid.isdigit()
             ]
             title = request.POST.get("title", "Reimbursement Package")
             recipient_email = request.POST.get("recipient_email", "").strip()
@@ -255,10 +227,7 @@ class CreatePackageFromRecordsView(
         attached = package.records.count()
         requested = len(set(record_ids))
         total_amount = (
-            package.records.filter(is_active=True).aggregate(total=Sum("balance"))[
-                "total"
-            ]
-            or 0
+            package.records.filter(is_active=True).aggregate(total=Sum("balance"))["total"] or 0
         )
         if posthog_client is not None:
             posthog_client.capture(

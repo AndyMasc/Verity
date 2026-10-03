@@ -72,9 +72,7 @@ class UploadView(BaseR2UploadView):
             "page_title": "Upload a financial record.",
             "page_subtitle": "We'll extract and organize the details automatically.",
             "api_url": reverse("documents:upload_document"),
-            "redirect_url_template": reverse(
-                "records:add_record", kwargs={"document_id": "0"}
-            ),
+            "redirect_url_template": reverse("records:add_record", kwargs={"document_id": "0"}),
             "is_supporting_flow": False,
         }
         return render(request, "documents/upload_file.html", context)
@@ -117,24 +115,24 @@ class ConfirmUploadView(LoginRequiredMixin, View):
                 result = service.confirm()
             except Exception as exc:
                 if posthog_client is not None:
-                    posthog_client.capture(
-                        "document_upload_failed",
+                    posthog_client.capture_exception(
+                        exception=exc,
+                        distinct_id=str(request.user.pk),
                         properties={
                             "source": "server",
                             "stage": "confirm",
-                            "error_type": type(exc).__name__,
                         },
                     )
                 raise
 
             if not result.valid:
                 if posthog_client is not None:
-                    posthog_client.capture(
-                        "document_upload_failed",
+                    posthog_client.capture_exception(
+                        exception=Exception(result.error),
+                        distinct_id=str(request.user.pk),
                         properties={
                             "source": "server",
                             "stage": "validate",
-                            "error_type": result.error,
                         },
                     )
                 return JsonResponse({"error": result.error}, status=result.status_code)
@@ -147,9 +145,7 @@ class ConfirmUploadView(LoginRequiredMixin, View):
         if posthog_client is not None:
             posthog_client.capture(
                 "document_upload_confirmed",
-                properties={
-                    "is_supporting_document": document.associated_record_id is not None
-                },
+                properties={"is_supporting_document": document.associated_record_id is not None},
             )
         return JsonResponse({"status": "confirmed", "document_id": document.id})
 
@@ -163,9 +159,7 @@ class AddSupportDocuments(BaseR2UploadView):
             "record": record,
             "page_title": "Add supporting documents.",
             "page_subtitle": f"Attach additional records directly to {record.title}.",
-            "api_url": reverse(
-                "documents:add_support_docs", kwargs={"record_id": record_id}
-            ),
+            "api_url": reverse("documents:add_support_docs", kwargs={"record_id": record_id}),
             "redirect_url_template": f"/records/record_detail/{record_id}",
             "is_supporting_flow": True,
         }

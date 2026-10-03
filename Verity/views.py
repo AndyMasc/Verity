@@ -56,9 +56,7 @@ def htmx_response(
         return None
     response = HttpResponse(status=status)
     if toast:
-        response["HX-Trigger"] = json.dumps(
-            {"showToast": {"text": toast, "tags": toast_tags}}
-        )
+        response["HX-Trigger"] = json.dumps({"showToast": {"text": toast, "tags": toast_tags}})
     if redirect_url:
         response["HX-Redirect"] = redirect_url
     return response
@@ -73,9 +71,7 @@ class CachedPaginatorMixin:
 
     def paginate_queryset(self, queryset, page_size):
         user = getattr(self.request, "user", None)
-        paginator = CachedPaginator(
-            queryset, page_size, user_id=getattr(user, "id", None)
-        )
+        paginator = CachedPaginator(queryset, page_size, user_id=getattr(user, "id", None))
         page_kwarg = self.page_kwarg
         page = self.kwargs.get(page_kwarg) or self.request.GET.get(page_kwarg) or 1
         try:
@@ -133,9 +129,7 @@ def parse_record_ids(
             content_type="application/json",
         )
 
-    if not isinstance(record_ids, list) or not all(
-        isinstance(rid, int) for rid in record_ids
-    ):
+    if not isinstance(record_ids, list) or not all(isinstance(rid, int) for rid in record_ids):
         return None, HttpResponse(
             '{"error": "record_ids must be a list of integers"}',
             status=400,

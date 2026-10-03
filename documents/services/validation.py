@@ -93,9 +93,7 @@ class DocumentUploadService:
         if head is None:
             self.document.status = DocumentStatus.ERROR
             self.document.save(update_fields=["status"])
-            return UploadResult(
-                valid=False, error="File not found in storage.", status_code=404
-            )
+            return UploadResult(valid=False, error="File not found in storage.", status_code=404)
 
         file_size = head.get("ContentLength")
         mime_type = (head.get("ContentType") or "").split(";")[0].strip()
