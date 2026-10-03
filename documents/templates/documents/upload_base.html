@@ -120,16 +120,14 @@
         // confirm/validation failures, which are the same event name.
         function captureUploadFailure(stage, error) {
             if (!window.posthog) return;
-            window.posthog.capture_exception(
+            window.posthog.captureException(
+                error instanceof Error ? error : new Error(String(error || 'unknown')),
                 {
-                    exception: new Error(error),
-                    distinct_id: window.posthog.get_distinct_id(),
-                    properties: {
-                        source: 'client',
-                        stage: stage,
-                        error: String(error && error.message ? error.message : error || 'unknown')
+                    source: 'client',
+                    stage: stage,
+                    error: String(error && error.message ? error.message : error || 'unknown')
                 }
-            });
+            );
         }
 
         function uploadError(stage, message) {
