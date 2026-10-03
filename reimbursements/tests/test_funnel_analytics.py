@@ -69,7 +69,7 @@ class RecipientPaidCaptureTests(_CaptureMixin, TestCase):
 
         names = [name for name, _, _ in captured]
         self.assertIn("recipient_paid_reimbursement", names)
-        self.assertIn("reimbursement_paid", names)
+        self.assertIn("sender_reimbursement_settled", names)
 
         event, distinct_id, props = next(
             (n, d, p) for n, d, p in captured if n == "recipient_paid_reimbursement"
@@ -86,7 +86,7 @@ class RecipientPaidCaptureTests(_CaptureMixin, TestCase):
         package.mark_as_paid(self.payer)
 
         _, distinct_id, _ = next(
-            (n, d, p) for n, d, p in captured if n == "reimbursement_paid"
+            (n, d, p) for n, d, p in captured if n == "sender_reimbursement_settled"
         )
         self.assertEqual(distinct_id, str(self.creator.pk))
 
@@ -111,11 +111,11 @@ class RecipientPaidCaptureTests(_CaptureMixin, TestCase):
 
         by_name = {name: props for name, _, props in captured}
         self.assertEqual(
-            by_name["reimbursement_paid"]["total_amount"],
+            by_name["sender_reimbursement_settled"]["total_amount"],
             by_name["recipient_paid_reimbursement"]["total_amount"],
         )
         self.assertEqual(
-            by_name["reimbursement_paid"]["currency"],
+            by_name["sender_reimbursement_settled"]["currency"],
             by_name["recipient_paid_reimbursement"]["currency"],
         )
 

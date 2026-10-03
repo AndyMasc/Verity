@@ -343,7 +343,7 @@ def handle_checkout_settled(**kwargs: Any) -> None:
     """
     session = _event_object(kwargs.get("event"))
     # Package purchases are one-off payments with their own funnel
-    # (reimbursement_paid); keep them out of the subscription metrics.
+    # (sender_reimbursement_settled); keep them out of the subscription metrics.
     if session.get("mode") != "subscription":
         return
     # "no_payment_required" covers fully discounted checkouts.

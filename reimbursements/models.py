@@ -381,11 +381,6 @@ class ReimbursementPackage(models.Model):
 
         if self.status == self.Status.PAID and posthog_client is not None:
             record_count = self.records.filter(is_active=True).count()
-            # "reimbursement_paid" is the funder's view of the payout.
-            # "recipient_paid_reimbursement" is the payer's: the same moment seen
-            # from the person whose money actually left, which is the only side
-            # that exists for an external payer with no account to be a person in
-            # PostHog. Both are emitted so neither audience is inferred.
             shared = {
                 "currency": record_currency,
                 "total_amount": float(converted),
@@ -393,7 +388,7 @@ class ReimbursementPackage(models.Model):
                 "payer_is_registered": payer is not None,
             }
             posthog_client.capture(
-                "reimbursement_paid",
+                "sender_reimbursement_settled",
                 distinct_id=str(self.creator_id),
                 properties=shared,
             )
