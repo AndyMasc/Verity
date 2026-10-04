@@ -106,7 +106,7 @@ STORAGE_UPGRADE_5 = ProductMetadata(
 STORAGE_UPGRADE_1 = ProductMetadata(
     stripe_id="prod_VCg5fBU3aujCi9",
     name="1 GB Storage Pack",
-    stackable=True,
+    stackable=False,  # Prevent free users from getting more value than a paid plan.
     description="Additional 1 GB cloud storage (available to all plans)",
     category="storage_plan",
     features=[
@@ -229,6 +229,22 @@ def _products_by_category(user) -> dict[str, ProductMetadata]:
 def plan_for_user(user) -> ProductMetadata:
     """Return the user's base plan (drives plan features), or Free if none."""
     return _products_by_category(user).get("base_plan", VERITY_FREE)
+
+
+def storage_addon_quantity(user) -> int:
+    """Units of the active storage pack the user bought.
+
+    Packs are stackable, so the entitlement has to count units. Billing
+    several while granting one leaves the customer paying for storage they
+    cannot use.
+    """
+    for subscription in _active_subscriptions(user):
+        for item in subscription.items.all():
+            product = item.price.product if item.price is not None else None
+            meta = PRODUCTS.get(product.id) if product is not None else None
+            if meta is not None and meta.category == "storage_plan":
+                return max(item.quantity or 1, 1)
+    return 0
 
 
 def storage_addons_for_user(user) -> list[ProductMetadata]:

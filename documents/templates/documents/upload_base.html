@@ -69,49 +69,6 @@
         </section>
     </main>
     <script type="module">
-        // Vendored: a CDN import here is a single point of failure for the whole
-        // upload flow, and a bad URL silently kills this entire module.
-        import xxhash from "{% static 'js/xxhash-wasm.js' %}";
-
-        // Optional. Fingerprinting speeds up duplicate detection but is not worth
-        // failing an upload over, so a failure here only costs the speedup.
-        let xxhashInstance = null;
-        try {
-            xxhashInstance = await xxhash();
-        } catch (e) {
-            console.warn("xxhash unavailable; falling back to SHA-256.");
-        }
-        const dropzone = document.getElementById('dropzone'),
-              fileInput = document.getElementById('fileInput'),
-              status = document.getElementById('status'),
-              uploadButton = document.getElementById('uploadButton'),
-              buttonSpinner = document.getElementById('buttonSpinner'),
-              buttonText = document.getElementById('buttonText');
-              
-        const API_URL = "{{ api_url }}", REDIRECT_URL_TEMPLATE = "{{ redirect_url_template }}";
-        const CONFIRM_URL = "{% url 'documents:confirm_upload' %}";
-        const isSupportingFlow = {{ is_supporting_flow|yesno:"true,false" }};
-        let selectedFile = null;
-
-        uploadButton.dataset.forceUpload = "false";
-
-        const fileStatus = document.createElement('div');
-        fileStatus.className = "mt-3 text-center text-sm text-zinc-600 dark:text-zinc-400";
-        dropzone.appendChild(fileStatus);
-
-        function captureUploadFailure(stage, error) {
-            if (!window.posthog) return;
-            window.posthog.capture_exception({
-                exception: new Error(error),
-                distinct_id: window.posthog.get_distinct_id(),
-                properties: {
-                    source: 'client',
-                    stage: stage,
-                    error: String(error && error.message ? error.message : error || 'unknown')
-                }
-            });
-        }
-
         function uploadError(stage, message) {
             const err = new Error(message);
             err.stage = stage;
@@ -126,6 +83,7 @@
 
         function setFile(file) {
             if (file.size > 5 * 1024 * 1024) {
+                captureUploadFailure("file_too_large", `File exceeds 5MB limit: ${file.name}`);
                 return setStatus("File exceeds 5MB limit.", "error");
             }
             selectedFile = file;
@@ -172,19 +130,12 @@
         });
 
         async function hashFile(file) {
-            const bytes = new Uint8Array(await file.arrayBuffer());
-
-            if (xxhashInstance) {
-                // create64() returns {update, digest} only, and h64ToString()
-                // takes a string, so binary bytes go through the incremental API.
-                const hasher = xxhashInstance.create64();
-                hasher.update(bytes);
-                return hasher.digest().toString(16).padStart(16, "0");
-            }
-
-            // The browser's own SHA-256: slower, but it is the field the server
-            // requires and it is exactly the 64 characters the column allows.
-            const digest = await crypto.subtle.digest("SHA-256", bytes);
+            // SHA-256 via the browser's own crypto: one algorithm on every
+            // browser, 64 hex characters, and no WASM to fail to load.
+            const digest = await crypto.subtle.digest(
+                "SHA-256",
+                await file.arrayBuffer()
+            );
             return Array.from(new Uint8Array(digest))
                 .map(b => b.toString(16).padStart(2, "0"))
                 .join("");
@@ -241,7 +192,6 @@
 
                 if (!presignRes.ok) {
                     const errorData = await presignRes.json().catch(() => ({}));
-                    captureUploadFailure("presign", errorData.error || "Backend validation failed.");
                     throw uploadError("presign", errorData.error || "Backend validation failed.");
                 }
 

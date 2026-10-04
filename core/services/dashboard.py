@@ -96,7 +96,10 @@ async def get_dashboard_context(user) -> dict:
     user_currency = user_settings[0].default_currency
 
     active_records_qs = (
-        Record.objects.visible_to(user).active().only(*DASHBOARD_RECORD_FIELDS)  # type: ignore
+        Record.objects.visible_to(user)
+        .active()
+        .only(*DASHBOARD_RECORD_FIELDS)  # type: ignore
+        .annotate(active_share_count=Record.with_active_share_count())
     )
 
     (

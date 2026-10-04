@@ -34,10 +34,11 @@
 <form method="post"
       action="{% url 'create_checkout_session' %}"
       class="w-full"
-      x-data="{ selectedBasePrice: null, selectedStoragePrice: null, get selectedPlanCount() { return (this.selectedBasePrice ? 1 : 0) + (this.selectedStoragePrice ? 1 : 0); } }">
+      x-data="{ selectedBasePrice: null, selectedStoragePrice: null, selectedStorageQuantity: 1, get selectedPlanCount() { return (this.selectedBasePrice ? 1 : 0) + (this.selectedStoragePrice ? 1 : 0); } }">
     {% csrf_token %}
     <input type="hidden" name="base_price_id" :value="selectedBasePrice">
     <input type="hidden" name="storage_price_id" :value="selectedStoragePrice">
+    <input type="hidden" name="quantity" :value="selectedStorageQuantity">
     <div class="relative mx-auto grid w-full max-w-5xl grid-cols-1 grid-rows-1">
         <!-- BASE PLANS -->
         <div x-show="selectedCategory === 'base_plan'"
@@ -192,15 +193,11 @@
                                     </div>
                                 {% else %}
                                     {% if product.stackable %}
-                                        <div x-data="{ selectedStorageQuantity: 1 }"
-                                             x-show="selectedStoragePrice === '{{ price_id }}'"
-                                             x-cloak>
+                                        <div x-show="selectedStoragePrice === '{{ price_id }}'" x-cloak>
                                             <p class="text-right text-xs text-zinc-500 dark:text-zinc-400">
                                                 Quantity: <span x-text="selectedStorageQuantity"></span>
                                             </p>
                                             <input type="range"
-                                                   id="quantity"
-                                                   name="quantity"
                                                    min="1"
                                                    max="10"
                                                    class="mb-5 w-full rounded-sm border border-zinc-200/70 bg-zinc-100/70 text-center text-xs font-medium tracking-tight text-zinc-800 transition-all duration-150 placeholder:text-zinc-400 dark:border-zinc-800/80 dark:bg-zinc-900/40 dark:text-zinc-200 dark:placeholder:text-zinc-500"
@@ -215,8 +212,7 @@
                                     <div type="button"
                                          :class="selectedStoragePrice === '{{ price_id }}' ? 'bg-indigo-600 text-white' : 'bg-black hover:bg-zinc-800 text-white dark:text-black dark:bg-white dark:hover:bg-zinc-200'"
                                          class="w-full rounded-4xl px-3 py-2 text-center text-xs font-medium tracking-tight transition-all duration-150">
-                                        <span x-text="selectedStoragePrice === '{{ price_id }}' ? 'Selected' : 'Select Pack'"
-                                              x-show=""></span>
+                                        <span x-text="selectedStoragePrice === '{{ price_id }}' ? 'Selected' : 'Select Pack'"></span>
                                     </div>
                                 {% endif %}
                             </div>

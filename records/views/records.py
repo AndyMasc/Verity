@@ -135,7 +135,9 @@ class RecordListView(LoginRequiredMixin, CachedPaginatorMixin, FilterView):
         return super().dispatch(*args, **kwargs)
 
     def get_queryset(self):
-        qs = Record.objects.visible_to(self.request.user)
+        qs = Record.objects.visible_to(self.request.user).annotate(
+            active_share_count=Record.with_active_share_count()
+        )
         # Archived records are only reachable via the explicit "is_active" filter
         # (the sidebar Archive link, the Active/All chips). Without a filter the
         # list shows active records only, so archiving visibly removes a record.

@@ -405,6 +405,23 @@ class Record(models.Model):
         cutoff = timezone.now().date() - datetime.timedelta(days=365 * RETENTION_YEARS)
         return self.date_added <= cutoff
 
+    @staticmethod
+    def with_active_share_count():
+        """Annotate each row with its number of live shares.
+
+        Shares are never deleted, so counting the reverse relation also counts
+        revoked and expired grants: the badge would outlive the access, and a
+        list of cards would run one COUNT query per row.
+        """
+        from django.db.models import Count, Q
+
+        now = timezone.now()
+        return Count(
+            "shares",
+            filter=Q(shares__revoked_at__isnull=True)
+            & (Q(shares__expires_at__isnull=True) | Q(shares__expires_at__gt=now)),
+        )
+
 
 class MergeLog(models.Model):
     """Immutable record of a merge between a Plaid transaction and a document record.
