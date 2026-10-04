@@ -3,7 +3,8 @@
 {% block content %}
     <main class="mx-auto flex min-h-screen w-full max-w-5xl flex-col items-center justify-center px-6 py-12 font-sans antialiased sm:py-16"
           data-plan-view-tracking
-          x-data="{ selectedCategory: 'base_plan' }">
+          x-data="{ selectedCategory: $persist('base_plan') }"
+          x-cloak>
         {% include "billing/partials/pricing_cards.html" %}
     </main>
 {% endblock content %}

@@ -223,6 +223,8 @@ class CreatePackageFromRecordsView(LoginRequiredMixin, ReimbursementRequestRequi
         )
         if error:
             return JsonResponse({"error": error}, status=400)
+        if package is None:
+            return JsonResponse({"error": "Unable to create reimbursement package."}, status=500)
 
         attached = package.records.count()
         requested = len(set(record_ids))
@@ -233,10 +235,8 @@ class CreatePackageFromRecordsView(LoginRequiredMixin, ReimbursementRequestRequi
             posthog_client.capture(
                 "reimbursement_package_created",
                 properties={
-                    "record_count": attached,
-                    "requested_record_count": requested,
-                    "days_valid": days_valid,
                     "total_amount": float(total_amount),
+                    "currency": package.currency,
                 },
             )
         if attached < requested:

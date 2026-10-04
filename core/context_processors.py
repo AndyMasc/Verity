@@ -53,3 +53,8 @@ def turnstile_settings(request: HttpRequest) -> dict[str, Any]:  # noqa: ARG001
             "checkout": ACTION_CHECKOUT,
         },
     }
+
+
+def is_debug(request: HttpRequest) -> dict[str, Any]:  # noqa: ARG001
+    """Expose whether the site is in debug mode to all templates."""
+    return {"is_debug": settings.DEBUG}

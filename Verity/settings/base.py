@@ -147,7 +147,13 @@ CONTENT_SECURITY_POLICY = {
             "blob:",
             "https:",
         ),
-        "script-src": ("'self'", "'unsafe-inline'", "'unsafe-eval'", "https:"),
+        "script-src": (
+            "'self'",
+            "'unsafe-inline'",
+            "'unsafe-eval'",
+            "'wasm-unsafe-eval'",
+            "https:",
+        ),
         "worker-src": ("'self'", "blob:"),
         "style-src": ("'self'", "'unsafe-inline'", "https:"),
         "font-src": ("'self'", "https:", "data:"),
@@ -254,6 +260,7 @@ TEMPLATES = [
                 "billing.context_processors.subscription_status",  # Subscription status for all templates
                 "billing.context_processors.scan_usage",  # Scan usage for all templates
                 "billing.context_processors.storage_usage",  # Storage usage for all templates
+                "core.context_processors.is_debug",  # Expose DEBUG to templates
             ],
             "builtins": [
                 "django.templatetags.static",

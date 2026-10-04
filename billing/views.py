@@ -145,23 +145,28 @@ def _checkout_quantity(raw_qty: str | None, max_quantity: int = 100) -> int:
 def create_checkout_session(request: HttpRequest) -> HttpResponse:
     user = cast(CustomUser, request.user)
 
-    base_price_id = _validated_price(request.POST.get("base_price_id"), "base_plan", user)
-    storage_price_id = _validated_price(request.POST.get("storage_price_id"), "storage_plan", user)
+    # Which plans are on the form, what they are called and whether they stack all
+    # come from metadata.CATEGORIES, so a new plan needs no change here.
+    selected = {
+        category: _validated_price(request.POST.get(field), category, user)
+        for category, (_, field) in metadata.CATEGORIES.items()
+    }
+    selected = {c: p for c, p in selected.items() if p}
 
-    if not base_price_id and not storage_price_id:
+    if not selected:
         return HttpResponseBadRequest("Select a valid plan to proceed to checkout.")
 
-    line_items = []
-    if base_price_id:
-        line_items.append({"price": base_price_id, "quantity": 1})
-
-    if storage_price_id:
-        line_items.append(
-            {
-                "price": storage_price_id,
-                "quantity": _checkout_quantity(request.POST.get("quantity")),
-            }
-        )
+    line_items = [
+        {
+            "price": price_id,
+            "quantity": (
+                _checkout_quantity(request.POST.get("quantity"))
+                if metadata.is_stackable(category)
+                else 1
+            ),
+        }
+        for category, price_id in selected.items()
+    ]
 
     customer = user.customer
     if (
@@ -173,8 +178,7 @@ def create_checkout_session(request: HttpRequest) -> HttpResponse:
 
     if customer is None:
         customer, _ = Customer.get_or_create(user)
-        # get_or_create may return a stale row whose Stripe record was deleted;
-        # unlink it so a brand-new customer is created instead.
+        # get_or_create may return a stale row whose Stripe record was deleted; unlink it so a brand-new customer is created instead.
         if services.customer_missing_in_stripe(customer.id):
             Customer.objects.filter(id=customer.id, subscriber=user).update(subscriber=None)
             customer, _ = Customer.get_or_create(user)
@@ -183,10 +187,7 @@ def create_checkout_session(request: HttpRequest) -> HttpResponse:
             user.save(update_fields=["customer"])
 
     try:
-        # No idempotency key: Checkout Sessions are already idempotent. A
-        # deterministic key previously made Stripe return the (possibly
-        # expired) session from the first request on every retry, which caused
-        # the "checkout session has timed out or expired" page.
+        # No idempotency key: Checkout Sessions are already idempotent.
         checkout_session = services.create_checkout_session(
             customer=customer.id,
             line_items=line_items,
@@ -198,10 +199,7 @@ def create_checkout_session(request: HttpRequest) -> HttpResponse:
         if posthog_client is not None:
             posthog_client.capture(
                 "subscription_checkout_started",
-                properties={
-                    "includes_base_plan": bool(base_price_id),
-                    "includes_storage_plan": bool(storage_price_id),
-                },
+                properties={"plan_types": list(selected)},
             )
         return HttpResponseRedirect(checkout_session.url)
     except Exception as e:
