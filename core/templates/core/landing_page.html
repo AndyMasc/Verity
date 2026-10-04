@@ -46,263 +46,262 @@
             <div class="pointer-events-none absolute -inset-6 rounded-3xl bg-zinc-400/25 blur-2xl transition-all duration-500 sm:-inset-8 sm:blur-3xl dark:bg-black/10">
             </div>
             <header class="max-w-7xl space-y-6 md:max-w-3xl">
-                <span class="inline-flex items-center gap-x-1.5 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-800 dark:bg-slate-800 dark:text-slate-200">
-                    <h1 class="text-5xl font-medium tracking-tight text-zinc-950 sm:text-6xl md:text-[75px] dark:text-zinc-50">
-                        Expense management without the busywork.
-                    </h1>
-                    <p class="mx-auto max-w-2xl rounded-2xl p-2 text-sm leading-relaxed text-zinc-700 backdrop-blur-sm sm:text-md md:text-[16px] dark:bg-black/60 dark:text-zinc-400/90">
-                        Capture purchases, sync transactions, manage documents, and get reimbursed, with receipts generated
-                        for you on the fly.
-                    </p>
-                </header>
-                <div class="inline-flex flex-wrap items-center justify-center gap-2.5 pt-2 text-xs font-medium tracking-tight text-zinc-600 dark:text-zinc-400">
-                    <span class="inline-flex cursor-default items-center gap-2 rounded-full border border-zinc-300 bg-zinc-100 px-3.5 py-1.5 font-bold text-zinc-950 shadow-sm transition-transform duration-300 hover:border-[#5A67FF]/40 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100">
-                        <span class="h-1.5 w-1.5 rounded-full bg-[#5A67FF]"></span> 9s - Verity
-                    </span>
-                    <span class="inline-flex cursor-default items-center rounded-full border border-zinc-300/80 bg-zinc-50 px-3.5 py-1.5 text-zinc-600 transition-transform duration-300 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
-                        17s - Expensify
-                    </span>
-                    <span class="inline-flex cursor-default items-center rounded-full border border-zinc-300/80 bg-zinc-50 px-3.5 py-1.5 text-zinc-600 transition-transform duration-300 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
-                        110s - Zoho Expense
-                    </span>
-                </div>
-                <div class="flex items-center gap-3.5 pt-4">
-                    <a href="{% url 'account_signup' %}"
-                       class="rounded-full bg-black px-3 py-3 text-xs font-semibold text-white shadow-md transition-all duration-300 hover:shadow-[0_0_20px_rgba(90,103,255,0.25)] active:scale-[0.97] sm:text-sm md:px-5 dark:bg-white dark:text-black dark:hover:bg-zinc-200">
-                        Get Started Free
-                    </a>
-                    <a href="#workflow"
-                       class="group mt-[1px] flex items-center justify-center gap-2 rounded-full border border-zinc-300 bg-zinc-100 px-3 py-3 text-xs font-semibold text-white shadow-sm backdrop-blur-xl transition-all duration-300 active:scale-[0.97] sm:text-sm md:px-5 dark:border-zinc-800 dark:bg-black">
-                        <span class="text-black dark:text-white">Discover Verity</span>
-                        <svg xmlns="http://www.w3.org/2000/svg"
-                             fill="none"
-                             viewBox="0 0 24 24"
-                             stroke-width="2"
-                             stroke="currentColor"
-                             class="size-5 text-black transition-transform duration-300 group-hover:translate-x-1 dark:text-white">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3" />
-                        </svg>
-                    </a>
-                </div>
-            </div>
-            <div class="relative mt-15 w-full overflow-visible">
-                <div class="mx-auto max-w-7xl overflow-visible px-6 lg:px-0">
-                    <div class="relative w-[180vw] md:w-full">
-                        <div class="pointer-events-none absolute -inset-8 rounded-3xl bg-zinc-400/15 blur-2xl will-change-transform sm:-inset-12 dark:bg-white/5">
-                        </div>
-                        <div class="relative overflow-hidden rounded-xl mask-[linear-gradient(to_bottom,rgba(0,0,0,1)_65%,rgba(0,0,0,0)_100%)]">
-                            <img src="{% static 'core/images/interface-demo-light.webp' %}"
-                                 alt="Verity expense management interface"
-                                 class="h-auto w-full rounded-2xl border border-zinc-200/80 object-cover object-left transition-transform duration-700 dark:hidden dark:border-white/10">
-                            <img src="{% static 'core/images/interface-demo-dark.webp' %}"
-                                 alt="Verity expense management interface in dark mode"
-                                 class="hidden h-auto w-full rounded-2xl border border-zinc-200/80 object-cover object-left transition-transform duration-700 dark:block dark:border-white/5">
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-        <section id="workflow"
-                 class="scroll-mt-24 border-t border-zinc-200/80 py-36 md:py-48 dark:border-zinc-900">
-            <div class="mx-auto max-w-3xl px-6">
-                <div class="mb-24">
-                    <span class="font-mono text-xs tracking-widest text-zinc-400 uppercase dark:text-zinc-500">01 / Process</span>
-                    <h2 class="mt-4 text-3xl font-normal tracking-tight text-zinc-950 sm:text-4xl dark:text-zinc-50">
-                        A single continuous line from purchase to ledger.
-                    </h2>
-                </div>
-                <div class="relative space-y-24 border-l border-zinc-200 pl-8 md:pl-12 dark:border-zinc-800">
-                    <div class="relative">
-                        <span class="absolute top-1.5 -left-[37px] flex size-2.5 items-center justify-center rounded-full bg-zinc-950 ring-4 ring-white md:-left-[53px] dark:bg-zinc-100 dark:ring-zinc-950"></span>
-                        <span class="font-mono text-[11px] text-zinc-400 uppercase">Phase 01 — Capture</span>
-                        <h3 class="mt-2 text-xl font-medium text-zinc-950 dark:text-zinc-100">Instant Extraction</h3>
-                        <p class="mt-3 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
-                            Drop any receipt, invoice, or billing document. Verity instantly extracts merchant metadata,
-                            itemized breakdown, tax codes, and amounts in ~9 seconds—eliminating manual typing completely.
-                        </p>
-                    </div>
-                    <div class="relative">
-                        <span class="absolute top-1.5 -left-[37px] flex size-2.5 items-center justify-center rounded-full bg-zinc-400 ring-4 ring-white md:-left-[53px] dark:bg-zinc-700 dark:ring-zinc-950"></span>
-                        <span class="font-mono text-[11px] text-zinc-400 uppercase">Phase 02 — Match</span>
-                        <h3 class="mt-2 text-xl font-medium text-zinc-950 dark:text-zinc-100">Bank Transaction Link</h3>
-                        <p class="mt-3 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
-                            Verity compares cleared bank transactions with your uploaded evidence automatically. Timestamps,
-                            totals, and merchant descriptors are verified in the background.
-                        </p>
-                    </div>
-                    <div class="relative">
-                        <span class="absolute top-1.5 -left-[37px] flex size-2.5 items-center justify-center rounded-full bg-zinc-400 ring-4 ring-white md:-left-[53px] dark:bg-zinc-700 dark:ring-zinc-950"></span>
-                        <span class="font-mono text-[11px] text-zinc-400 uppercase">Phase 03 — Retain</span>
-                        <h3 class="mt-2 text-xl font-medium text-zinc-950 dark:text-zinc-100">Permanent Life Cycle</h3>
-                        <p class="mt-3 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
-                            Store warranties, manuals, tax schedules, and supporting contracts bound directly to the
-                            underlying expense. Accessible for accounting, audits, and records years down the line.
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </section>
-        <section id="performance"
-                 class="scroll-mt-24 border-t border-zinc-200/80 py-36 md:py-48 dark:border-zinc-900">
-            <div class="mx-auto max-w-3xl px-6">
-                <div class="mb-16">
-                    <span class="font-mono text-xs tracking-widest text-zinc-400 uppercase dark:text-zinc-500">02 / Speed</span>
-                    <h2 class="mt-4 text-3xl font-normal tracking-tight text-zinc-950 sm:text-4xl dark:text-zinc-50">
-                        Minimal time per entry.
-                    </h2>
-                    <p class="mt-3 text-sm text-zinc-600 dark:text-zinc-400">
-                        Average standard extraction speed per mobile upload under identical conditions.
-                    </p>
-                </div>
-                <div class="divide-y divide-zinc-200 border-y border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
-                    <div class="flex items-center justify-between py-6">
-                        <div>
-                            <span class="text-base font-medium text-zinc-950 dark:text-zinc-100">Verity</span>
-                            <p class="text-xs text-zinc-500">Automated structured extraction</p>
-                        </div>
-                        <span class="font-mono text-2xl font-bold text-zinc-950 dark:text-zinc-100">~9s</span>
-                    </div>
-                    <div class="flex items-center justify-between py-6 opacity-60">
-                        <div>
-                            <span class="text-base font-medium text-zinc-900 dark:text-zinc-200">Expensify</span>
-                            <p class="text-xs text-zinc-500">Standard scan</p>
-                        </div>
-                        <span class="font-mono text-2xl text-zinc-600 dark:text-zinc-400">~17s</span>
-                    </div>
-                    <div class="flex items-center justify-between py-6 opacity-40">
-                        <div>
-                            <span class="text-base font-medium text-zinc-900 dark:text-zinc-200">Zoho Expense</span>
-                            <p class="text-xs text-zinc-500">Standard scan</p>
-                        </div>
-                        <span class="font-mono text-2xl text-zinc-600 dark:text-zinc-400">~110s</span>
-                    </div>
-                </div>
-                <p class="mt-8 text-[11px] leading-relaxed text-zinc-400 dark:text-zinc-500">
-                    * Internal controlled testing benchmarks. Competitor names are registered trademarks of their respective
-                    owners, used for identification purposes only.
+                <h1 class="text-5xl font-medium tracking-tight text-zinc-950 sm:text-6xl md:text-[75px] dark:text-zinc-50">
+                    Expense management without the busywork.
+                </h1>
+                <p class="mx-auto max-w-2xl rounded-2xl p-2 text-sm leading-relaxed text-zinc-700 backdrop-blur-sm sm:text-md md:text-[16px] dark:bg-black/60 dark:text-zinc-400/90">
+                    Capture purchases, sync transactions, manage documents, and get reimbursed, with receipts generated
+                    for you on the fly.
                 </p>
+            </header>
+            <div class="inline-flex flex-wrap items-center justify-center gap-2.5 pt-2 text-xs font-medium tracking-tight text-zinc-600 dark:text-zinc-400">
+                <span class="inline-flex cursor-default items-center gap-2 rounded-full border border-zinc-300 bg-zinc-100 px-3.5 py-1.5 font-bold text-zinc-950 shadow-sm transition-transform duration-300 hover:border-[#5A67FF]/40 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100">
+                    <span class="h-1.5 w-1.5 rounded-full bg-[#5A67FF]"></span> 9s - Verity
+                </span>
+                <span class="inline-flex cursor-default items-center rounded-full border border-zinc-300/80 bg-zinc-50 px-3.5 py-1.5 text-zinc-600 transition-transform duration-300 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
+                    17s - Expensify
+                </span>
+                <span class="inline-flex cursor-default items-center rounded-full border border-zinc-300/80 bg-zinc-50 px-3.5 py-1.5 text-zinc-600 transition-transform duration-300 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
+                    110s - Zoho Expense
+                </span>
             </div>
-        </section>
-        <section id="reimbursements"
-                 class="scroll-mt-24 border-t border-zinc-200/80 py-36 md:py-48 dark:border-zinc-900">
-            <div class="mx-auto max-w-3xl px-6">
-                <span class="font-mono text-xs tracking-widest text-zinc-400 uppercase dark:text-zinc-500">03 / Reimbursements</span>
+            <div class="flex items-center gap-3.5 pt-4">
+                <a href="{% url 'account_signup' %}"
+                   class="rounded-full bg-black px-3 py-3 text-xs font-semibold text-white shadow-md transition-all duration-300 hover:shadow-[0_0_20px_rgba(90,103,255,0.25)] active:scale-[0.97] sm:text-sm md:px-5 dark:bg-white dark:text-black dark:hover:bg-zinc-200">
+                    Get Started Free
+                </a>
+                <a href="#workflow"
+                   class="group mt-[1px] flex items-center justify-center gap-2 rounded-full border border-zinc-300 bg-zinc-100 px-3 py-3 text-xs font-semibold text-white shadow-sm backdrop-blur-xl transition-all duration-300 active:scale-[0.97] sm:text-sm md:px-5 dark:border-zinc-800 dark:bg-black">
+                    <span class="text-black dark:text-white">Discover Verity</span>
+                    <svg xmlns="http://www.w3.org/2000/svg"
+                         fill="none"
+                         viewBox="0 0 24 24"
+                         stroke-width="2"
+                         stroke="currentColor"
+                         class="size-5 text-black transition-transform duration-300 group-hover:translate-x-1 dark:text-white">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3" />
+                    </svg>
+                </a>
+            </div>
+        </div>
+        <div class="relative mt-15 w-full overflow-visible">
+            <div class="mx-auto max-w-7xl overflow-visible px-6 lg:px-0">
+                <div class="relative w-[180vw] md:w-full">
+                    <div class="pointer-events-none absolute -inset-8 rounded-3xl bg-zinc-400/15 blur-2xl will-change-transform sm:-inset-12 dark:bg-white/5">
+                    </div>
+                    <div class="relative overflow-hidden rounded-xl mask-[linear-gradient(to_bottom,rgba(0,0,0,1)_65%,rgba(0,0,0,0)_100%)]">
+                        <img src="{% static 'core/images/interface-demo-light.webp' %}"
+                             alt="Verity expense management interface"
+                             class="h-auto w-full rounded-2xl border border-zinc-200/80 object-cover object-left transition-transform duration-700 dark:hidden dark:border-white/10">
+                        <img src="{% static 'core/images/interface-demo-dark.webp' %}"
+                             alt="Verity expense management interface in dark mode"
+                             class="hidden h-auto w-full rounded-2xl border border-zinc-200/80 object-cover object-left transition-transform duration-700 dark:block dark:border-white/5">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <section id="workflow"
+             class="scroll-mt-24 border-t border-zinc-200/80 py-36 md:py-48 dark:border-zinc-900">
+        <div class="mx-auto max-w-3xl px-6">
+            <div class="mb-24">
+                <span class="font-mono text-xs tracking-widest text-zinc-400 uppercase dark:text-zinc-500">01 / Process</span>
                 <h2 class="mt-4 text-3xl font-normal tracking-tight text-zinc-950 sm:text-4xl dark:text-zinc-50">
-                    Request payouts without exposing your ledger.
+                    A single continuous line from purchase to ledger.
                 </h2>
-                <p class="mt-4 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
-                    Convert any existing purchase into a clean, isolated reimbursement link. External reviewers, clients, or
-                    managers receive the exact proof of payment and supporting files without getting access to your full
-                    financial workspace.
+            </div>
+            <div class="relative space-y-24 border-l border-zinc-200 pl-8 md:pl-12 dark:border-zinc-800">
+                <div class="relative">
+                    <span class="absolute top-1.5 -left-[37px] flex size-2.5 items-center justify-center rounded-full bg-zinc-950 ring-4 ring-white md:-left-[53px] dark:bg-zinc-100 dark:ring-zinc-950"></span>
+                    <span class="font-mono text-[11px] text-zinc-400 uppercase">Phase 01 — Capture</span>
+                    <h3 class="mt-2 text-xl font-medium text-zinc-950 dark:text-zinc-100">Instant Extraction</h3>
+                    <p class="mt-3 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
+                        Drop any receipt, invoice, or billing document. Verity instantly extracts merchant metadata,
+                        itemized breakdown, tax codes, and amounts in ~9 seconds—eliminating manual typing completely.
+                    </p>
+                </div>
+                <div class="relative">
+                    <span class="absolute top-1.5 -left-[37px] flex size-2.5 items-center justify-center rounded-full bg-zinc-400 ring-4 ring-white md:-left-[53px] dark:bg-zinc-700 dark:ring-zinc-950"></span>
+                    <span class="font-mono text-[11px] text-zinc-400 uppercase">Phase 02 — Match</span>
+                    <h3 class="mt-2 text-xl font-medium text-zinc-950 dark:text-zinc-100">Bank Transaction Link</h3>
+                    <p class="mt-3 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
+                        Verity compares cleared bank transactions with your uploaded evidence automatically. Timestamps,
+                        totals, and merchant descriptors are verified in the background.
+                    </p>
+                </div>
+                <div class="relative">
+                    <span class="absolute top-1.5 -left-[37px] flex size-2.5 items-center justify-center rounded-full bg-zinc-400 ring-4 ring-white md:-left-[53px] dark:bg-zinc-700 dark:ring-zinc-950"></span>
+                    <span class="font-mono text-[11px] text-zinc-400 uppercase">Phase 03 — Retain</span>
+                    <h3 class="mt-2 text-xl font-medium text-zinc-950 dark:text-zinc-100">Permanent Life Cycle</h3>
+                    <p class="mt-3 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
+                        Store warranties, manuals, tax schedules, and supporting contracts bound directly to the
+                        underlying expense. Accessible for accounting, audits, and records years down the line.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+    <section id="performance"
+             class="scroll-mt-24 border-t border-zinc-200/80 py-36 md:py-48 dark:border-zinc-900">
+        <div class="mx-auto max-w-3xl px-6">
+            <div class="mb-16">
+                <span class="font-mono text-xs tracking-widest text-zinc-400 uppercase dark:text-zinc-500">02 / Speed</span>
+                <h2 class="mt-4 text-3xl font-normal tracking-tight text-zinc-950 sm:text-4xl dark:text-zinc-50">
+                    Minimal time per entry.
+                </h2>
+                <p class="mt-3 text-sm text-zinc-600 dark:text-zinc-400">
+                    Average standard extraction speed per mobile upload under identical conditions.
                 </p>
-                <div class="mt-12 grid grid-cols-1 gap-6 border-t border-zinc-200 pt-8 sm:grid-cols-2 dark:border-zinc-800">
+            </div>
+            <div class="divide-y divide-zinc-200 border-y border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
+                <div class="flex items-center justify-between py-6">
                     <div>
-                        <h4 class="font-mono text-xs text-zinc-400 uppercase">Zero Duplication</h4>
-                        <p class="mt-2 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
-                            Uses the original verified record directly. No re-typing receipts or re-attaching PDFs for
-                            approval.
-                        </p>
+                        <span class="text-base font-medium text-zinc-950 dark:text-zinc-100">Verity</span>
+                        <p class="text-xs text-zinc-500">Automated structured extraction</p>
                     </div>
+                    <span class="font-mono text-2xl font-bold text-zinc-950 dark:text-zinc-100">~9s</span>
+                </div>
+                <div class="flex items-center justify-between py-6 opacity-60">
                     <div>
-                        <h4 class="font-mono text-xs text-zinc-400 uppercase">Audit Trail</h4>
-                        <p class="mt-2 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
-                            Follow submission, review status, approval timestamps, and payment transfers in real time.
-                        </p>
+                        <span class="text-base font-medium text-zinc-900 dark:text-zinc-200">Expensify</span>
+                        <p class="text-xs text-zinc-500">Standard scan</p>
+                    </div>
+                    <span class="font-mono text-2xl text-zinc-600 dark:text-zinc-400">~17s</span>
+                </div>
+                <div class="flex items-center justify-between py-6 opacity-40">
+                    <div>
+                        <span class="text-base font-medium text-zinc-900 dark:text-zinc-200">Zoho Expense</span>
+                        <p class="text-xs text-zinc-500">Standard scan</p>
+                    </div>
+                    <span class="font-mono text-2xl text-zinc-600 dark:text-zinc-400">~110s</span>
+                </div>
+            </div>
+            <p class="mt-8 text-[11px] leading-relaxed text-zinc-400 dark:text-zinc-500">
+                * Internal controlled testing benchmarks. Competitor names are registered trademarks of their respective
+                owners, used for identification purposes only.
+            </p>
+        </div>
+    </section>
+    <section id="reimbursements"
+             class="scroll-mt-24 border-t border-zinc-200/80 py-36 md:py-48 dark:border-zinc-900">
+        <div class="mx-auto max-w-3xl px-6">
+            <span class="font-mono text-xs tracking-widest text-zinc-400 uppercase dark:text-zinc-500">03 / Reimbursements</span>
+            <h2 class="mt-4 text-3xl font-normal tracking-tight text-zinc-950 sm:text-4xl dark:text-zinc-50">
+                Request payouts without exposing your ledger.
+            </h2>
+            <p class="mt-4 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
+                Convert any existing purchase into a clean, isolated reimbursement link. External reviewers, clients, or
+                managers receive the exact proof of payment and supporting files without getting access to your full
+                financial workspace.
+            </p>
+            <div class="mt-12 grid grid-cols-1 gap-6 border-t border-zinc-200 pt-8 sm:grid-cols-2 dark:border-zinc-800">
+                <div>
+                    <h4 class="font-mono text-xs text-zinc-400 uppercase">Zero Duplication</h4>
+                    <p class="mt-2 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
+                        Uses the original verified record directly. No re-typing receipts or re-attaching PDFs for
+                        approval.
+                    </p>
+                </div>
+                <div>
+                    <h4 class="font-mono text-xs text-zinc-400 uppercase">Audit Trail</h4>
+                    <p class="mt-2 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
+                        Follow submission, review status, approval timestamps, and payment transfers in real time.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- PRICING SECTION (Unchanged) -->
+    <section id="pricing"
+             class="scroll-mt-24 border-t border-zinc-200 dark:border-zinc-900">
+        <div class="mx-auto max-w-5xl px-6 py-20"
+             x-data="{ selectedCategory: 'base_plan' }">{% include "billing/partials/pricing_cards.html" %}</div>
+    </section>
+    <section id="faq"
+             class="scroll-mt-24 border-t border-zinc-200/80 py-36 md:py-48 dark:border-zinc-900">
+        <div class="mx-auto max-w-3xl px-6" x-data="{ openFaq: null }">
+            <div class="mb-16">
+                <span class="font-mono text-xs tracking-widest text-zinc-400 uppercase dark:text-zinc-500">04 / FAQ</span>
+                <h2 class="mt-4 text-3xl font-normal tracking-tight text-zinc-950 sm:text-4xl dark:text-zinc-50">
+                    Frequently asked questions.
+                </h2>
+            </div>
+            <div class="divide-y divide-zinc-200 border-y border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
+                <div class="py-6">
+                    <button @click="openFaq = (openFaq === 1 ? null : 1)"
+                            class="flex w-full items-center justify-between text-left focus:outline-none">
+                        <span class="text-sm font-medium text-zinc-950 dark:text-zinc-100">Who is Verity for?</span>
+                        <span class="font-mono text-zinc-400" x-text="openFaq === 1 ? '-' : '+'"></span>
+                    </button>
+                    <div x-show="openFaq === 1"
+                         x-collapse
+                         x-cloak
+                         class="mt-4 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
+                        Verity is built for anyone who needs a reliable record of their expenses — from contractors
+                        and freelancers to small businesses and teams managing employee purchases and reimbursements.
+                    </div>
+                </div>
+                <div class="py-6">
+                    <button @click="openFaq = (openFaq === 2 ? null : 2)"
+                            class="flex w-full items-center justify-between text-left focus:outline-none">
+                        <span class="text-sm font-medium text-zinc-950 dark:text-zinc-100">How does Verity handle reimbursements?</span>
+                        <span class="font-mono text-zinc-400" x-text="openFaq === 2 ? '-' : '+'"></span>
+                    </button>
+                    <div x-show="openFaq === 2"
+                         x-collapse
+                         x-cloak
+                         class="mt-4 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
+                        Reimbursements are created directly from existing expense records. The record can be shared for
+                        review, so the receipt, expense details, and supporting documents stay connected to the request
+                        instead of being copied into another system.
+                    </div>
+                </div>
+                <div class="py-6">
+                    <button @click="openFaq = (openFaq === 3 ? null : 3)"
+                            class="flex w-full items-center justify-between text-left focus:outline-none">
+                        <span class="text-sm font-medium text-zinc-950 dark:text-zinc-100">Can I share an expense with someone else?</span>
+                        <span class="font-mono text-zinc-400" x-text="openFaq === 3 ? '-' : '+'"></span>
+                    </button>
+                    <div x-show="openFaq === 3"
+                         x-collapse
+                         x-cloak
+                         class="mt-4 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
+                        Yes. Share individual records with collaborators when you need another person to review or work
+                        on an expense. Your other financial records remain private, so collaboration doesn't require
+                        handing over your entire expense history.
+                    </div>
+                </div>
+                <div class="py-6">
+                    <button @click="openFaq = (openFaq === 4 ? null : 4)"
+                            class="flex w-full items-center justify-between text-left focus:outline-none">
+                        <span class="text-sm font-medium text-zinc-950 dark:text-zinc-100">How does Verity differ from standard expense managers?</span>
+                        <span class="font-mono text-zinc-400" x-text="openFaq === 4 ? '-' : '+'"></span>
+                    </button>
+                    <div x-show="openFaq === 4"
+                         x-collapse
+                         x-cloak
+                         class="mt-4 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
+                        Verity treats an expense as more than a receipt. It connects the original purchase with bank
+                        transactions, supporting documents, warranties, reimbursements, sharing, and its history —
+                        giving you one place to understand the complete expense.
+                    </div>
+                </div>
+                <div class="py-6">
+                    <button @click="openFaq = (openFaq === 5 ? null : 5)"
+                            class="flex w-full items-center justify-between text-left focus:outline-none">
+                        <span class="text-sm font-medium text-zinc-950 dark:text-zinc-100">Is my financial data secure?</span>
+                        <span class="font-mono text-zinc-400" x-text="openFaq === 5 ? '-' : '+'"></span>
+                    </button>
+                    <div x-show="openFaq === 5"
+                         x-collapse
+                         x-cloak
+                         class="mt-4 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
+                        Verity is designed around keeping your financial records private. Documents and sensitive data
+                        are protected in transit and at rest, and shared access is limited to the records you choose to
+                        collaborate on.
                     </div>
                 </div>
             </div>
-        </section>
-        <!-- PRICING SECTION (Unchanged) -->
-        <section id="pricing"
-                 class="scroll-mt-24 border-t border-zinc-200 dark:border-zinc-900">
-            <div class="mx-auto max-w-5xl px-6 py-20"
-                 x-data="{ selectedCategory: 'base_plan' }">{% include "billing/partials/pricing_cards.html" %}</div>
-        </section>
-        <section id="faq"
-                 class="scroll-mt-24 border-t border-zinc-200/80 py-36 md:py-48 dark:border-zinc-900">
-            <div class="mx-auto max-w-3xl px-6" x-data="{ openFaq: null }">
-                <div class="mb-16">
-                    <span class="font-mono text-xs tracking-widest text-zinc-400 uppercase dark:text-zinc-500">04 / FAQ</span>
-                    <h2 class="mt-4 text-3xl font-normal tracking-tight text-zinc-950 sm:text-4xl dark:text-zinc-50">
-                        Frequently asked questions.
-                    </h2>
-                </div>
-                <div class="divide-y divide-zinc-200 border-y border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
-                    <div class="py-6">
-                        <button @click="openFaq = (openFaq === 1 ? null : 1)"
-                                class="flex w-full items-center justify-between text-left focus:outline-none">
-                            <span class="text-sm font-medium text-zinc-950 dark:text-zinc-100">Who is Verity for?</span>
-                            <span class="font-mono text-zinc-400" x-text="openFaq === 1 ? '-' : '+'"></span>
-                        </button>
-                        <div x-show="openFaq === 1"
-                             x-collapse
-                             x-cloak
-                             class="mt-4 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
-                            Verity is built for anyone who needs a reliable record of their expenses — from contractors
-                            and freelancers to small businesses and teams managing employee purchases and reimbursements.
-                        </div>
-                    </div>
-                    <div class="py-6">
-                        <button @click="openFaq = (openFaq === 2 ? null : 2)"
-                                class="flex w-full items-center justify-between text-left focus:outline-none">
-                            <span class="text-sm font-medium text-zinc-950 dark:text-zinc-100">How does Verity handle reimbursements?</span>
-                            <span class="font-mono text-zinc-400" x-text="openFaq === 2 ? '-' : '+'"></span>
-                        </button>
-                        <div x-show="openFaq === 2"
-                             x-collapse
-                             x-cloak
-                             class="mt-4 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
-                            Reimbursements are created directly from existing expense records. The record can be shared for
-                            review, so the receipt, expense details, and supporting documents stay connected to the request
-                            instead of being copied into another system.
-                        </div>
-                    </div>
-                    <div class="py-6">
-                        <button @click="openFaq = (openFaq === 3 ? null : 3)"
-                                class="flex w-full items-center justify-between text-left focus:outline-none">
-                            <span class="text-sm font-medium text-zinc-950 dark:text-zinc-100">Can I share an expense with someone else?</span>
-                            <span class="font-mono text-zinc-400" x-text="openFaq === 3 ? '-' : '+'"></span>
-                        </button>
-                        <div x-show="openFaq === 3"
-                             x-collapse
-                             x-cloak
-                             class="mt-4 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
-                            Yes. Share individual records with collaborators when you need another person to review or work
-                            on an expense. Your other financial records remain private, so collaboration doesn't require
-                            handing over your entire expense history.
-                        </div>
-                    </div>
-                    <div class="py-6">
-                        <button @click="openFaq = (openFaq === 4 ? null : 4)"
-                                class="flex w-full items-center justify-between text-left focus:outline-none">
-                            <span class="text-sm font-medium text-zinc-950 dark:text-zinc-100">How does Verity differ from standard expense managers?</span>
-                            <span class="font-mono text-zinc-400" x-text="openFaq === 4 ? '-' : '+'"></span>
-                        </button>
-                        <div x-show="openFaq === 4"
-                             x-collapse
-                             x-cloak
-                             class="mt-4 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
-                            Verity treats an expense as more than a receipt. It connects the original purchase with bank
-                            transactions, supporting documents, warranties, reimbursements, sharing, and its history —
-                            giving you one place to understand the complete expense.
-                        </div>
-                    </div>
-                    <div class="py-6">
-                        <button @click="openFaq = (openFaq === 5 ? null : 5)"
-                                class="flex w-full items-center justify-between text-left focus:outline-none">
-                            <span class="text-sm font-medium text-zinc-950 dark:text-zinc-100">Is my financial data secure?</span>
-                            <span class="font-mono text-zinc-400" x-text="openFaq === 5 ? '-' : '+'"></span>
-                        </button>
-                        <div x-show="openFaq === 5"
-                             x-collapse
-                             x-cloak
-                             class="mt-4 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
-                            Verity is designed around keeping your financial records private. Documents and sensitive data
-                            are protected in transit and at rest, and shared access is limited to the records you choose to
-                            collaborate on.
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-    {% endblock content %}
+        </div>
+    </section>
+{% endblock content %}
