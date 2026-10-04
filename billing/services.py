@@ -128,6 +128,7 @@ def _decorate_product_for_pricing(product, *, base_plan, held_product_ids):
     product.already_active = product.id in held_product_ids
     product.recommended = meta.recommended if meta else False
     product.pro_only = _product_pro_only(meta, base_plan)
+    product.stackable = meta.stackable if meta else False
 
 
 def pricing_context(user) -> dict:

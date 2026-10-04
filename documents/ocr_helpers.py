@@ -75,30 +75,26 @@ def _decode_image(image_bytes: bytes) -> np.ndarray | None:
             return None
 
     nparr = np.frombuffer(image_bytes, np.uint8)
+    reduced = cv2.imdecode(nparr, cv2.IMREAD_REDUCED_COLOR_2)
+    if reduced is not None and max(reduced.shape[:2]) >= MAX_DIMENSION:
+        return reduced
     return cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
 
 def _deskew_image(img: np.ndarray) -> np.ndarray:
-    """Rotate image to correct skew detected via the deskew library.
-
-    Downsamples to SKEW_MAX_DIM for angle detection performance, then
-    applies the rotation at full resolution if the angle exceeds the threshold.
-    """
+    """Rotate image to correct skew detected via the deskew library."""
     import cv2
     from deskew import determine_skew
 
     h, w = img.shape[:2]
     scale = SKEW_MAX_DIM / max(h, w)
-    if scale < 1.0:
-        small_gray = cv2.resize(
-            cv2.cvtColor(img, cv2.COLOR_BGR2GRAY),
-            (int(w * scale), int(h * scale)),
-            interpolation=cv2.INTER_AREA,
-        )
-    else:
-        small_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    small = (
+        cv2.resize(img, (int(w * scale), int(h * scale)), interpolation=cv2.INTER_AREA)
+        if scale < 1.0
+        else img
+    )
 
-    angle = determine_skew(small_gray)
+    angle = determine_skew(cv2.cvtColor(small, cv2.COLOR_BGR2GRAY))
 
     if angle and abs(angle) > SKEW_THRESHOLD:
         center = (w // 2, h // 2)
@@ -107,7 +103,7 @@ def _deskew_image(img: np.ndarray) -> np.ndarray:
             img,
             matrix,
             (w, h),
-            flags=cv2.INTER_CUBIC,
+            flags=cv2.INTER_LINEAR,
             borderMode=cv2.BORDER_REPLICATE,
         )
     return img
@@ -136,11 +132,7 @@ def _encode_webp(img: np.ndarray) -> bytes:
 
 
 def render_pdf_pages(pdf_bytes: bytes, dpi: int = PDF_RENDER_DPI) -> list[bytes] | None:
-    """Render every page of a PDF to JPEG bytes for Gemini input.
-
-    Sending rendered images instead of the raw PDF shrinks the payload
-    5-20x and lets Gemini process the pages as images, which is markedly
-    faster than server-side PDF parsing. Returns None (so the caller falls
+    """Render every page of a PDF to JPEG bytes for Gemini input. Returns None (so the caller falls
     back to the raw PDF) if rendering fails for any reason.
     """
     try:
@@ -164,7 +156,7 @@ def render_pdf_pages(pdf_bytes: bytes, dpi: int = PDF_RENDER_DPI) -> list[bytes]
 
 
 def prepare_image_for_gemini(image_bytes: bytes) -> bytes:
-    """Full preprocessing pipeline: decode, deskew, resize, and encode to WebP.
+    """Full preprocessing pipeline: decode, resize, deskew, and encode to WebP.
 
     Falls back to the original bytes if any step fails, ensuring OCR can
     still attempt extraction on unprocessed images.
@@ -175,8 +167,8 @@ def prepare_image_for_gemini(image_bytes: bytes) -> bytes:
         return image_bytes
 
     try:
-        img = _deskew_image(img)
         img = _resize_image(img)
+        img = _deskew_image(img)
         return _encode_webp(img)
 
     except Exception as e:

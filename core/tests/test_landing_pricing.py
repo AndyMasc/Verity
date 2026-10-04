@@ -24,7 +24,7 @@ class LandingPagePricingTests(TestCase):
 
     def test_landing_page_anonymous_visitor_sees_signup_cta_not_checkout(self):
         response = self.client.get("/")
-        self.assertContains(response, "Sign up to subscribe")
+        self.assertContains(response, "Get started for free")
         self.assertNotContains(response, "Continue to checkout")
 
     def test_pricing_page_shows_checkout_for_authenticated_user(self):

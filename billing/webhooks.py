@@ -77,6 +77,22 @@ def failure_reason(failure: dict[str, Any]) -> str:
     return failure.get("message") or failure.get("code") or "unknown"
 
 
+def checkout_categories(subscription_id: str | None) -> set[str]:
+    """Categories on the subscription a settled checkout created.
+
+    A checkout.session.completed payload carries no line_items -- dj-stripe
+    does not request the expansion -- so the categories come from the
+    subscription dj-stripe has already synced. Empty when that row has not
+    landed yet, which costs one event its plan_types and nothing else.
+    """
+    if not subscription_id:
+        return set()
+    subscription = Subscription.objects.filter(id=subscription_id).first()
+    if subscription is None:
+        return set()
+    return {meta.category for meta in metadata.metas_for_subscription(subscription)}
+
+
 def _subscription_categories(stripe_sub: dict) -> set[str]:
     """Return the pricing categories covered by a Stripe subscription payload."""
     categories: set[str] = set()
@@ -304,15 +320,7 @@ def handle_checkout_settled(**kwargs: Any) -> None:
     if session.get("payment_status") not in ("paid", "no_payment_required"):
         return
 
-    line_items = (session.get("line_items") or {}).get("data") or []
-    categories = {
-        category
-        for category in (
-            metadata.category_for_product((item.get("price") or {}).get("product"))
-            for item in line_items
-        )
-        if category
-    }
+    categories = checkout_categories(session.get("subscription"))
     capture(
         "subscription_checkout_completed",
         _subscriber_pk(session.get("customer"), session.get("client_reference_id")),
