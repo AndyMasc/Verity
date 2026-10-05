@@ -65,7 +65,7 @@ class PricingContextTests(TestCase):
             livemode=False,
             active=True,
             name="Verity Pro",
-            metadata={"category": "base_plan"},
+            metadata={"category": metadata.BASE_PLAN_CATEGORY},
         )
         keep = Price.objects.create(
             id="price_keep",
@@ -149,7 +149,7 @@ class AlreadyActiveTests(TestCase):
         self.user.customer = self.customer
         self.user.save(update_fields=["customer"])
 
-    def _product(self, meta, category="base_plan"):
+    def _product(self, meta, category=metadata.BASE_PLAN_CATEGORY):
         product, _ = Product.objects.get_or_create(
             id=meta.stripe_id,
             livemode=False,

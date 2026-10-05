@@ -1,7 +1,7 @@
 BYTES_PER_GB = 10**9
 
 # Pro plan features
-PRO_SCAN_LIMIT = 500  # Maximum quick scans per month before fair use review
+PRO_SCAN_LIMIT = 100  # Maximum quick scans per month before fair use review
 UNLIMITED_SCANS = f"{PRO_SCAN_LIMIT} quick scans / month"
 BANK_TRANSACTION_SYNC = "Bank transaction sync (US, CA, & supported EU institutions)"
 QUICK_REIMBURSEMENT_REQUEST = (

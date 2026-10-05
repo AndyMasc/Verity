@@ -99,7 +99,7 @@
 
         function setStatus(msg, type = "idle") {
             if (!statusElem) return;
-            statusElem.textContent = msg;
+            statusElem.innerHTML = msg;
             statusElem.className = "mb-4 text-sm text-center min-h-5 transition-all duration-200 " +
             (type === "error" ? "text-rose-500" : type === "success" ? "text-emerald-500" : "text-zinc-600 dark:text-zinc-400");
         }

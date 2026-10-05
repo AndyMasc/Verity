@@ -51,8 +51,7 @@ def create_checkout_session(
         "success_url": success_url,
         "cancel_url": cancel_url,
     }
-    # Identifies the buyer on the session so webhooks can attribute the event
-    # back to a user even when the customer row is not linked yet.
+    # Identifies the buyer on the session so webhooks can attribute the event back to a user even when the customer row is not linked yet.
     if client_reference_id is not None:
         kwargs["client_reference_id"] = client_reference_id
     if idempotency_key is not None:
@@ -69,11 +68,7 @@ def create_billing_portal_session(
 
 
 def get_metered_subscription_item(user, metered_price_id: str) -> str | None:
-    """Return the item id for "metered_price_id" on the user's subscription, or None.
-
-    The caller resolves which price applies through metadata.metered_price_id, so
-    the plan-based choice lives with the rest of the pricing rules.
-    """
+    """Return the item id for "metered_price_id" on the user's subscription, or None."""
 
     _configure()
     if not metered_price_id or not user.has_active_subscription:
@@ -81,8 +76,6 @@ def get_metered_subscription_item(user, metered_price_id: str) -> str | None:
     subscription = retrieve_subscription(user.subscription.id)
     for item in subscription.get("items", {}).get("data", []):
         price = item.get("price")
-        # Stripe sends price as an id unless the field was expanded, and a str has
-        # no .get, so accept both shapes.
         price_id = price.get("id") if isinstance(price, dict) else price
         if price_id == metered_price_id:
             return item.get("id")
@@ -115,13 +108,7 @@ def customer_missing_in_stripe(customer_id: str) -> bool:
 
 
 def _checkout_price_id(product: Product) -> str | None:
-    """Return the price id to submit at checkout for a product, or None.
-
-    Mirrors the pricing card display: the most recently created active,
-    monthly-recurring price. "prices.first" is deliberately avoided because
-    dj-stripe Prices have no default ordering, so it can select an archived
-    price that the checkout validation (_validated_price) rejects.
-    """
+    """Return the price id to submit at checkout for a product, or None."""
     candidates = [
         price
         for price in product.prices.all()
@@ -140,7 +127,6 @@ def _decorate_product_for_pricing(product, *, held_product_ids):
     product.features_list = meta.features if meta else []
     product.checkout_price_id = _checkout_price_id(product)
     product.already_active = product.id in held_product_ids
-    product.recommended = meta.recommended if meta else False
 
 
 def pricing_context(user) -> dict:
@@ -156,8 +142,6 @@ def pricing_context(user) -> dict:
     for product in products:
         _decorate_product_for_pricing(product, held_product_ids=held_product_ids)
 
-    # A copy, not the module-level constant: the free plan has no Stripe
-    # product behind it but the cards expect the same shape.
     free_plan = copy(metadata.VERITY_FREE)
     free_plan.features_list = free_plan.features
     free_plan.prices = []
@@ -169,4 +153,5 @@ def pricing_context(user) -> dict:
         "products": products,
         "free_plan": free_plan,
         "has_active_subscription": bool(user.is_authenticated and user.has_active_subscription),
+        "base_plans": products,
     }

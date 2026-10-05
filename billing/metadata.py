@@ -1,31 +1,29 @@
+from __future__ import annotations
+
 from dataclasses import dataclass, field
+from typing import cast
 
 from django.db.models import Prefetch
-from djstripe.models import Customer, SubscriptionItem
+from djstripe.models import Customer, Subscription, SubscriptionItem
 
 from . import features
 
 ACTIVE_SUBSCRIPTION_STATUSES = frozenset({"active", "trialing"})
 
+# Must match the "category" key on each Stripe product's metadata.
+BASE_PLAN_CATEGORY = "base_plan"
+STORAGE_PLAN_CATEGORY = "storage_plan"
+
 _NOT_CACHED = object()
 
 
 def product_category(product) -> str | None:
-    """Return a Stripe product's pricing category.
-
-    Stripe's product metadata is the single source of truth for categories, so
-    that adding a plan needs no code change here. "base_plan" is the paid plan
-    that drives features; "storage_plan" is usage-based storage.
-    """
+    """Return a Stripe product's pricing category."""
     return (getattr(product, "metadata", None) or {}).get("category")
 
 
 @dataclass
 class ProductMetadata:
-    """
-    Metadata for a Stripe product.
-    """
-
     stripe_id: str
     name: str
     features: list[str]
@@ -38,24 +36,18 @@ class ProductMetadata:
     description: str = ""
     storage_limit_gb: float = 0
     monthly_scan_limit: int | None = None
-    recommended: bool = False  # If True, this product is recommended for most users
     metered: bool = False
     price_ids: dict = field(default_factory=dict)
 
-    @property
-    def is_paid(self) -> bool:
-        """True for a paid base plan. Only meaningful on base-plan products."""
-        return self.stripe_id != VERITY_FREE.stripe_id
+    def price_id_for_plan(self, plan: ProductMetadata) -> str | None:
+        """This metered product's price as it applies to "plan".
 
-    def price_id_for_plan(self, paid_base: bool) -> str | None:
-        """This metered product's price for a free or paid base plan.
-
-        A metered product carries one price per plan so the included allowance
-        can differ; the caller says which plan the order is actually buying.
+        Keyed by the plan's Stripe product id, so a new plan needs only a price here
+        rather than a change to the lookup.
         """
         if not self.metered:
             return None
-        return self.price_ids.get("paid" if paid_base else "free")
+        return self.price_ids.get(plan.stripe_id)
 
 
 VERITY_FREE = ProductMetadata(
@@ -76,7 +68,6 @@ VERITY_FREE = ProductMetadata(
 VERITY_PRO = ProductMetadata(
     stripe_id="prod_VC8WUN1RO4Apqx",
     name="Verity Pro",
-    description="For small businesses and teams",
     features=[
         features.INCLUDES_ALL_FREE,
         features.UNLIMITED_SCANS,
@@ -88,20 +79,16 @@ VERITY_PRO = ProductMetadata(
     ],
     storage_limit_gb=features.PRO_STORAGE_LIMIT_GB,
     monthly_scan_limit=features.PRO_SCAN_LIMIT,
-    recommended=True,
 )
 
 USAGE_BASED_STORAGE = ProductMetadata(
     stripe_id="prod_VNkBxaDz3cZbza",
     name="Usage-Based Storage",
-    description="For users who need more storage than the base plan allows",
-    # Lifts the plan quota rather than raising it; the meter bills the difference.
-    storage_limit_gb=0,
+    storage_limit_gb=0,  # Lifts the plan quota; the meter bills the difference.
     metered=True,
-    # One price per plan, so the included allowance differs: FREE_PLAN gets a 500 MB $0 tier, PAID_PLAN a 5000 MB one. Check Stripe - its the source of truth.
     price_ids={
-        "free": "price_1UN6d3BR3saQICXCgJHfZd7O",
-        "paid": "price_1UN6e5BR3saQICXCgQ5ViNNZ",
+        VERITY_FREE.stripe_id: "price_1UN6d3BR3saQICXCgJHfZd7O",  # free plans get a 500 MB free tier
+        VERITY_PRO.stripe_id: "price_1UN6e5BR3saQICXCgQ5ViNNZ",  # paid plans get a 5000 MB free tier
     },
     features=[features.USAGE_BASED_BILLING, features.NO_STORAGE_LIMIT, features.PRICE],
 )
@@ -113,38 +100,83 @@ PRODUCTS = {
 }
 
 
-def _active_subscriptions(user):
-    """Return the user's active subscriptions, from the customer plus the direct FK.
+def subscriptions_for_customers(customer_ids: list) -> list:
+    """Return the subscriptions for Stripe customer ids, with their items prefetched."""
+    if not customer_ids:
+        return []
+    return list(
+        Subscription.objects.filter(customer_id__in=customer_ids).prefetch_related(
+            Prefetch(
+                "items",
+                queryset=SubscriptionItem.objects.select_related("price", "price__product"),
+            )
+        )
+    )
 
-    djstripe stores the subscription payload in "stripe_data" and exposes
-    "status" as a derived property, so status is filtered in Python.
 
-    Subscriptions are collected from both the user's "customer" FK and any
-    Stripe Customer whose "subscriber" points at this user.
+def linked_customer_ids(user, exclude_pk=None) -> list:
+    """Return the Stripe ids of customers linked to "user", excluding their own FK one."""
+    return list(
+        Customer.objects.filter(subscriber=user).exclude(pk=exclude_pk).values_list("id", flat=True)
+    )
+
+
+def prime_active_subscriptions(users) -> None:
+    """Prime the per-user subscription memo for many users in three queries.
+
+    Batch callers otherwise re-walk each user's subscriptions individually, which
+    made per-user work linear in queries.
     """
+    users = list(users)
+    if not users:
+        return
+
+    direct_customer_ids = [user.customer.id for user in users if getattr(user, "customer", None)]
+    # One query for every customer these users own or are linked to.
+    owned = dict(Customer.objects.filter(subscriber__in=users).values_list("subscriber_id", "id"))
+    customer_ids = set(direct_customer_ids) | set(owned.values())
+    subscriptions = subscriptions_for_customers(sorted(customer_ids))
+    by_customer: dict = {}
+    for subscription in subscriptions:
+        by_customer.setdefault(subscription.customer_id, []).append(subscription)
+
+    for user in users:
+        collected: list = []
+        own_id = user.customer.id if getattr(user, "customer", None) else None
+        for customer_id, linked in owned.items():
+            if customer_id == user.pk and customer_id != own_id:
+                collected.extend(by_customer.get(linked, []))
+        if own_id:
+            collected.extend(by_customer.get(own_id, []))
+        direct = getattr(user, "subscription", None)
+        if direct is not None and not any(sub.pk == direct.pk for sub in collected):
+            collected.append(direct)
+        user._pt_active_subscriptions = [
+            sub
+            for sub in collected
+            if getattr(sub, "status", None) in ACTIVE_SUBSCRIPTION_STATUSES
+            or bool(getattr(sub, "cancel_at_period_end", False))
+        ]
+
+
+def _active_subscriptions(user) -> list:
+    """Return the user's active subscriptions, from the customer plus the direct FK."""
+
     cached = getattr(user, "_pt_active_subscriptions", _NOT_CACHED)
     if cached is not _NOT_CACHED:
-        return cached
+        return cast(list, cached)
     if not getattr(user, "is_authenticated", False):
         return []
 
-    subscriptions = []
-    items_prefetch = Prefetch(
-        "items",
-        queryset=SubscriptionItem.objects.select_related("price", "price__product"),
-    )
     customer = getattr(user, "customer", None)
-    if customer is not None:
-        subscriptions.extend(customer.subscriptions.prefetch_related(items_prefetch).all())
 
-    linked_customers = Customer.objects.filter(subscriber=user).exclude(
-        pk=customer.pk if customer is not None else None
-    )
-    for linked in linked_customers:
-        subscriptions.extend(linked.subscriptions.prefetch_related(items_prefetch).all())
-
+    # Every customer linked to this user in one query. Walking them individually cost
+    # two queries each, on the path of every request that resolves a plan.
+    customer_ids = [customer.id] if customer is not None else []
+    customer_ids += linked_customer_ids(user, exclude_pk=customer.pk if customer else None)
+    subscriptions = subscriptions_for_customers(customer_ids)
     direct = getattr(user, "subscription", None)
-    if direct is not None and not any(s.pk == direct.pk for s in subscriptions):
+    if direct is not None and not any(sub.pk == direct.pk for sub in subscriptions):
         subscriptions.append(direct)
     active = []
     for sub in subscriptions:
@@ -166,12 +198,8 @@ def metas_for_subscription(subscription):
 
 
 def _active_products(user) -> dict[str, ProductMetadata]:
-    """Return the products the user is actively subscribed to, keyed by product id.
-
-    A product can appear on two subscriptions at once (the old one whose
-    cancellation has not landed yet, a webhook-synced duplicate), so the most
-    recently created subscription wins rather than the product stacking.
-    """
+    """Return the products the user is actively subscribed to, keyed by product id. A product can appear on two subscriptions at once (the old one whose
+    cancellation has not landed yet, a webhook-synced duplicate), so the most recently created subscription wins rather than the product stacking."""
     entries = [
         (subscription.created, subscription.pk, meta)
         for subscription in _active_subscriptions(user)
@@ -186,8 +214,8 @@ def _active_products(user) -> dict[str, ProductMetadata]:
 def plan_for_user(user) -> ProductMetadata:
     """Return the user's plan (drives plan features), or Free if they have none.
 
-    Usage-based storage is skipped: it is priced like a base plan but carries no
-    plan features, so returning it would hand a free user the paid feature set.
+    "metered" is the discriminator rather than the category: Free and Pro share
+    the "base_plan" category, and only usage-based storage is metered.
     """
     return next(
         (meta for meta in _active_products(user).values() if not meta.metered),
@@ -196,11 +224,7 @@ def plan_for_user(user) -> ProductMetadata:
 
 
 def active_products_for_user(user) -> list[ProductMetadata]:
-    """Return every product the user holds, their plan first.
-
-    The plan comes first so callers can render the plan name without hardcoding
-    an index.
-    """
+    """Return every product the user holds."""
     return sorted(
         _active_products(user).values(),
         key=lambda meta: (meta.metered, meta.name),
@@ -208,12 +232,7 @@ def active_products_for_user(user) -> list[ProductMetadata]:
 
 
 def has_metered_storage(user) -> bool:
-    """True when the user has subscribed to usage-based storage.
-
-    Answered from the cached local subscription rather than Stripe, because this
-    runs on every upload validation. Subscribing is what lifts the storage cap;
-    the plan's own quota still drives what the user is billed for.
-    """
+    """True when the user has subscribed to usage-based storage."""
     product_id = USAGE_BASED_STORAGE.stripe_id
     return any(
         item.price is not None and item.price.product_id == product_id
@@ -223,11 +242,7 @@ def has_metered_storage(user) -> bool:
 
 
 def metered_price_id(product: ProductMetadata, user) -> str | None:
-    """Return the Stripe price id for "product" as it applies to "user".
-
-    One lookup point for metered pricing: a product declares which plans it
-    serves, and the caller's plan picks the price.
-    """
+    """Return the Stripe price id for "product" as it applies to "user"."""
     if not product.metered:
         return None
-    return product.price_id_for_plan(plan_for_user(user).stripe_id != VERITY_FREE.stripe_id)
+    return product.price_id_for_plan(plan_for_user(user))

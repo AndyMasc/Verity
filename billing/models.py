@@ -122,11 +122,8 @@ class CustomUser(AbstractUser):
     def _cancel_overlapping_subscription(
         self, old_sub: Subscription, new_sub_id: str, incoming_categories: set
     ) -> bool:
-        """Cancel overlapping subscription if it has conflicting categories.
-
-        Returns False only when a conflicting plan was found but could not be
-        cancelled at Stripe; True when there was no conflict or the
-        cancellation succeeded.
+        """Cancel overlapping subscription if it has conflicting categories. Returns False only when a conflicting plan was found but could not be
+        cancelled at Stripe; True when there was no conflict or the cancellation succeeded.
         """
         for old_item in old_sub.items.select_related("price__product").all():
             old_product = old_item.price.product if old_item.price else None
@@ -161,20 +158,15 @@ class CustomUser(AbstractUser):
         return True
 
     def handle_new_subscription(self, djstripe_subscription: Subscription) -> bool:
-        """Processes an incoming checkout, updating the primary subscription and
-        canceling overlapping category subscriptions.
-
-        Returns True when every overlapping legacy subscription was cleared
-        successfully (or none existed), False when at least one could not be
-        cancelled at Stripe and the user may be billed twice.
-        """
+        """Processes an incoming checkout, updating the primary subscription and canceling overlapping category subscriptions.
+        Returns True when every overlapping legacy subscription was cleared successfully (or none existed), False when at least one failed."""
         if not self.customer:
             self.customer = djstripe_subscription.customer
             self.save(update_fields=["customer"])
 
         incoming_categories = self._get_incoming_categories(djstripe_subscription)
 
-        if "base_plan" in incoming_categories:
+        if metadata.BASE_PLAN_CATEGORY in incoming_categories:
             self.subscription = djstripe_subscription
             self.save(update_fields=["subscription"])
 

@@ -27,14 +27,14 @@
         {% for product in products %}
             {% with price_id=product.checkout_price_id %}
                 <div {% if price_id and not product.already_active %}@click="togglePrice('{{ price_id }}')"{% endif %}
-                     :class="selectedPrices.includes('{{ price_id }}') ? 'border-indigo-500/50 ring-1 ring-indigo-500/30 bg-indigo-50/30 dark:bg-indigo-950/20 dark:border-indigo-500/40 shadow-xs' : '{% if product.recommended %}border-indigo-300/60 bg-white/90 dark:border-indigo-500/30 dark:bg-zinc-900/60{% else %}border-zinc-200/90 bg-white/70 dark:border-zinc-800/80 dark:bg-zinc-900/40 hover:border-zinc-300 dark:hover:border-zinc-700/80 hover:bg-white dark:hover:bg-zinc-900/70 shadow-xs{% endif %}'"
+                     :class="selectedPrices.includes('{{ price_id }}') ? 'border-indigo-500/50 ring-1 ring-indigo-500/30 bg-indigo-50/30 dark:bg-indigo-950/20 dark:border-indigo-500/40 shadow-xs' : 'border-zinc-200/90 bg-white/70 dark:border-zinc-800/80 dark:bg-zinc-900/40 hover:border-zinc-300 dark:hover:border-zinc-700/80 hover:bg-white dark:hover:bg-zinc-900/70 shadow-xs'"
                      class="group relative flex flex-col justify-between rounded-3xl border p-6 backdrop-blur-md transition-all duration-200 w-full overflow-hidden {% if price_id and not product.already_active %}cursor-pointer{% else %}cursor-default{% endif %}">
-                    <div class="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-indigo-500/30 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 {% if product.recommended %}opacity-100{% endif %}">
+                    <div class="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-indigo-500/30 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 {% if product.stripe_data.metadata.recommended %}opacity-100{% endif %}">
                     </div>
                     <div>
                         <div class="mb-4 flex items-center justify-between">
                             <h3 class="text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">{{ product.name }}</h3>
-                            {% if product.recommended %}
+                            {% if product.metadata.recommended %}
                                 <span class="inline-flex items-center gap-1 rounded-full border border-indigo-500/20 bg-indigo-500/10 px-2 py-0.5 text-[10px] font-medium text-indigo-600 dark:border-indigo-400/20 dark:bg-indigo-400/10 dark:text-indigo-300">
                                     Recommended
                                 </span>

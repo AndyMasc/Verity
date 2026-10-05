@@ -76,7 +76,7 @@ class CheckoutCancelUrlTests(TestCase):
             ) as create_session,
         ):
             response = self.client.post(
-                reverse("create_checkout_session"), {"base_price_id": "price_pro"}
+                reverse("create_checkout_session"), {"price_ids": "price_pro"}
             )
 
         self.assertEqual(response.status_code, 302)

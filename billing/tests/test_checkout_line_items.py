@@ -23,8 +23,8 @@ from .helpers import FakeSession, give_pro_subscription
 
 PRO_PRICE = "price_pro_monthly"
 FREE_PRICE = "price_free_monthly"
-METERED_FREE = metadata.USAGE_BASED_STORAGE.price_ids["free"]
-METERED_PAID = metadata.USAGE_BASED_STORAGE.price_ids["paid"]
+METERED_FREE = metadata.USAGE_BASED_STORAGE.price_id_for_plan(metadata.VERITY_FREE)
+METERED_PAID = metadata.USAGE_BASED_STORAGE.price_id_for_plan(metadata.VERITY_PRO)
 
 
 class CheckoutLineItemTests(TestCase):
@@ -45,7 +45,7 @@ class CheckoutLineItemTests(TestCase):
                 livemode=False,
                 active=True,
                 name=meta.name,
-                metadata={"category": "base_plan"},
+                metadata={"category": metadata.BASE_PLAN_CATEGORY},
             )
             for price_id in price_ids:
                 price = Price.objects.create(
@@ -62,7 +62,7 @@ class CheckoutLineItemTests(TestCase):
             livemode=False,
             active=True,
             name=metadata.USAGE_BASED_STORAGE.name,
-            metadata={"category": "storage_plan"},
+            metadata={"category": metadata.STORAGE_PLAN_CATEGORY},
         )
         for price_id in metadata.USAGE_BASED_STORAGE.price_ids.values():
             price = Price.objects.create(
@@ -74,6 +74,9 @@ class CheckoutLineItemTests(TestCase):
             )
             price.stripe_data = {"recurring": {"interval": "month"}}
             price.save()
+
+    def _deactivate(self, price_id):
+        Price.objects.filter(id=price_id).update(active=False)
 
     def _checkout(self, *price_ids):
         """Post the pricing form and return the line items handed to Stripe."""
@@ -126,6 +129,15 @@ class CheckoutLineItemTests(TestCase):
         give_pro_subscription(self.user)
         (metered,) = self._checkout(METERED_FREE)
         self.assertEqual(metered["price"], METERED_PAID)
+
+    def test_unavailable_tier_price_is_rejected_not_substituted(self):
+        """The tier price, not the selected one, is what Stripe charges."""
+        self._deactivate(METERED_PAID)
+        response = self.client.post(
+            reverse("create_checkout_session"),
+            {"price_ids": [FREE_PRICE, METERED_FREE]},
+        )
+        self.assertEqual(response.status_code, 400)
 
     def test_two_plans_are_rejected(self):
         response = self.client.post(

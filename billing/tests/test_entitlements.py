@@ -166,6 +166,81 @@ class ContextProcessorTests(TestCase):
         add_subscription(self.user, self.customer, status=status, product_id=product_id)
 
 
+class ProSubscriptionResolvesTests(TestCase):
+    """A Pro subscriber must resolve to Pro.
+
+    "plan_for_user" once read Stripe's category off the ProductMetadata dataclass,
+    which has no such attribute, so it always matched nothing and every subscriber
+    was treated as Free.
+    """
+
+    def setUp(self):
+        self.user = CustomUser.objects.create_user(
+            username="resolved",
+            email="resolved@example.com",
+            password="password",
+        )
+        self.customer = Customer.objects.create(
+            id="cus_resolved", livemode=False, created=timezone.now()
+        )
+        self.user.customer = self.customer
+        self.user.save(update_fields=["customer"])
+
+    def _subscribe(self, meta, category):
+        product = Product.objects.create(
+            id=meta.stripe_id,
+            livemode=False,
+            active=True,
+            name=meta.name,
+            metadata={"category": category},
+        )
+        price = Price.objects.create(
+            id=f"price_resolved_{meta.stripe_id}",
+            livemode=False,
+            active=True,
+            product=product,
+            currency="usd",
+        )
+        subscription = Subscription.objects.create(
+            id=f"sub_resolved_{meta.stripe_id}",
+            livemode=False,
+            created=timezone.now(),
+            customer=self.customer,
+            stripe_data={"status": "active"},
+        )
+        SubscriptionItem.objects.create(
+            id=f"si_resolved_{meta.stripe_id}",
+            livemode=False,
+            created=timezone.now(),
+            subscription=subscription,
+            price=price,
+        )
+
+    def test_pro_subscriber_resolves_to_pro(self):
+        self._subscribe(metadata.VERITY_PRO, metadata.BASE_PLAN_CATEGORY)
+        self.assertEqual(metadata.plan_for_user(self.user), metadata.VERITY_PRO)
+        self.assertEqual(entitlements.get_plan(self.user), "paid")
+        self.assertEqual(
+            entitlements.get_monthly_scan_limit(self.user),
+            metadata.VERITY_PRO.monthly_scan_limit,
+        )
+
+    def test_metered_only_subscriber_stays_free(self):
+        self._subscribe(metadata.USAGE_BASED_STORAGE, metadata.STORAGE_PLAN_CATEGORY)
+        self.assertEqual(metadata.plan_for_user(self.user), metadata.VERITY_FREE)
+
+    def test_metered_price_follows_the_plan_it_is_bought_against(self):
+        storage = metadata.USAGE_BASED_STORAGE
+        self.assertEqual(
+            storage.price_id_for_plan(metadata.VERITY_FREE),
+            storage.price_ids[metadata.VERITY_FREE.stripe_id],
+        )
+        self.assertEqual(
+            storage.price_id_for_plan(metadata.VERITY_PRO),
+            storage.price_ids[metadata.VERITY_PRO.stripe_id],
+        )
+
+
 class MeteredIsNotAPlanTests(TestCase):
     """Usage-based storage is priced like a plan but grants no plan features.
 

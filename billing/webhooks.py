@@ -33,12 +33,8 @@ def _event_object(event: Any) -> dict[str, Any]:
 
 
 def _subscriber_pk(customer_id: str | None, client_reference_id: str | None = None) -> str | None:
-    """Resolve the local user behind a Stripe event, or None when unlinked.
-
-    The client reference ID is the id we stamp on our own checkout sessions, so
-    it is the most reliable link; the customer's subscriber covers events
-    that carry no session (invoices, payment intents).
-    """
+    """Resolve the local user behind a Stripe event, or None when unlinked. The client reference ID is the id we stamp on our own checkout sessions, so
+    it is the most reliable link; the customer's subscriber covers events that carry no session (invoices, payment intents)."""
     if client_reference_id and str(client_reference_id).isdigit():
         from .models import CustomUser
 
@@ -55,11 +51,7 @@ def _subscriber_pk(customer_id: str | None, client_reference_id: str | None = No
 
 
 def capture(event: str, distinct_id: str | None, properties: dict[str, Any]) -> None:
-    """Capture a PostHog event from a Stripe webhook.
-
-    Webhooks arrive server-to-server with no request context, so the distinct ID
-    is passed explicitly and omitted when the event cannot be tied to a user.
-    """
+    """Capture a PostHog event from a Stripe webhook."""
     if posthog_client is None:
         return
 
@@ -74,9 +66,8 @@ def failure_reason(failure: dict[str, Any]) -> str:
     return failure.get("message") or failure.get("code") or "unknown"
 
 
-# Cancellations fall into three kinds: a user cancelling at period end, a user cancelling
-# immediately, and this app tidying up after itself. The intent is recorded when we first see
-# it and marked here when we cause it.
+# Cancellations fall into three kinds: a user cancelling at period end, a user cancelling immediately, and this app tidying up after itself.
+# The intent is recorded when we first see it and cacged here when we cause it.
 _CANCEL_MARKER = "billing:cancel-intent:{sub_id}"
 _CANCEL_MARKER_TTL = 60 * 60 * 24
 
@@ -131,8 +122,6 @@ def handle_subscription_changed(**kwargs: Any) -> None:
             mark_cancel_intent(sub_id, "period_end")
             capture_subscription_cancelled(sub_id, stripe_sub)
 
-    # The only place Stripe reports a plan change made after checkout, so
-    # without this a later upgrade or downgrade is never seen.
     capture("subscription_updated", _subscriber_pk(customer_id), properties={})
 
 
@@ -165,12 +154,8 @@ def handle_subscription_deleted(**kwargs: Any) -> None:
 
 
 def capture_subscription_cancelled(sub_id: str, stripe_sub: dict | None = None) -> None:
-    """Record churn for a cancelled subscription, split by what it covered.
-
-    Cancellations this app performed itself are skipped: they are consequences
-    of another change (a plan swap, or an add-on following its base plan out)
-    rather than a decision to leave.
-    """
+    """Record churn for a cancelled subscription, split by what it covered. Cancellations this app performed itself are skipped: they are consequences
+    of another change (a plan swap, or an add-on following its base plan out) rather than a decision to leave."""
     if posthog_client is None:
         return
 
@@ -202,11 +187,8 @@ def capture_subscription_cancelled(sub_id: str, stripe_sub: dict | None = None) 
 @djstripe_receiver("checkout.session.completed")
 @djstripe_receiver("checkout.session.async_payment_succeeded")
 def handle_checkout_settled(**kwargs: Any) -> None:
-    """Track subscription checkouts Stripe actually settled.
-
-    Anyone who finishes checkout without reaching the success URL is still counted. Delayed payment methods
-    settle later via checkout.session.async_payment_succeeded, so their checkout.session.completed (sent unpaid) is skipped here.
-    """
+    """Track subscription checkouts Stripe actually settled. Anyone who finishes checkout without reaching the success URL is still counted. Delayed payment methods
+    settle later via checkout.session.async_payment_succeeded, so their checkout.session.completed (sent unpaid) is skipped here."""
     session = _event_object(kwargs.get("event"))
     if session.get("mode") != "subscription":
         return

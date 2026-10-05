@@ -57,7 +57,7 @@ class CancellationCaptureTests(TestCase):
                 livemode=False,
                 active=True,
                 name=product_meta.name,
-                metadata={"category": "base_plan"},
+                metadata={"category": metadata.BASE_PLAN_CATEGORY},
             ),
         )
         price, _ = Price.objects.get_or_create(
@@ -119,7 +119,7 @@ class CancellationDedupeTests(TestCase):
             livemode=False,
             active=True,
             name="Verity Pro",
-            metadata={"category": "base_plan"},
+            metadata={"category": metadata.BASE_PLAN_CATEGORY},
         )
         price = Price.objects.create(
             id="price_dedupe",

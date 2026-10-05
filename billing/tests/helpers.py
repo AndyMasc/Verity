@@ -75,7 +75,7 @@ def give_pro_subscription(user) -> Subscription:
         defaults={
             "active": True,
             "name": "Verity Pro",
-            "metadata": {"category": "base_plan"},
+            "metadata": {"category": metadata.BASE_PLAN_CATEGORY},
         },
     )
     price, _ = Price.objects.get_or_create(

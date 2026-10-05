@@ -1,5 +1,6 @@
 import logging
 from typing import cast
+from uuid import uuid4
 
 import stripe
 from django.contrib import messages
@@ -82,8 +83,7 @@ def subscription_confirm(request: HttpRequest) -> HttpResponse:
         messages.warning(
             request,
             "Your new plan is active, but we couldn't automatically cancel your previous "
-            "overlapping plan at Stripe. Please cancel it from the billing portal or contact "
-            "support to avoid being charged twice.",
+            "overlapping plan. Please cancel it from the billing portal or contact support.",
         )
     return redirect("core:dashboard")
 
@@ -104,30 +104,38 @@ def create_portal_session(request: HttpRequest) -> HttpResponse:
     return HttpResponseRedirect(portal_session.url)
 
 
-def _validated_price(price_id: str | None, category: str | None = None) -> str | None:
-    """Return the price ID only if it belongs to an active, priced product.
-
-    "category", when given, is the caller's own read of the product's Stripe
-    metadata.
-    """
-    if not price_id:
-        return None
-    price = (
-        Price.objects.filter(
-            id=price_id,
+def _purchasable_prices(price_ids) -> dict:
+    """Return {price_id: Price} for the ids that are active in this Stripe mode."""
+    ids = [price_id for price_id in price_ids if price_id]
+    if not ids:
+        return {}
+    return {
+        price.id: price
+        for price in Price.objects.filter(
+            id__in=ids,
             active=True,
             livemode=djstripe_settings.STRIPE_LIVE_MODE,
-        )
-        .select_related("product")
-        .first()
-    )
+        ).select_related("product")
+    }
+
+
+def _price_is_usable(price, category: str | None = None) -> bool:
+    """Whether a price belongs to a known product, optionally in "category".
+
+    "category" is the caller's own read of the product's Stripe metadata, so the two
+    cannot disagree.
+    """
     if price is None or price.product is None:
-        return None
+        return False
     if price.product.id not in metadata.PRODUCTS:
-        return None
-    if category is not None and metadata.product_category(price.product) != category:
-        return None
-    return price_id
+        return False
+    return category is None or metadata.product_category(price.product) == category
+
+
+def _validated_price(price_id: str | None, category: str | None = None) -> str | None:
+    """Return the price ID only if it is an active, purchasable price."""
+    price = _purchasable_prices([price_id]).get(price_id)
+    return price_id if _price_is_usable(price, category) else None
 
 
 def customer_needs_refresh(customer: Customer | None) -> bool:
@@ -146,22 +154,14 @@ def create_checkout_session(request: HttpRequest) -> HttpResponse:
     user = cast(CustomUser, request.user)
 
     # A plan and usage-based storage can be bought in one order; a second plan cannot.
-    selected = []
-    for raw in request.POST.getlist("price_ids"):
-        price = (
-            Price.objects.filter(
-                id=raw,
-                active=True,
-                livemode=djstripe_settings.STRIPE_LIVE_MODE,
-            )
-            .select_related("product")
-            .first()
-        )
-        if price is None or price.product is None:
-            continue
-        price_id = _validated_price(raw, metadata.product_category(price.product))
-        if price_id:
-            selected.append(price_id)
+    submitted = request.POST.getlist("price_ids")
+    # One query for the whole selection, instead of fetching each price twice.
+    catalog = _purchasable_prices(submitted)
+    selected = [
+        price_id
+        for price_id in submitted
+        if price_id in catalog and _price_is_usable(catalog[price_id])
+    ]
     if not selected:
         return HttpResponseBadRequest("Select a valid plan to proceed to checkout.")
 
@@ -179,15 +179,23 @@ def create_checkout_session(request: HttpRequest) -> HttpResponse:
 
     # The rate follows the plan the user ends up on, so an explicit selection wins and a downgrade is not billed at the tier they are leaving. A metered-only
     # order keeps the current plan's tier.
-    paid_base = (metas[licensed[0]] if licensed else plan_for_user(user)).is_paid
+    base_plan = metas[licensed[0]] if licensed else plan_for_user(user)
 
-    # Stripe's two rules, which are opposites: a licensed line item must carry a quantity, and a metered one must not.
+    # A licensed line item must carry a quantity. A metered one must not.
     line_items = [{"price": price_id, "quantity": 1} for price_id in licensed]
-    line_items += [
-        {"price": metas[price_id].price_id_for_plan(paid_base) or price_id}
-        for price_id in selected
-        if metas[price_id].metered
-    ]
+    for price_id in selected:
+        meta = metas[price_id]
+        if not meta.metered:
+            continue
+        # The selected catalog price only says the user wants metered storage; the
+        # tier decides which price Stripe will actually charge. Validate that price
+        # itself, so a stale or wrong-mode id fails here rather than at Stripe.
+        tier_price_id = meta.price_id_for_plan(base_plan)
+        if tier_price_id is None or _validated_price(tier_price_id) is None:
+            return HttpResponseBadRequest(
+                "This plan is not available for purchase. Please try again."
+            )
+        line_items.append({"price": tier_price_id})
 
     customer = user.customer
     if customer_needs_refresh(customer):
@@ -204,7 +212,6 @@ def create_checkout_session(request: HttpRequest) -> HttpResponse:
             user.save(update_fields=["customer"])
 
     try:
-        # No idempotency key: Checkout Sessions are already idempotent.
         checkout_session = services.create_checkout_session(
             customer=customer.id,
             line_items=line_items,
@@ -212,6 +219,7 @@ def create_checkout_session(request: HttpRequest) -> HttpResponse:
             success_url=request.build_absolute_uri(reverse("subscription_confirm"))
             + "?session_id={CHECKOUT_SESSION_ID}",
             cancel_url=request.build_absolute_uri(reverse("pricing_page")) + "?checkout=canceled",
+            idempotency_key=uuid4().hex,
         )
         if posthog_client is not None:
             invalidate_plan_usage_caches(user.pk)
