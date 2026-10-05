@@ -9,7 +9,7 @@ from copy import copy
 
 import stripe
 from django.db.models import Prefetch
-from djstripe.models import Price, Product
+from djstripe.models import Customer, Price, Product
 from djstripe.settings import djstripe_settings
 
 from . import metadata
@@ -95,6 +95,41 @@ def retrieve_customer(customer_id: str):
         return stripe.Customer.retrieve(customer_id)
     except stripe.error.InvalidRequestError:
         return None
+
+
+def resolve_customer(user) -> Customer:
+    """Return the user's Stripe Customer, creating or reconciling one as needed.
+
+    dj-stripe's Customer.get_or_create() calls .get(subscriber=user), which raises
+    MultipleObjectsReturned as soon as more than one Customer row points at the user.
+    That happens with historical data and with concurrent checkouts, and it made
+    checkout fail outright.
+
+    This keeps the invariant the 0006 data migration established: only the Customer the
+    user's own FK points at may keep "subscriber" set. The survivor is that FK row when
+    it is still linked, otherwise whichever candidate actually holds subscriptions.
+    """
+    own = getattr(user, "customer", None)
+    linked = list(Customer.objects.filter(subscriber=user).order_by("-djstripe_updated"))
+
+    if own is not None and any(customer.pk == own.pk for customer in linked):
+        chosen = own
+    elif linked:
+        chosen = next(
+            (customer for customer in linked if customer.subscriptions.exists()),
+            linked[0],
+        )
+    else:
+        customer, _created = Customer.get_or_create(user)
+        return customer
+
+    stale = [customer for customer in linked if customer.pk != chosen.pk]
+    if stale:
+        Customer.objects.filter(pk__in=[customer.pk for customer in stale]).update(subscriber=None)
+    if user.customer_id != chosen.pk:
+        user.customer = chosen
+        user.save(update_fields=["customer"])
+    return chosen
 
 
 def customer_missing_in_stripe(customer_id: str) -> bool:

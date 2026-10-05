@@ -202,14 +202,14 @@ def create_checkout_session(request: HttpRequest) -> HttpResponse:
         customer = None
 
     if customer is None:
-        customer, _ = Customer.get_or_create(user)
-        # get_or_create may return a stale row whose Stripe record was deleted; unlink it so a brand-new customer is created instead.
+        # Tolerates duplicate subscriber links instead of raising MultipleObjectsReturned,
+        # and leaves exactly one linked so it cannot recur.
+        customer = services.resolve_customer(user)
+        # The survivor may still be a row whose Stripe record was deleted; unlink it so a
+        # broken Stripe record cannot block checkout.
         if services.customer_missing_in_stripe(customer.id):
-            Customer.objects.filter(id=customer.id, subscriber=user).update(subscriber=None)
-            customer, _ = Customer.get_or_create(user)
-        if user.customer_id != customer.id:
-            user.customer = customer
-            user.save(update_fields=["customer"])
+            Customer.objects.filter(pk=customer.pk, subscriber=user).update(subscriber=None)
+            customer = services.resolve_customer(user)
 
     try:
         checkout_session = services.create_checkout_session(
