@@ -223,7 +223,7 @@ pyzmq==27.1.0
 RapidFuzz==3.14.5
 rcssmin==1.2.2
 readchar==4.2.2
-redis==8.0.1
+redis==8.1.0
 regex==2026.6.28
 requests==2.34.2
 requests-oauthlib==2.0.0
