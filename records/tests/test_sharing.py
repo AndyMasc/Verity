@@ -149,6 +149,8 @@ class TestShareService(SharingTestCase):
             "pk", flat=True
         )
 
+
+class TestShareAccessService(SharingTestCase):
     def test_view_only_share_cannot_edit(self):
         from records import shares as svc
 
@@ -268,7 +270,7 @@ class TestEditAttribution(SharingTestCase):
         assert self.record.history.first().history_user_id == self.owner.pk
 
 
-class TestShareViews(SharingTestCase):
+class TestBulkShareEndpoint(SharingTestCase):
     def test_free_user_cannot_grant(self):
         self.client.force_login(self.owner)
         response = self.client.post(
@@ -422,6 +424,8 @@ class TestShareViews(SharingTestCase):
         share = RecordShare.objects.get(record=self.record, user=self.recipient)
         assert share.permission == RecordShare.Permission.EDIT
 
+
+class TestBulkShareAnalytics(SharingTestCase):
     @mock.patch("records.views.shares.posthog_client")
     def test_single_record_share_still_fires_record_shared(self, mock_ph):
         """The one-record funnel must keep its original analytics event."""
@@ -464,6 +468,8 @@ class TestShareViews(SharingTestCase):
         assert [c.args[0] for c in mock_ph.capture.call_args_list] == ["record_shared"]
         assert mock_ph.capture.call_args.kwargs["properties"]["record_count"] == 2
 
+
+class TestBulkShareOwnership(SharingTestCase):
     def test_bulk_share_ignores_records_they_do_not_own(self):
         give_pro_subscription(self.owner)
         stranger_record = Record.objects.create(

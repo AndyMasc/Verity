@@ -27,11 +27,7 @@ PAID_FEATURES = FREE_FEATURES | PAID_ONLY_FEATURES
 
 
 def get_plan(user) -> str:
-    """Return 'paid' or 'free' based on the user's active base plan.
-
-    Storage add-ons alone never unlock paid features; only a base-plan
-    product (e.g. Verity Pro) does.
-    """
+    """Return 'paid' or 'free' based on the user's active plan."""
     from .metadata import VERITY_FREE, plan_for_user
 
     plan = plan_for_user(user)
@@ -39,11 +35,7 @@ def get_plan(user) -> str:
 
 
 def get_monthly_scan_limit(user) -> int | None:
-    """Return the user's monthly Quick Scan allowance, or None if unlimited.
-
-    Driven by the user's base plan metadata, so new tiers only need to set
-    "monthly_scan_limit" in their product definition.
-    """
+    """Return the user's monthly Quick Scan allowance, or None if unlimited."""
     from .metadata import plan_for_user
 
     return plan_for_user(user).monthly_scan_limit
@@ -61,13 +53,11 @@ def has_feature(user, feature: str) -> bool:
     return feature in get_features(user)
 
 
-def get_storage_limit(user) -> int:
-    """Return the user's storage limit in GB: base plan limit plus valid storage add-ons."""
-    from .metadata import plan_for_user, storage_addons_for_user
+def get_storage_limit(user) -> float:
+    """Return the user's included storage in GB. Usage-based storage is not added here: subscribing lifts the cap entirely"""
+    from .metadata import plan_for_user
 
-    limit = plan_for_user(user).storage_limit_gb
-    limit += sum(addon.storage_limit_gb for addon in storage_addons_for_user(user))
-    return limit
+    return plan_for_user(user).storage_limit_gb
 
 
 def get_storage_usage_bytes(user) -> int:
@@ -78,22 +68,30 @@ def get_storage_usage_bytes(user) -> int:
 
 
 def get_storage_usage_gb(user) -> float:
-    """Return total stored gigabytes (GB)."""
-    return get_storage_usage_bytes(user) / (1024**3)
+    """Return total stored decimal gigabytes (10**9 bytes)."""
+    return get_storage_usage_bytes(user) / features.BYTES_PER_GB
 
 
 def is_storage_limit_exceeded(user) -> bool:
-    """Check whether the user has exceeded their assigned storage limit in GB."""
-    limit_gb = get_storage_limit(user)
-    usage_gb = get_storage_usage_gb(user)
-    return usage_gb >= limit_gb
+    """Check whether the user has reached their assigned storage limit."""
+    from .metadata import has_metered_storage
+
+    if has_metered_storage(user):
+        return False
+    return get_storage_usage_gb(user) >= get_storage_limit(user)
 
 
 def can_add_storage(user, additional_bytes: int) -> bool:
-    """Return whether storing *additional_bytes* more would stay within the limit."""
-    limit_gb = get_storage_limit(user)
+    """Return whether storing additional_bytes more is allowed. Uncapped once the user subscribes to usage-based storage."""
+    from .metadata import has_metered_storage
+
+    # Usage-based storage is opt-in and uncapped.
+    if has_metered_storage(user):
+        return True
+
+    limit_bytes = get_storage_limit(user) * features.BYTES_PER_GB
     usage_bytes = get_storage_usage_bytes(user)
-    return usage_bytes + additional_bytes <= limit_gb * 1024**3
+    return usage_bytes + additional_bytes <= limit_bytes
 
 
 def can_scan(user) -> bool:
@@ -101,10 +99,8 @@ def can_scan(user) -> bool:
     if not user.is_authenticated:
         return False
 
-    # Storage limit block applies to both free and paid plans
     if is_storage_limit_exceeded(user):
         return False
-
     limit = get_monthly_scan_limit(user)
     if limit is None:
         return True
@@ -129,8 +125,7 @@ def record_scan(user) -> None:
     period = timezone.now().strftime("%Y-%m")
     while True:
         usage, _ = ScanUsage.objects.get_or_create(user=user, period=period)
-        # Guard against the row being deleted between get_or_create and the
-        # atomic increment (e.g. by a monthly cleanup job).
+        # Guard against the row being deleted between get_or_create and the atomic increment (e.g. by a monthly cleanup job).
         updated = ScanUsage.objects.filter(pk=usage.pk).update(count=models.F("count") + 1)
         if updated:
             invalidate_scan_usage_cache(user.pk, period)

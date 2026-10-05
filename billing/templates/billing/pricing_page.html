@@ -2,9 +2,7 @@
 {% block title %}Choose Your Plan | Verity{% endblock %}
 {% block content %}
     <main class="mx-auto flex min-h-screen w-full max-w-5xl flex-col items-center justify-center px-6 py-12 font-sans antialiased sm:py-16"
-          data-plan-view-tracking
-          x-data="{ selectedCategory: $persist('base_plan') }"
-          x-cloak>
+          data-plan-view-tracking>
         {% include "billing/partials/pricing_cards.html" %}
     </main>
 {% endblock content %}

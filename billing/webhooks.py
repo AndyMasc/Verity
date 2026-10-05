@@ -2,7 +2,6 @@ import logging
 from typing import Any
 
 import djstripe.signals as djstripe_signals
-import stripe
 from django.core.cache import cache
 from django.db import transaction
 from django.dispatch import receiver
@@ -11,8 +10,6 @@ from djstripe.event_handlers import djstripe_receiver
 from djstripe.models import Customer, Subscription
 
 from core.apps import posthog_client
-
-from . import metadata, services
 
 logger = logging.getLogger(__name__)
 
@@ -36,12 +33,8 @@ def _event_object(event: Any) -> dict[str, Any]:
 
 
 def _subscriber_pk(customer_id: str | None, client_reference_id: str | None = None) -> str | None:
-    """Resolve the local user behind a Stripe event, or None when unlinked.
-
-    The client reference ID is the id we stamp on our own checkout sessions, so
-    it is the most reliable link; the customer's subscriber covers events
-    that carry no session (invoices, payment intents).
-    """
+    """Resolve the local user behind a Stripe event, or None when unlinked. The client reference ID is the id we stamp on our own checkout sessions, so
+    it is the most reliable link; the customer's subscriber covers events that carry no session (invoices, payment intents)."""
     if client_reference_id and str(client_reference_id).isdigit():
         from .models import CustomUser
 
@@ -58,11 +51,7 @@ def _subscriber_pk(customer_id: str | None, client_reference_id: str | None = No
 
 
 def capture(event: str, distinct_id: str | None, properties: dict[str, Any]) -> None:
-    """Capture a PostHog event from a Stripe webhook.
-
-    Webhooks arrive server-to-server with no request context, so the distinct ID
-    is passed explicitly and omitted when the event cannot be tied to a user.
-    """
+    """Capture a PostHog event from a Stripe webhook."""
     if posthog_client is None:
         return
 
@@ -77,36 +66,8 @@ def failure_reason(failure: dict[str, Any]) -> str:
     return failure.get("message") or failure.get("code") or "unknown"
 
 
-def checkout_categories(subscription_id: str | None) -> set[str]:
-    """Categories on the subscription a settled checkout created.
-
-    A checkout.session.completed payload carries no line_items -- dj-stripe
-    does not request the expansion -- so the categories come from the
-    subscription dj-stripe has already synced. Empty when that row has not
-    landed yet, which costs one event its plan_types and nothing else.
-    """
-    if not subscription_id:
-        return set()
-    subscription = Subscription.objects.filter(id=subscription_id).first()
-    if subscription is None:
-        return set()
-    return {meta.category for meta in metadata.metas_for_subscription(subscription)}
-
-
-def _subscription_categories(stripe_sub: dict) -> set[str]:
-    """Return the pricing categories covered by a Stripe subscription payload."""
-    categories: set[str] = set()
-    for item in (stripe_sub or {}).get("items", {}).get("data", []):
-        product_id = item.get("price", {}).get("product")
-        category = metadata.category_for_product(product_id)
-        if category:
-            categories.add(category)
-    return categories
-
-
-# Cancellations fall into three kinds, a user cancelling at period end, a user cancelling immediately, and this app
-# tidying up after itself (e.g., user cancels pro plan, so app cancels pro only packs automatically). The intent is recorded when we
-# first see it and marked here when we cause it.
+# Cancellations fall into three kinds: a user cancelling at period end, a user cancelling immediately, and this app tidying up after itself.
+# The intent is recorded when we first see it and cacged here when we cause it.
 _CANCEL_MARKER = "billing:cancel-intent:{sub_id}"
 _CANCEL_MARKER_TTL = 60 * 60 * 24
 
@@ -122,83 +83,6 @@ def read_cancel_intent(sub_id: str) -> str | None:
 
 def clear_cancel_intent(sub_id: str) -> None:
     cache.delete(_CANCEL_MARKER.format(sub_id=sub_id))
-
-
-def _has_active_pro_storage(sub: Subscription) -> bool:
-    """Return whether an active subscription contains a Pro-only storage pack."""
-    if (sub.stripe_data or {}).get("status") not in {"active", "trialing"}:
-        return False
-
-    for item in sub.items.select_related("price__product").all():
-        product = item.price.product if item.price else None
-        product_meta = metadata.PRODUCTS.get(product.id) if product else None
-        is_storage_plan = product_meta and product_meta.category == "storage_plan"
-        if is_storage_plan and product_meta.pro_only:
-            return True
-    return False
-
-
-def _cancel_storage_subscription(sub: Subscription, customer_id: str) -> None:
-    """Cancel a Pro-only storage subscription and log any failure."""
-    try:
-        # Marked "system" so the resulting deleted event is not reported as the user cancelling an add-on.
-        services.cancel_subscription(sub.id)
-    except stripe.error.StripeError as exc:
-        logger.warning(
-            "Failed to auto-cancel pro-only storage pack %s for customer %s after base plan cancellation: %s",
-            sub.id,
-            customer_id,
-            exc,
-        )
-
-
-def _cancel_pro_only_storage_for_customer(
-    customer_id: str, base_subscription_id: str | None = None
-) -> None:
-    """Cancel active Pro-only storage add-ons after the user's base plan ends."""
-    if not customer_id:
-        return
-
-    subscriptions = Subscription.objects.filter(customer__id=customer_id)
-    if base_subscription_id:
-        subscriptions = subscriptions.exclude(id=base_subscription_id)
-
-    for sub in subscriptions.iterator():
-        if _has_active_pro_storage(sub):
-            _cancel_storage_subscription(sub, customer_id)
-
-
-@djstripe_receiver("customer.subscription.deleted")
-def handle_subscription_deleted(**kwargs: Any) -> None:
-    """Clears the user's subscription relation when cancelled in Stripe."""
-    event = kwargs.get("event")
-    if not event:
-        return
-
-    stripe_sub = event.data.get("object", {})
-    sub_id = stripe_sub.get("id")
-
-    if not sub_id:
-        return
-
-    _invalidate_subscription_caches_for_event(stripe_sub)
-    categories = _subscription_categories(stripe_sub)
-    if read_cancel_intent(sub_id) != "period_end":
-        capture_subscription_cancelled(sub_id, stripe_sub)
-    if "base_plan" in categories:
-        _cancel_pro_only_storage_for_customer(
-            stripe_sub.get("customer"), base_subscription_id=sub_id
-        )
-
-    def _clear_user_subscription() -> None:
-        from .models import CustomUser
-
-        updated_count = CustomUser.objects.filter(subscription__id=sub_id).update(subscription=None)
-        if updated_count:
-            logger.info("Cleared subscription %s from %d user(s).", sub_id, updated_count)
-
-    transaction.on_commit(_clear_user_subscription)
-    transaction.on_commit(lambda: clear_cancel_intent(sub_id))
 
 
 def _invalidate_subscription_caches_for_event(stripe_sub: dict) -> None:
@@ -232,34 +116,46 @@ def handle_subscription_changed(**kwargs: Any) -> None:
     _invalidate_subscription_caches_for_event(stripe_sub)
 
     customer_id = stripe_sub.get("customer")
-    categories = _subscription_categories(stripe_sub)
-    if "base_plan" in categories:
-        _cancel_pro_only_storage_for_customer(
-            customer_id, base_subscription_id=stripe_sub.get("id")
-        )
-
     if stripe_sub.get("cancel_at_period_end"):
         sub_id = stripe_sub.get("id")
         if sub_id and read_cancel_intent(sub_id) is None:
             mark_cancel_intent(sub_id, "period_end")
             capture_subscription_cancelled(sub_id, stripe_sub)
 
-    # The only place Stripe reports an item added or removed after checkout,
-    # so without this an add-on bought post-signup is never seen.
-    capture(
-        "subscription_updated",
-        _subscriber_pk(customer_id),
-        {"plan_types": sorted(categories)},
-    )
+    capture("subscription_updated", _subscriber_pk(customer_id), properties={})
+
+
+@djstripe_receiver("customer.subscription.deleted")
+def handle_subscription_deleted(**kwargs: Any) -> None:
+    """Clears the user's subscription relation when cancelled in Stripe."""
+    event = kwargs.get("event")
+    if not event:
+        return
+
+    stripe_sub = event.data.get("object", {})
+    sub_id = stripe_sub.get("id")
+
+    if not sub_id:
+        return
+
+    _invalidate_subscription_caches_for_event(stripe_sub)
+    if read_cancel_intent(sub_id) != "period_end":
+        capture_subscription_cancelled(sub_id, stripe_sub)
+
+    def _clear_user_subscription() -> None:
+        from .models import CustomUser
+
+        updated_count = CustomUser.objects.filter(subscription__id=sub_id).update(subscription=None)
+        if updated_count:
+            logger.info("Cleared subscription %s from %d user(s).", sub_id, updated_count)
+
+    transaction.on_commit(_clear_user_subscription)
+    transaction.on_commit(lambda: clear_cancel_intent(sub_id))
 
 
 def capture_subscription_cancelled(sub_id: str, stripe_sub: dict | None = None) -> None:
-    """Record churn for a cancelled subscription, split by what it covered.
-
-    Cancellations this app performed itself are skipped: they are consequences
-    of another change (a plan swap, or an add-on following its base plan out)
-    rather than a decision to leave.
-    """
+    """Record churn for a cancelled subscription, split by what it covered. Cancellations this app performed itself are skipped: they are consequences
+    of another change (a plan swap, or an add-on following its base plan out) rather than a decision to leave."""
     if posthog_client is None:
         return
 
@@ -268,17 +164,10 @@ def capture_subscription_cancelled(sub_id: str, stripe_sub: dict | None = None) 
         return
 
     user = getattr(getattr(sub, "customer", None), "subscriber", None)
-    metas = [
-        metadata.PRODUCTS[item.price.product.id]
-        for item in sub.items.select_related("price__product")
-        if item.price and item.price.product and item.price.product.id in metadata.PRODUCTS
-    ]
     # Skip our own cancellations: a plan swap or an add-on following its base plan out is not a user deciding to leave.
     if read_cancel_intent(sub_id) == "system":
         return
 
-    base = next((meta for meta in metas if meta.category == "base_plan"), None)
-    has_storage_pack = any(m.category == "storage_plan" for m in metas)
     cancel_type = read_cancel_intent(sub_id) or (
         "period_end" if (stripe_sub or {}).get("cancel_at_period_end") else "immediate"
     )
@@ -292,27 +181,14 @@ def capture_subscription_cancelled(sub_id: str, stripe_sub: dict | None = None) 
         "months_active": months_active,  # How long the subscription was active before cancellation.
         "cancel_type": cancel_type,  # Whether the user cancelled immediately, at period end, or the app cancelled it automatically.
     }
-    plan_types = []
-    if base is not None:
-        plan_types.append("base_plan")
-    if has_storage_pack:
-        plan_types.append("storage_plan")
-
-    capture(
-        "subscription_cancelled",
-        distinct_id,
-        properties={**common, "plan_types": plan_types},
-    )
+    capture("subscription_cancelled", distinct_id, properties=common)
 
 
 @djstripe_receiver("checkout.session.completed")
 @djstripe_receiver("checkout.session.async_payment_succeeded")
 def handle_checkout_settled(**kwargs: Any) -> None:
-    """Track subscription checkouts Stripe actually settled.
-
-    Anyone who finishes checkout without reaching the success URL is still counted. Delayed payment methods
-    settle later via checkout.session.async_payment_succeeded, so their checkout.session.completed (sent unpaid) is skipped here.
-    """
+    """Track subscription checkouts Stripe actually settled. Anyone who finishes checkout without reaching the success URL is still counted. Delayed payment methods
+    settle later via checkout.session.async_payment_succeeded, so their checkout.session.completed (sent unpaid) is skipped here."""
     session = _event_object(kwargs.get("event"))
     if session.get("mode") != "subscription":
         return
@@ -320,14 +196,12 @@ def handle_checkout_settled(**kwargs: Any) -> None:
     if session.get("payment_status") not in ("paid", "no_payment_required"):
         return
 
-    categories = checkout_categories(session.get("subscription"))
     capture(
         "subscription_checkout_completed",
         _subscriber_pk(session.get("customer"), session.get("client_reference_id")),
         {
             "amount": (session.get("amount_total") or 0) / 100,
             "currency": session.get("currency"),
-            "plan_types": list(categories),
         },
     )
 

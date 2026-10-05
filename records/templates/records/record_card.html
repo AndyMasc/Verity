@@ -2,7 +2,7 @@
 <div data-record-id="{{ record.pk }}"
      data-record-active="{% if record.is_active %}true{% else %}false{% endif %}"
      data-record-permanent="{% if record.can_hard_delete %}true{% else %}false{% endif %}"
-     class="group relative rounded-lg border-b border-zinc-100 bg-transparent transition-colors duration-150 last:border-none hover:bg-zinc-50/80 dark:border-zinc-800/30 dark:hover:bg-zinc-800/40">
+     class="group relative rounded-lg border-b border-zinc-100 bg-transparent transition-colors duration-150 hover:bg-zinc-50/80 dark:border-zinc-800/30 dark:hover:bg-zinc-800/40">
     <a href="{% url 'records:record_detail' record.pk %}"
        class="hidden grid-cols-[32px_minmax(0,1fr)_160px_110px_90px_100px] items-center gap-4 px-4 py-3 sm:grid">
         {% include "records/partials/select_checkbox.html" with select_id=record.pk %}
@@ -13,8 +13,8 @@
             <div class="min-w-0 flex-1">
                 <p class="truncate text-sm font-medium text-zinc-950 transition-colors group-hover:text-black dark:text-zinc-50 dark:group-hover:text-white">
                     {{ record.title }}
-                    {% if record.shares.count > 0 %}
-                        <span class="ml-2 inline-flex items-center rounded-xl border border-zinc-400 bg-zinc-100 px-1.5 py-0.5 text-xs text-zinc-900 dark:border-zinc-500 dark:bg-zinc-800 dark:text-zinc-100">
+                    {% if record.active_share_count %}
+                        <span class="ml-2 inline-flex items-center rounded-xl border border-zinc-300 bg-zinc-100 px-1.5 text-xs text-zinc-600 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100">
                             shared
                         </span>
                     {% endif %}

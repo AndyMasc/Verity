@@ -8,12 +8,7 @@ from . import entitlements
 
 
 class FeatureRequiredMixin(UserPassesTestMixin):
-    """Ensures the user's plan includes a given feature.
-
-    Set "required_feature" on the view to one of the constants from
-    "billing.features". Users without the feature are redirected to the
-    pricing page (or given a JSON 403 for AJAX requests).
-    """
+    """Ensures the user's plan includes a given feature. Set "required_feature" on the view to one of the constants from "billing.features"."""
 
     required_feature: str | None = None
 
@@ -32,7 +27,7 @@ class FeatureRequiredMixin(UserPassesTestMixin):
         if self.request.content_type and "application/json" in self.request.content_type:
             return JsonResponse(
                 {
-                    "error": "This feature requires the Verity Pro plan.",
+                    "error": "This feature isnt available in your plan. Upgrade to continue.",
                     "redirect_url": pricing_url,
                 },
                 status=403,
@@ -40,6 +35,6 @@ class FeatureRequiredMixin(UserPassesTestMixin):
 
         messages.warning(
             self.request,
-            "This feature requires the Verity Pro plan. Upgrade to continue.",
+            "This feature isnt available in your plan. Upgrade to continue.",
         )
         return redirect(pricing_url)

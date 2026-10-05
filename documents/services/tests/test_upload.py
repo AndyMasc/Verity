@@ -216,8 +216,9 @@ class TestUploadServiceHandle:
     )
     def test_upload_above_storage_limit_rejected(self, mock_presign, user):
         from billing.entitlements import get_storage_limit
+        from billing.features import BYTES_PER_GB
 
-        over = get_storage_limit(user) * 1024**3 + 1
+        over = get_storage_limit(user) * BYTES_PER_GB + 1
         DocumentData.objects.create(
             user=user,
             filepath="users/1/full.pdf",
@@ -258,8 +259,9 @@ class TestUploadServiceHandle:
     )
     def test_upload_unknown_file_size_checks_exceeded_only(self, mock_presign, user):
         from billing.entitlements import get_storage_limit
+        from billing.features import BYTES_PER_GB
 
-        over = get_storage_limit(user) * 1024**3 + 1
+        over = get_storage_limit(user) * BYTES_PER_GB + 1
         DocumentData.objects.create(
             user=user,
             filepath="users/1/full.pdf",

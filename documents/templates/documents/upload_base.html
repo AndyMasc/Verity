@@ -17,7 +17,7 @@
             </p>
             <div class="mt-8 mb-2 flex w-full flex-col space-y-4">
                 <div id="dropzone"
-                     class="flex max-h-70 w-full cursor-pointer flex-col items-center justify-center rounded-2xl border border-zinc-200 bg-zinc-100 p-10 transition-all duration-200 hover:bg-zinc-200 dark:border-zinc-800 dark:bg-zinc-800/40 dark:hover:bg-zinc-800/70">
+                     class="flex max-h-70 w-full cursor-pointer flex-col items-center justify-center rounded-2xl border border-zinc-200 bg-zinc-100 p-10 transition-all duration-200 hover:bg-zinc-200 dark:border-zinc-900 dark:bg-zinc-900/40 dark:hover:bg-zinc-800/70">
                     <div class="bg-neutral-secondary-medium pointer-events-none flex h-64 w-full flex-col items-center justify-center">
                         <div class="text-body flex flex-col items-center justify-center pt-5 pb-6">
                             <svg class="mb-4 size-12 text-zinc-600 dark:text-zinc-300"
@@ -35,7 +35,7 @@
                 {% block extra_fields %}
                     <textarea id="docNotes"
                               rows="2"
-                              class="w-full resize-none rounded-xl border border-zinc-200 bg-zinc-100 p-4 text-sm text-zinc-800 placeholder-zinc-500 transition-all duration-200 focus:border-zinc-400 focus:outline-none dark:border-zinc-800 dark:bg-zinc-800/40 dark:text-zinc-200 dark:placeholder-zinc-500 dark:focus:border-zinc-600"
+                              class="w-full resize-none rounded-xl border border-zinc-200 bg-zinc-100 p-4 text-sm text-zinc-800 placeholder-zinc-500 transition-all duration-200 focus:border-zinc-400 focus:outline-none dark:border-zinc-900 dark:bg-zinc-900/40 dark:text-zinc-200 dark:placeholder-zinc-500 dark:focus:border-zinc-600"
                               placeholder="Add a note..."></textarea>
                 {% endblock extra_fields %}
             </div>
@@ -68,37 +68,25 @@
             {% endblock upload_footer %}
         </section>
     </main>
+    <script>
+        window.UPLOAD_CONFIG = {
+            apiUrl: "{{ api_url|escapejs }}",
+            confirmUrl: "{% url 'documents:confirm_upload' %}",
+            redirectUrlTemplate: "{{ redirect_url_template|escapejs }}",
+            isSupportingFlow: {{ is_supporting_flow|yesno:"true,false" }}
+        };
+    </script>
     <script type="module">
-        // Vendored: a CDN import here is a single point of failure for the whole
-        // upload flow, and a bad URL silently kills this entire module.
-        import xxhash from "{% static 'js/xxhash-wasm.js' %}";
-
-        // Optional. Fingerprinting speeds up duplicate detection but is not worth
-        // failing an upload over, so a failure here only costs the speedup.
-        let xxhashInstance = null;
-        try {
-            xxhashInstance = await xxhash();
-        } catch (e) {
-            console.warn("xxhash unavailable; falling back to SHA-256.");
-        }
-        const dropzone = document.getElementById('dropzone'),
-              fileInput = document.getElementById('fileInput'),
-              status = document.getElementById('status'),
-              uploadButton = document.getElementById('uploadButton'),
-              buttonSpinner = document.getElementById('buttonSpinner'),
-              buttonText = document.getElementById('buttonText');
-              
-        const API_URL = "{{ api_url }}", REDIRECT_URL_TEMPLATE = "{{ redirect_url_template }}";
-        const CONFIRM_URL = "{% url 'documents:confirm_upload' %}";
-        const isSupportingFlow = {{ is_supporting_flow|yesno:"true,false" }};
         let selectedFile = null;
 
-        uploadButton.dataset.forceUpload = "false";
+        const statusElem = document.getElementById('status');
+        const dropzoneElem = document.getElementById('dropzone');
+        const fileInputElem = document.getElementById('fileInput');
+        const uploadButtonElem = document.getElementById('uploadButton');
+        const buttonSpinnerElem = document.getElementById('buttonSpinner');
+        const buttonTextElem = document.getElementById('buttonText');
 
-        const fileStatus = document.createElement('div');
-        fileStatus.className = "mt-3 text-center text-sm text-zinc-600 dark:text-zinc-400";
-        dropzone.appendChild(fileStatus);
-
+        // Fallback for missing analytics/logger function
         function captureUploadFailure(stage, error) {
             if (!window.posthog) return;
             window.posthog.capture_exception({
@@ -118,72 +106,74 @@
         }
 
         function setStatus(msg, type = "idle") {
-            status.innerHTML = msg;
-            status.className = "mb-4 text-sm text-center min-h-5 transition-all duration-200 " +
+            if (!statusElem) return;
+            statusElem.innerHTML = msg;
+            statusElem.className = "mb-4 text-sm text-center min-h-5 transition-all duration-200 " +
             (type === "error" ? "text-rose-500" : type === "success" ? "text-emerald-500" : "text-zinc-600 dark:text-zinc-400");
+        }
+
+        const fileStatus = document.createElement('div');
+        fileStatus.className = "mt-3 text-center text-sm text-zinc-600 dark:text-zinc-400";
+        if (dropzoneElem) {
+            dropzoneElem.appendChild(fileStatus);
         }
 
         function setFile(file) {
             if (file.size > 5 * 1024 * 1024) {
+                captureUploadFailure("file_too_large", `File exceeds 5MB limit: ${file.name}`);
                 return setStatus("File exceeds 5MB limit.", "error");
             }
             selectedFile = file;
-            uploadButton.dataset.forceUpload = "false";
+            if (uploadButtonElem) {
+                uploadButtonElem.dataset.forceUpload = "false";
+            }
             fileStatus.innerHTML =
                 `<div class="text-emerald-500 font-medium text-sm truncate max-w-xs mx-auto">\u2713 ${file.name}</div>` +
                 `<div class="text-xs text-zinc-500 mt-1">${(file.size / 1024 / 1024).toFixed(2)} MB \u00b7 ready</div>`;
             setStatus("");
         }
 
-        // Dropzone Event Handlers
-        dropzone.addEventListener('click', () => {
-            fileInput.value = ''; // Reset input to allow re-selecting same file
-            fileInput.click();
-        });
+        if (dropzoneElem && fileInputElem) {
+            dropzoneElem.addEventListener('click', () => {
+                fileInputElem.value = ''; // Reset input to allow re-selecting same file
+                fileInputElem.click();
+            });
 
-        fileInput.addEventListener('change', e => {
-            if (e.target.files && e.target.files[0]) {
-                setFile(e.target.files[0]);
-            }
-        });
+            fileInputElem.addEventListener('change', e => {
+                if (e.target.files && e.target.files[0]) {
+                    setFile(e.target.files[0]);
+                }
+            });
 
-        ['dragenter', 'dragover'].forEach(eventName => {
-            dropzone.addEventListener(eventName, e => {
-                e.preventDefault();
-                e.stopPropagation();
-                dropzone.classList.add('scale-[1.01]');
-            }, false);
-        });
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropzoneElem.addEventListener(eventName, e => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropzoneElem.classList.add('scale-[1.01]');
+                }, false);
+            });
 
-        ['dragleave', 'drop'].forEach(eventName => {
-            dropzone.addEventListener(eventName, e => {
-                e.preventDefault();
-                e.stopPropagation();
-                dropzone.classList.remove('scale-[1.01]');
-            }, false);
-        });
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropzoneElem.addEventListener(eventName, e => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropzoneElem.classList.remove('scale-[1.01]');
+                }, false);
+            });
 
-        dropzone.addEventListener('drop', e => {
-            const dt = e.dataTransfer;
-            if (dt && dt.files && dt.files[0]) {
-                setFile(dt.files[0]);
-            }
-        });
+            dropzoneElem.addEventListener('drop', e => {
+                const dt = e.dataTransfer;
+                if (dt && dt.files && dt.files[0]) {
+                    setFile(dt.files[0]);
+                }
+            });
+        }
 
         async function hashFile(file) {
-            const bytes = new Uint8Array(await file.arrayBuffer());
-
-            if (xxhashInstance) {
-                // create64() returns {update, digest} only, and h64ToString()
-                // takes a string, so binary bytes go through the incremental API.
-                const hasher = xxhashInstance.create64();
-                hasher.update(bytes);
-                return hasher.digest().toString(16).padStart(16, "0");
-            }
-
-            // The browser's own SHA-256: slower, but it is the field the server
-            // requires and it is exactly the 64 characters the column allows.
-            const digest = await crypto.subtle.digest("SHA-256", bytes);
+            const digest = await crypto.subtle.digest(
+                "SHA-256",
+                await file.arrayBuffer()
+            );
             return Array.from(new Uint8Array(digest))
                 .map(b => b.toString(16).padStart(2, "0"))
                 .join("");
@@ -191,7 +181,8 @@
 
         async function postForm(url, fields) {
             const body = new URLSearchParams(fields);
-            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            const csrfInput = document.querySelector('[name=csrfmiddlewaretoken]');
+            const csrfToken = csrfInput ? csrfInput.value : '';
             body.append('csrfmiddlewaretoken', csrfToken);
             return fetch(url, {
                 method: "POST",
@@ -205,18 +196,20 @@
         }
 
         function setLoading(loading) {
-            uploadButton.disabled = loading;
-            buttonSpinner.classList.toggle('hidden', !loading);
-            buttonText.textContent = loading ? "Processing..." : "Upload and continue";
+            if (uploadButtonElem) uploadButtonElem.disabled = loading;
+            if (buttonSpinnerElem) buttonSpinnerElem.classList.toggle('hidden', !loading);
+            if (buttonTextElem) buttonTextElem.textContent = loading ? "Processing..." : "Upload and continue";
         }
 
         // Attach global window hook for inline dynamic HTML buttons (e.g. "Upload anyway?")
         window.triggerForceUpload = function() {
-            uploadButton.dataset.forceUpload = "true";
+            if (uploadButtonElem) uploadButtonElem.dataset.forceUpload = "true";
             uploadFile();
         };
 
-        uploadButton.addEventListener('click', uploadFile);
+        if (uploadButtonElem) {
+            uploadButtonElem.addEventListener('click', uploadFile);
+        }
 
         async function uploadFile() {
             if (!selectedFile) return setStatus("Select a file first.", "error");
@@ -229,18 +222,18 @@
                 const fileHash = await hashFile(selectedFile);
                 const mimeType = selectedFile.type || 'application/octet-stream';
 
-                const presignRes = await postForm(API_URL, {
+                const targetApiUrl = window.UPLOAD_CONFIG.apiUrl;
+                const presignRes = await postForm(targetApiUrl, {
                     'file_hash': fileHash,
                     'filename': selectedFile.name,
                     'content_type': mimeType,
                     'file_size': selectedFile.size,
                     'notes': notesValue || "",
-                    'force_upload': uploadButton.dataset.forceUpload,
+                    'force_upload': uploadButtonElem ? uploadButtonElem.dataset.forceUpload : "false",
                 });
 
                 if (!presignRes.ok) {
                     const errorData = await presignRes.json().catch(() => ({}));
-                    captureUploadFailure("presign", errorData.error || "Backend validation failed.");
                     throw uploadError("presign", errorData.error || "Backend validation failed.");
                 }
 
@@ -279,7 +272,8 @@
 
                 setStatus("Verifying upload...", "idle");
 
-                const confirmRes = await postForm(CONFIRM_URL, {
+                const targetConfirmUrl = window.UPLOAD_CONFIG.confirmUrl;
+                const confirmRes = await postForm(targetConfirmUrl, {
                     'document_id': document_id,
                     'key': key,
                 });
@@ -290,30 +284,33 @@
                 }
 
                 setStatus("Upload completed successfully", "success");
-                uploadButton.dataset.forceUpload = "false";
+                if (uploadButtonElem) uploadButtonElem.dataset.forceUpload = "false";
 
                 const getRedirectURL = (template, id) => template.replace('/0/', `/${id}/`);
 
-                if (typeof isSupportingFlow !== 'undefined' && isSupportingFlow) {
+                if (window.UPLOAD_CONFIG.isSupportingFlow) {
                     setTimeout(() => {
                         selectedFile = null;
-                        fileInput.value = '';
+                        if (fileInputElem) fileInputElem.value = '';
 
                         const notesElem = document.getElementById('docNotes');
                         if (notesElem) notesElem.value = '';
 
-                        fileStatus.innerHTML = '';
-                        setStatus('File uploaded. Add another or click "Done adding files".', 'success');
-                        buttonText.textContent = 'Upload and continue';
+                        fileStatus?.replaceChildren();
+                        setStatus('File uploaded. Add another or click "Finish Uploading".', 'success');
+                        if (buttonTextElem) buttonTextElem.textContent = 'Upload and continue';
                         setLoading(false);
                     }, 1500);
                 } else {
-                    window.location.href = getRedirectURL(REDIRECT_URL_TEMPLATE, document_id);
+                    const redirectTemplate = typeof REDIRECT_URL_TEMPLATE !== 'undefined' ? REDIRECT_URL_TEMPLATE : '/0/';
+                    window.location.href = window.UPLOAD_CONFIG.redirectUrlTemplate
+                        ? getRedirectURL(window.UPLOAD_CONFIG.redirectUrlTemplate, document_id)
+                        : redirectTemplate;
                 }
 
             } catch (err) {
                 captureUploadFailure(err.stage || "unknown", err);
-                setStatus(err.message, "error");
+                setStatus(err.message || "An unexpected error occurred.", "error");
                 setLoading(false);
             }
         }

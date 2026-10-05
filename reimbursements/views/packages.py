@@ -235,6 +235,9 @@ class CreatePackageFromRecordsView(LoginRequiredMixin, ReimbursementRequestRequi
             posthog_client.capture(
                 "reimbursement_package_created",
                 properties={
+                    "record_count": attached,
+                    "requested_record_count": requested,
+                    "days_valid": days_valid,
                     "total_amount": float(total_amount),
                     "currency": package.currency,
                 },

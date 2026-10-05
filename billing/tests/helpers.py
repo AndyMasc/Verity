@@ -72,7 +72,11 @@ def give_pro_subscription(user) -> Subscription:
     product, _ = Product.objects.get_or_create(
         id=metadata.VERITY_PRO.stripe_id,
         livemode=False,
-        defaults={"active": True, "name": "Verity Pro"},
+        defaults={
+            "active": True,
+            "name": "Verity Pro",
+            "metadata": {"category": metadata.BASE_PLAN_CATEGORY},
+        },
     )
     price, _ = Price.objects.get_or_create(
         id=f"price_pro_{user.pk}",

@@ -343,7 +343,7 @@
                                         <div>
                                             <div class="mb-1 flex items-center justify-between text-[10px]">
                                                 <span class="font-medium text-zinc-600 dark:text-zinc-400">Cloud Storage</span>
-                                                <span class="font-semibold text-zinc-800 dark:text-zinc-200">{{ storage_usage_gb|floatformat:2 }}/{{ storage_limit_gb }} GB</span>
+                                                <span class="font-semibold text-zinc-800 dark:text-zinc-200">{% if storage_metered %}{{ storage_usage_gb|floatformat:2 }} GB · uncapped{% else %}{{ storage_usage_gb|floatformat:2 }}/{{ storage_limit_gb }} GB{% endif %}</span>
                                             </div>
                                             <div class="mb-3 h-1 w-full overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800/80">
                                                 {% if storage_limit_gb %}

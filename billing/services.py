@@ -51,8 +51,7 @@ def create_checkout_session(
         "success_url": success_url,
         "cancel_url": cancel_url,
     }
-    # Identifies the buyer on the session so webhooks can attribute the event
-    # back to a user even when the customer row is not linked yet.
+    # Identifies the buyer on the session so webhooks can attribute the event back to a user even when the customer row is not linked yet.
     if client_reference_id is not None:
         kwargs["client_reference_id"] = client_reference_id
     if idempotency_key is not None:
@@ -66,6 +65,21 @@ def create_billing_portal_session(
     """Create a Stripe billing portal session."""
     _configure()
     return stripe.billing_portal.Session.create(customer=customer, return_url=return_url)
+
+
+def get_metered_subscription_item(user, metered_price_id: str) -> str | None:
+    """Return the item id for "metered_price_id" on the user's subscription, or None."""
+
+    _configure()
+    if not metered_price_id or not user.has_active_subscription:
+        return None
+    subscription = retrieve_subscription(user.subscription.id)
+    for item in subscription.get("items", {}).get("data", []):
+        price = item.get("price")
+        price_id = price.get("id") if isinstance(price, dict) else price
+        if price_id == metered_price_id:
+            return item.get("id")
+    return None
 
 
 def cancel_subscription(subscription_id: str) -> None:
@@ -94,13 +108,7 @@ def customer_missing_in_stripe(customer_id: str) -> bool:
 
 
 def _checkout_price_id(product: Product) -> str | None:
-    """Return the price id to submit at checkout for a product, or None.
-
-    Mirrors the pricing card display: the most recently created active,
-    monthly-recurring price. "prices.first" is deliberately avoided because
-    dj-stripe Prices have no default ordering, so it can select an archived
-    price that the checkout validation (_validated_price) rejects.
-    """
+    """Return the price id to submit at checkout for a product, or None."""
     candidates = [
         price
         for price in product.prices.all()
@@ -112,23 +120,13 @@ def _checkout_price_id(product: Product) -> str | None:
     return newest.id
 
 
-def _product_pro_only(meta, base_plan) -> bool:
-    """Return whether a product should be hidden from users on the free plan."""
-    if not meta or not meta.pro_only:
-        return False
-    return base_plan.stripe_id == metadata.VERITY_FREE.stripe_id
-
-
-def _decorate_product_for_pricing(product, *, base_plan, held_product_ids):
+def _decorate_product_for_pricing(product, *, held_product_ids):
     """Attach display metadata used by the pricing cards and checkout UI."""
     meta = metadata.PRODUCTS.get(product.id)
-    product.category = meta.category if meta else None
+    product.category = metadata.product_category(product)
     product.features_list = meta.features if meta else []
     product.checkout_price_id = _checkout_price_id(product)
     product.already_active = product.id in held_product_ids
-    product.recommended = meta.recommended if meta else False
-    product.pro_only = _product_pro_only(meta, base_plan)
-    product.stackable = meta.stackable if meta else False
 
 
 def pricing_context(user) -> dict:
@@ -139,16 +137,11 @@ def pricing_context(user) -> dict:
             Prefetch("prices", queryset=Price.objects.filter(active=True, livemode=live))
         )
     )
-    base_plan = metadata.plan_for_user(user)
     held_product_ids = {meta.stripe_id for meta in metadata.active_products_for_user(user)}
 
     for product in products:
-        _decorate_product_for_pricing(
-            product, base_plan=base_plan, held_product_ids=held_product_ids
-        )
+        _decorate_product_for_pricing(product, held_product_ids=held_product_ids)
 
-    # A copy, not the module-level constant: the free plan has no Stripe
-    # product behind it but the cards expect the same shape.
     free_plan = copy(metadata.VERITY_FREE)
     free_plan.features_list = free_plan.features
     free_plan.prices = []
@@ -160,6 +153,5 @@ def pricing_context(user) -> dict:
         "products": products,
         "free_plan": free_plan,
         "has_active_subscription": bool(user.is_authenticated and user.has_active_subscription),
-        "base_plans": [p for p in products if p.category == "base_plan"],
-        "storage_plans": [p for p in products if p.category == "storage_plan"],
+        "base_plans": products,
     }

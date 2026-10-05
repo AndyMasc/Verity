@@ -7,7 +7,7 @@ import stripe
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-from djstripe.models import Subscription
+from djstripe.models import Product, Subscription
 
 from . import metadata, services
 
@@ -37,6 +37,13 @@ class CustomUser(AbstractUser):
             "kept in sync by the documents storage signals so quota checks are O(1)."
         ),
     )
+
+    @property
+    def storage_used_gb(self) -> float:
+        """Return the user's storage usage in decimal gigabytes (10**9 bytes)."""
+        from .features import BYTES_PER_GB
+
+        return self.storage_used_bytes / BYTES_PER_GB
 
     @property
     def has_active_subscription(self) -> bool:
@@ -99,31 +106,31 @@ class CustomUser(AbstractUser):
     def _get_incoming_categories(self, djstripe_subscription: Subscription) -> set:
         """Extract product categories from the incoming subscription."""
         raw_subscription = services.retrieve_subscription(djstripe_subscription.id)
-        incoming_categories = set()
-
-        for item in raw_subscription.get("items", {}).get("data", []):
-            product_id = item.get("price", {}).get("product")
-            category = metadata.category_for_product(product_id)
-            if category:
-                incoming_categories.add(category)
-
-        return incoming_categories
+        product_ids = {
+            item.get("price", {}).get("product")
+            for item in raw_subscription.get("items", {}).get("data", [])
+        }
+        categories = {
+            category
+            for category in Product.objects.filter(id__in=product_ids).values_list(
+                "metadata__category", flat=True
+            )
+            if category
+        }
+        return categories
 
     def _cancel_overlapping_subscription(
         self, old_sub: Subscription, new_sub_id: str, incoming_categories: set
     ) -> bool:
-        """Cancel overlapping subscription if it has conflicting categories.
-
-        Returns False only when a conflicting plan was found but could not be
-        cancelled at Stripe; True when there was no conflict or the
-        cancellation succeeded.
+        """Cancel overlapping subscription if it has conflicting categories. Returns False only when a conflicting plan was found but could not be
+        cancelled at Stripe; True when there was no conflict or the cancellation succeeded.
         """
         for old_item in old_sub.items.select_related("price__product").all():
             old_product = old_item.price.product if old_item.price else None
             if not old_product:
                 continue
 
-            old_cat = metadata.category_for_product(old_product.id)
+            old_cat = metadata.product_category(old_product)
             if old_cat not in incoming_categories:
                 continue
 
@@ -151,26 +158,18 @@ class CustomUser(AbstractUser):
         return True
 
     def handle_new_subscription(self, djstripe_subscription: Subscription) -> bool:
-        """Processes an incoming checkout, updating the primary subscription and
-        canceling overlapping category subscriptions.
-
-        Returns True when every overlapping legacy subscription was cleared
-        successfully (or none existed), False when at least one could not be
-        cancelled at Stripe and the user may be billed twice.
-        """
+        """Processes an incoming checkout, updating the primary subscription and canceling overlapping category subscriptions.
+        Returns True when every overlapping legacy subscription was cleared successfully (or none existed), False when at least one failed."""
         if not self.customer:
             self.customer = djstripe_subscription.customer
             self.save(update_fields=["customer"])
 
         incoming_categories = self._get_incoming_categories(djstripe_subscription)
 
-        if "base_plan" in incoming_categories:
+        if metadata.BASE_PLAN_CATEGORY in incoming_categories:
             self.subscription = djstripe_subscription
             self.save(update_fields=["subscription"])
 
-        # The plan/subscription cache must be dropped here, not only in webhook
-        # handlers, because this runs on the checkout-success view before any
-        # subscription webhook fires (e.g. a freshly purchased storage pack).
         from .context_processors import invalidate_plan_usage_caches
 
         invalidate_plan_usage_caches(self.id)

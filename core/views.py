@@ -115,10 +115,7 @@ def safe_webpush_save_info(request: HttpRequest) -> HttpResponse:
 
     Removes any existing SubscriptionInfo with the same endpoint to prevent
     stale or duplicate entries, then forwards the request to the upstream
-    "save_info" handler. Requires an authenticated user; the endpoint stays
-    CSRF-exempt because subscriptions are registered from service-worker
-    contexts that cannot carry the CSRF token.
-    """
+    "save_info" handler."""
     try:
         post_data = json.loads(request.body.decode("utf-8"))
         endpoint = post_data.get("subscription", {}).get("endpoint")
@@ -142,7 +139,6 @@ class DashboardView(LoginRequiredMixin, TemplateView):
     async def dispatch(  # type: ignore[override]
         self, request: HttpRequest, *args: Any, **kwargs: Any
     ) -> HttpResponse:
-        # LoginRequiredMixin reads request.user synchronously, which is not safe on the event loop.
         request.user = await request.auser()
         response = super().dispatch(request, *args, **kwargs)
         return await response if iscoroutine(response) else response
@@ -220,13 +216,10 @@ class ProfilePageView(LoginRequiredMixin, UpdateView):
 @ratelimit(key="user", rate="30/m", method="GET", block=True)
 def expense_chart_data(request: HttpRequest) -> JsonResponse:
     """Return monthly expense aggregates for the expense chart.
-
     Query params:
         period - "3m", "6m", "1y", or "all" (default "3m").
-
     Response:
-        {"months": [{"label": "Jan 24", "total": 1234.56}, ...], "currency": "$"}
-    """
+        {"months": [{"label": "Jan 24", "total": 1234.56}, ...], "currency": "$"}"""
     from .services.expenses import get_monthly_expense_series
 
     period = request.GET.get("period", "3m")

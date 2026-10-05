@@ -53,7 +53,12 @@ class CancellationCaptureTests(TestCase):
         )
         product, _ = Product.objects.get_or_create(
             id=product_meta.stripe_id,
-            defaults=dict(livemode=False, active=True, name=product_meta.name),
+            defaults=dict(
+                livemode=False,
+                active=True,
+                name=product_meta.name,
+                metadata={"category": metadata.BASE_PLAN_CATEGORY},
+            ),
         )
         price, _ = Price.objects.get_or_create(
             id=f"price_{product_meta.stripe_id}",
@@ -74,29 +79,18 @@ class CancellationCaptureTests(TestCase):
             capture_subscription_cancelled(sub_id, stripe_sub)
         return {call.args[0]: call.kwargs["properties"] for call in capture.call_args_list}
 
-    def test_base_plan_only_is_marked_base(self):
+    def test_cancellation_reports_duration_and_intent(self):
         self._add_item("sub_base", metadata.VERITY_PRO)
         events = self._captured("sub_base")
         self.assertEqual(set(events), {"subscription_cancelled"})
-        self.assertEqual(events["subscription_cancelled"]["plan_types"], ["base_plan"])
+        self.assertIn("months_active", events["subscription_cancelled"])
+        self.assertIn("cancel_type", events["subscription_cancelled"])
 
-    def test_addon_only_emits_addon_event(self):
-        """Add-on cancellations used to be dropped by the base-plan gate."""
-        addon = next(m for m in metadata.PRODUCTS.values() if m.category == "storage_plan")
-        self._add_item("sub_addon", addon)
-        events = self._captured("sub_addon")
+    def test_usage_based_storage_cancellation_is_captured(self):
+        """A metered subscription cancels like any other plan."""
+        self._add_item("sub_metered", metadata.USAGE_BASED_STORAGE)
+        events = self._captured("sub_metered")
         self.assertEqual(set(events), {"subscription_cancelled"})
-        self.assertEqual(events["subscription_cancelled"]["plan_types"], ["storage_plan"])
-
-    def test_combined_subscription_lists_both_plan_types(self):
-        self._add_item("sub_both", metadata.VERITY_PRO)
-        addon = next(m for m in metadata.PRODUCTS.values() if m.category == "storage_plan")
-        self._add_item("sub_both", addon)
-        events = self._captured("sub_both")
-        self.assertEqual(
-            events["subscription_cancelled"]["plan_types"],
-            ["base_plan", "storage_plan"],
-        )
 
     def test_system_cancellation_is_not_churn(self):
         self._add_item("sub_sys", metadata.VERITY_PRO)
@@ -125,6 +119,7 @@ class CancellationDedupeTests(TestCase):
             livemode=False,
             active=True,
             name="Verity Pro",
+            metadata={"category": metadata.BASE_PLAN_CATEGORY},
         )
         price = Price.objects.create(
             id="price_dedupe",
