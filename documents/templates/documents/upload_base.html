@@ -233,17 +233,23 @@
 
                 if (data.status === 'duplicate_confirmed') {
                     setLoading(false);
-                    let message = data.record_id
-                        ? `<div class="text-center text-amber-600 dark:text-amber-400 font-medium">
-                               This file is already attached to
-                               <a href="${data.record_url}" class="underline font-bold hover:text-amber-700 dark:hover:text-amber-300 transition-colors">${data.record_label}</a>.
-                               <button onclick="window.triggerForceUpload();" class="inline underline font-bold text-zinc-600 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors cursor-pointer focus:outline-none">Upload anyway?</button>
-                           </div>`
-                        : `<div class="text-center text-amber-600 dark:text-amber-400 font-medium">
-                               This document has already been uploaded in your library.
-                               <button onclick="window.triggerForceUpload();" class="inline underline font-bold text-zinc-600 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors cursor-pointer focus:outline-none">Upload anyway?</button>
-                           </div>`;
-                    setStatus(message, "idle");
+                    statusElem.className = "mb-4 text-sm text-center min-h-5 transition-all duration-200 text-zinc-600 dark:text-zinc-400";
+                    const duplicate = document.createElement('div');
+                    duplicate.className = "text-center text-amber-600 dark:text-amber-400 font-medium";
+                    duplicate.append(data.record_id ? "This file is already attached to " : "This document has already been uploaded in your library. ");
+                    if (data.record_id) {
+                        const link = document.createElement('a');
+                        link.href = data.record_url;
+                        link.className = "underline font-bold hover:text-amber-700 dark:hover:text-amber-300 transition-colors";
+                        link.textContent = data.record_label;
+                        duplicate.append(link, ". ");
+                    }
+                    const forceButton = document.createElement('button');
+                    forceButton.className = "inline underline font-bold text-zinc-600 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors cursor-pointer focus:outline-none";
+                    forceButton.textContent = "Upload anyway?";
+                    forceButton.addEventListener('click', window.triggerForceUpload);
+                    duplicate.append(forceButton);
+                    statusElem.replaceChildren(duplicate);
                     return;
                 }
 
