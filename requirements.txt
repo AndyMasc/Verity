@@ -28,8 +28,6 @@ cffi==2.0.0
 cfgv==3.5.0
 charset-normalizer==3.4.7
 click==8.4.1
-codeflash==0.20.6
-codeflash-benchmark==0.3.0
 ConfigArgParse==1.7.5
 cookiecutter==2.7.1
 coverage==7.15.2
