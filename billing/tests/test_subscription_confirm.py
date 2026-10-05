@@ -142,6 +142,26 @@ class SubscriptionConfirmTests(TestCase):
 
         self.assertEqual(response.status_code, 400)
 
+    def test_accepts_session_with_nothing_due(self):
+        """A metered-only order charges nothing up front.
+
+        Usage is billed in arrears from reported usage, so Stripe settles the session
+        with "no_payment_required". That is a successful checkout, not an unpaid one.
+        """
+        self.user.customer = self.customer
+        self.user.save()
+        session = FakeSession(
+            payment_status="no_payment_required",
+            customer=self.customer.id,
+            client_reference_id=str(self.user.id),
+        )
+        client = self._patch_stripe(session)
+        client.force_login(self.user)
+
+        response = client.get(self.url, {"session_id": "cs_test"})
+
+        self.assertEqual(response.status_code, 302)
+
     def test_confirm_invalidates_subscription_status_cache(self):
         # A primed per-user plan/subscription cache must be dropped when a plan
         # (e.g. a storage pack) is purchased, so the sidebar updates immediately.

@@ -97,6 +97,12 @@ def retrieve_customer(customer_id: str):
         return None
 
 
+# A Checkout Session is settled when Stripe has taken payment, and also when there was
+# nothing to take: a metered-only order bills in arrears from reported usage, and a fully
+# discounted order is settled on creation. Both are successful checkouts.
+SETTLED_PAYMENT_STATUSES = frozenset({"paid", "no_payment_required"})
+
+
 def resolve_customer(user) -> Customer:
     """Return the user's Stripe Customer, creating or reconciling one as needed.
 

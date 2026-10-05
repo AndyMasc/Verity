@@ -51,7 +51,7 @@ def subscription_confirm(request: HttpRequest) -> HttpResponse:
 
     try:
         session = services.retrieve_checkout_session(session_id)
-        if session.payment_status != "paid":
+        if session.payment_status not in services.SETTLED_PAYMENT_STATUSES:
             return HttpResponseBadRequest("Subscription is not paid.")
         if not session.subscription:
             return HttpResponseBadRequest("Session is not a subscription checkout.")

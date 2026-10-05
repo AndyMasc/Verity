@@ -11,6 +11,8 @@ from djstripe.models import Customer, Subscription
 
 from core.apps import posthog_client
 
+from .services import SETTLED_PAYMENT_STATUSES
+
 logger = logging.getLogger(__name__)
 
 
@@ -193,7 +195,7 @@ def handle_checkout_settled(**kwargs: Any) -> None:
     if session.get("mode") != "subscription":
         return
     # "no_payment_required" covers fully discounted checkouts.
-    if session.get("payment_status") not in ("paid", "no_payment_required"):
+    if session.get("payment_status") not in SETTLED_PAYMENT_STATUSES:
         return
 
     capture(
