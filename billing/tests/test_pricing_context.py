@@ -48,35 +48,6 @@ class CheckoutPriceIdTests(TestCase):
         self._price("price_archived", active=False)
         self.assertIsNone(services._checkout_price_id(self.product))
 
-    def test_storage_pro_only_product_uses_active_monthly_price(self):
-        product = Product.objects.create(
-            id=metadata.STORAGE_UPGRADE_10.stripe_id,
-            livemode=False,
-            active=True,
-            name="10 GB Storage Pack",
-        )
-        current = Price.objects.create(
-            id="price_10",
-            livemode=False,
-            active=True,
-            product=product,
-            currency="usd",
-        )
-        current.stripe_data = {"recurring": {"interval": "month"}}
-        current.save(update_fields=["stripe_data"])
-
-        archived = Price.objects.create(
-            id="price_10_archived",
-            livemode=False,
-            active=False,
-            product=product,
-            currency="usd",
-        )
-        archived.stripe_data = {"recurring": {"interval": "month"}}
-        archived.save(update_fields=["stripe_data"])
-
-        self.assertEqual(services._checkout_price_id(product), current.id)
-
 
 class PricingContextTests(TestCase):
     """pricing_context attaches a deterministic checkout price per product."""
@@ -178,14 +149,14 @@ class AlreadyActiveTests(TestCase):
         self.user.customer = self.customer
         self.user.save(update_fields=["customer"])
 
-    def _product(self, meta):
+    def _product(self, meta, category="base_plan"):
         product, _ = Product.objects.get_or_create(
             id=meta.stripe_id,
             livemode=False,
             defaults={
                 "active": True,
                 "name": meta.name,
-                "metadata": {"category": meta.category},
+                "metadata": {"category": category},
             },
         )
         price, _ = Price.objects.get_or_create(
@@ -220,9 +191,7 @@ class AlreadyActiveTests(TestCase):
         )
 
     def _card(self, context, meta):
-        return next(
-            p for p in context["base_plans"] + context["storage_plans"] if p.id == meta.stripe_id
-        )
+        return next(p for p in context["base_plans"] if p.id == meta.stripe_id)
 
     def test_free_user_has_no_active_plan(self):
         self._product(metadata.VERITY_PRO)
@@ -230,16 +199,8 @@ class AlreadyActiveTests(TestCase):
         self.assertFalse(self._card(context, metadata.VERITY_PRO).already_active)
 
     def test_held_base_plan_is_marked_active(self):
-        self._product(metadata.STORAGE_UPGRADE_10)
         self._subscribe(metadata.VERITY_PRO)
         context = services.pricing_context(self.user)
         self.assertTrue(self._card(context, metadata.VERITY_PRO).already_active)
-        self.assertFalse(self._card(context, metadata.STORAGE_UPGRADE_10).already_active)
-
-    def test_held_storage_plan_is_marked_active(self):
-        self._product(metadata.VERITY_PRO)
-        self._subscribe(metadata.VERITY_PRO)
-        self._subscribe(metadata.STORAGE_UPGRADE_10)
-        context = services.pricing_context(self.user)
-        self.assertTrue(self._card(context, metadata.VERITY_PRO).already_active)
-        self.assertTrue(self._card(context, metadata.STORAGE_UPGRADE_10).already_active)
+        # Everyone is on the free plan, so its card always reads as current.
+        self.assertTrue(self._card(context, metadata.VERITY_FREE).already_active)

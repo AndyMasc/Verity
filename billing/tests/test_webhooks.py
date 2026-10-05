@@ -69,87 +69,6 @@ class HandleSubscriptionDeletedTests(TestCase):
         self.assertEqual(self.user.subscription_id, self.subscription.djstripe_id)
 
 
-class HandleSubscriptionChangedTests(TestCase):
-    def test_cancels_pro_only_storage_when_base_plan_ends(self):
-        customer = Customer.objects.create(
-            id="cus_cancelled_base", livemode=False, created=timezone.now()
-        )
-        pro_product = Product.objects.create(
-            id=metadata.VERITY_PRO.stripe_id,
-            livemode=False,
-            active=True,
-            name="Verity Pro",
-        )
-        pro_price = Price.objects.create(
-            id="price_pro_cancel",
-            livemode=False,
-            active=True,
-            product=pro_product,
-            currency="usd",
-        )
-        pro_sub = Subscription.objects.create(
-            id="sub_pro_cancel",
-            livemode=False,
-            created=timezone.now(),
-            customer=customer,
-            stripe_data={"status": "active"},
-        )
-        SubscriptionItem.objects.create(
-            id="si_pro_cancel",
-            livemode=False,
-            created=timezone.now(),
-            subscription=pro_sub,
-            price=pro_price,
-        )
-
-        storage_product = Product.objects.create(
-            id=metadata.STORAGE_UPGRADE_10.stripe_id,
-            livemode=False,
-            active=True,
-            name="10 GB Storage Pack",
-        )
-        storage_price = Price.objects.create(
-            id="price_storage_cancel",
-            livemode=False,
-            active=True,
-            product=storage_product,
-            currency="usd",
-        )
-        storage_sub = Subscription.objects.create(
-            id="sub_storage_cancel",
-            livemode=False,
-            created=timezone.now(),
-            customer=customer,
-            stripe_data={"status": "active"},
-        )
-        SubscriptionItem.objects.create(
-            id="si_storage_cancel",
-            livemode=False,
-            created=timezone.now(),
-            subscription=storage_sub,
-            price=storage_price,
-        )
-
-        with mock.patch("billing.webhooks.services.cancel_subscription") as cancel_mock:
-            handle_subscription_changed(
-                event=mock.Mock(
-                    data={
-                        "object": {
-                            "id": pro_sub.id,
-                            "customer": customer.id,
-                            "status": "canceled",
-                            "cancel_at_period_end": False,
-                            "items": {
-                                "data": [{"price": {"product": metadata.VERITY_PRO.stripe_id}}]
-                            },
-                        }
-                    }
-                )
-            )
-
-        cancel_mock.assert_called_once_with(storage_sub.id)
-
-
 class HandleSubscriptionCancellationTrackingTests(TestCase):
     def setUp(self):
         self.user = get_user_model().objects.create_user(
@@ -211,10 +130,7 @@ class HandleSubscriptionCancellationTrackingTests(TestCase):
         )
 
     def _handle_deleted(self, cancel_at_period_end):
-        with (
-            self.captureOnCommitCallbacks(execute=True),
-            mock.patch("billing.webhooks._cancel_pro_only_storage_for_customer"),
-        ):
+        with self.captureOnCommitCallbacks(execute=True):
             webhooks.handle_subscription_deleted(event=self._deleted_event(cancel_at_period_end))
 
     def test_immediate_cancel_tracked_once(self):
@@ -223,7 +139,6 @@ class HandleSubscriptionCancellationTrackingTests(TestCase):
         name, kwargs = self.captured[0]
         self.assertEqual(name, ("subscription_cancelled",))
         self.assertEqual(kwargs["distinct_id"], str(self.user.pk))
-        self.assertEqual(kwargs["properties"]["plan_types"], ["base_plan"])
         self.assertEqual(kwargs["properties"]["cancel_type"], "immediate")
 
     def test_period_end_cancel_tracked_once(self):
@@ -239,43 +154,37 @@ class HandleSubscriptionCancellationTrackingTests(TestCase):
         self.assertNotIn("distinct_id", self.captured[0][1])
 
     def test_changed_event_does_not_track_cancellation(self):
-        with mock.patch("billing.webhooks._cancel_pro_only_storage_for_customer"):
-            webhooks.handle_subscription_changed(
-                event=mock.Mock(
-                    data={
-                        "object": {
-                            "id": self.subscription.id,
-                            "status": "canceled",
-                            "cancel_at_period_end": False,
-                            "items": {
-                                "data": [{"price": {"product": metadata.VERITY_PRO.stripe_id}}]
-                            },
-                        }
+        webhooks.handle_subscription_changed(
+            event=mock.Mock(
+                data={
+                    "object": {
+                        "id": self.subscription.id,
+                        "status": "canceled",
+                        "cancel_at_period_end": False,
+                        "items": {"data": [{"price": {"product": metadata.VERITY_PRO.stripe_id}}]},
                     }
-                )
+                }
             )
+        )
         # subscription_updated is expected here; a *cancellation* is not, since
         # customer.subscription.deleted owns that event.
         self.assertNotIn("base_subscription_cancelled", [name[0] for name, _ in self.captured])
 
     def test_scheduled_cancel_tracked_when_scheduled(self):
         """A period-end cancel is recorded on .updated, the only event that says so."""
-        with mock.patch("billing.webhooks._cancel_pro_only_storage_for_customer"):
-            webhooks.handle_subscription_changed(
-                event=mock.Mock(
-                    data={
-                        "object": {
-                            "id": self.subscription.id,
-                            "status": "active",
-                            "customer": self.customer.id,
-                            "cancel_at_period_end": True,
-                            "items": {
-                                "data": [{"price": {"product": metadata.VERITY_PRO.stripe_id}}]
-                            },
-                        }
+        webhooks.handle_subscription_changed(
+            event=mock.Mock(
+                data={
+                    "object": {
+                        "id": self.subscription.id,
+                        "status": "active",
+                        "customer": self.customer.id,
+                        "cancel_at_period_end": True,
+                        "items": {"data": [{"price": {"product": metadata.VERITY_PRO.stripe_id}}]},
                     }
-                )
+                }
             )
+        )
         cancels = [
             (name, kwargs) for name, kwargs in self.captured if name[0] == "subscription_cancelled"
         ]
@@ -318,17 +227,16 @@ class ReportWebhookProcessingErrorTests(TestCase):
 
 
 class CheckoutCompletedTests(TestCase):
-    """plan_types comes from the synced subscription, not the session payload.
+    """A settled checkout captures once, whether or not Stripe synced the subscription.
 
     A real checkout.session.completed payload has no line_items, so a test that
     builds one from session["line_items"] proves nothing.
     """
 
     def setUp(self):
-        # A real product id, so metadata.PRODUCTS can resolve its category.
         from billing import metadata as billing_metadata
 
-        product_id = billing_metadata.STORAGE_UPGRADE_1.stripe_id
+        product_id = billing_metadata.VERITY_PRO.stripe_id
         self.product = Product.objects.create(
             id=product_id, stripe_data={"id": product_id, "object": "product"}
         )
@@ -365,7 +273,7 @@ class CheckoutCompletedTests(TestCase):
             webhooks.handle_checkout_settled(event=mock.Mock())
         return captured
 
-    def test_plan_types_come_from_the_subscription(self):
+    def test_settled_checkout_is_captured(self):
         customer = Customer.objects.create(
             id="cus_1",
             livemode=False,
@@ -382,9 +290,8 @@ class CheckoutCompletedTests(TestCase):
         captured = self._settle("sub_1")
         self.assertEqual(len(captured), 1)
         self.assertEqual(captured[0][0][0], "subscription_checkout_completed")
-        self.assertEqual(captured[0][0][2]["plan_types"], ["storage_plan"])
 
     def test_missing_subscription_does_not_break_the_capture(self):
         captured = self._settle("sub_absent")
         self.assertEqual(len(captured), 1)
-        self.assertEqual(captured[0][0][2]["plan_types"], [])
+        self.assertEqual(captured[0][0][0], "subscription_checkout_completed")

@@ -24,7 +24,8 @@ from djstripe.settings import djstripe_settings
 from core.apps import posthog_client
 
 from . import metadata, services
-from .metadata import VERITY_FREE, plan_for_user
+from .context_processors import invalidate_plan_usage_caches
+from .metadata import plan_for_user
 from .models import CustomUser
 
 logger = logging.getLogger(__name__)
@@ -103,11 +104,11 @@ def create_portal_session(request: HttpRequest) -> HttpResponse:
     return HttpResponseRedirect(portal_session.url)
 
 
-def _validated_price(price_id: str | None, category: str, user=None) -> str | None:
-    """Return the price ID only if it belongs to an active product in "category".
+def _validated_price(price_id: str | None, category: str | None = None) -> str | None:
+    """Return the price ID only if it belongs to an active, priced product.
 
-    Pro-only products (e.g. the +5GB/+10GB storage packs) require a paid base
-    plan; a user on the Free plan (or anonymous) is not allowed to buy them.
+    "category", when given, is the caller's own read of the product's Stripe
+    metadata.
     """
     if not price_id:
         return None
@@ -122,21 +123,20 @@ def _validated_price(price_id: str | None, category: str, user=None) -> str | No
     )
     if price is None or price.product is None:
         return None
-    meta = metadata.PRODUCTS.get(price.product.id)
-    if meta is None or meta.category != category:
+    if price.product.id not in metadata.PRODUCTS:
         return None
-    if meta.pro_only and plan_for_user(user).stripe_id == VERITY_FREE.stripe_id:
+    if category is not None and metadata.product_category(price.product) != category:
         return None
     return price_id
 
 
-def _checkout_quantity(raw_qty: str | None, max_quantity: int = 100) -> int:
-    """Get checkout quantity from POST request, for stackable plans and scalability"""
-    try:
-        quantity = int(raw_qty) if raw_qty else 1
-    except (TypeError, ValueError):
-        quantity = 1
-    return max(1, min(quantity, max_quantity))
+def customer_needs_refresh(customer: Customer | None) -> bool:
+    """Return True when a stored customer ID is stale or missing in Stripe."""
+    if customer is None:
+        return True
+    if customer.livemode != djstripe_settings.STRIPE_LIVE_MODE:
+        return True
+    return services.customer_missing_in_stripe(customer.id)
 
 
 @login_required
@@ -145,35 +145,52 @@ def _checkout_quantity(raw_qty: str | None, max_quantity: int = 100) -> int:
 def create_checkout_session(request: HttpRequest) -> HttpResponse:
     user = cast(CustomUser, request.user)
 
-    # Which plans are on the form, what they are called and whether they stack all
-    # come from metadata.CATEGORIES, so a new plan needs no change here.
-    selected = {
-        category: _validated_price(request.POST.get(field), category, user)
-        for category, (_, field) in metadata.CATEGORIES.items()
-    }
-    selected = {c: p for c, p in selected.items() if p}
-
+    # A plan and usage-based storage can be bought in one order; a second plan cannot.
+    selected = []
+    for raw in request.POST.getlist("price_ids"):
+        price = (
+            Price.objects.filter(
+                id=raw,
+                active=True,
+                livemode=djstripe_settings.STRIPE_LIVE_MODE,
+            )
+            .select_related("product")
+            .first()
+        )
+        if price is None or price.product is None:
+            continue
+        price_id = _validated_price(raw, metadata.product_category(price.product))
+        if price_id:
+            selected.append(price_id)
     if not selected:
         return HttpResponseBadRequest("Select a valid plan to proceed to checkout.")
 
-    line_items = [
-        {
-            "price": price_id,
-            "quantity": (
-                _checkout_quantity(request.POST.get("quantity"))
-                if metadata.is_stackable(category)
-                else 1
-            ),
-        }
-        for category, price_id in selected.items()
+    # Resolve the selected prices to their products.
+    products = Price.objects.filter(id__in=selected).select_related("product")
+    metas = {
+        price.id: meta
+        for price in products
+        if (meta := metadata.PRODUCTS.get(price.product_id)) is not None
+    }
+
+    licensed = [price_id for price_id in selected if not metas[price_id].metered]
+    if len(licensed) > 1:
+        return HttpResponseBadRequest("Select a single plan to proceed to checkout.")
+
+    # The rate follows the plan the user ends up on, so an explicit selection wins and a downgrade is not billed at the tier they are leaving. A metered-only
+    # order keeps the current plan's tier.
+    paid_base = (metas[licensed[0]] if licensed else plan_for_user(user)).is_paid
+
+    # Stripe's two rules, which are opposites: a licensed line item must carry a quantity, and a metered one must not.
+    line_items = [{"price": price_id, "quantity": 1} for price_id in licensed]
+    line_items += [
+        {"price": metas[price_id].price_id_for_plan(paid_base) or price_id}
+        for price_id in selected
+        if metas[price_id].metered
     ]
 
     customer = user.customer
-    if (
-        customer is None
-        or customer.livemode != djstripe_settings.STRIPE_LIVE_MODE
-        or services.customer_missing_in_stripe(customer.id)
-    ):
+    if customer_needs_refresh(customer):
         customer = None
 
     if customer is None:
@@ -197,10 +214,8 @@ def create_checkout_session(request: HttpRequest) -> HttpResponse:
             cancel_url=request.build_absolute_uri(reverse("pricing_page")) + "?checkout=canceled",
         )
         if posthog_client is not None:
-            posthog_client.capture(
-                "subscription_checkout_started",
-                properties={"plan_types": list(selected)},
-            )
+            invalidate_plan_usage_caches(user.pk)
+            posthog_client.capture("subscription_checkout_started", properties={})
         return HttpResponseRedirect(checkout_session.url)
     except Exception as e:
         logger.error("Could not create checkout session: %s", e, exc_info=True)

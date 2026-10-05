@@ -55,18 +55,10 @@ def _build_subscription_status(user) -> dict[str, Any]:
     plan_name = ", ".join(product.name for product in active_products) or (
         metadata.VERITY_FREE.name
     )
-    storage_pack_requires_paid_base = bool(
-        metadata.plan_for_user(user).stripe_id == metadata.VERITY_FREE.stripe_id
-        and any(
-            product.category == "storage_plan" and product.pro_only for product in active_products
-        )
-    )
-
     return {
         "is_subscribed": is_subscribed,
         "plan_name": plan_name,
         "monthly_scan_limit": entitlements.get_monthly_scan_limit(user),
-        "storage_pack_requires_paid_base": storage_pack_requires_paid_base,
     }
 
 
@@ -120,11 +112,12 @@ def storage_usage(request: HttpRequest) -> dict[str, Any]:
     if cached is not None:
         return cached
 
-    usage_bytes = entitlements.get_storage_usage_bytes(user)
-    limit_gb = entitlements.get_storage_limit(user)
+    metered = metadata.has_metered_storage(user)
     value = {
-        "storage_usage_gb": usage_bytes / (1024**3),
-        "storage_limit_gb": limit_gb,
+        "storage_usage_gb": entitlements.get_storage_usage_gb(user),
+        # Falsy when uncapped, which is what the sidebar's else-branch keys off.
+        "storage_limit_gb": None if metered else entitlements.get_storage_limit(user),
+        "storage_metered": metered,
     }
     cache.set(cache_key, value, BILLING_CONTEXT_CACHE_TTL)
     return value

@@ -31,6 +31,7 @@ class SubscriptionConfirmTests(TestCase):
             livemode=False,
             active=True,
             name="Verity Pro",
+            metadata={"category": "base_plan"},
         )
         pro_price = Price.objects.create(
             id="price_pro",

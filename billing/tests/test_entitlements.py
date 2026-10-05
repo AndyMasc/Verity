@@ -1,3 +1,6 @@
+from math import ceil
+from unittest import mock
+
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.utils import timezone
@@ -79,15 +82,6 @@ class EntitlementTests(TestCase):
         self.assertEqual(entitlements.get_plan(self.user), "paid")
         self.assertTrue(entitlements.has_feature(self.user, features.BANK_TRANSACTION_SYNC))
 
-    def test_storage_addon_alone_does_not_unlock_pro_features(self):
-        self._add_subscription(status="active", product_id=metadata.STORAGE_UPGRADE_10.stripe_id)
-        self.assertEqual(entitlements.get_plan(self.user), "free")
-        self.assertEqual(entitlements.get_features(self.user), entitlements.FREE_FEATURES)
-        self.assertFalse(entitlements.has_feature(self.user, features.UNLIMITED_SCANS))
-        self.assertFalse(entitlements.has_feature(self.user, features.BANK_TRANSACTION_SYNC))
-        self.assertFalse(entitlements.has_feature(self.user, features.QUICK_REIMBURSEMENT_REQUEST))
-        self.assertTrue(entitlements.has_feature(self.user, features.LIMITED_SCANS))
-
     def test_unauthenticated_user_has_no_features(self):
         self.assertFalse(entitlements.has_feature(None, features.BANK_TRANSACTION_SYNC))
 
@@ -159,17 +153,6 @@ class ContextProcessorTests(TestCase):
         self.assertFalse(ctx["is_subscribed"])
         self.assertEqual(entitlements.get_plan(self.user), "free")
 
-    def test_storage_addon_plan_name_is_not_free(self):
-        from ..context_processors import subscription_status
-
-        self._add_subscription(status="active", product_id=metadata.STORAGE_UPGRADE_10.stripe_id)
-        ctx = subscription_status(self._request())
-        self.assertEqual(ctx["plan_name"], metadata.STORAGE_UPGRADE_10.name)
-        self.assertEqual(entitlements.get_plan(self.user), "free")
-        self.assertEqual(ctx["monthly_scan_limit"], features.FREE_MONTHLY_SCAN_LIMIT)
-        self.assertNotIn(features.UNLIMITED_SCANS, entitlements.get_features(self.user))
-        self.assertTrue(ctx["storage_pack_requires_paid_base"])
-
     def test_pro_plan_name_is_dynamic(self):
         from ..context_processors import subscription_status
 
@@ -181,6 +164,77 @@ class ContextProcessorTests(TestCase):
 
     def _add_subscription(self, status="active", product_id=None):
         add_subscription(self.user, self.customer, status=status, product_id=product_id)
+
+
+class MeteredIsNotAPlanTests(TestCase):
+    """Usage-based storage is priced like a plan but grants no plan features.
+
+    Every product shares the "base_plan" category, so category alone cannot pick
+    the plan: without an explicit metered check, a free user who bought only
+    usage-based storage resolved to the paid feature set.
+    """
+
+    def setUp(self):
+        self.user = CustomUser.objects.create_user(
+            username="metered",
+            email="metered@example.com",
+            password="password",
+        )
+        self.customer = Customer.objects.create(
+            id="cus_metered", livemode=False, created=timezone.now()
+        )
+
+    def _subscribe_usage_storage(self):
+        add_subscription(
+            self.user,
+            self.customer,
+            status="active",
+            product_id=metadata.USAGE_BASED_STORAGE.stripe_id,
+        )
+
+    def test_usage_storage_alone_leaves_the_user_free(self):
+        self._subscribe_usage_storage()
+        self.assertEqual(entitlements.get_plan(self.user), "free")
+        self.assertTrue(metadata.has_metered_storage(self.user))
+
+    def test_usage_storage_alone_grants_no_paid_features(self):
+        self._subscribe_usage_storage()
+        self.assertNotIn(metadata.VERITY_PRO.features[0], entitlements.get_features(self.user))
+
+    def test_plan_resolves_alongside_usage_storage(self):
+        add_subscription(
+            self.user,
+            self.customer,
+            status="active",
+            product_id=metadata.VERITY_PRO.stripe_id,
+        )
+        self.assertEqual(metadata.plan_for_user(self.user), metadata.VERITY_PRO)
+        self.assertEqual(entitlements.get_plan(self.user), "paid")
+
+
+class DecimalStorageUnitsTests(TestCase):
+    """Storage is sold in decimal units, so 10**9 bytes is one GB.
+
+    Binary units here would grant 7.4% more quota than advertised and report
+    6.9% less usage to Stripe than was actually stored.
+    """
+
+    def setUp(self):
+        self.user = CustomUser.objects.create_user(
+            username="units",
+            email="units@example.com",
+            password="password",
+        )
+        self.assertEqual(features.BYTES_PER_GB, 10**9)
+
+    def test_ten_to_the_nine_bytes_is_one_gigabyte(self):
+        with mock.patch.object(entitlements, "get_storage_usage_bytes", return_value=10**9):
+            self.assertEqual(entitlements.get_storage_usage_gb(self.user), 1.0)
+
+    def test_one_gigabyte_reports_as_one_thousand_megabytes(self):
+        with mock.patch.object(entitlements, "get_storage_usage_bytes", return_value=10**9):
+            reported_mb = ceil(entitlements.get_storage_usage_gb(self.user) * 1000)
+        self.assertEqual(reported_mb, 1000)
 
 
 class StorageLimitTests(TestCase):
@@ -239,46 +293,11 @@ class StorageLimitTests(TestCase):
             metadata.VERITY_PRO.stripe_id,
         )
 
-    def test_available_storage_addon_alone_boosts_storage_only(self):
-        self._add_subscription_with_product(metadata.STORAGE_UPGRADE_1.stripe_id)
-        self.assertEqual(
-            entitlements.get_storage_limit(self.user),
-            features.FREE_STORAGE_LIMIT_GB + features.STORAGE_ADDITIONAL_GB_1,
-        )
-        self.assertEqual(entitlements.get_plan(self.user), "free")
-        self.assertEqual(metadata.plan_for_user(self.user).stripe_id, "free")
-
-    def test_pro_only_storage_addon_requires_paid_base_plan(self):
-        self._add_subscription_with_product(metadata.STORAGE_UPGRADE_10.stripe_id)
-        self.assertEqual(entitlements.get_storage_limit(self.user), features.FREE_STORAGE_LIMIT_GB)
-        self.assertEqual(entitlements.get_plan(self.user), "free")
-        self.assertEqual(metadata.storage_addons_for_user(self.user), [])
-
-    def test_pro_plus_storage_addon_sums_storage_and_keeps_pro_features(self):
-        customer = Customer.objects.create(
-            id="cus_pro_addon", livemode=False, created=timezone.now()
-        )
-        self._add_subscription_with_product(metadata.VERITY_PRO.stripe_id, customer=customer)
-        self._add_subscription_with_product(
-            metadata.STORAGE_UPGRADE_10.stripe_id, customer=customer
-        )
-        self.user.customer = customer
-        self.user.save()
-        self.assertEqual(
-            entitlements.get_storage_limit(self.user),
-            features.PRO_STORAGE_LIMIT_GB + features.STORAGE_ADDITIONAL_GB_10,
-        )
-        self.assertEqual(entitlements.get_plan(self.user), "paid")
-        self.assertEqual(
-            metadata.plan_for_user(self.user).stripe_id,
-            metadata.VERITY_PRO.stripe_id,
-        )
-
     def test_storage_usage_counts_document_sizes(self):
         from documents.models import DocumentData
 
         self._add_subscription_with_product(metadata.VERITY_PRO.stripe_id)
-        for i, size in enumerate((1024**3, 2 * 1024**3)):
+        for i, size in enumerate((features.BYTES_PER_GB, 2 * features.BYTES_PER_GB)):
             DocumentData.objects.create(
                 user=self.user,
                 filepath=f"users/{self.user.pk}/doc-{size}.pdf",
@@ -295,7 +314,41 @@ class StorageLimitTests(TestCase):
             user=self.user,
             filepath=f"users/{self.user.pk}/big.pdf",
             file_hash="x",
-            file_size=2 * 1024**3,
+            file_size=2 * features.BYTES_PER_GB,
         )
         self.assertTrue(entitlements.is_storage_limit_exceeded(self.user))
         self.assertFalse(entitlements.can_scan(self.user))
+
+
+class UsageBasedStorageCapTests(TestCase):
+    """Subscribing to usage-based storage lifts the upload cap."""
+
+    def setUp(self):
+        self.metadata = metadata
+        self.user = get_user_model().objects.create_user(
+            username="metered", email="metered@example.com", password="x"
+        )
+        self.customer = Customer.objects.create(
+            id="cus_metered",
+            livemode=False,
+            created=timezone.now(),
+            subscriber=self.user,
+        )
+
+    def test_capped_without_a_metered_subscription(self):
+        self.assertFalse(self.metadata.has_metered_storage(self.user))
+        limit_mb = entitlements.get_storage_limit(self.user) * 1024
+        self.assertTrue(entitlements.can_add_storage(self.user, 1_000))
+        # One byte past the free allowance is refused.
+        self.assertFalse(entitlements.can_add_storage(self.user, int(limit_mb * 1024**2) + 1))
+
+    def test_uncapped_once_subscribed(self):
+        add_subscription(
+            self.user,
+            self.customer,
+            status="active",
+            product_id=self.metadata.USAGE_BASED_STORAGE.stripe_id,
+        )
+        self.assertTrue(self.metadata.has_metered_storage(self.user))
+        # Far past any plan quota: the meter bills this, the cap does not block it.
+        self.assertTrue(entitlements.can_add_storage(self.user, 50 * features.BYTES_PER_GB))

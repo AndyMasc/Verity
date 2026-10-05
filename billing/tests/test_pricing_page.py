@@ -5,7 +5,9 @@ from django.contrib.messages import get_messages
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
-from djstripe.models import Customer
+from djstripe.models import Customer, Price, Product
+
+from .. import metadata
 
 from .helpers import FakeSession
 
@@ -19,15 +21,6 @@ class PricingPageTests(TestCase):
         )
         self.client.force_login(self.user)
         self.url = reverse("pricing_page")
-
-    def test_selection_state_lives_in_one_scope(self):
-        # The wrapper and the checkout form both declared the selection
-        # variables, so the cards and the plan counter could read different
-        # scopes. Only the form may own them.
-        response = self.client.get(self.url)
-        content = response.content.decode()
-        self.assertEqual(content.count("selectedBasePrice: null"), 1)
-        self.assertEqual(content.count("selectedStoragePrice: null"), 1)
 
     def test_plan_view_tracking_root_is_rendered(self):
         response = self.client.get(self.url)
@@ -58,8 +51,23 @@ class CheckoutCancelUrlTests(TestCase):
         )
         self.client.force_login(user)
 
+        # A real price, because checkout resolves the product to decide whether the
+        # line item is metered.
+        product = Product.objects.create(
+            id=metadata.VERITY_PRO.stripe_id,
+            livemode=False,
+            active=True,
+            name="Verity Pro",
+        )
+        Price.objects.create(
+            id="price_pro",
+            livemode=False,
+            active=True,
+            product=product,
+            currency="usd",
+        )
+
         with (
-            mock.patch("billing.views._validated_price", return_value="price_pro"),
             mock.patch("billing.views.Customer.get_or_create", return_value=(customer, True)),
             mock.patch("billing.services.customer_missing_in_stripe", return_value=False),
             mock.patch(

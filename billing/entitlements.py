@@ -61,14 +61,15 @@ def has_feature(user, feature: str) -> bool:
     return feature in get_features(user)
 
 
-def get_storage_limit(user) -> int:
-    """Return the user's storage limit in GB: base plan limit plus valid storage add-ons."""
-    from .metadata import plan_for_user, storage_addon_quantity, storage_addons_for_user
+def get_storage_limit(user) -> float:
+    """Return the user's included storage in GB.
 
-    addons = storage_addons_for_user(user)
-    limit = plan_for_user(user).storage_limit_gb
-    limit += sum(addon.storage_limit_gb for addon in addons) * storage_addon_quantity(user)
-    return limit
+    Usage-based storage is not added here: subscribing lifts the cap entirely
+    (see "can_add_storage") and the meter bills whatever sits above the quota.
+    """
+    from .metadata import plan_for_user
+
+    return plan_for_user(user).storage_limit_gb
 
 
 def get_storage_usage_bytes(user) -> int:
@@ -79,22 +80,30 @@ def get_storage_usage_bytes(user) -> int:
 
 
 def get_storage_usage_gb(user) -> float:
-    """Return total stored gigabytes (GB)."""
-    return get_storage_usage_bytes(user) / (1024**3)
+    """Return total stored decimal gigabytes (10**9 bytes)."""
+    return get_storage_usage_bytes(user) / features.BYTES_PER_GB
 
 
 def is_storage_limit_exceeded(user) -> bool:
-    """Check whether the user has exceeded their assigned storage limit in GB."""
-    limit_gb = get_storage_limit(user)
-    usage_gb = get_storage_usage_gb(user)
-    return usage_gb >= limit_gb
+    """Check whether the user has reached their assigned storage limit."""
+    return get_storage_usage_gb(user) >= get_storage_limit(user)
 
 
 def can_add_storage(user, additional_bytes: int) -> bool:
-    """Return whether storing *additional_bytes* more would stay within the limit."""
-    limit_gb = get_storage_limit(user)
+    """Return whether storing additional_bytes more is allowed.
+
+    Uncapped once the user subscribes to usage-based storage.
+    """
+    from .metadata import has_metered_storage
+
+    # Usage-based storage is opt-in and uncapped: subscribing is what lifts the
+    # plan quota, and the meter bills whatever sits above it.
+    if has_metered_storage(user):
+        return True
+
+    limit_bytes = get_storage_limit(user) * features.BYTES_PER_GB
     usage_bytes = get_storage_usage_bytes(user)
-    return usage_bytes + additional_bytes <= limit_gb * 1024**3
+    return usage_bytes + additional_bytes <= limit_bytes
 
 
 def can_scan(user) -> bool:

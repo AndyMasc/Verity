@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from django.db.models import Prefetch
 from djstripe.models import Customer, SubscriptionItem
@@ -10,14 +10,20 @@ ACTIVE_SUBSCRIPTION_STATUSES = frozenset({"active", "trialing"})
 _NOT_CACHED = object()
 
 
+def product_category(product) -> str | None:
+    """Return a Stripe product's pricing category.
+
+    Stripe's product metadata is the single source of truth for categories, so
+    that adding a plan needs no code change here. "base_plan" is the paid plan
+    that drives features; "storage_plan" is usage-based storage.
+    """
+    return (getattr(product, "metadata", None) or {}).get("category")
+
+
 @dataclass
 class ProductMetadata:
     """
     Metadata for a Stripe product.
-
-    "category" groups products into pricing tables:
-      * "base_plan"    -> the main plan that determines plan features (Free/Pro/...)
-      * "storage_plan" -> add-on storage products that only raise the storage limit
     """
 
     stripe_id: str
@@ -30,23 +36,32 @@ class ProductMetadata:
         return self.stripe_id
 
     description: str = ""
-    category: str = "base_plan"
     storage_limit_gb: float = 0
-    # Monthly Quick Scan allowance; None means unlimited. Storage add-ons leave
-    # this unset -- scan entitlement always comes from the user's base plan.
     monthly_scan_limit: int | None = None
-    # If True, this product is only available to users with a paid base plan.
-    # Free users can see it as "disabled" but cannot purchase it via Stripe.
-    pro_only: bool = False
     recommended: bool = False  # If True, this product is recommended for most users
-    stackable: bool = False  # If True, this product can be purchased in quantities
+    metered: bool = False
+    price_ids: dict = field(default_factory=dict)
+
+    @property
+    def is_paid(self) -> bool:
+        """True for a paid base plan. Only meaningful on base-plan products."""
+        return self.stripe_id != VERITY_FREE.stripe_id
+
+    def price_id_for_plan(self, paid_base: bool) -> str | None:
+        """This metered product's price for a free or paid base plan.
+
+        A metered product carries one price per plan so the included allowance
+        can differ; the caller says which plan the order is actually buying.
+        """
+        if not self.metered:
+            return None
+        return self.price_ids.get("paid" if paid_base else "free")
 
 
 VERITY_FREE = ProductMetadata(
     stripe_id="free",
     name="Free",
     description="For personal use",
-    category="base_plan",
     features=[
         features.RECORD_RETENTION,
         features.LIMITED_SCANS,
@@ -62,7 +77,6 @@ VERITY_PRO = ProductMetadata(
     stripe_id="prod_VC8WUN1RO4Apqx",
     name="Verity Pro",
     description="For small businesses and teams",
-    category="base_plan",
     features=[
         features.INCLUDES_ALL_FREE,
         features.UNLIMITED_SCANS,
@@ -77,69 +91,26 @@ VERITY_PRO = ProductMetadata(
     recommended=True,
 )
 
-STORAGE_UPGRADE_10 = ProductMetadata(
-    stripe_id="prod_V0dPTSMZjCZNuk",
-    name="10 GB Storage Pack",
-    stackable=True,
-    description="Additional 10 GB cloud storage (Pro users only)",
-    category="storage_plan",
-    features=[
-        features.STORAGE_UPGRADE_GB_10,
-    ],
-    storage_limit_gb=features.STORAGE_ADDITIONAL_GB_10,
-    pro_only=True,  # Pro users only
-)
-
-STORAGE_UPGRADE_5 = ProductMetadata(
-    stripe_id="prod_VCgHfYDCC6aDCN",
-    name="5 GB Storage Pack",
-    stackable=True,
-    description="Additional 5 GB cloud storage (Pro users only)",
-    category="storage_plan",
-    features=[
-        features.STORAGE_UPGRADE_GB_5,
-    ],
-    storage_limit_gb=features.STORAGE_ADDITIONAL_GB_5,
-    pro_only=True,  # Pro users only
-)
-
-STORAGE_UPGRADE_1 = ProductMetadata(
-    stripe_id="prod_VCg5fBU3aujCi9",
-    name="1 GB Storage Pack",
-    stackable=False,  # Prevent free users from getting more value than a paid plan.
-    description="Additional 1 GB cloud storage (available to all plans)",
-    category="storage_plan",
-    features=[
-        features.STORAGE_UPGRADE_GB_1,
-    ],
-    storage_limit_gb=features.STORAGE_ADDITIONAL_GB_1,
-    pro_only=False,  # Available to everyone (free or paid)
+USAGE_BASED_STORAGE = ProductMetadata(
+    stripe_id="prod_VNkBxaDz3cZbza",
+    name="Usage-Based Storage",
+    description="For users who need more storage than the base plan allows",
+    # Lifts the plan quota rather than raising it; the meter bills the difference.
+    storage_limit_gb=0,
+    metered=True,
+    # One price per plan, so the included allowance differs: FREE_PLAN gets a 500 MB $0 tier, PAID_PLAN a 5000 MB one. Check Stripe - its the source of truth.
+    price_ids={
+        "free": "price_1UN6d3BR3saQICXCgJHfZd7O",
+        "paid": "price_1UN6e5BR3saQICXCgQ5ViNNZ",
+    },
+    features=[features.USAGE_BASED_BILLING, features.NO_STORAGE_LIMIT, features.PRICE],
 )
 
 PRODUCTS = {
     VERITY_PRO.stripe_id: VERITY_PRO,
     VERITY_FREE.stripe_id: VERITY_FREE,
-    STORAGE_UPGRADE_10.stripe_id: STORAGE_UPGRADE_10,
-    STORAGE_UPGRADE_5.stripe_id: STORAGE_UPGRADE_5,
-    STORAGE_UPGRADE_1.stripe_id: STORAGE_UPGRADE_1,
+    USAGE_BASED_STORAGE.stripe_id: USAGE_BASED_STORAGE,
 }
-
-
-def is_stackable(category: str) -> bool:
-    """Whether a category's line item may be bought in quantity above one.
-
-    Driven by the products themselves, so a new plan is a metadata change and
-    checkout needs no edit.
-    """
-    return any(m.stackable for m in PRODUCTS.values() if m.category == category)
-
-
-def category_for_product(product_id: str | None) -> str | None:
-    """Return the pricing category for a Stripe product ID, or None if unknown."""
-    if product_id is None:
-        return None
-    meta = PRODUCTS.get(product_id)
-    return meta.category if meta is not None else None
 
 
 def _active_subscriptions(user):
@@ -149,14 +120,7 @@ def _active_subscriptions(user):
     "status" as a derived property, so status is filtered in Python.
 
     Subscriptions are collected from both the user's "customer" FK and any
-    Stripe Customer whose "subscriber" points at this user. The two can
-    diverge when a legacy customer (created without "subscriber") predates
-    "Customer.get_or_create": a later checkout then creates a fresh customer
-    and its subscriptions would otherwise be invisible on the dashboard.
-
-    The result is memoized on the user instance so a single request (which
-    shares one "request.user" object across context processors and views)
-    runs the queries at most once.
+    Stripe Customer whose "subscriber" points at this user.
     """
     cached = getattr(user, "_pt_active_subscriptions", _NOT_CACHED)
     if cached is not _NOT_CACHED:
@@ -193,12 +157,7 @@ def _active_subscriptions(user):
 
 
 def metas_for_subscription(subscription):
-    """Yield ProductMetadata for each item on a single subscription.
-
-    Items are prefetched together with their price and product by
-    "_active_subscriptions" (via "Prefetch"), so this is served from the
-    query cache rather than issuing a query per subscription.
-    """
+    """Yield ProductMetadata for each item on a single subscription."""
     for item in subscription.items.all():
         product = item.price.product if item.price is not None else None
         meta = PRODUCTS.get(product.id) if product is not None else None
@@ -206,14 +165,12 @@ def metas_for_subscription(subscription):
             yield meta
 
 
-def _products_by_category(user) -> dict[str, ProductMetadata]:
-    """Return at most one ProductMetadata per category for the user.
+def _active_products(user) -> dict[str, ProductMetadata]:
+    """Return the products the user is actively subscribed to, keyed by product id.
 
-    Exactly one plan per category is allowed. When several active
-    subscriptions cover the same category (an old plan whose Stripe
-    cancellation hasn't landed yet, a webhook-synced duplicate, ...), the
-    most recently created subscription wins so a new purchase "replaces"
-    rather than stacks with the previous one.
+    A product can appear on two subscriptions at once (the old one whose
+    cancellation has not landed yet, a webhook-synced duplicate), so the most
+    recently created subscription wins rather than the product stacking.
     """
     entries = [
         (subscription.created, subscription.pk, meta)
@@ -222,60 +179,55 @@ def _products_by_category(user) -> dict[str, ProductMetadata]:
     ]
     winners: dict[str, ProductMetadata] = {}
     for _created, _pk, meta in sorted(entries, key=lambda e: (e[0], e[1]), reverse=True):
-        winners.setdefault(meta.category, meta)
+        winners.setdefault(meta.stripe_id, meta)
     return winners
 
 
 def plan_for_user(user) -> ProductMetadata:
-    """Return the user's base plan (drives plan features), or Free if none."""
-    return _products_by_category(user).get("base_plan", VERITY_FREE)
+    """Return the user's plan (drives plan features), or Free if they have none.
 
-
-def storage_addon_quantity(user) -> int:
-    """Units of the active storage pack the user bought.
-
-    Packs are stackable, so the entitlement has to count units. Billing
-    several while granting one leaves the customer paying for storage they
-    cannot use.
+    Usage-based storage is skipped: it is priced like a base plan but carries no
+    plan features, so returning it would hand a free user the paid feature set.
     """
-    for subscription in _active_subscriptions(user):
-        for item in subscription.items.all():
-            product = item.price.product if item.price is not None else None
-            meta = PRODUCTS.get(product.id) if product is not None else None
-            if meta is not None and meta.category == "storage_plan":
-                return max(item.quantity or 1, 1)
-    return 0
-
-
-def storage_addons_for_user(user) -> list[ProductMetadata]:
-    """Return the user's valid storage add-on product(s), if any.
-
-    Pro-only packs require an active paid base plan. General storage add-ons
-    may still apply to free users, but a base plan cancellation removes the
-    Pro-only entitlement without invalidating the entire storage add-on model.
-    """
-    addon = _products_by_category(user).get("storage_plan")
-    if addon is None:
-        return []
-    if plan_for_user(user).stripe_id == VERITY_FREE.stripe_id and addon.pro_only:
-        return []
-    return [addon]
-
-
-# Pricing category -> (display order, field name the pricing form posts for it).
-# One entry per plan category: adding a plan means adding a line here and its
-# products in PRODUCTS, and nothing in billing.views needs to change.
-CATEGORIES: dict[str, tuple[int, str]] = {
-    "base_plan": (0, "base_price_id"),
-    "storage_plan": (1, "storage_price_id"),
-}
+    return next(
+        (meta for meta in _active_products(user).values() if not meta.metered),
+        VERITY_FREE,
+    )
 
 
 def active_products_for_user(user) -> list[ProductMetadata]:
-    """Return metadata for every product the user is actively subscribed to.
+    """Return every product the user holds, their plan first.
 
-    At most one product per category, base plan first, so callers can render
-    plan names without hardcoding anything.
+    The plan comes first so callers can render the plan name without hardcoding
+    an index.
     """
-    products = list(_products_by_category(user).values())
-    return sorted(products, key=lambda p: (CATEGORIES.get(p.category, (99, ""))[0], p.name))
+    return sorted(
+        _active_products(user).values(),
+        key=lambda meta: (meta.metered, meta.name),
+    )
+
+
+def has_metered_storage(user) -> bool:
+    """True when the user has subscribed to usage-based storage.
+
+    Answered from the cached local subscription rather than Stripe, because this
+    runs on every upload validation. Subscribing is what lifts the storage cap;
+    the plan's own quota still drives what the user is billed for.
+    """
+    product_id = USAGE_BASED_STORAGE.stripe_id
+    return any(
+        item.price is not None and item.price.product_id == product_id
+        for subscription in _active_subscriptions(user)
+        for item in subscription.items.all()
+    )
+
+
+def metered_price_id(product: ProductMetadata, user) -> str | None:
+    """Return the Stripe price id for "product" as it applies to "user".
+
+    One lookup point for metered pricing: a product declares which plans it
+    serves, and the caller's plan picks the price.
+    """
+    if not product.metered:
+        return None
+    return product.price_id_for_plan(plan_for_user(user).stripe_id != VERITY_FREE.stripe_id)

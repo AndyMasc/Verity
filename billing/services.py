@@ -68,6 +68,27 @@ def create_billing_portal_session(
     return stripe.billing_portal.Session.create(customer=customer, return_url=return_url)
 
 
+def get_metered_subscription_item(user, metered_price_id: str) -> str | None:
+    """Return the item id for "metered_price_id" on the user's subscription, or None.
+
+    The caller resolves which price applies through metadata.metered_price_id, so
+    the plan-based choice lives with the rest of the pricing rules.
+    """
+
+    _configure()
+    if not metered_price_id or not user.has_active_subscription:
+        return None
+    subscription = retrieve_subscription(user.subscription.id)
+    for item in subscription.get("items", {}).get("data", []):
+        price = item.get("price")
+        # Stripe sends price as an id unless the field was expanded, and a str has
+        # no .get, so accept both shapes.
+        price_id = price.get("id") if isinstance(price, dict) else price
+        if price_id == metered_price_id:
+            return item.get("id")
+    return None
+
+
 def cancel_subscription(subscription_id: str) -> None:
     """Cancel a Stripe subscription, logging failures for the caller."""
     _configure()
@@ -112,23 +133,14 @@ def _checkout_price_id(product: Product) -> str | None:
     return newest.id
 
 
-def _product_pro_only(meta, base_plan) -> bool:
-    """Return whether a product should be hidden from users on the free plan."""
-    if not meta or not meta.pro_only:
-        return False
-    return base_plan.stripe_id == metadata.VERITY_FREE.stripe_id
-
-
-def _decorate_product_for_pricing(product, *, base_plan, held_product_ids):
+def _decorate_product_for_pricing(product, *, held_product_ids):
     """Attach display metadata used by the pricing cards and checkout UI."""
     meta = metadata.PRODUCTS.get(product.id)
-    product.category = meta.category if meta else None
+    product.category = metadata.product_category(product)
     product.features_list = meta.features if meta else []
     product.checkout_price_id = _checkout_price_id(product)
     product.already_active = product.id in held_product_ids
     product.recommended = meta.recommended if meta else False
-    product.pro_only = _product_pro_only(meta, base_plan)
-    product.stackable = meta.stackable if meta else False
 
 
 def pricing_context(user) -> dict:
@@ -139,13 +151,10 @@ def pricing_context(user) -> dict:
             Prefetch("prices", queryset=Price.objects.filter(active=True, livemode=live))
         )
     )
-    base_plan = metadata.plan_for_user(user)
     held_product_ids = {meta.stripe_id for meta in metadata.active_products_for_user(user)}
 
     for product in products:
-        _decorate_product_for_pricing(
-            product, base_plan=base_plan, held_product_ids=held_product_ids
-        )
+        _decorate_product_for_pricing(product, held_product_ids=held_product_ids)
 
     # A copy, not the module-level constant: the free plan has no Stripe
     # product behind it but the cards expect the same shape.
@@ -160,6 +169,4 @@ def pricing_context(user) -> dict:
         "products": products,
         "free_plan": free_plan,
         "has_active_subscription": bool(user.is_authenticated and user.has_active_subscription),
-        "base_plans": [p for p in products if p.category == "base_plan"],
-        "storage_plans": [p for p in products if p.category == "storage_plan"],
     }
