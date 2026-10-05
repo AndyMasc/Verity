@@ -97,10 +97,26 @@ def create_portal_session(request: HttpRequest) -> HttpResponse:
     if customer is None:
         return HttpResponseBadRequest("No Stripe customer associated with this account.")
 
-    portal_session = services.create_billing_portal_session(
-        customer=customer.id,
-        return_url=request.build_absolute_uri(reverse("core:profile_page")),
-    )
+    try:
+        # A new customer would have no subscriptions to manage, so do not create one here.
+        if customer_needs_refresh(customer):
+            messages.info(
+                request,
+                "We could not find your billing account. Select a plan to start a subscription.",
+            )
+            return redirect("pricing_page")
+
+        portal_session = services.create_billing_portal_session(
+            customer=customer.id,
+            return_url=request.build_absolute_uri(reverse("core:profile_page")),
+        )
+    except stripe.error.StripeError as e:
+        logger.error("Stripe API error while opening the billing portal: %s", e)
+        messages.error(
+            request,
+            "We could not open the billing portal. Please try again or contact support.",
+        )
+        return redirect("core:profile_page")
     return HttpResponseRedirect(portal_session.url)
 
 
