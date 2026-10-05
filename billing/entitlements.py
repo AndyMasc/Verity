@@ -86,6 +86,10 @@ def get_storage_usage_gb(user) -> float:
 
 def is_storage_limit_exceeded(user) -> bool:
     """Check whether the user has reached their assigned storage limit."""
+    from .metadata import has_metered_storage
+
+    if has_metered_storage(user):
+        return False
     return get_storage_usage_gb(user) >= get_storage_limit(user)
 
 
