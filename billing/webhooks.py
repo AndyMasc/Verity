@@ -136,6 +136,36 @@ def handle_subscription_changed(**kwargs: Any) -> None:
     capture("subscription_updated", _subscriber_pk(customer_id), properties={})
 
 
+def _cancel_pro_only_storage_for_customer(customer_id: str | None, base_subscription_id: str) -> None:
+    """Cancel legacy storage-only subscriptions when their paid base ends."""
+    if not customer_id:
+        return
+
+    from . import metadata, services
+
+    base = Subscription.objects.filter(id=base_subscription_id).first()
+    if base is None:
+        return
+    base_items = base.items.select_related("price__product").all()
+    if not any(not metadata.PRODUCTS.get(item.price.product_id, metadata.VERITY_FREE).metered
+               for item in base_items if item.price and item.price.product):
+        return
+
+    for subscription in Subscription.objects.filter(customer_id=customer_id).exclude(
+        id=base_subscription_id
+    ):
+        items = subscription.items.select_related("price__product").all()
+        if items and all(
+            item.price and item.price.product_id == metadata.USAGE_BASED_STORAGE.stripe_id
+            for item in items
+        ) and getattr(subscription, "status", None) in metadata.ACTIVE_SUBSCRIPTION_STATUSES:
+            mark_cancel_intent(subscription.id, "system")
+            try:
+                services.cancel_subscription(subscription.id)
+            except Exception:
+                logger.exception("Failed to cancel legacy storage subscription %s", subscription.id)
+
+
 @djstripe_receiver("customer.subscription.deleted")
 def handle_subscription_deleted(**kwargs: Any) -> None:
     """Clears the user's subscription relation when cancelled in Stripe."""
@@ -150,6 +180,7 @@ def handle_subscription_deleted(**kwargs: Any) -> None:
         return
 
     _invalidate_subscription_caches_for_event(stripe_sub)
+    _cancel_pro_only_storage_for_customer(stripe_sub.get("customer"), sub_id)
     if read_cancel_intent(sub_id) != "period_end":
         capture_subscription_cancelled(sub_id, stripe_sub)
 
