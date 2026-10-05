@@ -191,7 +191,9 @@ class AlreadyActiveTests(TestCase):
         )
 
     def _card(self, context, meta):
-        return next(p for p in context["base_plans"] if p.id == meta.stripe_id)
+        if meta is metadata.VERITY_FREE:
+            return context["free_plan"]
+        return next(p for p in context["products"] if p.id == meta.stripe_id)
 
     def test_free_user_has_no_active_plan(self):
         self._product(metadata.VERITY_PRO)
