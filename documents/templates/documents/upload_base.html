@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 {% block content %}
     {% csrf_token %}
     {% block onboarding_modal %}
@@ -17,7 +18,7 @@
             <div class="mt-8 mb-2 flex w-full flex-col space-y-4">
                 <div id="dropzone"
                      class="flex max-h-70 w-full cursor-pointer flex-col items-center justify-center rounded-2xl border border-zinc-200 bg-zinc-100 p-10 transition-all duration-200 hover:bg-zinc-200 dark:border-zinc-800 dark:bg-zinc-800/40 dark:hover:bg-zinc-800/70">
-                    <div class="bg-neutral-secondary-medium flex h-64 w-full flex-col items-center justify-center">
+                    <div class="bg-neutral-secondary-medium pointer-events-none flex h-64 w-full flex-col items-center justify-center">
                         <div class="text-body flex flex-col items-center justify-center pt-5 pb-6">
                             <svg class="mb-4 size-12 text-zinc-600 dark:text-zinc-300"
                                  aria-hidden="true"
@@ -44,7 +45,6 @@
                    class="hidden"
                    accept=".jpg, .png, .jpeg, .webp, .pdf, .heic">
             <button id="uploadButton"
-                    onclick="uploadFile()"
                     class="mt-2 flex w-full cursor-pointer items-center justify-center space-x-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm text-white shadow-xs transition-all duration-200 hover:bg-zinc-800 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200">
                 <span id="buttonSpinner" class="hidden">
                     <svg class="h-4 w-4 animate-spin text-white dark:text-black"
@@ -68,46 +68,30 @@
             {% endblock upload_footer %}
         </section>
     </main>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/spark-md5/3.0.2/spark-md5.min.js"></script>
-    <script>
+    <script type="module">
+        // Vendored: a CDN import here is a single point of failure for the whole
+        // upload flow, and a bad URL silently kills this entire module.
+        import xxhash from "{% static 'js/xxhash-wasm.js' %}";
+
+        // Optional. Fingerprinting speeds up duplicate detection but is not worth
+        // failing an upload over, so a failure here only costs the speedup.
+        let xxhashInstance = null;
+        try {
+            xxhashInstance = await xxhash();
+        } catch (e) {
+            console.warn("xxhash unavailable; falling back to SHA-256.");
+        }
         const dropzone = document.getElementById('dropzone'),
               fileInput = document.getElementById('fileInput'),
               status = document.getElementById('status'),
               uploadButton = document.getElementById('uploadButton'),
               buttonSpinner = document.getElementById('buttonSpinner'),
               buttonText = document.getElementById('buttonText');
+              
         const API_URL = "{{ api_url }}", REDIRECT_URL_TEMPLATE = "{{ redirect_url_template }}";
         const CONFIRM_URL = "{% url 'documents:confirm_upload' %}";
         const isSupportingFlow = {{ is_supporting_flow|yesno:"true,false" }};
-        const DOWNSCALE_MAX_DIM = 1568, DOWNSCALE_QUALITY = 0.85;
         let selectedFile = null;
-
-        // Downscale large camera photos in the browser before upload: this cuts
-        // upload time (especially on slower uplinks) and Gemini OCR input size.
-        // Returns { blob, mimeType, filename } or null to upload the original.
-        async function downscaleImage(file) {
-            const type = (file.type || "").toLowerCase();
-            if (type !== "image/jpeg" && type !== "image/png" && type !== "image/webp") return null;
-            try {
-                const bitmap = await createImageBitmap(file);
-                const scale = Math.min(1, DOWNSCALE_MAX_DIM / Math.max(bitmap.width, bitmap.height));
-                const outW = Math.max(1, Math.round(bitmap.width * scale));
-                const outH = Math.max(1, Math.round(bitmap.height * scale));
-                const canvas = document.createElement('canvas');
-                canvas.width = outW;
-                canvas.height = outH;
-                canvas.getContext('2d').drawImage(bitmap, 0, 0, outW, outH);
-                bitmap.close();
-                const mimeType = type === "image/png" ? "image/png" : "image/jpeg";
-                const blob = await new Promise(resolve => canvas.toBlob(resolve, mimeType, DOWNSCALE_QUALITY));
-                if (!blob || blob.size >= file.size) return null; // only replace when actually smaller
-                const ext = mimeType === "image/png" ? "png" : "jpg";
-                const base = file.name.replace(/\.[^.]+$/, "");
-                return { blob, mimeType, filename: `${base}.${ext}` };
-            } catch (e) {
-                return null; // fall back to the original on any failure
-            }
-        }
 
         uploadButton.dataset.forceUpload = "false";
 
@@ -115,14 +99,11 @@
         fileStatus.className = "mt-3 text-center text-sm text-zinc-600 dark:text-zinc-400";
         dropzone.appendChild(fileStatus);
 
-        // Browser-side upload failures never reach the server, so they are
-        // reported from here. "source" separates them from the server's own
-        // confirm/validation failures, which are the same event name.
         function captureUploadFailure(stage, error) {
             if (!window.posthog) return;
-            window.posthog.captureException(
+            window.posthog.capture_exception({
                 error instanceof Error ? error : new Error(String(error || 'unknown')),
-                {
+                properties: {
                     source: 'client',
                     stage: stage,
                     error: String(error && error.message ? error.message : error || 'unknown')
@@ -144,54 +125,82 @@
 
         function setFile(file) {
             if (file.size > 5 * 1024 * 1024) {
-                captureUploadFailure("file_too_large", "File exceeds 5MB limit.");
                 return setStatus("File exceeds 5MB limit.", "error");
             }
             selectedFile = file;
             uploadButton.dataset.forceUpload = "false";
             fileStatus.innerHTML =
-                `<div class="text-emerald-500 font-medium text-sm truncate max-w-xs">\u2713 ${file.name}</div>` +
-            `<div class="text-xs text-zinc-500 mt-1">${(file.size / 1024 / 1024).toFixed(2)} MB \u00b7 ready</div>`;
+                `<div class="text-emerald-500 font-medium text-sm truncate max-w-xs mx-auto">\u2713 ${file.name}</div>` +
+                `<div class="text-xs text-zinc-500 mt-1">${(file.size / 1024 / 1024).toFixed(2)} MB \u00b7 ready</div>`;
             setStatus("");
         }
 
-        dropzone.onclick = () => fileInput.click();
-        fileInput.onchange = e => { if (e.target.files[0]) setFile(e.target.files[0]); };
-        dropzone.ondragover = e => { e.preventDefault(); dropzone.classList.add('scale-[1.01]'); };
-        dropzone.ondragleave = () => dropzone.classList.remove('scale-[1.01]');
-        dropzone.ondrop = e => { e.preventDefault(); dropzone.classList.remove('scale-[1.01]'); if (e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]); };
+        // Dropzone Event Handlers
+        dropzone.addEventListener('click', () => {
+            fileInput.value = ''; // Reset input to allow re-selecting same file
+            fileInput.click();
+        });
 
-        // Hash the file using SparkMD5 in chunks to avoid memory issues with large files
-        function hashFile(file) {
-            return new Promise((resolve, reject) => {
-                const spark = new SparkMD5.ArrayBuffer();
-                const reader = new FileReader();
-                const chunkSize = 2 * 1024 * 1024;
-                let offset = 0;
+        fileInput.addEventListener('change', e => {
+            if (e.target.files && e.target.files[0]) {
+                setFile(e.target.files[0]);
+            }
+        });
 
-                reader.onload = e => {
-                    spark.append(e.target.result);
-                    offset += e.target.result.byteLength;
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropzone.addEventListener(eventName, e => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropzone.classList.add('scale-[1.01]');
+            }, false);
+        });
 
-                    // Update status with progress
-                    const percent = Math.round((offset / file.size) * 100);
-                    setStatus(`Hashing file... ${percent}%`);
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropzone.addEventListener(eventName, e => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropzone.classList.remove('scale-[1.01]');
+            }, false);
+        });
 
-                    if (offset < file.size) {
-                        readNextChunk();
-                    } else {
-                        resolve(spark.end());
-                    }
-                };
+        dropzone.addEventListener('drop', e => {
+            const dt = e.dataTransfer;
+            if (dt && dt.files && dt.files[0]) {
+                setFile(dt.files[0]);
+            }
+        });
 
-                reader.onerror = () => reject(uploadError("file_read", "Failed to read file"));
+        async function hashFile(file) {
+            const bytes = new Uint8Array(await file.arrayBuffer());
 
-                function readNextChunk() {
-                    const blob = file.slice(offset, offset + chunkSize);
-                    reader.readAsArrayBuffer(blob);
-                }
+            if (xxhashInstance) {
+                // create64() returns {update, digest} only, and h64ToString()
+                // takes a string, so binary bytes go through the incremental API.
+                const hasher = xxhashInstance.create64();
+                hasher.update(bytes);
+                return hasher.digest().toString(16).padStart(16, "0");
+            }
 
-                readNextChunk();
+            // The browser's own SHA-256: slower, but it is the field the server
+            // requires and it is exactly the 64 characters the column allows.
+            const digest = await crypto.subtle.digest("SHA-256", bytes);
+            return Array.from(new Uint8Array(digest))
+                .map(b => b.toString(16).padStart(2, "0"))
+                .join("");
+        }
+
+        async function postForm(url, fields) {
+            const body = new URLSearchParams(fields);
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            body.append('csrfmiddlewaretoken', csrfToken);
+            return fetch(url, {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": csrfToken,
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "Cache-Control": "no-cache",
+                },
+                body,
             });
         }
 
@@ -201,48 +210,37 @@
             buttonText.textContent = loading ? "Processing..." : "Upload and continue";
         }
 
+        // Attach global window hook for inline dynamic HTML buttons (e.g. "Upload anyway?")
         window.triggerForceUpload = function() {
             uploadButton.dataset.forceUpload = "true";
             uploadFile();
         };
+
+        uploadButton.addEventListener('click', uploadFile);
 
         async function uploadFile() {
             if (!selectedFile) return setStatus("Select a file first.", "error");
 
             const notesValue = document.getElementById('docNotes')?.value;
             setLoading(true);
-            setStatus("Computing file fingerprint...", "idle");
+            setStatus("Preparing upload...", "idle");
 
             try {
                 const fileHash = await hashFile(selectedFile);
+                const mimeType = selectedFile.type || 'application/octet-stream';
 
-                const prepared = await downscaleImage(selectedFile);
-                const uploadFile = prepared ? prepared.blob : selectedFile;
-                const resolvedMimeType = prepared ? prepared.mimeType : (selectedFile.type || 'application/octet-stream');
-                const uploadFilename = prepared ? prepared.filename : selectedFile.name;
-
-                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-                const metadataBody = new URLSearchParams();
-                metadataBody.append('csrfmiddlewaretoken', csrfToken);
-                metadataBody.append('file_hash', fileHash);
-                metadataBody.append('filename', uploadFilename);
-                metadataBody.append('content_type', resolvedMimeType);
-                metadataBody.append('file_size', uploadFile.size);
-                metadataBody.append('notes', notesValue || "");
-                metadataBody.append('force_upload', uploadButton.dataset.forceUpload);
-
-                const presignRes = await fetch(API_URL, {
-                    method: "POST",
-                    headers: {
-                        "X-CSRFToken": csrfToken,
-                        "Content-Type": "application/x-www-form-urlencoded",
-                        "Cache-Control": "no-cache",
-                    },
-                    body: metadataBody,
+                const presignRes = await postForm(API_URL, {
+                    'file_hash': fileHash,
+                    'filename': selectedFile.name,
+                    'content_type': mimeType,
+                    'file_size': selectedFile.size,
+                    'notes': notesValue || "",
+                    'force_upload': uploadButton.dataset.forceUpload,
                 });
 
                 if (!presignRes.ok) {
                     const errorData = await presignRes.json().catch(() => ({}));
+                    captureUploadFailure("presign", errorData.error || "Backend validation failed.");
                     throw uploadError("presign", errorData.error || "Backend validation failed.");
                 }
 
@@ -274,25 +272,16 @@
 
                 const uploadRes = await fetch(upload_url, {
                     method: "PUT",
-                    headers: { "Content-Type": resolvedMimeType },
-                    body: uploadFile,
+                    headers: { "Content-Type": mimeType },
+                    body: selectedFile,
                 });
                 if (!uploadRes.ok) throw uploadError("storage", "Storage upload failed.");
 
                 setStatus("Verifying upload...", "idle");
 
-                const confirmBody = new URLSearchParams();
-                confirmBody.append('csrfmiddlewaretoken', csrfToken);
-                confirmBody.append('document_id', document_id);
-                confirmBody.append('key', key);
-
-                const confirmRes = await fetch(CONFIRM_URL, {
-                    method: "POST",
-                    headers: {
-                        "X-CSRFToken": csrfToken,
-                        "Content-Type": "application/x-www-form-urlencoded",
-                    },
-                    body: confirmBody,
+                const confirmRes = await postForm(CONFIRM_URL, {
+                    'document_id': document_id,
+                    'key': key,
                 });
 
                 if (!confirmRes.ok) {
@@ -306,7 +295,6 @@
                 const getRedirectURL = (template, id) => template.replace('/0/', `/${id}/`);
 
                 if (typeof isSupportingFlow !== 'undefined' && isSupportingFlow) {
-                    // Reset UI after successful upload
                     setTimeout(() => {
                         selectedFile = null;
                         fileInput.value = '';

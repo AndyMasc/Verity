@@ -10,6 +10,7 @@ PRO_STORAGE_LIMIT_GB = 5
 PRO_STORAGE_LIMIT = f"{PRO_STORAGE_LIMIT_GB} GB cloud storage"
 AUTO_TXN_CATEGORIZATION = "Automatic transaction categorization and matching"
 RECORD_SHARING = "Collaborative records"  # Gate for granting record access to others
+PRO_PACKS = "Buy larger add-on packs to increase your quota"
 
 # Free plan features
 RECORD_RETENTION = "7 year record retention period"

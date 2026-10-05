@@ -1,27 +1,37 @@
 <div id="cookie-consent-panel"
-     class="fixed right-5 bottom-5 z-50 w-full max-w-xs p-1 antialiased"
+     class="fixed right-5 bottom-5 z-50 w-full max-w-sm p-1 antialiased"
      hidden>
-    <div class="relative overflow-hidden rounded-xl border border-zinc-200/80 bg-white/80 p-4 shadow-xl backdrop-blur-md transition-all dark:border-white/10 dark:bg-zinc-900/80 dark:shadow-2xl dark:shadow-black/60">
+    <div class="flex gap-3 overflow-hidden rounded-xl border border-zinc-200/80 bg-white/80 p-4 shadow-xl backdrop-blur-md transition-all dark:border-white/10 dark:bg-zinc-900/80 dark:shadow-2xl dark:shadow-black/60">
         <div class="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-zinc-400/20 to-transparent dark:via-white/20">
         </div>
-        <p class="text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
-            We use cookies to optimize your experience. Read our
-            <a href="{% url 'docs:privacy_policy' %}"
-               class="font-medium text-zinc-900 underline decoration-zinc-300 underline-offset-2 transition-colors hover:decoration-zinc-900 dark:text-zinc-200 dark:decoration-zinc-700 dark:hover:decoration-zinc-200">
-                Privacy Policy.
-            </a>
-        </p>
-        <div class="mt-4 flex items-center gap-2">
-            <button type="button"
-                    data-cookie-action="allow"
-                    class="inline-flex w-full items-center justify-center rounded-lg bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-all hover:bg-zinc-800 active:scale-[0.98] dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white">
-                Accept all
-            </button>
-            <button type="button"
-                    data-cookie-action="reject"
-                    class="inline-flex w-full items-center justify-center rounded-lg border border-zinc-200 bg-transparent px-3 py-1.5 text-xs font-medium text-zinc-700 transition-all hover:bg-zinc-100/80 active:scale-[0.98] dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-900/60">
-                Decline
-            </button>
+        <svg xmlns="http://www.w3.org/2000/svg"
+             fill="none"
+             viewBox="0 0 24 24"
+             stroke-width="1.5"
+             stroke="currentColor"
+             class="size-7">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+        </svg>
+        <div>
+            <p class="text-xs leading-relaxed text-black dark:text-white">
+                We use cookies to optimize our platform, and improve your experience. Read our
+                <a href="{% url 'docs:privacy_policy' %}"
+                   class="font-medium text-zinc-900 underline decoration-zinc-300 underline-offset-2 transition-colors hover:decoration-zinc-900 dark:text-zinc-200 dark:decoration-zinc-700 dark:hover:decoration-zinc-200">
+                    Privacy Policy.
+                </a>
+            </p>
+            <div class="mt-4 flex w-min items-center gap-2">
+                <button type="button"
+                        data-cookie-action="allow"
+                        class="inline-flex w-full items-center justify-center rounded-lg border border-zinc-200 bg-transparent px-2 py-1 text-xs font-medium whitespace-nowrap text-zinc-800 transition-all hover:bg-zinc-100/80 active:scale-[0.98] dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900/60">
+                    Accept all
+                </button>
+                <button type="button"
+                        data-cookie-action="reject"
+                        class="inline-flex w-full items-center justify-center rounded-lg border border-zinc-200 bg-transparent px-2 py-1 text-xs font-medium whitespace-nowrap text-zinc-800 transition-all hover:bg-zinc-100/80 active:scale-[0.98] dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900/60">
+                    Decline all
+                </button>
+            </div>
         </div>
     </div>
 </div>

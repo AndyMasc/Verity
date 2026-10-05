@@ -39,6 +39,7 @@ class ProductMetadata:
     # Free users can see it as "disabled" but cannot purchase it via Stripe.
     pro_only: bool = False
     recommended: bool = False  # If True, this product is recommended for most users
+    stackable: bool = False  # If True, this product can be purchased in quantities
 
 
 VERITY_FREE = ProductMetadata(
@@ -79,6 +80,7 @@ VERITY_PRO = ProductMetadata(
 STORAGE_UPGRADE_10 = ProductMetadata(
     stripe_id="prod_V0dPTSMZjCZNuk",
     name="10 GB Storage Pack",
+    stackable=True,
     description="Additional 10 GB cloud storage (Pro users only)",
     category="storage_plan",
     features=[
@@ -91,6 +93,7 @@ STORAGE_UPGRADE_10 = ProductMetadata(
 STORAGE_UPGRADE_5 = ProductMetadata(
     stripe_id="prod_VCgHfYDCC6aDCN",
     name="5 GB Storage Pack",
+    stackable=True,
     description="Additional 5 GB cloud storage (Pro users only)",
     category="storage_plan",
     features=[
@@ -103,6 +106,7 @@ STORAGE_UPGRADE_5 = ProductMetadata(
 STORAGE_UPGRADE_1 = ProductMetadata(
     stripe_id="prod_VCg5fBU3aujCi9",
     name="1 GB Storage Pack",
+    stackable=True,
     description="Additional 1 GB cloud storage (available to all plans)",
     category="storage_plan",
     features=[
@@ -119,6 +123,15 @@ PRODUCTS = {
     STORAGE_UPGRADE_5.stripe_id: STORAGE_UPGRADE_5,
     STORAGE_UPGRADE_1.stripe_id: STORAGE_UPGRADE_1,
 }
+
+
+def is_stackable(category: str) -> bool:
+    """Whether a category's line item may be bought in quantity above one.
+
+    Driven by the products themselves, so a new plan is a metadata change and
+    checkout needs no edit.
+    """
+    return any(m.stackable for m in PRODUCTS.values() if m.category == category)
 
 
 def category_for_product(product_id: str | None) -> str | None:
@@ -179,7 +192,7 @@ def _active_subscriptions(user):
     return active
 
 
-def _metas_for_subscription(subscription):
+def metas_for_subscription(subscription):
     """Yield ProductMetadata for each item on a single subscription.
 
     Items are prefetched together with their price and product by
@@ -205,7 +218,7 @@ def _products_by_category(user) -> dict[str, ProductMetadata]:
     entries = [
         (subscription.created, subscription.pk, meta)
         for subscription in _active_subscriptions(user)
-        for meta in _metas_for_subscription(subscription)
+        for meta in metas_for_subscription(subscription)
     ]
     winners: dict[str, ProductMetadata] = {}
     for _created, _pk, meta in sorted(entries, key=lambda e: (e[0], e[1]), reverse=True):
@@ -233,7 +246,13 @@ def storage_addons_for_user(user) -> list[ProductMetadata]:
     return [addon]
 
 
-CATEGORY_ORDER = {"base_plan": 0, "storage_plan": 1}
+# Pricing category -> (display order, field name the pricing form posts for it).
+# One entry per plan category: adding a plan means adding a line here and its
+# products in PRODUCTS, and nothing in billing.views needs to change.
+CATEGORIES: dict[str, tuple[int, str]] = {
+    "base_plan": (0, "base_price_id"),
+    "storage_plan": (1, "storage_price_id"),
+}
 
 
 def active_products_for_user(user) -> list[ProductMetadata]:
@@ -243,4 +262,4 @@ def active_products_for_user(user) -> list[ProductMetadata]:
     plan names without hardcoding anything.
     """
     products = list(_products_by_category(user).values())
-    return sorted(products, key=lambda p: (CATEGORY_ORDER.get(p.category, 99), p.name))
+    return sorted(products, key=lambda p: (CATEGORIES.get(p.category, (99, ""))[0], p.name))

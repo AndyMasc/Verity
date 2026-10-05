@@ -315,3 +315,76 @@ class ReportWebhookProcessingErrorTests(TestCase):
         self.assertIn("checkout.session.completed", HANDLED_EVENT_TYPES)
         self.assertIn("charge.refunded", HANDLED_EVENT_TYPES)
         self.assertNotIn("customer.subscription.deleted", HANDLED_EVENT_TYPES)
+
+
+class CheckoutCompletedTests(TestCase):
+    """plan_types comes from the synced subscription, not the session payload.
+
+    A real checkout.session.completed payload has no line_items, so a test that
+    builds one from session["line_items"] proves nothing.
+    """
+
+    def setUp(self):
+        # A real product id, so metadata.PRODUCTS can resolve its category.
+        from billing import metadata as billing_metadata
+
+        product_id = billing_metadata.STORAGE_UPGRADE_1.stripe_id
+        self.product = Product.objects.create(
+            id=product_id, stripe_data={"id": product_id, "object": "product"}
+        )
+        self.price = Price.objects.create(
+            id="price_plan",
+            product=self.product,
+            livemode=False,
+            active=True,
+            currency="usd",
+            stripe_data={"id": "price_plan", "object": "price"},
+        )
+
+    def _settle(self, subscription_id):
+        from billing import webhooks
+
+        captured = []
+        with (
+            mock.patch.object(webhooks, "capture", lambda *a, **k: captured.append((a, k))),
+            mock.patch.object(
+                webhooks,
+                "_event_object",
+                return_value={
+                    "id": "cs_1",
+                    "mode": "subscription",
+                    "payment_status": "paid",
+                    "customer": "cus_1",
+                    "client_reference_id": "1",
+                    "amount_total": 1000,
+                    "currency": "usd",
+                    "subscription": subscription_id,
+                },
+            ),
+        ):
+            webhooks.handle_checkout_settled(event=mock.Mock())
+        return captured
+
+    def test_plan_types_come_from_the_subscription(self):
+        customer = Customer.objects.create(
+            id="cus_1",
+            livemode=False,
+            created=timezone.now(),
+            stripe_data={"id": "cus_1", "object": "customer"},
+        )
+        Subscription.objects.create(
+            id="sub_1",
+            customer=customer,
+            livemode=False,
+            stripe_data={"id": "sub_1", "object": "subscription"},
+        )
+        Subscription.objects.get(id="sub_1").items.create(id="si_1", price=self.price)
+        captured = self._settle("sub_1")
+        self.assertEqual(len(captured), 1)
+        self.assertEqual(captured[0][0][0], "subscription_checkout_completed")
+        self.assertEqual(captured[0][0][2]["plan_types"], ["storage_plan"])
+
+    def test_missing_subscription_does_not_break_the_capture(self):
+        captured = self._settle("sub_absent")
+        self.assertEqual(len(captured), 1)
+        self.assertEqual(captured[0][0][2]["plan_types"], [])

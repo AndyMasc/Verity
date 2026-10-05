@@ -103,13 +103,13 @@
                         {% if price_id %}
                             <div class="mt-auto border-t border-zinc-200/70 pt-5 dark:border-zinc-800/80">
                                 {% if product.already_active %}
-                                    <div class="w-full cursor-not-allowed rounded-lg border border-zinc-200/60 bg-zinc-100/50 px-3 py-2 text-center text-xs text-zinc-400 dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-500">
+                                    <div class="w-full cursor-not-allowed rounded-4xl border border-zinc-200/60 bg-zinc-100/50 px-3 py-2 text-center text-xs text-zinc-400 dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-500">
                                         <span class="font-normal">Current plan</span>
                                     </div>
                                 {% else %}
                                     <div type="button"
-                                         :class="selectedBasePrice === '{{ price_id }}' ? 'bg-indigo-600 text-white border border-indigo-600 dark:bg-indigo-600 dark:border-indigo-500' : 'bg-zinc-100 hover:bg-zinc-200/70 text-zinc-800 border border-zinc-200/70 dark:bg-zinc-800/60 dark:hover:bg-zinc-800 dark:text-zinc-200 dark:border-zinc-700/60'"
-                                         class="w-full rounded-lg px-3 py-2 text-center text-xs font-medium tracking-tight transition-all duration-150">
+                                         :class="selectedBasePrice === '{{ price_id }}' ? 'bg-indigo-600 text-white' : 'bg-black hover:bg-zinc-800 text-white dark:text-black dark:bg-white dark:hover:bg-zinc-200'"
+                                         class="w-full rounded-4xl px-3 py-2 text-center text-xs font-medium tracking-tight transition-all duration-150">
                                         <span x-text="selectedBasePrice === '{{ price_id }}' ? 'Selected' : 'Select Plan'"></span>
                                     </div>
                                 {% endif %}
@@ -183,18 +183,40 @@
                         {% if price_id %}
                             <div class="mt-auto border-t border-zinc-200/70 pt-5 dark:border-zinc-800/80">
                                 {% if product.already_active %}
-                                    <div class="w-full cursor-not-allowed rounded-lg border border-zinc-200/60 bg-zinc-100/50 px-3 py-2 text-center text-xs text-zinc-400 dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-500">
+                                    <div class="w-full cursor-not-allowed rounded-4xl border border-zinc-200/60 bg-zinc-100/50 px-3 py-2 text-center text-xs text-zinc-400 dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-500">
                                         <span class="font-normal">Current plan</span>
                                     </div>
                                 {% elif product.pro_only %}
-                                    <div class="w-full cursor-not-allowed rounded-lg border border-zinc-200/50 bg-zinc-100/30 px-3 py-2 text-center text-xs text-zinc-400 dark:border-zinc-800/40 dark:bg-zinc-900/30 dark:text-zinc-500">
-                                        <span class="font-normal">Pro users only</span>
+                                    <div class="w-full cursor-not-allowed rounded-4xl border border-zinc-400/50 bg-zinc-100/30 px-3 py-2 text-center text-xs text-zinc-600 dark:border-zinc-700/40 dark:bg-zinc-800/30 dark:text-zinc-400">
+                                        <span class="font-normal">Upgrade to purchase</span>
                                     </div>
                                 {% else %}
+                                    {% if product.stackable %}
+                                        <div x-data="{ selectedStorageQuantity: 1 }"
+                                             x-show="selectedStoragePrice === '{{ price_id }}'"
+                                             x-cloak>
+                                            <p class="text-right text-xs text-zinc-500 dark:text-zinc-400">
+                                                Quantity: <span x-text="selectedStorageQuantity"></span>
+                                            </p>
+                                            <input type="range"
+                                                   id="quantity"
+                                                   name="quantity"
+                                                   min="1"
+                                                   max="10"
+                                                   class="mb-5 w-full rounded-sm border border-zinc-200/70 bg-zinc-100/70 text-center text-xs font-medium tracking-tight text-zinc-800 transition-all duration-150 placeholder:text-zinc-400 dark:border-zinc-800/80 dark:bg-zinc-900/40 dark:text-zinc-200 dark:placeholder:text-zinc-500"
+                                                   placeholder="Quantity"
+                                                   x-model.number="selectedStorageQuantity"
+                                                   @input="selectedStorageQuantity = Math.max(1, Math.min(10, Number(selectedStorageQuantity) || 1))"
+                                                   @click.stop
+                                                   @mousedown.stop
+                                                   @touchstart.stop>
+                                        </div>
+                                    {% endif %}
                                     <div type="button"
-                                         :class="selectedStoragePrice === '{{ price_id }}' ? 'bg-indigo-600 text-white border border-indigo-600 dark:bg-indigo-600 dark:border-indigo-500' : 'bg-zinc-100 hover:bg-zinc-200/70 text-zinc-800 border border-zinc-200/70 dark:bg-zinc-800/60 dark:hover:bg-zinc-800 dark:text-zinc-200 dark:border-zinc-700/60'"
-                                         class="w-full rounded-lg px-3 py-2 text-center text-xs font-medium tracking-tight transition-all duration-150">
-                                        <span x-text="selectedStoragePrice === '{{ price_id }}' ? 'Selected' : 'Select Pack'"></span>
+                                         :class="selectedStoragePrice === '{{ price_id }}' ? 'bg-indigo-600 text-white' : 'bg-black hover:bg-zinc-800 text-white dark:text-black dark:bg-white dark:hover:bg-zinc-200'"
+                                         class="w-full rounded-4xl px-3 py-2 text-center text-xs font-medium tracking-tight transition-all duration-150">
+                                        <span x-text="selectedStoragePrice === '{{ price_id }}' ? 'Selected' : 'Select Pack'"
+                                              x-show=""></span>
                                     </div>
                                 {% endif %}
                             </div>
@@ -208,7 +230,7 @@
         {% if request.user.is_authenticated %}
             <button type="submit"
                     :disabled="!selectedBasePrice && !selectedStoragePrice"
-                    :class="(!selectedBasePrice && !selectedStoragePrice) ? 'opacity-40 cursor-not-allowed bg-zinc-100 text-zinc-400 border border-zinc-200 dark:bg-zinc-800/50 dark:text-zinc-600 dark:border-zinc-800' : 'bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white border border-zinc-900 dark:border-zinc-200 shadow-xs active:scale-[0.99]'"
+                    :class="(!selectedBasePrice && !selectedStoragePrice) ? 'cursor-not-allowed bg-zinc-100 text-zinc-500 border border-zinc-200 dark:bg-zinc-800/50 dark:text-zinc-600 dark:border-zinc-800' : 'bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white border border-zinc-900 dark:border-zinc-200 shadow-xs active:scale-[0.99]'"
                     class="w-full max-w-xs rounded-4xl px-5 py-2.5 text-sm font-semibold tracking-tight transition-all duration-150">
                 Continue to checkout
                 <span x-text="selectedPlanCount > 0 ? `- ${selectedPlanCount} plan(s)` : ''"></span>
@@ -216,7 +238,7 @@
         {% else %}
             <a href="{% url 'account_signup' %}"
                class="w-full max-w-xs cursor-pointer rounded-4xl border border-zinc-900 bg-zinc-900 px-5 py-2.5 text-center text-sm font-semibold tracking-tight text-white shadow-xs transition-all duration-150 hover:bg-zinc-800 active:scale-[0.99] dark:border-zinc-200 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white">
-                Sign up to subscribe
+                Get started for free
             </a>
         {% endif %}
     </div>
