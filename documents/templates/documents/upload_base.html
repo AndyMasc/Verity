@@ -88,7 +88,15 @@
 
         // Fallback for missing analytics/logger function
         function captureUploadFailure(stage, error) {
-            console.error(`[Upload Failed - ${stage}]:`, error);
+            if (!window.posthog) return;
+            window.posthog.capture_exception({
+                error instanceof Error ? error : new Error(String(error || 'unknown')),
+                properties: {
+                    source: 'client',
+                    stage: stage,
+                    error: String(error && error.message ? error.message : error || 'unknown')
+                }
+            );
         }
 
         function uploadError(stage, message) {
