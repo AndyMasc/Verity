@@ -217,7 +217,7 @@ python-slugify==8.0.4
 python-socketio==5.16.3
 pytokens==0.4.1
 pytz==2026.2
-pywebpush==2.3.0
+pywebpush==2.5.0
 PyYAML==6.0.3
 pyzmq==27.1.0
 RapidFuzz==3.14.5
