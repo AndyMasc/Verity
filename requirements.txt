@@ -282,7 +282,7 @@ uvicorn-worker==0.3.0
 virtualenv==21.9.0
 vulture==2.16
 wcwidth==0.8.4
-websocket-client==1.9.0
+websocket-client==1.9.2
 websockets==16.0
 Werkzeug==3.1.8
 whitenoise==6.12.0
