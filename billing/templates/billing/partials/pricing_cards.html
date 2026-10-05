@@ -120,12 +120,6 @@
             {% endwith %}
         {% endfor %}
     </div>
-    {% if has_active_subscription %}
-        <p class="mt-6 text-center text-xs text-zinc-500 dark:text-zinc-400">
-            Plans are bundled into one subscription, so buying another plan cancels your
-            current one, usage-based storage included.
-        </p>
-    {% endif %}
     <div class="mt-10 flex flex-col items-center">
         {% if request.user.is_authenticated %}
             <button type="submit"
