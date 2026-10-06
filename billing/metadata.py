@@ -132,22 +132,24 @@ def prime_active_subscriptions(users) -> None:
         return
 
     direct_customer_ids = [user.customer.id for user in users if getattr(user, "customer", None)]
-    # One query for every customer these users own or are linked to.
-    owned = dict(Customer.objects.filter(subscriber__in=users).values_list("subscriber_id", "id"))
-    customer_ids = set(direct_customer_ids) | set(owned.values())
+    # One query for every customer these users own or are linked to. A subscriber
+    # can own many customers (duplicates from repeated checkouts), so keep them all.
+    owned: dict = {}
+    for subscriber_id, customer_id in Customer.objects.filter(subscriber__in=users).values_list(
+        "subscriber_id", "id"
+    ):
+        owned.setdefault(subscriber_id, []).append(customer_id)
+    customer_ids = set(direct_customer_ids).union(*owned.values())
     subscriptions = subscriptions_for_customers(sorted(customer_ids))
     by_customer: dict = {}
     for subscription in subscriptions:
         by_customer.setdefault(subscription.customer_id, []).append(subscription)
 
     for user in users:
-        collected: list = []
         own_id = user.customer.id if getattr(user, "customer", None) else None
-        for customer_id, linked in owned.items():
-            if customer_id == user.pk and customer_id != own_id:
-                collected.extend(by_customer.get(linked, []))
-        if own_id:
-            collected.extend(by_customer.get(own_id, []))
+        user_customer_ids = [own_id] if own_id else []
+        user_customer_ids += [cid for cid in owned.get(user.pk, []) if cid != own_id]
+        collected = [sub for cid in user_customer_ids for sub in by_customer.get(cid, [])]
         direct = getattr(user, "subscription", None)
         if direct is not None and not any(sub.pk == direct.pk for sub in collected):
             collected.append(direct)
