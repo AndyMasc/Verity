@@ -45,12 +45,6 @@ def sync_storage_usage_to_stripe():
     # Everything the loop needs, fetched once for the whole batch rather than per
     # user: this ran about five queries per subscriber, every hour.
     metadata.prime_active_subscriptions(profiles)
-    usage_mb = {
-        row[0]: ceil(row[1] / features.BYTES_PER_GB * 1000)  # Decimal GB to whole MB.
-        for row in CustomUser.objects.filter(pk__in=[u.pk for u in profiles]).values_list(
-            "pk", "storage_used_bytes"
-        )
-    }
 
     sent = 0
     failed = 0
@@ -84,7 +78,8 @@ def sync_storage_usage_to_stripe():
             stripe.billing.MeterEvent.create(
                 event_name="storage_usage",
                 payload={
-                    "value": str(usage_mb.get(profile.pk, 0)),
+                    # Decimal GB to whole MB.
+                    "value": str(ceil(profile.storage_used_bytes / features.BYTES_PER_GB * 1000)),
                     "stripe_customer_id": metered_customer_id,
                 },
                 idempotency_key=idempotency_key,  # Retries are safe due to idempotency key being hourly unique per user

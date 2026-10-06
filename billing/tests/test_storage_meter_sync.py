@@ -22,28 +22,19 @@ from ..tasks import sync_storage_usage_to_stripe
 
 class SyncStorageUsageTests(TestCase):
     def setUp(self):
-        self.user = get_user_model().objects.create_user(
-            username="metered",
-            email="metered@example.com",
-            password="password",
-        )
-        self.customer = Customer.objects.create(
-            id="cus_metered",
-            livemode=False,
-            created=timezone.now(),
-            subscriber=self.user,
-        )
-        self.user.customer = self.customer
-        self.user.save(update_fields=["customer"])
+        self.user = self._user("metered")
+        self.customer = self.user.customer
 
     def _subscribe(self, meta, status="active", category=None, price_id=None, customer=None):
         customer = customer or self.customer
         product, _ = Product.objects.get_or_create(
             id=meta.stripe_id,
-            livemode=False,
-            active=True,
-            name=meta.name,
-            metadata={"category": category or metadata.BASE_PLAN_CATEGORY},
+            defaults={
+                "livemode": False,
+                "active": True,
+                "name": meta.name,
+                "metadata": {"category": category or metadata.BASE_PLAN_CATEGORY},
+            },
         )
         # The task resolves the metered price from the plan the user is on, so the
         # fixture has to carry that exact Stripe price id.
@@ -75,18 +66,18 @@ class SyncStorageUsageTests(TestCase):
             subscriber=user or self.user,
         )
 
-    def _metered_user(self, username):
+    def _user(self, username):
         user = get_user_model().objects.create_user(
             username=username, email=f"{username}@example.com", password="password"
         )
         user.customer = self._customer(f"cus_{username}", user=user)
         user.save(update_fields=["customer"])
-        self._subscribe_metered(user.customer)
         return user
 
-    def _subscribe_metered(self, customer=None):
+    def _subscribe_metered(self, customer=None, status="active"):
         return self._subscribe(
             metadata.USAGE_BASED_STORAGE,
+            status=status,
             category=metadata.STORAGE_PLAN_CATEGORY,
             price_id=self._free_metered_price(),
             customer=customer,
@@ -95,11 +86,12 @@ class SyncStorageUsageTests(TestCase):
     def _free_metered_price(self):
         return metadata.USAGE_BASED_STORAGE.price_ids[metadata.VERITY_FREE.stripe_id]
 
-    def _run(self):
+    def _run(self, create_event=None):
+        create_event = create_event or mock.Mock()
         with (
             mock.patch("billing.services._configure"),
             mock.patch("billing.tasks._configure"),
-            mock.patch("stripe.billing.MeterEvent.create") as create_event,
+            mock.patch("stripe.billing.MeterEvent.create", create_event),
         ):
             sync_storage_usage_to_stripe.fn()
         return create_event
@@ -107,19 +99,11 @@ class SyncStorageUsageTests(TestCase):
     def test_task_runs_without_raising(self):
         # Regression: the ORM status filter made this raise FieldError, so no
         # meter event was ever sent.
-        self._subscribe(
-            metadata.USAGE_BASED_STORAGE,
-            category=metadata.STORAGE_PLAN_CATEGORY,
-            price_id=self._free_metered_price(),
-        )
+        self._subscribe_metered()
         self._run()
 
     def test_metered_subscriber_gets_an_event(self):
-        self._subscribe(
-            metadata.USAGE_BASED_STORAGE,
-            category=metadata.STORAGE_PLAN_CATEGORY,
-            price_id=self._free_metered_price(),
-        )
+        self._subscribe_metered()
         create_event = self._run()
         self.assertEqual(create_event.call_count, 1)
         payload = create_event.call_args.kwargs["payload"]
@@ -127,11 +111,7 @@ class SyncStorageUsageTests(TestCase):
         self.assertEqual(create_event.call_args.kwargs["event_name"], "storage_usage")
 
     def test_reported_value_is_whole_megabytes(self):
-        self._subscribe(
-            metadata.USAGE_BASED_STORAGE,
-            category=metadata.STORAGE_PLAN_CATEGORY,
-            price_id=self._free_metered_price(),
-        )
+        self._subscribe_metered()
         # The task reads the denormalised byte counter, so drive the real path.
         CustomUser.objects.filter(pk=self.user.pk).update(storage_used_bytes=10**9)
         create_event = self._run()
@@ -144,12 +124,7 @@ class SyncStorageUsageTests(TestCase):
         self.assertEqual(self._run().call_count, 0)
 
     def test_cancelled_metered_subscription_is_skipped(self):
-        self._subscribe(
-            metadata.USAGE_BASED_STORAGE,
-            status="canceled",
-            category=metadata.STORAGE_PLAN_CATEGORY,
-            price_id=self._free_metered_price(),
-        )
+        self._subscribe_metered(status="canceled")
         self.assertEqual(self._run().call_count, 0)
 
     def test_metered_subscription_on_a_linked_customer_is_billed_to_that_customer(self):
@@ -170,16 +145,10 @@ class SyncStorageUsageTests(TestCase):
 
     def test_one_stripe_failure_does_not_stop_the_batch(self):
         self._subscribe_metered()
-        self._metered_user("second")
-        with (
-            mock.patch("billing.tasks._configure"),
-            mock.patch(
-                "stripe.billing.MeterEvent.create",
-                side_effect=[stripe.error.APIConnectionError("down"), None],
-            ) as create_event,
-            self.assertRaises(RuntimeError),
-        ):
-            sync_storage_usage_to_stripe.fn()
+        self._subscribe_metered(self._user("second").customer)
+        create_event = mock.Mock(side_effect=[stripe.error.APIConnectionError("down"), None])
+        with self.assertRaises(RuntimeError):
+            self._run(create_event)
         self.assertEqual(create_event.call_count, 2)
 
     def test_run_reports_completion(self):
