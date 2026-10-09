@@ -9,6 +9,8 @@ from .metadata import plan_for_user
 
 
 def get_monthly_upload_limit(user, action: str) -> int | None:
+    if action == "upload" and metadata.has_metered_storage(user):
+        return None
     plan = plan_for_user(user)
     return plan.monthly_scan_limit if action == "scan" else plan.monthly_upload_limit
 
@@ -43,9 +45,7 @@ def can_upload(user) -> bool:
 
 def within_allowance(user, action: str) -> bool:
     limit = get_monthly_upload_limit(user, action)
-    if limit is None or (action == "upload" and metadata.has_metered_storage(user)):
-        return True
-    return get_monthly_upload_count(user, action) < limit
+    return limit is None or get_monthly_upload_count(user, action) < limit
 
 
 def has_feature(user, lookup_key: str) -> bool:

@@ -1,5 +1,3 @@
-BYTES_PER_GB = 10**9
-
 # Only define SHARED constants of Free and Paid plans here.
 FREE_MONTHLY_UPLOAD_LIMIT = 25
 PRO_MONTHLY_UPLOAD_LIMIT = 200
