@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
-    <div class="max-w-9xl mx-auto px-6 py-8 min-h-[calc(100vh-4rem)] flex flex-col lg:flex-row gap-8"
+    <div class="max-w-7xl mx-auto px-6 py-8 min-h-[calc(100vh-4rem)] flex flex-col lg:flex-row gap-8"
          hx-ext="response-targets">
         <aside class="w-full lg:w-96 flex flex-col justify-between space-y-8 shrink-0">
             <div class="space-y-6">
@@ -92,19 +92,12 @@
                     <h3 class="text-[11px] font-bold tracking-widest text-zinc-500 dark:text-zinc-400 uppercase mb-2 pl-0.5">Connected Record</h3>
                     {% if document.associated_record %}
                         <a href="{% url 'records:record_detail' document.associated_record.id %}"
-                           class="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-medium py-2.5 px-4 rounded-2xl text-xs flex items-center justify-center gap-2 transition-all duration-200 shadow-xs active:scale-[0.98]">
-                            <svg class="w-4 h-4 text-zinc-500"
-                                 fill="none"
-                                 viewBox="0 0 24 24"
-                                 stroke-width="2"
-                                 stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-                            </svg>
+                           class="w-full bg-black dark:bg-white border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-white dark:text-black font-medium py-2 px-4 rounded-xl text-xs flex items-center justify-center gap-2 transition-all duration-200 shadow-xs active:scale-[0.98]">
                             View Associated Record
                         </a>
                     {% else %}
                         <button @click="modalOpen=true"
-                                class="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-medium py-2.5 px-4 rounded-2xl text-xs flex items-center justify-center gap-2 transition-all duration-200 shadow-xs active:scale-[0.98] cursor-pointer">
+                                class="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-medium py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-2 transition-all duration-200 shadow-xs active:scale-[0.98] cursor-pointer">
                             <svg class="w-4 h-4 text-zinc-500"
                                  fill="none"
                                  viewBox="0 0 24 24"
@@ -136,7 +129,7 @@
                                      x-transition:leave="ease-in duration-200"
                                      x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
                                      x-transition:leave-end="opacity-0 translate-y-4 sm:scale-95"
-                                     class="relative flex flex-col w-full max-h-[85vh] bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xl sm:max-w-md rounded-2xl overflow-y-auto">
+                                     class="relative flex flex-col w-full max-h-[85vh] bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xl sm:max-w-md rounded-xl overflow-y-auto">
                                     <div class="px-6 pt-6 pb-4 border-b border-zinc-100 dark:border-zinc-800/60 space-y-4">
                                         <div class="flex justify-between items-start">
                                             <div class="space-y-1">
@@ -144,7 +137,7 @@
                                                 <p class="text-xs text-zinc-500 dark:text-zinc-400">Select a record to associate with this file.</p>
                                             </div>
                                             <button @click="modalOpen=false"
-                                                    class="flex items-center justify-center w-8 h-8 rounded-full text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all duration-200 cursor-pointer">
+                                                    class="flex items-center justify-center w-8 h-8 rounded-xl text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all duration-200 cursor-pointer">
                                                 <svg class="w-4 h-4"
                                                      xmlns="http://www.w3.org/2000/svg"
                                                      fill="none"
@@ -191,7 +184,7 @@
                                                     Cancel
                                                 </button>
                                                 <button type="submit"
-                                                        class="inline-flex justify-center items-center px-5 py-2 text-xs font-medium text-white dark:text-zinc-950 bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-zinc-200 rounded-2xl transition-all duration-200 shadow-xs active:scale-[0.98] cursor-pointer">
+                                                        class="inline-flex justify-center items-center px-5 py-2 text-xs font-medium text-white dark:text-zinc-950 bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-zinc-200 rounded-xl transition-all duration-200 shadow-xs active:scale-[0.98] cursor-pointer">
                                                     Confirm Attachment
                                                 </button>
                                             </div>
@@ -210,14 +203,14 @@
                     {% csrf_token %}
                     <button type="submit"
                             onclick="return confirm('Delete this document?\nThis action is permanent and cannot be undone.')"
-                            class="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:bg-rose-500/5 dark:hover:bg-rose-500/10 text-zinc-500 dark:text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:border-rose-200 dark:hover:border-rose-900/50 font-medium py-2.5 px-4 rounded-2xl text-xs flex items-center justify-center gap-2 transition-all duration-200 shadow-xs active:scale-[0.98] cursor-pointer">
+                            class="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:bg-rose-500/5 dark:hover:bg-rose-500/10 text-zinc-500 dark:text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:border-rose-200 dark:hover:border-rose-900/50 font-medium py-2 px-4 rounded-xl text-xs flex items-center justify-center gap-2 transition-all duration-200 shadow-xs active:scale-[0.98] cursor-pointer">
                         Delete Document
                     </button>
                 </form>
             </div>
         </aside>
         <main x-data="{ zoom: 1 }"
-              class="flex-1 w-full flex flex-col border border-zinc-200/50 dark:border-zinc-800/50 rounded-2xl overflow-hidden relative min-h-[600px]">
+              class="flex-1 w-full flex flex-col border border-zinc-200/50 dark:border-zinc-800/50 rounded-xl overflow-hidden relative min-h-[600px]">
             <div class="absolute top-4 right-4 z-10 flex gap-1 bg-white/90 dark:bg-zinc-950/90 backdrop-blur rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xs p-0.5">
                 <button @click="zoom = Math.max(0.5, zoom - 0.1)"
                         class="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-all duration-200 cursor-pointer">

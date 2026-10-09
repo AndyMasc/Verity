@@ -2,7 +2,7 @@
 {% load form_tags %}
 {% block title %}Dashboard | Verity{% endblock %}
 {% block content %}
-    <main class="mx-auto flex min-h-screen max-w-9xl flex-col py-12 font-sans text-zinc-900 antialiased dark:text-zinc-100"
+    <main class="mx-auto flex min-h-screen max-w-7xl flex-col py-12 font-sans text-zinc-900 antialiased dark:text-zinc-100"
           x-data="recordBulkActions()"
           id="dashboard-content"
           hx-get="{% url 'core:dashboard' %}"
@@ -14,7 +14,7 @@
             <header class="flex w-full justify-end gap-4 md:flex-row md:items-center md:justify-between">
                 <div class="hidden md:block">
                     <a href="{% url 'core:profile_page' %}" class="group inline-block">
-                        <div class="shadow-2xs inline-flex items-center gap-2 rounded-full border border-zinc-200/80 bg-white px-3 py-1.5 transition-all duration-200 dark:border-white/[0.06] dark:bg-zinc-900/60">
+                        <div class="shadow-2xs inline-flex items-center gap-2 rounded-xl border border-zinc-200/80 bg-white px-3 py-1.5 transition-all duration-200 dark:border-white/[0.06] dark:bg-zinc-900">
                             <svg xmlns="http://www.w3.org/2000/svg"
                                  fill="none"
                                  viewBox="0 0 24 24"
@@ -29,20 +29,8 @@
                         </a>
                     </div>
                     <div class="flex items-center justify-between gap-2">
-                        <a href="{% url 'records:view_all_records' %}"
-                           class="flex flex-row items-center justify-center gap-2 rounded-full border border-zinc-300/60 bg-white px-3 py-1.5 text-xs font-medium text-black transition-all hover:bg-zinc-200/70 active:scale-[0.98] dark:border-zinc-800/30 dark:bg-zinc-800/40 dark:text-zinc-300 dark:hover:bg-zinc-900/60">
-                            <svg xmlns="http://www.w3.org/2000/svg"
-                                 fill="none"
-                                 viewBox="0 0 24 24"
-                                 stroke-width="1.5"
-                                 stroke="currentColor"
-                                 class="size-5">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
-                            </svg>
-                            Search
-                        </a>
                         <a href="{% url 'documents:upload_document' %}"
-                           class="shadow-2xs flex flex-row items-center justify-center gap-2 rounded-full bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white transition-all hover:bg-zinc-800 active:scale-[0.98] dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white/95">
+                           class="shadow-2xs flex flex-row items-center justify-center gap-2 rounded-xl bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white transition-all hover:bg-zinc-800 active:scale-[0.98] dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white/95">
                             <svg xmlns="http://www.w3.org/2000/svg"
                                  fill="none"
                                  viewBox="0 0 24 24"
