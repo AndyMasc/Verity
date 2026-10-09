@@ -7,6 +7,9 @@ optionally transitions the document from PENDING_UPLOAD to UPLOADED status.
 import logging
 from dataclasses import dataclass
 
+from django.db import transaction
+
+from billing.entitlements import record_monthly_use
 from documents.models import DocumentData, DocumentStatus
 from documents.storage import get_r2_object_head
 from documents.validators import MAX_FILE_SIZE
@@ -113,10 +116,23 @@ class DocumentUploadService:
             )
 
         if transition:
-            self.document.status = DocumentStatus.UPLOADED
-            self.document.file_size = file_size
-            self.document.mime_type = mime_type or self.document.mime_type
-            self.document.save(update_fields=["status", "file_size", "mime_type"])
+            # Confirmations can be retried or arrive concurrently. Only the
+            # conditional pending -> uploaded update that wins may record usage.
+            with transaction.atomic():
+                new_mime_type = mime_type or self.document.mime_type
+                transitioned = DocumentData.objects.filter(
+                    pk=self.document.pk,
+                    status=DocumentStatus.PENDING_UPLOAD,
+                ).update(
+                    status=DocumentStatus.UPLOADED,
+                    file_size=file_size,
+                    mime_type=new_mime_type,
+                )
+                if transitioned:
+                    self.document.status = DocumentStatus.UPLOADED
+                    self.document.file_size = file_size
+                    self.document.mime_type = new_mime_type
+                    record_monthly_use(self.document.user, "upload")
 
         return UploadResult(
             valid=True,

@@ -15,7 +15,7 @@ from typing import Any
 from django.db import transaction
 from django.http import HttpRequest
 
-from billing.entitlements import can_upload, get_monthly_limit, record_monthly_use
+from billing.entitlements import can_upload, get_monthly_limit
 from documents.forms import R2UploadForm
 from documents.models import DocumentData, DocumentStatus
 from documents.storage import generate_presigned_post, generate_upload_key
@@ -114,7 +114,6 @@ class UploadService:
                 file_hash=effective_hash,
                 status=DocumentStatus.PENDING_UPLOAD,
             )
-            record_monthly_use(self.user, "upload")
 
         upload_url = generate_presigned_post(key, content_type)
 
