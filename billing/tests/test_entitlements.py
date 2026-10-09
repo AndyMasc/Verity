@@ -16,7 +16,7 @@ from djstripe.models import (
 
 from .. import entitlements, features, metadata
 from ..models import CustomUser
-from .helpers import add_subscription
+from .helpers import add_subscription, give_pro_subscription
 
 
 class EntitlementTests(TestCase):
@@ -164,6 +164,12 @@ class ContextProcessorTests(TestCase):
         self.assertEqual(
             metadata.plan_for_user(self.user).stripe_id, metadata.VERITY_FREE.stripe_id
         )
+
+    def test_paid_plan_name_renders(self):
+        from ..context_processors import subscription_status
+
+        give_pro_subscription(self.user)
+        self.assertEqual(subscription_status(self._request())["plan_name"], "Verity Pro")
 
     def _add_subscription(self, status="active", product_id=None):
         add_subscription(self.user, self.customer, status=status, product_id=product_id)

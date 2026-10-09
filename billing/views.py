@@ -6,6 +6,7 @@ from typing import cast
 import stripe
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.cache import cache
 from django.http import (
     HttpRequest,
     HttpResponse,
@@ -93,66 +94,74 @@ def create_portal_session(request: HttpRequest) -> HttpResponse:
 @ratelimit(key="user", rate="15/m", method="POST", block=True)
 def purchase_subscription(request: HttpRequest) -> HttpResponse:
     user = cast(CustomUser, request.user)
+    line_items = services.fetch_line_items(request)
+    if isinstance(line_items, HttpResponseBadRequest):
+        return line_items
+
     customer = Customer.get_or_create(subscriber=request.user)[0]
-    subscription = customer.subscriptions.active().order_by("-created").first()
+    lock = f"billing:lock:{user.pk}"
+    if not cache.add(lock, 1, timeout=30):
+        messages.info(request, "A plan change is already in progress.")
+        return redirect("billing:pricing_page")
 
-    if subscription is None:
-        line_items = services.fetch_line_items(request)
-        if isinstance(line_items, HttpResponseBadRequest):
-            return line_items
+    try:
+        subscription = customer.subscriptions.active().order_by("-created").first()
 
-        idempotency_key = hashlib.sha256(  # Hourly-unique per user and line items, so a retry for the same user and line items cannot double-charge.
-            f"{user.pk}:{','.join(sorted(item['price'] for item in line_items))}:{int(time.time() // 3600)}".encode()
-        ).hexdigest()
-        success_url = (
-            request.build_absolute_uri(reverse("subscription_confirm"))
-            + "?session_id={CHECKOUT_SESSION_ID}"
-        )
-        cancel_url = (
-            request.build_absolute_uri(reverse("billing:pricing_page")) + "?checkout=canceled"
-        )
+        if subscription is None:
+            key = hashlib.sha256(  # Hourly-unique per user and line items, so a retry for the same user and line items cannot double-charge.
+                f"{user.pk}:{','.join(sorted(item['price'] for item in line_items))}:{int(time.time() // 3600)}".encode()
+            ).hexdigest()
+            success_url = (
+                request.build_absolute_uri(reverse("subscription_confirm"))
+                + "?session_id={CHECKOUT_SESSION_ID}"
+            )
+            cancel_url = (
+                request.build_absolute_uri(reverse("billing:pricing_page")) + "?checkout=canceled"
+            )
+            try:
+                services._configure()
+                session = stripe.checkout.Session.create(
+                    customer=customer.id,
+                    mode="subscription",
+                    line_items=line_items,
+                    client_reference_id=str(user.pk),
+                    success_url=success_url,
+                    cancel_url=cancel_url,
+                    idempotency_key=key,
+                )
+                invalidate_plan_usage_caches(user.pk)
+            except stripe.error.StripeError as e:
+                logger.error("Stripe API error during checkout session creation: %s", e)
+                messages.error(
+                    request,
+                    "We encountered an error creating your checkout session. Please try again.",
+                )
+                return redirect("billing:pricing_page")
+            return HttpResponseRedirect(session.url)
+
         try:
-            services._configure()
-            checkout_session = stripe.checkout.Session.create(
-                customer=customer.id,
-                mode="subscription",
-                line_items=line_items,
-                client_reference_id=str(user.pk),
-                success_url=success_url,
-                cancel_url=cancel_url,
-                idempotency_key=idempotency_key,
+            items = services.sanitize_line_items(subscription, line_items)
+            if not items:
+                messages.info(
+                    request,
+                    "No valid plans found after sanitization. Your subscription remains unchanged.",
+                )
+                return redirect("core:dashboard")
+            subscription.update(
+                items=items,
+                proration_behavior="create_prorations",
+            )
+            messages.success(
+                request,
+                "Your subscription has been updated successfully.",
             )
             invalidate_plan_usage_caches(user.pk)
         except stripe.error.StripeError as e:
-            logger.error("Stripe API error during checkout session creation: %s", e)
+            logger.error("Stripe API error during subscription update: %s", e)
             messages.error(
                 request,
-                "We encountered an error creating your checkout session. Please try again.",
+                "We encountered an error updating your subscription. Please contact support.",
             )
-            return redirect("billing:pricing_page")
-        return HttpResponseRedirect(checkout_session.url)
-
-    try:
-        sanitized_line_items = services.sanitize_line_items(user, line_items)
-        if not sanitized_line_items:
-            messages.info(
-                request,
-                "No valid plans found after sanitization. Your subscription remains unchanged.",
-            )
-            return redirect("core:dashboard")
-        subscription.update(
-            items=sanitized_line_items,
-            proration_behavior="create_prorations",
-        )
-        messages.success(
-            request,
-            "Your subscription has been updated successfully.",
-        )
-        invalidate_plan_usage_caches(user.pk)
-    except stripe.error.StripeError as e:
-        logger.error("Stripe API error during subscription update: %s", e)
-        messages.error(
-            request,
-            "We encountered an error updating your subscription. Please contact support.",
-        )
-    return redirect("core:dashboard")
+        return redirect("core:dashboard")
+    finally:
+        cache.delete(lock)

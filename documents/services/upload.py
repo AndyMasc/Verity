@@ -114,9 +114,9 @@ class UploadService:
                 file_hash=effective_hash,
                 status=DocumentStatus.PENDING_UPLOAD,
             )
-            record_monthly_use(self.user, "upload")
 
         upload_url = generate_presigned_post(key, content_type)
+        record_monthly_use(self.user, "upload")
 
         return PresignResult(
             status="upload_url",

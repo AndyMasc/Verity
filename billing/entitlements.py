@@ -30,7 +30,7 @@ def record_monthly_use(user, action: str) -> None:
     MonthlyUsage.objects.filter(user=user, period=period, action=action).update(
         count=F("count") + 1
     )
-    invalidate_monthly_usage_cache(user.pk, period, action)
+    invalidate_monthly_usage_cache(user.pk, period)
 
 
 def can_scan(user) -> bool:
@@ -43,7 +43,9 @@ def can_upload(user) -> bool:
 
 def can_use(user, action: str) -> bool:
     limit = get_monthly_limit(user, action)
-    return limit is None or get_monthly_count(user, action) < limit
+    if limit is None or (action == "upload" and metadata.has_metered_storage(user)):
+        return True
+    return get_monthly_count(user, action) < limit
 
 
 def has_feature(user, lookup_key: str) -> bool:

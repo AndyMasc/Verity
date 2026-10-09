@@ -49,7 +49,7 @@ def sync_upload_overage_to_stripe():
                     "value": str(overage),
                     "stripe_customer_id": subscription.customer.id,
                 },
-                idempotency_key=f"upload_overage_{user.pk}_{timezone.now().strftime('%Y%m%d%H')}",
+                idempotency_key=f"upload_overage_{subscription.customer.id}_{timezone.now().strftime('%Y%m%d%H')}",
             )
         except stripe.error.StripeError as e:
             logger.error("Failed to sync usage for %s: %s", user.pk, e)

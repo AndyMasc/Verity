@@ -2,7 +2,6 @@
 
 import logging
 from copy import copy
-from typing import Any
 
 import stripe
 from django.db.models import F
@@ -50,14 +49,13 @@ def fetch_line_items(
     line_items = [{"price": price_id, "quantity": quantity} for price_id in licensed]
     line_items += [{"price": price_id} for price_id in metered]
 
+    if not line_items:
+        return HttpResponseBadRequest("Select a valid plan.")
+
     return line_items
 
 
-def sanitize_line_items(user: Any, line_items: list[dict]) -> list[dict]:
-    """Clear stale items from selected prices. Only required for updating existing subscriptions: No sub = No stale items."""
-    subscription = (
-        subscriptions[0] if (subscriptions := metadata.active_subscriptions(user)) else None
-    )
+def sanitize_line_items(subscription, line_items: list[dict]) -> list[dict]:
     held_items = metadata.live_items(subscription) if subscription else []
 
     held_by_category: dict[str, list] = {}
