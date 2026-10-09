@@ -26,7 +26,7 @@
         {% for product in products %}
             {% with price_id=product.checkout_price_id category=product.stripe_data.metadata.category %}
                 <div {% if price_id and not product.already_active %}@click="togglePrice('{{ price_id }}', '{{ category|escapejs }}')"{% endif %}
-                     :class="selectedPrices.includes('{{ price_id }}') ? 'border-indigo-500/50 ring-1 ring-indigo-500/30 bg-indigo-50/30 dark:bg-indigo-950/20 dark:border-indigo-500/40 shadow-xs' : 'border-zinc-200/90 bg-white/70 dark:border-zinc-800/80 dark:bg-zinc-900/40 hover:border-zinc-300 dark:hover:border-zinc-700/80 hover:bg-white dark:hover:bg-zinc-900/70 shadow-xs'"
+                     :class="selectedPrices.includes('{{ price_id }}') ? 'border-indigo-500/50 ring-1 ring-indigo-500/30 bg-indigo-50/30 dark:bg-indigo-950/20 dark:border-indigo-500/40 shadow-xs' : 'border-zinc-200/90 bg-white/70 dark:border-zinc-800/80 dark:bg-zinc-900/40 hover:border-zinc-300 dark:hover:border-zinc-700/80 shadow-xs'"
                      class="hover:scale-101 hover:shadow-xl group relative flex flex-col justify-between rounded-3xl border p-7 backdrop-blur-md transition-all duration-200 w-full overflow-hidden {% if price_id and not product.already_active %}cursor-pointer{% else %}cursor-default{% endif %}">
                     <div class="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-indigo-500/30 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 {% if product.stripe_data.metadata.recommended %}opacity-100{% endif %}">
                     </div>
@@ -34,7 +34,7 @@
                         <div class="mb-4 flex items-center justify-between">
                             <h3 class="text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">{{ product.name }}</h3>
                             {% if product.metadata.recommended %}
-                                <span class="inline-flex items-center gap-1 rounded-xl border border-indigo-500/20 bg-indigo-500/10 px-2 py-0.5 text-[10px] font-medium tracking-wider text-indigo-600 uppercase dark:border-indigo-400/20 dark:bg-indigo-400/10 dark:text-indigo-300">
+                                <span class="inline-flex items-center gap-1 rounded-lg border border-indigo-500/20 bg-indigo-500/10 px-2 py-0.5 text-[10px] font-medium tracking-wider text-indigo-600 uppercase dark:border-indigo-400/20 dark:bg-indigo-400/10 dark:text-indigo-300">
                                     Recommended
                                 </span>
                             {% endif %}
@@ -103,7 +103,7 @@
                     <div class="mt-5">
                         {% if price_id %}
                             {% if product.already_active %}
-                                <div class="w-full cursor-not-allowed rounded-4xl border border-zinc-200/60 bg-zinc-100/50 px-3 py-2 text-center text-xs text-zinc-400 dark:border-zinc-900 dark:bg-zinc-900/50 dark:text-zinc-500">
+                                <div class="w-full cursor-not-allowed rounded-xl border border-zinc-200/60 bg-zinc-100/50 px-3 py-2 text-center text-xs text-zinc-400 dark:border-zinc-900 dark:bg-zinc-900/50 dark:text-zinc-500">
                                     <span class="font-normal">Current plan</span>
                                 </div>
                             {% else %}
@@ -131,7 +131,7 @@
                         id="update-subscription-button"
                         :class="(selectedPlanCount === 0) ? 'cursor-not-allowed bg-zinc-100 text-zinc-400 border border-zinc-200 dark:bg-zinc-800/50 dark:text-zinc-600 dark:border-zinc-900' : 'bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white border border-zinc-900 dark:border-zinc-200 shadow-sm active:scale-[0.98]'"
                         class="group inline-flex w-full max-w-xs items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold tracking-tight transition-all duration-200">
-                    <span>Update subscription</span>
+                    <span>Update Subscription</span>
                     <svg class="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5"
                          fill="none"
                          stroke="currentColor"
