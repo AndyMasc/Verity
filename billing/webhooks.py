@@ -11,9 +11,9 @@ from djstripe.models import Customer, Subscription
 
 from core.apps import posthog_client
 
-from .services import SETTLED_PAYMENT_STATUSES
-
 logger = logging.getLogger(__name__)
+
+SETTLED_PAYMENT_STATUSES = ("paid", "no_payment_required")
 
 
 @receiver(djstripe_signals.webhook_processing_error)
@@ -35,8 +35,12 @@ def _event_object(event: Any) -> dict[str, Any]:
 
 
 def _subscriber_pk(customer_id: str | None, client_reference_id: str | None = None) -> str | None:
-    """Resolve the local user behind a Stripe event, or None when unlinked. The client reference ID is the id we stamp on our own checkout sessions, so
-    it is the most reliable link; the customer's subscriber covers events that carry no session (invoices, payment intents)."""
+    """Resolve the local user behind a Stripe event, or None when unlinked.
+
+    The client reference id is the one we stamp on our own checkout sessions, so
+    it is the most reliable link; the customer's subscriber covers events that
+    carry no session (invoices, payment intents).
+    """
     if client_reference_id and str(client_reference_id).isdigit():
         from .models import CustomUser
 
@@ -116,11 +120,11 @@ def handle_subscription_changed(**kwargs: Any) -> None:
         return
 
     _invalidate_subscription_caches_for_event(stripe_sub)
-
     customer_id = stripe_sub.get("customer")
+
     if stripe_sub.get("cancel_at_period_end"):
         sub_id = stripe_sub.get("id")
-        if sub_id and read_cancel_intent(sub_id) is None:
+        if read_cancel_intent(sub_id) is None:
             mark_cancel_intent(sub_id, "period_end")
             capture_subscription_cancelled(sub_id, stripe_sub)
 
@@ -144,20 +148,11 @@ def handle_subscription_deleted(**kwargs: Any) -> None:
     if read_cancel_intent(sub_id) != "period_end":
         capture_subscription_cancelled(sub_id, stripe_sub)
 
-    def _clear_user_subscription() -> None:
-        from .models import CustomUser
-
-        updated_count = CustomUser.objects.filter(subscription__id=sub_id).update(subscription=None)
-        if updated_count:
-            logger.info("Cleared subscription %s from %d user(s).", sub_id, updated_count)
-
-    transaction.on_commit(_clear_user_subscription)
     transaction.on_commit(lambda: clear_cancel_intent(sub_id))
 
 
 def capture_subscription_cancelled(sub_id: str, stripe_sub: dict | None = None) -> None:
-    """Record churn for a cancelled subscription, split by what it covered. Cancellations this app performed itself are skipped: they are consequences
-    of another change (a plan swap, or an add-on following its base plan out) rather than a decision to leave."""
+    """Record churn for a cancelled subscription, split by what it covered."""
     if posthog_client is None:
         return
 
@@ -166,7 +161,8 @@ def capture_subscription_cancelled(sub_id: str, stripe_sub: dict | None = None) 
         return
 
     user = getattr(getattr(sub, "customer", None), "subscriber", None)
-    # Skip our own cancellations: a plan swap or an add-on following its base plan out is not a user deciding to leave.
+    # A plan swap, or an add-on following its base plan out, is not a user
+    # deciding to leave, so cancellations this app caused itself are skipped.
     if read_cancel_intent(sub_id) == "system":
         return
 
@@ -189,8 +185,7 @@ def capture_subscription_cancelled(sub_id: str, stripe_sub: dict | None = None) 
 @djstripe_receiver("checkout.session.completed")
 @djstripe_receiver("checkout.session.async_payment_succeeded")
 def handle_checkout_settled(**kwargs: Any) -> None:
-    """Track subscription checkouts Stripe actually settled. Anyone who finishes checkout without reaching the success URL is still counted. Delayed payment methods
-    settle later via checkout.session.async_payment_succeeded, so their checkout.session.completed (sent unpaid) is skipped here."""
+    """Track subscription checkouts Stripe actually settled."""
     session = _event_object(kwargs.get("event"))
     if session.get("mode") != "subscription":
         return

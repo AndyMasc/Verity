@@ -1,9 +1,6 @@
-"""Shared Plaid API client instance.
-
-Configures and exports a singleton "PlaidApi" client used by all
-other modules in the plaid_integration app. The environment (sandbox,
-development, production) is determined by the "PLAID_ENV" setting.
-"""
+"""Shared Plaid API client instance. Configures and exports a singleton "PlaidApi" client used by all
+other modules in the plaid_integration app. The environment (sandbox, development, production) is
+determined by the "PLAID_ENV" setting."""
 
 import plaid
 from django.conf import settings

@@ -16,9 +16,9 @@ from django.db import transaction
 from django.http import HttpRequest
 
 from billing.entitlements import (
-    can_add_storage,
-    get_storage_limit,
-    is_storage_limit_exceeded,
+    can_upload,
+    get_monthly_upload_limit,
+    record_monthly_upload_usage,
 )
 from documents.forms import R2UploadForm
 from documents.models import DocumentData, DocumentStatus
@@ -97,13 +97,11 @@ class UploadService:
             if existing:
                 return self._duplicate_result(existing)
 
-        if not self._within_storage_limit(form.cleaned_data.get("file_size")):
-            limit_gb = get_storage_limit(self.user)
+        if not can_upload(self.user):
+            limit = get_monthly_upload_limit(self.user, "upload")
             return PresignResult(
                 status="error",
-                error=(
-                    f"Storage limit reached ({limit_gb} GB). Upgrade to upload more files, or delete documents for."
-                ),
+                error=f"Upload limit reached ({limit}/month). Upgrade for more.",
             )
 
         effective_hash = self._resolve_hash(file_hash, force_upload)
@@ -122,6 +120,7 @@ class UploadService:
             )
 
         upload_url = generate_presigned_post(key, content_type)
+        record_monthly_upload_usage(self.user, "upload")
 
         return PresignResult(
             status="upload_url",
@@ -129,16 +128,6 @@ class UploadService:
             key=key,
             document_id=document.id,
         )
-
-    def _within_storage_limit(self, file_size: int | None) -> bool:
-        """Return whether the current upload stays within the user's storage quota.
-
-        Falls back to blocking only when the quota is already exceeded if the
-        prospective file size is unknown (e.g. legacy clients).
-        """
-        if file_size is None:
-            return not is_storage_limit_exceeded(self.user)
-        return can_add_storage(self.user, file_size)
 
     def _find_duplicate(self, file_hash: str) -> DocumentData | None:
         """Search for an existing active document with the same file hash for this user."""

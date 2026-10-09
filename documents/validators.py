@@ -1,9 +1,5 @@
-"""File validation utilities for document uploads.
-
-Detects MIME types from file headers using python-magic, filetype, and raw
-magic-byte signatures as fallbacks. Enforces size limits, allowed types,
-and pixel dimensions for images.
-"""
+"""File validation utilities for document uploads. Detects MIME types from file headers using python-magic, filetype, and raw
+magic-byte signatures as fallbacks. Enforces size limits, allowed types, and pixel dimensions for images."""
 
 import logging
 from dataclasses import dataclass
@@ -50,17 +46,10 @@ MAGIC_SIGNATURES = {
 
 
 def _detect_mime_from_bytes(header_bytes: bytes) -> str | None:
-    """Detect MIME type from file header bytes using multiple detection strategies.
-
-    Tries python-magic first, falls back to filetype, then raw magic-byte
-    signature matching.
-    """
+    """Detect MIME type from file header bytes using multiple detection strategies."""
     if HAS_MAGIC:
         try:
             detected = python_magic.from_buffer(header_bytes, mime=True)
-            # libmagic reports unrecognized/truncated headers as
-            # "application/octet-stream"; keep the specific fallbacks below
-            # rather than treating that as a successful detection.
             if detected and detected != "application/octet-stream":
                 return detected
         except Exception as e:
@@ -106,18 +95,7 @@ def validate_file_upload(
     file_obj: IO[bytes],
     declared_mime_type: str | None = None,  # noqa: ARG001
 ) -> ValidationResult:
-    """Validate a file-like upload object by reading its header and checking constraints.
-
-    Args:
-        file_obj: A seekable file-like object to validate.
-        declared_mime_type: Ignored; detection is always done from raw bytes.
-
-    Returns:
-            ValidationResult with file size and detected MIME type.
-
-    Raises:
-        ValidationError: If the file is empty, too large, or an unsupported type.
-    """
+    """Validate a file-like upload object by reading its header and checking constraints."""
     file_obj.seek(0, 2)
     file_size = file_obj.tell()
     file_obj.seek(0)
@@ -130,19 +108,6 @@ def validate_file_upload(
 
 
 def validate_file_bytes(header_bytes: bytes, content_length: int) -> ValidationResult:
-    """Validate file type and size from raw header bytes and a known content length.
-
-    Used by the gatekeeper to validate R2 objects where only a partial read is available.
-
-    Args:
-            header_bytes: First ~8KB of the file for MIME detection.
-            content_length: Total file size in bytes.
-
-    Returns:
-            ValidationResult with file size and detected MIME type.
-
-    Raises:
-        ValidationError: If the file is empty, too large, or an unsupported type.
-    """
+    """Validate file type and size from raw header bytes and a known content length."""
     detected_mime = _detect_mime_from_bytes(header_bytes)
     return _validate_file(content_length, detected_mime)

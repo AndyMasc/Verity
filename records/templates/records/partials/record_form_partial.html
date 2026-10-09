@@ -49,7 +49,7 @@
         <div class="flex w-full items-center justify-between gap-3">
             <div class="flex gap-3">
                 <a href="{% url 'records:record_history' record.pk %}"
-                   class="inline-flex items-center gap-1.5 rounded-full border border-zinc-200/80 bg-white px-3 py-1.5 text-xs font-medium text-zinc-600 transition-colors dark:border-zinc-800 dark:bg-zinc-900 dark:text-white">
+                   class="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200/80 bg-white px-3 py-1.5 text-xs font-medium text-zinc-600 transition-colors dark:border-zinc-800 dark:bg-zinc-900 dark:text-white">
                     <svg class="size-3.5"
                          fill="none"
                          viewBox="0 0 24 24"
@@ -64,7 +64,7 @@
                         hx-get="{% url 'records:record_shares_panel' record.pk %}"
                         hx-target="#share-panel-body"
                         hx-swap="innerHTML"
-                        class="inline-flex items-center gap-1.5 rounded-full bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-zinc-700 active:scale-[0.98] dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200">
+                        class="inline-flex items-center gap-1.5 rounded-xl bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-zinc-700 active:scale-[0.98] dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200">
                     <svg class="size-3"
                          fill="none"
                          viewBox="0 0 24 24"
@@ -76,7 +76,7 @@
                     share{{ record.shared_count|pluralize }}{% else %}Share{% endif %}</span>
             </button>
             <span class="htmx-indicator mr-2 inline-flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
-                <span class="size-1.5 animate-pulse rounded-full bg-emerald-500"></span>
+                <span class="size-1.5 animate-pulse rounded-xl bg-emerald-500"></span>
                 Saving
             </span>
         </div>
@@ -87,7 +87,7 @@
                     hx-swap="none"
                     hx-confirm="This record has met its retention period. Permanently delete this record and all associated documents? This cannot be undone."
                     title="Retention period passed — permanently delete?"
-                    class="inline-flex items-center gap-1.5 rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-medium text-rose-700 transition-colors hover:bg-rose-500/10 active:scale-[0.98] dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-400 dark:hover:bg-rose-500/10">
+                    class="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-medium text-rose-700 transition-colors hover:bg-rose-500/10 active:scale-[0.98] dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-400 dark:hover:bg-rose-500/10">
                 <svg class="size-3.5"
                      fill="none"
                      viewBox="0 0 24 24"
@@ -114,7 +114,7 @@
 {% endif %}
 <header class="pt-6 pb-4">
     <div class="flex items-center justify-between gap-3">
-        <span class="rounded-full {{ record.badge_classes }} flex p-1 px-2">
+        <span class="rounded-xl {{ record.badge_classes }} flex p-1 px-2">
             {% render_field form.record_type class="cursor-pointer bg-transparent text-[10px] ring-none outline-none font-bold tracking-wider uppercase" %}
         </span>
         <div class="flex flex-col">
@@ -259,7 +259,7 @@
             </div>
             {% if request.user == record.user %}
                 <a href="{% url 'documents:add_support_docs' record.pk %}"
-                   class="shadow-2xs inline-flex shrink-0 items-center gap-1 rounded-full bg-black px-2.5 py-1 text-xs font-medium text-white transition-colors dark:bg-white dark:text-black dark:hover:bg-zinc-200 hover:dark:bg-zinc-200">
+                   class="shadow-2xs inline-flex shrink-0 items-center gap-1 rounded-lg bg-black px-2.5 py-1 text-xs font-medium text-white transition-colors dark:bg-white dark:text-black dark:hover:bg-zinc-200 hover:dark:bg-zinc-200">
                     <svg class="size-3.5"
                          fill="none"
                          viewBox="0 0 24 24"

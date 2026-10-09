@@ -1,77 +1,52 @@
-"""Inline scripts in templates must actually parse.
-
-A syntax error anywhere in an inline <script type="module"> kills the whole module,
-so every listener in it silently stops being attached. That is invisible to the view
-tests and only shows up as a dead control in the browser: an unreferenced identifier
-or a malformed object literal makes "click the upload dropzone" do nothing at all.
-"""
-
 import re
 import shutil
 import subprocess
 import tempfile
-from pathlib import Path
+import unittest
 
-from django.template.loader import render_to_string
-from django.test import SimpleTestCase
-
-TEMPLATE_ROOT = Path(__file__).resolve().parents[2]
-
-# Rendered with the smallest context each one accepts; anything missing is simply
-# empty, which is harmless for a syntax check.
-TEMPLATES = {
-    "documents/upload_file.html": {
-        "api_url": "/billing/x/",
-        "redirect_url_template": "/records/add/0/",
-        "is_supporting_flow": False,
-    },
-    # upload_supporting_files.html extends upload_base.html and inherits the same
-    # module script, so upload_file.html already covers it.
-    "billing/partials/pricing_cards.html": {"request": None, "base_plans": []},
-}
+from django.template.loader import get_template
+from django.test import TestCase
 
 
-def _inline_scripts(html: str) -> list[str]:
-    scripts = []
-    for match in re.finditer(r"<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>", html, re.DOTALL):
-        body = match.group(1).strip()
-        if body:
-            scripts.append(body)
-    return scripts
+class InlineScriptSyntaxTests(TestCase):
+    TEMPLATES = ["documents/upload_base.html", "billing/partials/pricing_cards.html"]
 
+    def _parse_errors(self, js):
+        with tempfile.NamedTemporaryFile("w", suffix=".js", delete=False) as handle:
+            handle.write(js)
+        result = subprocess.run(["node", "--check", handle.name], capture_output=True, text=True)
+        return result.returncode, result.stderr
 
-def _strip_template_tags(source: str) -> str:
-    source = re.sub(r"\{%.*?%\}", "", source, flags=re.DOTALL)
-    return re.sub(r"\{\{.*?\}\}", '""', source, flags=re.DOTALL)
-
-
-class InlineScriptSyntaxTests(SimpleTestCase):
     def test_inline_scripts_parse(self):
-        node = shutil.which("node")
-        if node is None:
-            self.skipTest("node is not installed")
+        if shutil.which("node") is None:
+            self.skipTest("node not installed")
 
-        failures = []
         checked = 0
-        for template, context in TEMPLATES.items():
-            html = render_to_string(template, context)
-            for index, script in enumerate(_inline_scripts(html)):
+        for name in self.TEMPLATES:
+            html = get_template(name).render()
+            blocks = [
+                b for b in re.findall(r"<script[^>]*>(.*?)</script>", html, re.S) if b.strip()
+            ]
+            for index, block in enumerate(blocks):
+                js = re.sub(r"\{\{.*?\}\}|\{%.*?%\}", "", block, flags=re.S)
+                code, stderr = self._parse_errors(js)
+                self.assertEqual(code, 0, f"{name} script {index} does not parse:\n{stderr}")
                 checked += 1
-                with tempfile.NamedTemporaryFile("w", suffix=".mjs", delete=False) as handle:
-                    handle.write(_strip_template_tags(script))
-                    path = handle.name
-                result = subprocess.run([node, "--check", path], capture_output=True, text=True)
-                Path(path).unlink()
-                if result.returncode != 0:
-                    detail = next(
-                        (
-                            line
-                            for line in result.stderr.splitlines()
-                            if "Error" in line or "SyntaxError" in line
-                        ),
-                        result.stderr.splitlines()[0] if result.stderr else "",
-                    )
-                    failures.append(f"{template} script #{index}: {detail.strip()}")
 
-        self.assertEqual(failures, [], "Inline scripts failed to parse:\n" + "\n".join(failures))
-        self.assertGreater(checked, 0, "expected at least one inline script to check")
+        self.assertGreaterEqual(checked, 5)
+
+    def test_parser_rejects_the_bug_that_broke_dropzone(self):
+        if shutil.which("node") is None:
+            self.skipTest("node not installed")
+
+        code, _ = self._parse_errors(
+            "posthog.capture_exception(error, { event: 'x', props: { a: 1 });"
+        )
+        self.assertNotEqual(code, 0)
+
+    def test_parser_accepts_valid_js(self):
+        if shutil.which("node") is None:
+            self.skipTest("node not installed")
+
+        code, _ = self._parse_errors("posthog.capture_exception(error, { event: 'x' });")
+        self.assertEqual(code, 0)

@@ -1,10 +1,12 @@
+import hashlib
 import logging
+import time
 from typing import cast
-from uuid import uuid4
 
 import stripe
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.cache import cache
 from django.http import (
     HttpRequest,
     HttpResponse,
@@ -15,18 +17,12 @@ from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 from django_ratelimit.decorators import ratelimit
-from djstripe.models import (
-    Customer,
-    Price,
-    Subscription,
-)
-from djstripe.settings import djstripe_settings
+from djstripe.models import Customer
 
 from core.apps import posthog_client
 
-from . import metadata, services
+from . import services
 from .context_processors import invalidate_plan_usage_caches
-from .metadata import plan_for_user
 from .models import CustomUser
 
 logger = logging.getLogger(__name__)
@@ -45,18 +41,20 @@ def pricing_page(request: HttpRequest) -> HttpResponse:
 @login_required
 @ratelimit(key="user", rate="10/m", method=["GET"], block=True)
 def subscription_confirm(request: HttpRequest) -> HttpResponse:
-    session_id = request.GET.get("session_id")
-    if not session_id:
-        return HttpResponseBadRequest("Missing session ID.")
-
     try:
-        session = services.retrieve_checkout_session(session_id)
-        if session.payment_status not in services.SETTLED_PAYMENT_STATUSES:
-            return HttpResponseBadRequest("Subscription is not paid.")
+        session_id = request.GET.get("session_id")
+        if not session_id:
+            return HttpResponseBadRequest("Missing session_id parameter.")
+        services._configure()
+        session = stripe.checkout.Session.retrieve(session_id)
+
+        if session.status != "complete":
+            return HttpResponseBadRequest("Checkout did not complete.")
         if not session.subscription:
             return HttpResponseBadRequest("Session is not a subscription checkout.")
+        if session.get("client_reference_id") != str(request.user.pk):
+            return HttpResponseBadRequest("Session does not belong to this user.")
 
-        subscription = services.retrieve_subscription(str(session.subscription))
     except stripe.error.StripeError as e:
         logger.error("Stripe API error during subscription confirmation: %s", e)
         messages.error(
@@ -65,26 +63,13 @@ def subscription_confirm(request: HttpRequest) -> HttpResponse:
         )
         return redirect("core:dashboard")
 
-    subscription_holder = request.user.get_verified_session_holder(session)
-    if subscription_holder is None:
-        return HttpResponseBadRequest("Invalid session payload.")
-
-    djstripe_subscription = Subscription.sync_from_stripe_data(subscription)
-    overlaps_cleared = subscription_holder.handle_new_subscription(djstripe_subscription)
+    invalidate_plan_usage_caches(request.user.pk)
     if posthog_client is not None:
-        posthog_client.capture(
-            "subscription_activated",
-            properties={"overlapping_subscription_cleared": overlaps_cleared},
-        )
-
-    if overlaps_cleared:
-        messages.success(request, "Your subscription has been updated successfully!")
-    else:
-        messages.warning(
-            request,
-            "Your new plan is active, but we couldn't automatically cancel your previous "
-            "overlapping plan. Please cancel it from the billing portal or contact support.",
-        )
+        posthog_client.capture("subscription_activated")
+    messages.success(
+        request,
+        "Your subscription is now active! You can manage your plan and billing in your profile.",
+    )
     return redirect("core:dashboard")
 
 
@@ -92,139 +77,91 @@ def subscription_confirm(request: HttpRequest) -> HttpResponse:
 @require_POST
 @ratelimit(key="user", rate="10/m", method="POST", block=True)
 def create_portal_session(request: HttpRequest) -> HttpResponse:
-    user = cast(CustomUser, request.user)
-    customer = user.customer
+    customer = Customer.get_or_create(request.user)[0]
     if customer is None:
         return HttpResponseBadRequest("No Stripe customer associated with this account.")
 
-    portal_session = services.create_billing_portal_session(
+    services._configure()
+    portal_session = stripe.billing_portal.Session.create(
         customer=customer.id,
         return_url=request.build_absolute_uri(reverse("core:profile_page")),
     )
     return HttpResponseRedirect(portal_session.url)
 
 
-def _purchasable_prices(price_ids) -> dict:
-    """Return {price_id: Price} for the ids that are active in this Stripe mode."""
-    ids = [price_id for price_id in price_ids if price_id]
-    if not ids:
-        return {}
-    return {
-        price.id: price
-        for price in Price.objects.filter(
-            id__in=ids,
-            active=True,
-            livemode=djstripe_settings.STRIPE_LIVE_MODE,
-        ).select_related("product")
-    }
-
-
-def _price_is_usable(price, category: str | None = None) -> bool:
-    """Whether a price belongs to a known product, optionally in "category".
-
-    "category" is the caller's own read of the product's Stripe metadata, so the two
-    cannot disagree.
-    """
-    if price is None or price.product is None:
-        return False
-    if price.product.id not in metadata.PRODUCTS:
-        return False
-    return category is None or metadata.product_category(price.product) == category
-
-
-def _validated_price(price_id: str | None, category: str | None = None) -> str | None:
-    """Return the price ID only if it is an active, purchasable price."""
-    price = _purchasable_prices([price_id]).get(price_id)
-    return price_id if _price_is_usable(price, category) else None
-
-
-def customer_needs_refresh(customer: Customer | None) -> bool:
-    """Return True when a stored customer ID is stale or missing in Stripe."""
-    if customer is None:
-        return True
-    if customer.livemode != djstripe_settings.STRIPE_LIVE_MODE:
-        return True
-    return services.customer_missing_in_stripe(customer.id)
-
-
 @login_required
 @require_POST
 @ratelimit(key="user", rate="15/m", method="POST", block=True)
-def create_checkout_session(request: HttpRequest) -> HttpResponse:
+def purchase_subscription(request: HttpRequest) -> HttpResponse:
     user = cast(CustomUser, request.user)
+    line_items = services.fetch_line_items(request)
+    if isinstance(line_items, HttpResponseBadRequest):
+        return line_items
 
-    # A plan and usage-based storage can be bought in one order; a second plan cannot.
-    submitted = request.POST.getlist("price_ids")
-    # One query for the whole selection, instead of fetching each price twice.
-    catalog = _purchasable_prices(submitted)
-    selected = [
-        price_id
-        for price_id in submitted
-        if price_id in catalog and _price_is_usable(catalog[price_id])
-    ]
-    if not selected:
-        return HttpResponseBadRequest("Select a valid plan to proceed to checkout.")
-
-    # Resolve the selected prices to their products.
-    products = Price.objects.filter(id__in=selected).select_related("product")
-    metas = {
-        price.id: meta
-        for price in products
-        if (meta := metadata.PRODUCTS.get(price.product_id)) is not None
-    }
-
-    licensed = [price_id for price_id in selected if not metas[price_id].metered]
-    if len(licensed) > 1:
-        return HttpResponseBadRequest("Select a single plan to proceed to checkout.")
-
-    # The rate follows the plan the user ends up on, so an explicit selection wins and a downgrade is not billed at the tier they are leaving. A metered-only
-    # order keeps the current plan's tier.
-    base_plan = metas[licensed[0]] if licensed else plan_for_user(user)
-
-    # A licensed line item must carry a quantity. A metered one must not.
-    line_items = [{"price": price_id, "quantity": 1} for price_id in licensed]
-    for price_id in selected:
-        meta = metas[price_id]
-        if not meta.metered:
-            continue
-        # The selected catalog price only says the user wants metered storage; the
-        # tier decides which price Stripe will actually charge. Validate that price
-        # itself, so a stale or wrong-mode id fails here rather than at Stripe.
-        tier_price_id = meta.price_id_for_plan(base_plan)
-        if tier_price_id is None or _validated_price(tier_price_id) is None:
-            return HttpResponseBadRequest(
-                "This plan is not available for purchase. Please try again."
-            )
-        line_items.append({"price": tier_price_id})
-
-    customer = user.customer
-    if customer_needs_refresh(customer):
-        customer = None
-
-    if customer is None:
-        # Tolerates duplicate subscriber links instead of raising MultipleObjectsReturned,
-        # and leaves exactly one linked so it cannot recur.
-        customer = services.resolve_customer(user)
-        # The survivor may still be a row whose Stripe record was deleted; unlink it so a
-        # broken Stripe record cannot block checkout.
-        if services.customer_missing_in_stripe(customer.id):
-            Customer.objects.filter(pk=customer.pk, subscriber=user).update(subscriber=None)
-            customer = services.resolve_customer(user)
+    customer = services.resolve_customer(user) or Customer.get_or_create(subscriber=user)[0]
+    lock = f"billing:lock:{user.pk}"
+    if not cache.add(lock, 1, timeout=30):
+        messages.info(request, "A plan change is already in progress.")
+        return redirect("billing:pricing_page")
 
     try:
-        checkout_session = services.create_checkout_session(
-            customer=customer.id,
-            line_items=line_items,
-            client_reference_id=str(user.pk),
-            success_url=request.build_absolute_uri(reverse("subscription_confirm"))
-            + "?session_id={CHECKOUT_SESSION_ID}",
-            cancel_url=request.build_absolute_uri(reverse("pricing_page")) + "?checkout=canceled",
-            idempotency_key=uuid4().hex,
-        )
-        if posthog_client is not None:
+        subscription = customer.subscriptions.active().order_by("-created").first()
+
+        if subscription is None:
+            key = hashlib.sha256(  # Hourly-unique per user and line items, so a retry for the same user and line items cannot double-charge.
+                f"{user.pk}:{','.join(sorted(item['price'] for item in line_items))}:{int(time.time() // 3600)}".encode()
+            ).hexdigest()
+            success_url = (
+                request.build_absolute_uri(reverse("subscription_confirm"))
+                + "?session_id={CHECKOUT_SESSION_ID}"
+            )
+            cancel_url = (
+                request.build_absolute_uri(reverse("billing:pricing_page")) + "?checkout=canceled"
+            )
+            try:
+                services._configure()
+                session = stripe.checkout.Session.create(
+                    customer=customer.id,
+                    mode="subscription",
+                    line_items=line_items,
+                    client_reference_id=str(user.pk),
+                    success_url=success_url,
+                    cancel_url=cancel_url,
+                    idempotency_key=key,
+                )
+                invalidate_plan_usage_caches(user.pk)
+            except stripe.error.StripeError as e:
+                logger.error("Stripe API error during checkout session creation: %s", e)
+                messages.error(
+                    request,
+                    "We encountered an error creating your checkout session. Please try again.",
+                )
+                return redirect("billing:pricing_page")
+            return HttpResponseRedirect(session.url)
+
+        try:
+            items = services.sanitize_line_items(subscription, line_items)
+            if not items:
+                messages.info(
+                    request,
+                    "No valid plans found after sanitization. Your subscription remains unchanged.",
+                )
+                return redirect("core:dashboard")
+            subscription.update(
+                items=items,
+                proration_behavior="create_prorations",
+            )
+            messages.success(
+                request,
+                "Your subscription has been updated successfully.",
+            )
             invalidate_plan_usage_caches(user.pk)
-            posthog_client.capture("subscription_checkout_started", properties={})
-        return HttpResponseRedirect(checkout_session.url)
-    except Exception as e:
-        logger.error("Could not create checkout session: %s", e, exc_info=True)
-        return HttpResponseBadRequest("Unable to start checkout. Please try again.")
+        except stripe.error.StripeError as e:
+            logger.error("Stripe API error during subscription update: %s", e)
+            messages.error(
+                request,
+                "We encountered an error updating your subscription. Please contact support.",
+            )
+        return redirect("core:dashboard")
+    finally:
+        cache.delete(lock)

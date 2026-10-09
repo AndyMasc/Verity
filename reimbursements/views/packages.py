@@ -13,7 +13,6 @@ from django.views import View
 from django.views.generic import DetailView, ListView
 from django_ratelimit.decorators import ratelimit
 
-from billing import features
 from core.apps import posthog_client
 
 from .. import services
@@ -182,7 +181,7 @@ def _clamp_days_valid(raw: Any) -> int:
 
 @method_decorator(ratelimit(key="user", rate="5/m", method="POST", block=True), name="dispatch")
 class CreatePackageFromRecordsView(LoginRequiredMixin, ReimbursementRequestRequiredMixin, View):
-    required_feature = features.QUICK_REIMBURSEMENT_REQUEST
+    required_feature = "reimbursement-creation"
 
     def post(self, request: HttpRequest) -> HttpResponse:
         if request.content_type and "application/json" in request.content_type:

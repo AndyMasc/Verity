@@ -16,16 +16,11 @@ from django.views.decorators.http import require_POST
 from django_ratelimit.decorators import ratelimit
 
 from billing.entitlements import has_feature
-from billing.features import RECORD_SHARING
 from core.apps import posthog_client
 from records.models import Record, RecordShare
 from Verity.views import parse_record_ids
 
 from .. import shares as share_services
-
-
-def _can_grant_shares(user) -> bool:
-    return has_feature(user, RECORD_SHARING)
 
 
 def _owned_record_or_404(request: HttpRequest, pk: int) -> Record:
@@ -43,12 +38,12 @@ class RecordSharingSectionView(LoginRequiredMixin, View):
     def get(self, request: HttpRequest, pk: int) -> HttpResponse:
         record = _owned_record_or_404(request, pk)
         is_owner = record.user_id == request.user.pk
-        can_share_feature = _can_grant_shares(request.user)
+        has_share_feature = has_feature(request.user, "record-sharing")
         context = {
             "record": record,
             "shares": share_services.shares_for_viewer(record=record, viewer=request.user),
-            "can_grant": can_share_feature and is_owner,
-            "can_share_feature": can_share_feature,
+            "can_grant": has_share_feature and is_owner,
+            "can_share_feature": has_share_feature,
             "is_recipient": not is_owner
             and RecordShare.objects.filter(record=record, user=request.user).exists(),
         }
@@ -67,7 +62,7 @@ class BulkShareView(LoginRequiredMixin, View):
 
     @method_decorator(ratelimit(key="user", rate="10/m", method="POST", block=True))
     def post(self, request: HttpRequest) -> HttpResponse:
-        if not _can_grant_shares(request.user):
+        if not has_feature(request.user, "record-sharing"):
             return JsonResponse({"error": "Record sharing requires the Pro plan"}, status=403)
 
         record_ids, error = parse_record_ids(request)

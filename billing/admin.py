@@ -1,10 +1,10 @@
 from django.contrib import admin
 
-from .models import CustomUser, ScanUsage
+from .models import CustomUser, MonthlyUploadUsage
 
 
-@admin.register(ScanUsage)
-class ScanUsageAdmin(admin.ModelAdmin):
+@admin.register(MonthlyUploadUsage)
+class MonthlyUploadUsageAdmin(admin.ModelAdmin):
     list_display = ("user", "period", "count")
     list_filter = ("period",)
     search_fields = ("user__email", "user__username")
@@ -19,7 +19,6 @@ class CustomUserAdmin(admin.ModelAdmin):
         "is_active",
         "is_staff",
         "is_superuser",
-        "storage_used_gb",
     )
     list_filter = ("is_active", "is_staff", "is_superuser")
     search_fields = ("email", "username")

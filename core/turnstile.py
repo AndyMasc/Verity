@@ -1,7 +1,4 @@
-"""Cloudflare Turnstile verification utilities.
-
-Provides server-side token verification for Turnstile CAPTCHA responses.
-"""
+"""Cloudflare Turnstile verification utilities. Provides server-side token verification for Turnstile CAPTCHA responses."""
 
 import logging
 import os

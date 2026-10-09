@@ -1,5 +1,4 @@
 """Forms for document upload and metadata editing.
-
 Provides validation for R2 presigned-URL uploads (filename, content type)
 and a ModelForm for updating document title, notes, and record association.
 """
@@ -64,8 +63,7 @@ class DocumentUpdateForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
-        # Scope the record picker to the current user's records so other
-        # users' record titles/ids are never enumerated.
+        # Scope the record picker to the current user's records so other users' record titles/ids are never enumerated.
         user = kwargs.pop("user", None)
         super().__init__(*args, **kwargs)
         self.fields["associated_record"].required = False

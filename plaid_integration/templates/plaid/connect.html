@@ -132,7 +132,7 @@
     </style>
 {% endblock extra_head %}
 {% block content %}
-    <div class="mx-auto max-w-9xl space-y-8 py-12 font-sans antialiased">
+    <div class="mx-auto max-w-7xl space-y-8 py-12 font-sans antialiased">
         <header class="flex flex-col justify-between gap-4 border-b border-zinc-200/80 pb-6 sm:flex-row sm:items-center dark:border-zinc-800/80">
             <div>
                 <h1 class="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-white">Connected Banks</h1>
@@ -171,7 +171,7 @@
                 <p class="mx-auto mt-1 max-w-sm text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
                     Automated transaction syncing is available exclusively on Pro plans.
                 </p>
-                <a href="{% url 'pricing_page' %}"
+                <a href="{% url 'billing:pricing_page' %}"
                    class="mt-6 inline-block rounded-full bg-zinc-900 px-5 py-2.5 text-xs font-medium text-zinc-50 transition-all hover:bg-zinc-800 active:scale-[0.98] dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white">
                     Upgrade to Pro
                 </a>

@@ -1,5 +1,4 @@
 """Cloudflare R2 (S3-compatible) storage operations for document files.
-
 Handles presigned URL generation, object existence verification, gatekeeper
 validation of uploaded files, and batched deletion of R2 objects.
 """
@@ -104,10 +103,8 @@ def get_r2_object_head(key: str) -> dict | None:
 
 def gatekeeper_validate_r2_object(key: str, head: dict | None = None) -> dict:
     """Validate an uploaded R2 object for size, emptiness, file type, and image dimensions.
-
     Rejects files that exceed size limits, are empty, have disallowed MIME types,
-    or contain images with excessively large pixel counts. Deletes invalid objects.
-    """
+    or contain images with excessively large pixel counts. Deletes invalid objects."""
     s3 = get_s3_client()
     if head is None:
         head = get_r2_object_head(key)
@@ -138,12 +135,7 @@ def gatekeeper_validate_r2_object(key: str, head: dict | None = None) -> dict:
 
 
 def validate_uploaded_bytes(content: bytes) -> str | None:
-    """Validate raw file bytes for size, emptiness, file type, and image dimensions.
-
-    Applies the same gatekeeper rules as "gatekeeper_validate_r2_object" but on
-    in-memory bytes, so the OCR worker can gate extraction without extra R2
-    round trips. Returns an error message, or None when the bytes pass.
-    """
+    """Validate raw file bytes for size, emptiness, file type, and image dimensions."""
     content_length = len(content)
     if content_length == 0 or content_length > MAX_FILE_SIZE:
         return _size_error(content_length)
@@ -159,7 +151,6 @@ def _size_error(content_length: int) -> str:
 
 def _validate_header(header_bytes: bytes, content_length: int) -> str | None:
     """Run MIME and image-dimension checks on a file's header bytes.
-
     Returns an error message, or None when the header passes all checks.
     """
     try:

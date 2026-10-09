@@ -7,7 +7,6 @@ optionally transitions the document from PENDING_UPLOAD to UPLOADED status.
 import logging
 from dataclasses import dataclass
 
-from billing.entitlements import can_add_storage, get_storage_limit
 from documents.models import DocumentData, DocumentStatus
 from documents.storage import get_r2_object_head
 from documents.validators import MAX_FILE_SIZE
@@ -110,18 +109,6 @@ class DocumentUploadService:
             return reject(
                 f"[Gatekeeper] File exceeds {limit_mb}MB limit.",
                 f"File exceeds {limit_mb}MB limit.",
-                422,
-            )
-
-        if (
-            transition
-            and file_size is not None
-            and not can_add_storage(self.document.user, file_size)
-        ):
-            limit_gb = get_storage_limit(self.document.user)
-            return reject(
-                f"[Storage] Upload rejected: storage limit ({limit_gb} GB) reached.",
-                f"Storage limit ({limit_gb} GB) reached.",
                 422,
             )
 

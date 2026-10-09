@@ -1,5 +1,5 @@
 # Build & Dependencies
-FROM python:3.13-slim-bookworm AS builder
+FROM python:3.14-slim-bookworm AS builder
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
@@ -24,7 +24,7 @@ RUN --mount=type=cache,target=/root/.cache/pip pip install -r requirements.txt
 
 
 # Runtime Production Image
-FROM python:3.13-slim-bookworm AS runner
+FROM python:3.14-slim-bookworm AS runner
 
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1

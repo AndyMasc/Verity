@@ -25,11 +25,7 @@ OCR_SLOT_POLL_SECONDS = 4
 
 
 def _wait_for_ocr_slot() -> None:
-    """Wait in line for the shared rate-limit bucket.
-
-    Queueing rather than failing fast avoids a retry storm when the OCR
-    backlog is deep. On timeout the message is handed back via a delayed Retry.
-    """
+    """Wait in line for the shared rate-limit bucket."""
     deadline = time.monotonic() + OCR_SLOT_WAIT_TIMEOUT_SECONDS
     while True:
         try:
@@ -48,12 +44,7 @@ def _wait_for_ocr_slot() -> None:
     max_backoff=300_000,
 )
 def extract_document(document_id: int) -> None:
-    """Run Gemini OCR on a document and auto-create a Record from the result.
-
-    The record is created from the persisted "ocr_raw_data" so it survives
-    even if the user closes the tab before the redirect. Merging with a Plaid
-    match (when warranted) happens inside "create_record_from_ocr".
-    """
+    """Run Gemini OCR on a document and auto-create a Record from the result."""
     _wait_for_ocr_slot()
     if "error" not in extract(document_id):
         from records.services import create_record_from_ocr

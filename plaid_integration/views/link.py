@@ -19,7 +19,6 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from billing import features
 from billing.entitlements import has_feature
 from billing.mixins import FeatureRequiredMixin
 from core.apps import posthog_client
@@ -54,7 +53,7 @@ def _link_token_request(user_id: int, access_token: str | None = None):
 @permission_classes([permissions.IsAuthenticated])
 def plaid_connect_page(request: Request) -> HttpResponse:
     """Render the bank connection management page for the authenticated user."""
-    if not has_feature(request.user, features.BANK_TRANSACTION_SYNC):
+    if not has_feature(request.user, "transaction-sync"):
         return render(
             request,
             "plaid/connect.html",
@@ -67,7 +66,7 @@ def plaid_connect_page(request: Request) -> HttpResponse:
 class CreateLinkTokenView(FeatureRequiredMixin, APIView):
     """Create a Plaid Link token for a new bank connection."""
 
-    required_feature = features.BANK_TRANSACTION_SYNC
+    required_feature = "transaction-sync"
     authentication_classes: ClassVar[list] = [authentication.SessionAuthentication]
     permission_classes: ClassVar[list] = [permissions.IsAuthenticated]
 
@@ -84,7 +83,7 @@ class CreateLinkTokenView(FeatureRequiredMixin, APIView):
 class CreateUpdateLinkTokenView(FeatureRequiredMixin, APIView):
     """Create a Plaid Link token to update credentials for an existing bank item."""
 
-    required_feature = features.BANK_TRANSACTION_SYNC
+    required_feature = "transaction-sync"
     authentication_classes: ClassVar[list] = [authentication.SessionAuthentication]
     permission_classes: ClassVar[list] = [permissions.IsAuthenticated]
 
@@ -108,7 +107,7 @@ class CreateUpdateLinkTokenView(FeatureRequiredMixin, APIView):
 class PublicTokenExchange(FeatureRequiredMixin, APIView):
     """Exchange a Plaid public token for a persistent access token."""
 
-    required_feature = features.BANK_TRANSACTION_SYNC
+    required_feature = "transaction-sync"
     authentication_classes: ClassVar[list] = [authentication.SessionAuthentication]
     permission_classes: ClassVar[list] = [permissions.IsAuthenticated]
 
@@ -139,7 +138,5 @@ class PublicTokenExchange(FeatureRequiredMixin, APIView):
 
             return Response({"success": "Bank linked successfully! Syncing transactions…"})
         except Exception:
-            logger.exception(  # Logger automatically captures exception details and forwards to Posthog.
-                "Failed to exchange public token for user %s", request.user.id
-            )
+            logger.exception("Failed to exchange public token for user %s", request.user.id)
             return Response({"error": "Failed to exchange token"}, status=400)

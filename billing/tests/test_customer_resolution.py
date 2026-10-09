@@ -58,7 +58,7 @@ class ResolveCustomerTests(TestCase):
             livemode=False,
             active=True,
             name="Pro",
-            metadata={"category": metadata.BASE_PLAN_CATEGORY},
+            metadata={"category": "base_plan"},
         )
         price = Price.objects.create(
             id="price_dupes", livemode=False, active=True, product=product, currency="usd"

@@ -214,34 +214,6 @@ class TestUploadServiceHandle:
         "documents.services.upload.generate_presigned_post",
         return_value="https://upload.url",
     )
-    def test_upload_above_storage_limit_rejected(self, mock_presign, user):
-        from billing.entitlements import get_storage_limit
-        from billing.features import BYTES_PER_GB
-
-        over = get_storage_limit(user) * BYTES_PER_GB + 1
-        DocumentData.objects.create(
-            user=user,
-            filepath="users/1/full.pdf",
-            file_hash=_make_hash(),
-            file_size=over,
-            status=DocumentStatus.UPLOADED,
-        )
-        request = HttpRequest()
-        request.content_type = "application/x-www-form-urlencoded"
-        request.POST = QueryDict(
-            "filename=new.pdf&file_hash=abc123&content_type=application/pdf&file_size=100"
-        )
-        request.user = user
-        svc = UploadService(request)
-        result = svc.handle()
-        assert result.status == "error"
-        assert "Storage limit reached" in result.error
-        mock_presign.assert_not_called()
-
-    @patch(
-        "documents.services.upload.generate_presigned_post",
-        return_value="https://upload.url",
-    )
     def test_upload_within_storage_limit_allowed(self, mock_presign, user):
         request = HttpRequest()
         request.content_type = "application/x-www-form-urlencoded"
@@ -257,23 +229,22 @@ class TestUploadServiceHandle:
         "documents.services.upload.generate_presigned_post",
         return_value="https://upload.url",
     )
-    def test_upload_unknown_file_size_checks_exceeded_only(self, mock_presign, user):
-        from billing.entitlements import get_storage_limit
-        from billing.features import BYTES_PER_GB
-
-        over = get_storage_limit(user) * BYTES_PER_GB + 1
-        DocumentData.objects.create(
-            user=user,
-            filepath="users/1/full.pdf",
-            file_hash=_make_hash(),
-            file_size=over,
-            status=DocumentStatus.UPLOADED,
+    def test_upload_over_monthly_allowance_is_rejected(self, mock_presign, user):
+        from billing.entitlements import (
+            get_monthly_upload_count,
+            get_monthly_upload_limit,
+            record_monthly_upload_usage,
         )
+
+        for _ in range(get_monthly_upload_limit(user, "upload")):
+            record_monthly_upload_usage(user, "upload")
+        assert get_monthly_upload_count(user, "upload") == get_monthly_upload_limit(user, "upload")
+
         request = HttpRequest()
         request.content_type = "application/x-www-form-urlencoded"
         request.POST = QueryDict("filename=new.pdf&file_hash=abc123&content_type=application/pdf")
         request.user = user
-        svc = UploadService(request)
-        result = svc.handle()
+        result = UploadService(request).handle()
+
         assert result.status == "error"
-        assert "Storage limit reached" in result.error
+        assert "Upload limit reached" in result.error

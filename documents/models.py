@@ -90,12 +90,7 @@ class DocumentDataManager(models.Manager.from_queryset(DocumentDataQuerySet)):
 
 
 class DocumentData(models.Model):
-    """Represents an uploaded document file and its processing metadata.
-
-    Documents track a file from initial upload through optional OCR extraction,
-    linking to a Record once processed. Deleting a document is permanent; there
-    is no trash or undo step.
-    """
+    """Represents an uploaded document file and its processing metadata."""
 
     id = models.BigAutoField(primary_key=True)
     title = models.CharField(max_length=200, default="Untitled")

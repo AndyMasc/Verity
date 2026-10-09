@@ -1,14 +1,11 @@
-"""Service layer for Stripe billing operations.
-
-Keeps raw Stripe API calls out of models and views so they are mocked and
-tested in one place, and always use djstripe's mode-aware secret key.
-"""
+"""Service layer for Stripe billing operations."""
 
 import logging
 from copy import copy
 
 import stripe
-from django.db.models import Prefetch
+from django.db.models import Count, F
+from django.http import HttpRequest, HttpResponseBadRequest
 from djstripe.models import Customer, Price, Product
 from djstripe.settings import djstripe_settings
 
@@ -21,178 +18,122 @@ def _configure() -> None:
     stripe.api_key = djstripe_settings.STRIPE_SECRET_KEY
 
 
-def retrieve_subscription(subscription_id: str) -> dict:
-    """Fetch the latest Stripe subscription payload for the given ID."""
-    _configure()
-    return stripe.Subscription.retrieve(str(subscription_id))
-
-
-def retrieve_checkout_session(session_id: str) -> stripe.checkout.Session:
-    """Fetch a Stripe checkout Session payload for the given ID."""
-    _configure()
-    return stripe.checkout.Session.retrieve(session_id)
-
-
-def create_checkout_session(
-    *,
-    customer: str,
-    line_items: list[dict],
-    success_url: str,
-    cancel_url: str,
-    client_reference_id: str | None = None,
-    idempotency_key: str | None = None,
-) -> stripe.checkout.Session:
-    """Create a Stripe subscription checkout session."""
-    _configure()
-    kwargs = {
-        "customer": customer,
-        "line_items": line_items,
-        "mode": "subscription",
-        "success_url": success_url,
-        "cancel_url": cancel_url,
-    }
-    # Identifies the buyer on the session so webhooks can attribute the event back to a user even when the customer row is not linked yet.
-    if client_reference_id is not None:
-        kwargs["client_reference_id"] = client_reference_id
-    if idempotency_key is not None:
-        kwargs["idempotency_key"] = idempotency_key
-    return stripe.checkout.Session.create(**kwargs)
-
-
-def create_billing_portal_session(
-    *, customer: str, return_url: str
-) -> stripe.billing_portal.Session:
-    """Create a Stripe billing portal session."""
-    _configure()
-    return stripe.billing_portal.Session.create(customer=customer, return_url=return_url)
-
-
-def get_metered_subscription_item(user, metered_price_id: str) -> str | None:
-    """Return the item id for "metered_price_id" on the user's subscription, or None."""
-
-    _configure()
-    if not metered_price_id or not user.has_active_subscription:
-        return None
-    subscription = retrieve_subscription(user.subscription.id)
-    for item in subscription.get("items", {}).get("data", []):
-        price = item.get("price")
-        price_id = price.get("id") if isinstance(price, dict) else price
-        if price_id == metered_price_id:
-            return item.get("id")
-    return None
-
-
-def cancel_subscription(subscription_id: str) -> None:
-    """Cancel a Stripe subscription, logging failures for the caller."""
-    _configure()
-    stripe.Subscription.cancel(subscription_id)
-
-
-def retrieve_customer(customer_id: str):
-    """Return the Stripe customer, or None when it no longer exists."""
-    _configure()
-    try:
-        return stripe.Customer.retrieve(customer_id)
-    except stripe.error.InvalidRequestError:
+def resolve_customer(user):
+    linked = list(Customer.objects.filter(subscriber=user).annotate(subs=Count("subscriptions")))
+    if not linked:
         return None
 
+    keep = next((c for c in linked if c.pk == user.customer_id), None) or max(
+        linked, key=lambda c: (c.subs, c.pk)
+    )
+    for cust in linked:
+        if cust.pk != keep.pk:
+            cust.subscriber = None
+            cust.save(update_fields=["subscriber"])
+    return keep
 
-# A Checkout Session is settled when Stripe has taken payment, and also when there was
-# nothing to take: a metered-only order bills in arrears from reported usage, and a fully
-# discounted order is settled on creation. Both are successful checkouts.
-SETTLED_PAYMENT_STATUSES = frozenset({"paid", "no_payment_required"})
 
+def fetch_line_items(
+    request: HttpRequest, quantity: int = 1
+) -> list[dict] | HttpResponseBadRequest:
+    """Fetch Price objects for the selected price IDs in the request."""
+    price_ids = request.POST.getlist("price_ids")
+    products = Price.objects.filter(
+        id__in=price_ids,
+        active=True,
+        livemode=getattr(djstripe_settings, "STRIPE_LIVE_MODE", False),
+    ).select_related("product")
 
-def resolve_customer(user) -> Customer:
-    """Return the user's Stripe Customer, creating or reconciling one as needed.
-
-    dj-stripe's Customer.get_or_create() calls .get(subscriber=user), which raises
-    MultipleObjectsReturned as soon as more than one Customer row points at the user.
-    That happens with historical data and with concurrent checkouts, and it made
-    checkout fail outright.
-
-    This keeps the invariant the 0006 data migration established: only the Customer the
-    user's own FK points at may keep "subscriber" set. The survivor is that FK row when
-    it is still linked, otherwise whichever candidate actually holds subscriptions.
-    """
-    own = getattr(user, "customer", None)
-    linked = list(Customer.objects.filter(subscriber=user).order_by("-djstripe_updated"))
-
-    if own is not None and any(customer.pk == own.pk for customer in linked):
-        chosen = own
-    elif linked:
-        chosen = next(
-            (customer for customer in linked if customer.subscriptions.exists()),
-            linked[0],
+    categories = {metadata.product_category(price.product) for price in products}
+    if not categories or len(categories) != len(products):
+        return HttpResponseBadRequest(
+            "Select a valid plan, or, deselect duplicate products from the same category."
         )
-    else:
-        customer, _created = Customer.get_or_create(user)
-        return customer
+    metas = {
+        price.id: ProductMetadata
+        for price in products
+        if (ProductMetadata := metadata.PRODUCTS.get(price.product.id))
+    }
 
-    stale = [customer for customer in linked if customer.pk != chosen.pk]
-    if stale:
-        Customer.objects.filter(pk__in=[customer.pk for customer in stale]).update(subscriber=None)
-    if user.customer_id != chosen.pk:
-        user.customer = chosen
-        user.save(update_fields=["customer"])
-    return chosen
+    licensed, metered = [], []
+    for price_id in dict.fromkeys(price_ids):
+        if price_id in metas:
+            (metered if metas[price_id].metered else licensed).append(price_id)
 
+    # A licensed line item must carry a quantity; a metered one must not.
+    line_items = [{"price": price_id, "quantity": quantity} for price_id in licensed]
+    line_items += [{"price": price_id} for price_id in metered]
 
-def customer_missing_in_stripe(customer_id: str) -> bool:
-    """Return True when a stored customer ID no longer exists in Stripe."""
-    if not customer_id:
-        return True
-    remote = retrieve_customer(customer_id)
-    if remote is None:
-        return True
-    return bool(getattr(remote, "deleted", False))
+    if not line_items:
+        return HttpResponseBadRequest("Select a valid plan.")
+
+    return line_items
 
 
-def _checkout_price_id(product: Product) -> str | None:
-    """Return the price id to submit at checkout for a product, or None."""
-    candidates = [
-        price
-        for price in product.prices.all()
-        if price.active and price.recurring and price.recurring.get("interval") == "month"
-    ]
-    if not candidates:
-        return None
-    newest = max(candidates, key=lambda price: price.djstripe_created)
-    return newest.id
+def sanitize_line_items(subscription, line_items: list[dict]) -> list[dict]:
+    """Clear stale line items from the subscription and return a list of items to send to Stripe."""
+    held_items = metadata.live_items(subscription) if subscription else []
 
+    category_to_held_items: dict[str, list] = {}
+    for item in held_items:
+        if not item.price:
+            continue
+        category = metadata.product_category(item.price.product)
+        if category:
+            category_to_held_items.setdefault(category, []).append(item)
 
-def _decorate_product_for_pricing(product, *, held_product_ids):
-    """Attach display metadata used by the pricing cards and checkout UI."""
-    meta = metadata.PRODUCTS.get(product.id)
-    product.category = metadata.product_category(product)
-    product.features_list = meta.features if meta else []
-    product.checkout_price_id = _checkout_price_id(product)
-    product.already_active = product.id in held_product_ids
+    held_price_ids = {item.price.id for item in held_items if item.price}
+
+    incoming_price_ids = {item["price"] for item in line_items}
+    incoming_price_categories = {
+        price.id: metadata.product_category(price.product)
+        for price in Price.objects.filter(id__in=incoming_price_ids).select_related("product")
+    }
+
+    sanitized_line_items = []
+    for item in line_items:
+        price = item["price"]
+        category = incoming_price_categories.get(price)
+
+        for held_item in category_to_held_items.get(category, []):
+            if held_item.price.id == price:
+                sanitized_line_items.append({"id": held_item.id})
+            else:
+                sanitized_line_items.append({"id": held_item.id, "deleted": True})
+
+        if price not in held_price_ids:
+            sanitized_line_items.append({"price": price})
+
+    return sanitized_line_items
 
 
 def pricing_context(user) -> dict:
     """Build the pricing data shared by the pricing page and the landing page."""
     live = djstripe_settings.STRIPE_LIVE_MODE
-    products = list(
-        Product.objects.filter(active=True, livemode=live).prefetch_related(
-            Prefetch("prices", queryset=Price.objects.filter(active=True, livemode=live))
-        )
+    catalog = list(Product.objects.filter(active=True, livemode=live))
+
+    prices = Price.objects.filter(product__in=catalog, active=True, livemode=live).order_by(
+        F("djstripe_created").desc(nulls_last=True), "-djstripe_id"
     )
-    held_product_ids = {meta.stripe_id for meta in metadata.active_products_for_user(user)}
 
-    for product in products:
-        _decorate_product_for_pricing(product, held_product_ids=held_product_ids)
+    checkout_price: dict[str, Price] = {}
+    for price in prices:
+        if (price.stripe_data or {}).get("recurring", {}).get("interval") == "month":
+            checkout_price.setdefault(price.product_id, price)
 
-    free_plan = copy(metadata.VERITY_FREE)
-    free_plan.features_list = free_plan.features
-    free_plan.prices = []
-    free_plan.checkout_price_id = None
-    free_plan.already_active = True
-    products.insert(0, free_plan)
+    free = copy(metadata.VERITY_FREE)
+    free.features_list = list(free.features)
+
+    held_ids = set(metadata.held_products(user))
+
+    for product in catalog:
+        product.checkout_price = checkout_price.get(product.id)
+        product.checkout_price_id = getattr(product.checkout_price, "id", None)
+        product.already_active = product.id in held_ids
+
+    products = [free, *catalog]
 
     return {
         "products": products,
-        "free_plan": free_plan,
-        "has_active_subscription": bool(user.is_authenticated and user.has_active_subscription),
-        "base_plans": products,
+        "has_active_subscription": bool(getattr(user, "has_active_subscription", False)),
     }

@@ -1,13 +1,4 @@
-"""Anonymous access control for every authenticated view.
-
-This was twenty-one copies of the same two lines, one per view test class, with
-the assertion drifting between a strict 302 and a loose 302/300. A new protected
-view now gets one row here instead of a new copy of the pattern, and the whole
-set is visible in one place.
-
-Views that scope to an object are listed against a record or document created in
-setUp; the row only has to say which one.
-"""
+"""Anonymous access control for every authenticated view."""
 
 import pytest
 from django.test import Client

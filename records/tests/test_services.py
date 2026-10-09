@@ -243,12 +243,10 @@ class KickoffOCRScanTest(TestCase):
         mock_send.assert_called_once_with(self.doc.id)
 
     def test_returns_warning_when_scan_limit_reached(self):
-        from django.utils import timezone
+        from billing.entitlements import record_monthly_upload_usage
 
-        from billing.models import ScanUsage
-
-        period = timezone.now().strftime("%Y-%m")
-        ScanUsage.objects.create(user=self.user, period=period, count=30)
+        for _ in range(30):
+            record_monthly_upload_usage(self.user, "scan")
         warning = kickoff_ocr_scan(self.user, self.doc)
         self.assertIsNotNone(warning)
         self.assertIn("limit", warning.lower())

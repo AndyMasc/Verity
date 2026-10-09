@@ -43,30 +43,20 @@ class HandleSubscriptionDeletedTests(TestCase):
             email="deleted@example.com",
             password="password",
         )
-        self.user.subscription = self.subscription
-        self.user.save()
-
-    def test_clears_user_subscription(self):
-        with self.captureOnCommitCallbacks(execute=True):
-            handle_subscription_deleted(
-                event=_fake_event("customer.subscription.deleted", "sub_deleted")
-            )
-        self.user.refresh_from_db()
-        self.assertIsNone(self.user.subscription_id)
+        self.customer.subscriber = self.user
+        self.customer.save(update_fields=["subscriber"])
 
     def test_noop_when_event_missing(self):
         with self.captureOnCommitCallbacks(execute=True):
             handle_subscription_deleted()
-        self.user.refresh_from_db()
-        self.assertEqual(self.user.subscription_id, self.subscription.djstripe_id)
+        self.assertTrue(Subscription.objects.filter(id="sub_deleted").exists())
 
     def test_noop_when_subscription_unknown(self):
         with self.captureOnCommitCallbacks(execute=True):
             handle_subscription_deleted(
                 event=_fake_event("customer.subscription.deleted", "sub_does_not_exist")
             )
-        self.user.refresh_from_db()
-        self.assertEqual(self.user.subscription_id, self.subscription.djstripe_id)
+        self.assertTrue(Subscription.objects.filter(id="sub_deleted").exists())
 
 
 class HandleSubscriptionCancellationTrackingTests(TestCase):
