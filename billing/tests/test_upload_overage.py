@@ -67,7 +67,7 @@ class SyncUploadOverageTests(TestCase):
 
     def test_event_carries_customer_and_event_name(self):
         self._subscribe(metadata.USAGE_BASED_STORAGE.stripe_id)
-        limit = entitlements.get_monthly_upload_limit(self.user, "upload")
+        limit = metadata.plan_for_user(self.user).monthly_upload_limit
 
         create_event = self._over(limit + 1)
 
@@ -79,7 +79,7 @@ class SyncUploadOverageTests(TestCase):
 
     def test_reported_value_is_the_overage(self):
         self._subscribe(metadata.USAGE_BASED_STORAGE.stripe_id)
-        limit = entitlements.get_monthly_upload_limit(self.user, "upload")
+        limit = metadata.plan_for_user(self.user).monthly_upload_limit
 
         create_event = self._over(limit + 7)
 
@@ -87,7 +87,7 @@ class SyncUploadOverageTests(TestCase):
 
     def test_within_allowance_sends_nothing(self):
         self._subscribe(metadata.USAGE_BASED_STORAGE.stripe_id)
-        limit = entitlements.get_monthly_upload_limit(self.user, "upload")
+        limit = metadata.plan_for_user(self.user).monthly_upload_limit
 
         self.assertEqual(self._over(limit).call_count, 0)
 

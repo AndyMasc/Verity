@@ -103,7 +103,7 @@ def held_products(user) -> dict[str, ProductMetadata]:
 
 
 def plan_for_user(user) -> ProductMetadata:
-    """The user's plan, or Free. Metered add-ons are not plans."""
+    """The user's plan, or Free. Metered add-ons are excluded."""
     return next((m for m in held_products(user).values() if not m.metered), VERITY_FREE)
 
 

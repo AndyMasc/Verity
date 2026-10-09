@@ -6,7 +6,7 @@ from django.utils import timezone
 from djstripe.models import Subscription
 from periodiq import cron
 
-from billing.entitlements import get_monthly_upload_count, get_monthly_upload_limit
+from billing.entitlements import get_monthly_upload_count
 
 from . import metadata
 from .services import _configure
@@ -35,7 +35,7 @@ def sync_upload_overage_to_stripe():
             continue
         user = subscription.customer.subscriber
 
-        limit = get_monthly_upload_limit(user, "upload")
+        limit = metadata.plan_for_user(user).monthly_upload_limit
         if limit is None:
             continue
 
