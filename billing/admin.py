@@ -1,10 +1,10 @@
 from django.contrib import admin
 
-from .models import CustomUser, MonthlyUsage
+from .models import CustomUser, MonthlyUploadUsage
 
 
-@admin.register(MonthlyUsage)
-class MonthlyUsageAdmin(admin.ModelAdmin):
+@admin.register(MonthlyUploadUsage)
+class MonthlyUploadUsageAdmin(admin.ModelAdmin):
     list_display = ("user", "period", "count")
     list_filter = ("period",)
     search_fields = ("user__email", "user__username")

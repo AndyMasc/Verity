@@ -24,7 +24,7 @@ class CustomUser(AbstractUser):
         return bool(metadata.active_subscriptions(self))
 
 
-class MonthlyUsage(models.Model):
+class MonthlyUploadUsage(models.Model):
     """Per-calendar-month counter for a rate-limited action."""
 
     user = models.ForeignKey(

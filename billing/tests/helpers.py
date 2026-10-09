@@ -91,9 +91,9 @@ def give_pro_subscription(user) -> Subscription:
         },
     )
     for lookup_key in (
-        features.RECORD_SHARING_KEY,
-        features.TRANSACTION_SYNC_KEY,
-        features.REIMBURSEMENT_CREATION_KEY,
+        "record-sharing",
+        "transaction-sync",
+        "reimbursement-creation",
     ):
         feature, _ = Feature.objects.get_or_create(
             id=f"feat_{lookup_key}",

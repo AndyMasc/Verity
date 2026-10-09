@@ -231,14 +231,14 @@ class TestUploadServiceHandle:
     )
     def test_upload_over_monthly_allowance_is_rejected(self, mock_presign, user):
         from billing.entitlements import (
-            get_monthly_count,
-            get_monthly_limit,
-            record_monthly_use,
+            get_monthly_upload_count,
+            get_monthly_upload_limit,
+            record_monthly_upload_usage,
         )
 
-        for _ in range(get_monthly_limit(user, "upload")):
-            record_monthly_use(user, "upload")
-        assert get_monthly_count(user, "upload") == get_monthly_limit(user, "upload")
+        for _ in range(get_monthly_upload_limit(user, "upload")):
+            record_monthly_upload_usage(user, "upload")
+        assert get_monthly_upload_count(user, "upload") == get_monthly_upload_limit(user, "upload")
 
         request = HttpRequest()
         request.content_type = "application/x-www-form-urlencoded"

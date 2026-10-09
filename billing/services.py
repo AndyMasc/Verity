@@ -56,7 +56,7 @@ def fetch_line_items(
     }
 
     licensed, metered = [], []
-    for price_id in price_ids:
+    for price_id in dict.fromkeys(price_ids):
         if price_id in metas:
             (metered if metas[price_id].metered else licensed).append(price_id)
 
@@ -74,13 +74,15 @@ def sanitize_line_items(subscription, line_items: list[dict]) -> list[dict]:
     """Clear stale line items from the subscription and return a list of items to send to Stripe."""
     held_items = metadata.live_items(subscription) if subscription else []
 
-    held_by_category: dict[str, list] = {}
-    for held_item in held_items:
-        if not held_item.price:
+    category_to_held_items: dict[str, list] = {}
+    for item in held_items:
+        if not item.price:
             continue
-        category = metadata.product_category(held_item.price.product)
+        category = metadata.product_category(item.price.product)
         if category:
-            held_by_category.setdefault(category, []).append(held_item)
+            category_to_held_items.setdefault(category, []).append(item)
+
+    held_price_ids = {item.price.id for item in held_items if item.price}
 
     incoming_price_ids = {item["price"] for item in line_items}
     incoming_price_categories = {
@@ -89,30 +91,18 @@ def sanitize_line_items(subscription, line_items: list[dict]) -> list[dict]:
     }
 
     sanitized_line_items = []
-    emitted_ids: set[str] = set()
     for item in line_items:
         price = item["price"]
-        category_items = held_by_category.get(incoming_price_categories.get(price), [])
+        category = incoming_price_categories.get(price)
 
-        keep = next(
-            (
-                held
-                for held in category_items
-                if held.price.id == price and held.id not in emitted_ids
-            ),
-            None,
-        )
-        if keep is None:
+        for held_item in category_to_held_items.get(category, []):
+            if held_item.price.id == price:
+                sanitized_line_items.append({"id": held_item.id})
+            else:
+                sanitized_line_items.append({"id": held_item.id, "deleted": True})
+
+        if price not in held_price_ids:
             sanitized_line_items.append({"price": price})
-        else:
-            emitted_ids.add(keep.id)
-            sanitized_line_items.append({"id": keep.id})
-
-        for held_item in category_items:
-            if held_item.id in emitted_ids:
-                continue
-            emitted_ids.add(held_item.id)
-            sanitized_line_items.append({"id": held_item.id, "deleted": True})
 
     return sanitized_line_items
 

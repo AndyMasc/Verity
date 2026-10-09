@@ -72,7 +72,7 @@ class SyncUploadOverageTests(TestCase):
         create_event = self._over(limit + 1)
 
         self.assertEqual(create_event.call_count, 1)
-        self.assertEqual(create_event.call_args.kwargs["event_name"], "document_uploads")
+        self.assertEqual(create_event.call_args.kwargs["event_name"], "upload_overage")
         self.assertEqual(
             create_event.call_args.kwargs["payload"]["stripe_customer_id"], self.customer.id
         )

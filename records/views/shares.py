@@ -15,7 +15,6 @@ from django.views import View
 from django.views.decorators.http import require_POST
 from django_ratelimit.decorators import ratelimit
 
-from billing import features
 from billing.entitlements import has_feature
 from core.apps import posthog_client
 from records.models import Record, RecordShare
@@ -39,7 +38,7 @@ class RecordSharingSectionView(LoginRequiredMixin, View):
     def get(self, request: HttpRequest, pk: int) -> HttpResponse:
         record = _owned_record_or_404(request, pk)
         is_owner = record.user_id == request.user.pk
-        has_share_feature = has_feature(request.user, features.RECORD_SHARING_KEY)
+        has_share_feature = has_feature(request.user, "record-sharing")
         context = {
             "record": record,
             "shares": share_services.shares_for_viewer(record=record, viewer=request.user),
@@ -63,7 +62,7 @@ class BulkShareView(LoginRequiredMixin, View):
 
     @method_decorator(ratelimit(key="user", rate="10/m", method="POST", block=True))
     def post(self, request: HttpRequest) -> HttpResponse:
-        if not has_feature(request.user, features.RECORD_SHARING_KEY):
+        if not has_feature(request.user, "record-sharing"):
             return JsonResponse({"error": "Record sharing requires the Pro plan"}, status=403)
 
         record_ids, error = parse_record_ids(request)

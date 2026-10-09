@@ -15,7 +15,11 @@ from typing import Any
 from django.db import transaction
 from django.http import HttpRequest
 
-from billing.entitlements import can_upload, get_monthly_limit, record_monthly_use
+from billing.entitlements import (
+    can_upload,
+    get_monthly_upload_limit,
+    record_monthly_upload_usage,
+)
 from documents.forms import R2UploadForm
 from documents.models import DocumentData, DocumentStatus
 from documents.storage import generate_presigned_post, generate_upload_key
@@ -94,7 +98,7 @@ class UploadService:
                 return self._duplicate_result(existing)
 
         if not can_upload(self.user):
-            limit = get_monthly_limit(self.user, "upload")
+            limit = get_monthly_upload_limit(self.user, "upload")
             return PresignResult(
                 status="error",
                 error=f"Upload limit reached ({limit}/month). Upgrade for more.",
@@ -116,7 +120,7 @@ class UploadService:
             )
 
         upload_url = generate_presigned_post(key, content_type)
-        record_monthly_use(self.user, "upload")
+        record_monthly_upload_usage(self.user, "upload")
 
         return PresignResult(
             status="upload_url",

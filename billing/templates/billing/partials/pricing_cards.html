@@ -1,6 +1,4 @@
-<header class="relative mx-auto mb-10 max-w-xl text-center">
-    <div class="pointer-events-none absolute -top-20 left-1/2 -z-10 h-56 w-80 -translate-x-1/2 rounded-full bg-indigo-500/10 blur-3xl dark:bg-indigo-500/15">
-    </div>
+<header class="relative mx-auto mt-5 mb-10 max-w-xl text-center">
     <div class="inline-flex items-center gap-2 rounded-full text-[11px] font-bold tracking-wide text-[#5B66FF] uppercase">
         Plans & Pricing
     </div>
@@ -29,14 +27,14 @@
             {% with price_id=product.checkout_price_id category=product.stripe_data.metadata.category %}
                 <div {% if price_id and not product.already_active %}@click="togglePrice('{{ price_id }}', '{{ category|escapejs }}')"{% endif %}
                      :class="selectedPrices.includes('{{ price_id }}') ? 'border-indigo-500/50 ring-1 ring-indigo-500/30 bg-indigo-50/30 dark:bg-indigo-950/20 dark:border-indigo-500/40 shadow-xs' : 'border-zinc-200/90 bg-white/70 dark:border-zinc-800/80 dark:bg-zinc-900/40 hover:border-zinc-300 dark:hover:border-zinc-700/80 hover:bg-white dark:hover:bg-zinc-900/70 shadow-xs'"
-                     class="hover:scale-101 hover:shadow-xl group relative flex flex-col justify-between rounded-3xl border p-6 backdrop-blur-md transition-all duration-200 w-full overflow-hidden {% if price_id and not product.already_active %}cursor-pointer{% else %}cursor-default{% endif %}">
+                     class="hover:scale-101 hover:shadow-xl group relative flex flex-col justify-between rounded-3xl border p-7 backdrop-blur-md transition-all duration-200 w-full overflow-hidden {% if price_id and not product.already_active %}cursor-pointer{% else %}cursor-default{% endif %}">
                     <div class="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-indigo-500/30 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 {% if product.stripe_data.metadata.recommended %}opacity-100{% endif %}">
                     </div>
                     <div>
                         <div class="mb-4 flex items-center justify-between">
                             <h3 class="text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">{{ product.name }}</h3>
                             {% if product.metadata.recommended %}
-                                <span class="inline-flex items-center gap-1 rounded-full border border-indigo-500/20 bg-indigo-500/10 px-2 py-0.5 text-[10px] font-medium text-indigo-600 dark:border-indigo-400/20 dark:bg-indigo-400/10 dark:text-indigo-300">
+                                <span class="inline-flex items-center gap-1 rounded-full border border-indigo-500/20 bg-indigo-500/10 px-2 py-0.5 text-[10px] font-medium tracking-wider text-indigo-600 uppercase dark:border-indigo-400/20 dark:bg-indigo-400/10 dark:text-indigo-300">
                                     Recommended
                                 </span>
                             {% endif %}
@@ -72,30 +70,30 @@
                             <p class="mt-2 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">{{ product.description|linebreaksbr }}</p>
                         </div>
                         <div class="mb-6 space-y-3">
-                            <ul class="space-y-2.5 text-xs font-normal text-zinc-600 dark:text-zinc-300">
+                            <ul class="space-y-2.5 text-xs font-normal">
                                 {% for feature in product.stripe_data.marketing_features %}
                                     <li class="flex items-start gap-2.5">
-                                        <svg class="mt-0.5 h-3.5 w-3.5 shrink-0 text-indigo-600 dark:text-indigo-400"
+                                        <svg class="mt-0.5 h-3.5 w-3.5 shrink-0 rounded-full bg-indigo-500/30 p-0.5 text-indigo-600 dark:text-indigo-300"
                                              fill="none"
                                              viewBox="0 0 24 24"
                                              stroke="currentColor"
                                              stroke-width="2.5">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                                         </svg>
-                                        <span class="leading-relaxed text-zinc-700 dark:text-zinc-300">{{ feature.name }}</span>
+                                        <span class="leading-relaxed text-black dark:text-white">{{ feature.name }}</span>
                                     </li>
                                 {% empty %}
                                     <!-- Only needed for free plan - other plans are set with marketing features in Stripe -->
                                     {% for feature in product.features_list %}
                                         <li class="flex items-start gap-2.5">
-                                            <svg class="mt-0.5 h-3.5 w-3.5 shrink-0 text-indigo-600 dark:text-indigo-400"
+                                            <svg class="mt-0.5 h-3.5 w-3.5 shrink-0 rounded-full bg-indigo-500/30 p-0.5 text-indigo-600 dark:text-indigo-300"
                                                  fill="none"
                                                  viewBox="0 0 24 24"
                                                  stroke="currentColor"
                                                  stroke-width="2.5">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                                             </svg>
-                                            <span class="leading-relaxed text-zinc-700 dark:text-zinc-300">{{ feature }}</span>
+                                            <span class="leading-relaxed text-black dark:text-white">{{ feature }}</span>
                                         </li>
                                     {% endfor %}
                                 {% endfor %}
@@ -105,20 +103,18 @@
                     <div>
                         {% if price_id %}
                             <p class="mt-3 mb-2 text-right text-xs text-zinc-500 dark:text-zinc-500">category: {{ category }}</p>
-                            <div class="mt-auto border-t border-zinc-200/70 pt-3 dark:border-zinc-800/80">
-                                {% if product.already_active %}
-                                    <div class="w-full cursor-not-allowed rounded-4xl border border-zinc-200/60 bg-zinc-100/50 px-3 py-2 text-center text-xs text-zinc-400 dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-500">
-                                        <span class="font-normal">Current plan</span>
-                                    </div>
-                                {% else %}
-                                    <button type="button"
-                                            @click.stop="togglePrice('{{ price_id }}', '{{ category|escapejs }}')"
-                                            :class="selectedPrices.includes('{{ price_id }}') ? 'bg-indigo-600 text-white' : 'bg-black hover:bg-zinc-800 text-white dark:text-black dark:bg-white dark:hover:bg-zinc-200'"
-                                            class="w-full rounded-4xl px-3 py-2 text-center text-xs font-medium tracking-tight transition-all duration-150">
-                                        <span x-text="selectedPrices.includes('{{ price_id }}') ? 'Selected' : 'Select Plan'"></span>
-                                    </button>
-                                {% endif %}
-                            </div>
+                            {% if product.already_active %}
+                                <div class="w-full cursor-not-allowed rounded-4xl border border-zinc-200/60 bg-zinc-100/50 px-3 py-2 text-center text-xs text-zinc-400 dark:border-zinc-900 dark:bg-zinc-900/50 dark:text-zinc-500">
+                                    <span class="font-normal">Current plan</span>
+                                </div>
+                            {% else %}
+                                <button type="button"
+                                        @click.stop="togglePrice('{{ price_id }}', '{{ category|escapejs }}')"
+                                        :class="selectedPrices.includes('{{ price_id }}') ? 'bg-indigo-600 text-white' : 'bg-black hover:bg-zinc-800 text-white dark:text-black dark:bg-white dark:hover:bg-zinc-200'"
+                                        class="w-full rounded-4xl px-3 py-2 text-center text-xs font-medium tracking-tight transition-all duration-150">
+                                    <span x-text="selectedPrices.includes('{{ price_id }}') ? 'Selected' : 'Select Plan'"></span>
+                                </button>
+                            {% endif %}
                         {% endif %}
                     </div>
                 </div>
@@ -134,9 +130,8 @@
                         :disabled="selectedPlanCount === 0"
                         id="update-subscription-button"
                         :class="(selectedPlanCount === 0) ? 'cursor-not-allowed bg-zinc-100 text-zinc-400 border border-zinc-200 dark:bg-zinc-800/50 dark:text-zinc-600 dark:border-zinc-900' : 'bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white border border-zinc-900 dark:border-zinc-200 shadow-sm active:scale-[0.98]'"
-                        class="group inline-flex w-full max-w-xs items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold tracking-tight transition-all duration-200">
+                        class="group inline-flex w-full max-w-xs items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-semibold tracking-tight transition-all duration-200">
                     <span>Update subscription</span>
-                    <span x-text="selectedPlanCount > 0 ? `- ${selectedPlanCount} plan(s)` : ''"></span>
                     <svg class="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5"
                          fill="none"
                          stroke="currentColor"
@@ -166,7 +161,7 @@
                              x-transition:leave="ease-in duration-200"
                              x-transition:leave-start="opacity-100 scale-100 translate-y-0"
                              x-transition:leave-end="opacity-0 scale-95 translate-y-4"
-                             class="relative w-full max-w-lg overflow-hidden rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-2xl sm:p-8 dark:border-zinc-800 dark:bg-zinc-950">
+                             class="relative w-full max-w-lg overflow-hidden rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-2xl sm:p-8 dark:border-zinc-900 dark:bg-zinc-950">
                             <div class="pointer-events-none absolute -top-24 -right-24 h-48 w-48 rounded-full bg-zinc-200/50 blur-3xl dark:bg-zinc-800/40">
                             </div>
                             <div class="relative z-10 flex flex-col">
@@ -175,26 +170,21 @@
                                         <h3 class="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">Confirm Subscription Update</h3>
                                     </div>
                                 </div>
-                                <div class="space-y-4 py-4">
-                                    <div class="rounded-2xl border border-zinc-100 bg-zinc-50 p-4 dark:border-zinc-800/80 dark:bg-zinc-800/50">
-                                        <p class="text-sm leading-relaxed text-zinc-600 dark:text-zinc-300">
-                                            This product will be added to <span class="font-semibold text-zinc-900 underline decoration-zinc-300 underline-offset-4 dark:text-zinc-100 dark:decoration-zinc-700">{{ request.user.username }}</span>'s existing subscription item.
-                                        </p>
-                                    </div>
-                                    <p class="px-1 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
-                                        If your subscription has an active product in the same category, it will be replaced with this one. Otherwise, it will be bundled into your existing subscription.
+                                <div class="space-y-4">
+                                    <p class="px-1 text-sm leading-relaxed text-zinc-800 dark:text-zinc-400">
+                                        If your subscription has an active item in the same category, it will be replaced with this one. Otherwise, it will be bundled into your existing subscription.
                                     </p>
                                 </div>
-                                <div class="mt-2 flex flex-col-reverse gap-2.5 border-t border-zinc-100 pt-6 sm:flex-row sm:justify-end dark:border-zinc-800/60">
+                                <div class="mt-2 flex flex-col-reverse gap-2.5 pt-6 sm:flex-row sm:justify-end dark:border-zinc-800/60">
                                     <button @click="modalOpen=false"
                                             type="button"
-                                            class="inline-flex h-11 cursor-pointer items-center justify-center rounded-full border border-zinc-300 px-6 py-2.5 text-sm font-semibold text-zinc-700 transition-all hover:bg-zinc-100 active:scale-[0.98] dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800">
+                                            class="inline-flex cursor-pointer items-center justify-center rounded-full border border-zinc-300 px-6 py-2 text-sm font-semibold text-zinc-700 transition-all hover:bg-zinc-100 active:scale-[0.98] dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800">
                                         Cancel
                                     </button>
                                     <button @click="document.getElementById('checkout-form').submit()"
                                             type="button"
-                                            class="inline-flex h-11 cursor-pointer items-center justify-center rounded-full bg-zinc-900 px-6 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:bg-zinc-800 active:scale-[0.98] dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200">
-                                        Confirm & Continue
+                                            class="inline-flex cursor-pointer items-center justify-center rounded-full bg-zinc-900 px-6 py-2 text-sm font-semibold text-white shadow-md transition-all hover:bg-zinc-800 active:scale-[0.98] dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200">
+                                        Buy plan
                                     </button>
                                 </div>
                             </div>

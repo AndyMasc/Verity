@@ -56,25 +56,33 @@ class EntitlementTests(TestCase):
             metadata.plan_for_user(self.user).stripe_id, metadata.VERITY_FREE.stripe_id
         )
         self.assertEqual(metadata.granted_features(self.user), set())
-        self.assertFalse(entitlements.has_feature(self.user, features.TRANSACTION_SYNC_KEY))
+        self.assertFalse(entitlements.has_feature(self.user, "transaction-sync"))
 
     def test_pro_product_grants_its_attached_features(self):
-        self._attach_feature(metadata.VERITY_PRO.stripe_id, features.TRANSACTION_SYNC_KEY)
-        self._attach_feature(metadata.VERITY_PRO.stripe_id, features.RECORD_SHARING_KEY)
+        self._attach_feature(metadata.VERITY_PRO.stripe_id, "transaction-sync")
+        self._attach_feature(metadata.VERITY_PRO.stripe_id, "record-sharing")
         self._add_subscription(status="active", product_id=metadata.VERITY_PRO.stripe_id)
 
         self.assertEqual(metadata.plan_for_user(self.user).stripe_id, metadata.VERITY_PRO.stripe_id)
         self.assertEqual(
             metadata.granted_features(self.user),
-            {features.TRANSACTION_SYNC_KEY, features.RECORD_SHARING_KEY},
+            {"transaction-sync", "record-sharing"},
         )
-        self.assertTrue(entitlements.has_feature(self.user, features.TRANSACTION_SYNC_KEY))
-        self.assertTrue(entitlements.has_feature(self.user, features.RECORD_SHARING_KEY))
+        self.assertTrue(entitlements.has_feature(self.user, "transaction-sync"))
+        self.assertTrue(entitlements.has_feature(self.user, "record-sharing"))
 
     def test_feature_on_a_product_the_user_does_not_hold_is_not_granted(self):
-        self._attach_feature(metadata.VERITY_PRO.stripe_id, features.TRANSACTION_SYNC_KEY)
+        self._attach_feature(metadata.VERITY_PRO.stripe_id, "transaction-sync")
         self._add_subscription(status="active", product_id=metadata.USAGE_BASED_STORAGE.stripe_id)
-        self.assertFalse(entitlements.has_feature(self.user, features.TRANSACTION_SYNC_KEY))
+        self.assertFalse(entitlements.has_feature(self.user, "transaction-sync"))
+
+    def test_feature_on_the_metered_addon_is_granted_when_held(self):
+        self._attach_feature(metadata.USAGE_BASED_STORAGE.stripe_id, "transaction-sync")
+        self._add_subscription(status="active", product_id=metadata.USAGE_BASED_STORAGE.stripe_id)
+        self.assertTrue(entitlements.has_feature(self.user, "transaction-sync"))
+        self.assertEqual(
+            metadata.plan_for_user(self.user).stripe_id, metadata.VERITY_FREE.stripe_id
+        )
 
     def test_trialing_counts_as_paid(self):
         self._add_subscription(status="trialing", product_id=metadata.VERITY_PRO.stripe_id)
@@ -85,10 +93,10 @@ class EntitlementTests(TestCase):
         self.assertEqual(
             metadata.plan_for_user(self.user).stripe_id, metadata.VERITY_FREE.stripe_id
         )
-        self.assertFalse(entitlements.has_feature(self.user, features.TRANSACTION_SYNC_KEY))
+        self.assertFalse(entitlements.has_feature(self.user, "transaction-sync"))
 
     def test_cancel_at_period_end_keeps_paid_access_until_cycle_end(self):
-        self._attach_feature(metadata.VERITY_PRO.stripe_id, features.TRANSACTION_SYNC_KEY)
+        self._attach_feature(metadata.VERITY_PRO.stripe_id, "transaction-sync")
         sub = Subscription.objects.create(
             id="sub_ent_cancel_at_period_end",
             livemode=False,
@@ -112,10 +120,10 @@ class EntitlementTests(TestCase):
         sub.customer.subscriber = self.user
         sub.customer.save(update_fields=["subscriber"])
         self.assertEqual(metadata.plan_for_user(self.user).stripe_id, metadata.VERITY_PRO.stripe_id)
-        self.assertTrue(entitlements.has_feature(self.user, features.TRANSACTION_SYNC_KEY))
+        self.assertTrue(entitlements.has_feature(self.user, "transaction-sync"))
 
     def test_unauthenticated_user_has_no_features(self):
-        self.assertFalse(entitlements.has_feature(None, features.TRANSACTION_SYNC_KEY))
+        self.assertFalse(entitlements.has_feature(None, "transaction-sync"))
 
 
 class ContextProcessorTests(TestCase):
@@ -248,7 +256,7 @@ class ProSubscriptionResolvesTests(TestCase):
         self.assertEqual(metadata.plan_for_user(self.user), metadata.VERITY_PRO)
         self.assertEqual(metadata.plan_for_user(self.user).stripe_id, metadata.VERITY_PRO.stripe_id)
         self.assertEqual(
-            entitlements.get_monthly_limit(self.user, "scan"),
+            entitlements.get_monthly_upload_limit(self.user, "scan"),
             metadata.VERITY_PRO.monthly_scan_limit,
         )
 
