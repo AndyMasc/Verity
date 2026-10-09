@@ -95,14 +95,15 @@ def purchase_subscription(request: HttpRequest) -> HttpResponse:
     user = cast(CustomUser, request.user)
     customer = Customer.get_or_create(subscriber=request.user)[0]
     subscription = customer.subscriptions.active().order_by("-created").first()
+    line_items = services.fetch_line_items(request)
+    if isinstance(line_items, HttpResponseBadRequest):
+        return line_items
 
     if subscription is None:
-        line_items = services.fetch_line_items(request)
-        if isinstance(line_items, HttpResponseBadRequest):
-            return line_items
-
-        idempotency_key = hashlib.sha256(  # Hourly-unique per user and line items, so a retry for the same user and line items cannot double-charge.
-            f"{user.pk}:{','.join(sorted(item['price'] for item in line_items))}:{int(time.time() // 3600)}".encode()
+        # Use one idempotency key for a customer's hourly checkout window. This
+        # prevents concurrent selections from creating multiple subscriptions.
+        idempotency_key = hashlib.sha256(
+            f"{user.pk}:{int(time.time() // 3600)}".encode()
         ).hexdigest()
         success_url = (
             request.build_absolute_uri(reverse("subscription_confirm"))
