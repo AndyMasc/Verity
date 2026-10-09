@@ -47,8 +47,6 @@ def _fetch_signing_key(kid: str) -> dict | None:
         response.raise_for_status()
         return response.json().get("key")
     except (requests.RequestException, OSError, ValueError, KeyError) as exc:
-        # Any failure to obtain a trusted key means we cannot verify, so this
-        # fails closed and is never cached.
         logger.error("Could not fetch Plaid signing key for kid=%s: %s", kid, exc)
         return None
 

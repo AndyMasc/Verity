@@ -104,7 +104,7 @@ def kickoff_ocr_scan(user: User, document) -> str | None:
         document.did_ocr = False
         document.save(update_fields=["did_ocr"])
     cache.set(cache_key, "processing", timeout=600)
-    entitlements.record_scan(user)
+    entitlements.record_monthly_use(user, "scan")
     extract_document.send(document.id)
     return None
 

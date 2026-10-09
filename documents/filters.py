@@ -1,5 +1,4 @@
 """Filtersets for the document list view.
-
 Provides dynamic filter choices for file type and processing status.
 File-type choices are cached per user to avoid repeated queries.
 """
@@ -16,11 +15,7 @@ FILTER_CHOICES_CACHE_TTL = 3600
 
 
 class DocumentFilter(django_filters.FilterSet):
-    """Filters documents by file extension and link status.
-
-    File type choices are populated dynamically from the user's existing
-    documents and cached to reduce database load on list views.
-    """
+    """Filters documents by file extension and link status."""
 
     file_type = django_filters.ChoiceFilter(
         field_name="file_extension",

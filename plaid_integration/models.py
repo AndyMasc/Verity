@@ -1,8 +1,6 @@
 """Django models for storing Plaid banking integration data.
-
 Tracks linked bank items, access tokens, sync cursors, and error
-state needed to maintain ongoing transaction synchronization.
-"""
+state needed to maintain ongoing transaction synchronization."""
 
 import json
 from typing import Any
@@ -13,18 +11,7 @@ from fernet_fields import EncryptedCharField, EncryptedTextField
 
 
 class EncryptedJSONField(EncryptedTextField):
-    """A custom field that encrypts JSON data and safely stores it as text.
-
-    Overrides get_prep_value to serialize dict/list → JSON string before
-    Fernet encryption, and from_db_value / to_python to deserialize the
-    decrypted string back into Python objects.
-
-    NOTE: get_prep_value intentionally skips super() to avoid Django 6's
-    TextField.get_prep_value calling self.to_python(), which would
-    json.loads the JSON string back into a Python object before encryption,
-    resulting in "str(list)" (single-quoted Python repr) being stored
-    instead of valid JSON.
-    """
+    """A custom field that encrypts JSON data and safely stores it as text."""
 
     def get_prep_value(self, value: Any) -> Any:
         """Serialize dict/list into a JSON string before Fernet encryption."""
@@ -55,12 +42,7 @@ class EncryptedJSONField(EncryptedTextField):
 
 
 class PlaidItem(models.Model):
-    """Represents a connected Plaid bank item (e.g. one bank account).
-
-    Stores the encrypted access token and sync cursor needed to fetch transactions
-    incrementally via the Plaid Transactions Sync endpoint. Also tracks
-    institution metadata and error state for user-facing diagnostics.
-    """
+    """Represents a connected Plaid bank item (e.g. one bank account)."""
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="plaid_items"

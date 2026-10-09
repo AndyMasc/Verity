@@ -252,8 +252,7 @@ TEMPLATES = [
                 "core.context_processors.turnstile_settings",  # Turnstile sitekey
                 # Billing template context_processors
                 "billing.context_processors.subscription_status",  # Subscription status for all templates
-                "billing.context_processors.scan_usage",  # Scan usage for all templates
-                "billing.context_processors.storage_usage",  # Storage usage for all templates
+                "billing.context_processors.monthly_usage",  # Scan and upload usage for all templates
                 "core.context_processors.is_debug",  # Expose DEBUG to templates
             ],
             "builtins": [
@@ -463,8 +462,6 @@ DRAMATIQ_BROKER = {
     "MIDDLEWARE": [
         "dramatiq.middleware.prometheus.Prometheus",
         "dramatiq.middleware.CurrentMessage",
-        # Reports worker failures. After CurrentMessage so the actor context
-        # is set before anything raises.
         "core.error_tracking.ErrorTracking",
         "dramatiq.middleware.AgeLimit",
         "dramatiq.middleware.TimeLimit",

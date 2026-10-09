@@ -116,11 +116,11 @@
                             </div>
                             <div class="flex shrink-0 items-center gap-2">
                                 {% if is_subscribed %}
-                                    <a href="{% url 'pricing_page' %}"
+                                    <a href="{% url 'billing:pricing_page' %}"
                                        class="rounded-lg bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-zinc-800 active:scale-[0.98] dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200">
-                                        Change plan
+                                        Change or Add plan
                                     </a>
-                                    <form method="post" action="{% url 'portal_session' %}">
+                                    <form method="post" action="{% url 'billing:portal_session' %}">
                                         {% csrf_token %}
                                         <button type="submit"
                                                 class="cursor-pointer rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 transition hover:bg-zinc-50 active:scale-[0.98] dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800/80">
@@ -128,7 +128,7 @@
                                         </button>
                                     </form>
                                 {% else %}
-                                    <a href="{% url 'pricing_page' %}"
+                                    <a href="{% url 'billing:pricing_page' %}"
                                        class="rounded-lg bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-zinc-800 active:scale-[0.98] dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200">
                                         Upgrade plan
                                     </a>

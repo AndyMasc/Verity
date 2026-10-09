@@ -44,8 +44,7 @@ class ViewDocument(LoginRequiredMixin, UpdateView):
         return [self.template_name]
 
     def get_queryset(self):
-        # Documents attached to records that are shared with include_documents
-        # disabled (e.g. reimbursement grants) are hidden from the recipient.
+        # Documents attached to records that are shared with include_documents disabled (e.g. reimbursement grants) are hidden from the recipient.
         return DocumentData.objects.filter(
             Q(user=self.request.user)
             | Q(associated_record__in=RecordShare.document_visible_records(self.request.user))

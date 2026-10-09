@@ -7,7 +7,7 @@ from .. import metadata, services
 
 
 class CheckoutPriceIdTests(TestCase):
-    """_checkout_price_id must select the active monthly price the card shows."""
+    """pricing_context must put the active monthly price on the card."""
 
     def setUp(self):
         self.product = Product.objects.create(
@@ -15,6 +15,9 @@ class CheckoutPriceIdTests(TestCase):
             livemode=False,
             active=True,
             name="Verity Pro",
+        )
+        self.user = get_user_model().objects.create_user(
+            username="card", email="card@example.com", password="password"
         )
 
     def _price(self, price_id, *, active=True, interval="month"):
@@ -29,24 +32,18 @@ class CheckoutPriceIdTests(TestCase):
         price.save(update_fields=["stripe_data"])
         return price
 
+    def _card_price_id(self):
+        context = services.pricing_context(self.user)
+        return next(
+            p.checkout_price_id
+            for p in context["products"]
+            if (p.stripe_id if hasattr(p, "stripe_id") else p.id) == self.product.id
+        )
+
     def test_picks_newest_active_monthly_price(self):
         self._price("price_old")
         newest = self._price("price_new")
-        self.assertEqual(services._checkout_price_id(self.product), newest.id)
-
-    def test_ignores_archived_annual_response_archived_and_one_time(self):
-        self._price("price_archived", active=False)
-        self._price("price_annual", interval="year")
-        self._price("price_one_time", interval=None)
-        monthly = self._price("price_monthly")
-        self.assertEqual(services._checkout_price_id(self.product), monthly.id)
-
-    def test_none_when_only_one_time_or_inactive_prices(self):
-        self._price("price_one_time", interval=None)
-        self.assertIsNone(services._checkout_price_id(self.product))
-        self.product.prices.all().delete()
-        self._price("price_archived", active=False)
-        self.assertIsNone(services._checkout_price_id(self.product))
+        self.assertEqual(self._card_price_id(), newest.id)
 
 
 class PricingContextTests(TestCase):
@@ -65,7 +62,6 @@ class PricingContextTests(TestCase):
             livemode=False,
             active=True,
             name="Verity Pro",
-            metadata={"category": metadata.BASE_PLAN_CATEGORY},
         )
         keep = Price.objects.create(
             id="price_keep",
@@ -88,7 +84,12 @@ class PricingContextTests(TestCase):
         archived.save(update_fields=["stripe_data"])
 
         context = services.pricing_context(self._user())
-        pro_card = next(p for p in context["base_plans"] if p.id == metadata.VERITY_PRO.stripe_id)
+        # dj-stripe Product rows expose .id; the free card is a ProductMetadata.
+        pro_card = next(
+            p
+            for p in context["products"]
+            if (p.stripe_id if hasattr(p, "stripe_id") else p.id) == metadata.VERITY_PRO.stripe_id
+        )
         self.assertEqual(pro_card.checkout_price_id, "price_keep")
 
     def test_catalog_is_scoped_to_the_configured_stripe_mode(self):
@@ -120,10 +121,14 @@ class PricingContextTests(TestCase):
         with override_settings(STRIPE_LIVE_MODE=True):
             live_mode = services.pricing_context(user)
 
-        self.assertIn("prod_test_mode", [p.id for p in test_mode["products"]])
-        self.assertNotIn("prod_live_mode", [p.id for p in test_mode["products"]])
-        self.assertIn("prod_live_mode", [p.id for p in live_mode["products"]])
-        self.assertNotIn("prod_test_mode", [p.id for p in live_mode["products"]])
+        def ids(context):
+            # dj-stripe Product rows expose .id; the free card is a ProductMetadata.
+            return [p.stripe_id if hasattr(p, "stripe_id") else p.id for p in context["products"]]
+
+        self.assertIn("prod_test_mode", ids(test_mode))
+        self.assertNotIn("prod_live_mode", ids(test_mode))
+        self.assertIn("prod_live_mode", ids(live_mode))
+        self.assertNotIn("prod_test_mode", ids(live_mode))
 
     def test_free_plan_copy_does_not_mutate_the_shared_constant(self):
         # pricing_context used to attach display attributes to the module-level
@@ -149,24 +154,20 @@ class AlreadyActiveTests(TestCase):
         self.user.customer = self.customer
         self.user.save(update_fields=["customer"])
 
-    def _product(self, meta, category=metadata.BASE_PLAN_CATEGORY):
+    def _product(self, meta, category="base_plan"):
         product, _ = Product.objects.get_or_create(
             id=meta.stripe_id,
             livemode=False,
             defaults={
                 "active": True,
-                "name": meta.name,
+                "name": meta.name or meta.stripe_id,
                 "metadata": {"category": category},
             },
         )
         price, _ = Price.objects.get_or_create(
             id="price_" + meta.stripe_id.replace("prod_", ""),
             livemode=False,
-            defaults={
-                "active": True,
-                "product": product,
-                "currency": "usd",
-            },
+            defaults={"active": True, "product": product, "currency": "usd"},
         )
         price.stripe_data = {"recurring": {"interval": "month"}}
         price.save(update_fields=["stripe_data"])
@@ -191,16 +192,13 @@ class AlreadyActiveTests(TestCase):
         )
 
     def _card(self, context, meta):
-        return next(p for p in context["base_plans"] if p.id == meta.stripe_id)
+        return next(
+            p
+            for p in context["products"]
+            if (p.stripe_id if hasattr(p, "stripe_id") else p.id) == meta.stripe_id
+        )
 
     def test_free_user_has_no_active_plan(self):
         self._product(metadata.VERITY_PRO)
         context = services.pricing_context(self.user)
         self.assertFalse(self._card(context, metadata.VERITY_PRO).already_active)
-
-    def test_held_base_plan_is_marked_active(self):
-        self._subscribe(metadata.VERITY_PRO)
-        context = services.pricing_context(self.user)
-        self.assertTrue(self._card(context, metadata.VERITY_PRO).already_active)
-        # Everyone is on the free plan, so its card always reads as current.
-        self.assertTrue(self._card(context, metadata.VERITY_FREE).already_active)

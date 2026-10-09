@@ -8,11 +8,7 @@ from . import views
 
 @login_required
 def trigger_error(request):
-    """Raise a 500 on demand so error reporting can be verified end to end.
-
-    Restricted to logged-in staff: an unauthenticated version lets anyone
-    flood the error quota and pollute the dashboards.
-    """
+    """Raise a 500 on demand so error reporting can be verified end to end."""
     if not request.user.is_staff:
         from django.http import HttpResponseForbidden
 

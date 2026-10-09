@@ -22,7 +22,7 @@ class FeatureRequiredMixin(UserPassesTestMixin):
         if not self.request.user.is_authenticated:
             return super().handle_no_permission()
 
-        pricing_url = reverse("pricing_page")
+        pricing_url = reverse("billing:pricing_page")
 
         if self.request.content_type and "application/json" in self.request.content_type:
             return JsonResponse(

@@ -1,5 +1,4 @@
 """Image preprocessing and OCR result mapping for Gemini-based document extraction.
-
 Handles HEIC decoding, deskewing, resizing, and WebP encoding to prepare
 images for optimal Gemini OCR performance, plus mapping extracted JSON
 to record form fields.
@@ -27,10 +26,8 @@ PDF_JPEG_QUALITY = 85
 
 
 def ocr_data_to_form_initial(data: dict | None) -> dict:
-    """Convert raw Gemini OCR output into a dict suitable for pre-populating a record form.
-
-    Normalizes the products field from a list of dicts/strings into newline-joined text.
-    """
+    """Convert OCR output into a dict suitable for pre-populating a record form.
+    Normalizes the products field from a list of dicts/strings into text."""
     if not isinstance(data, dict):
         return {}
 
@@ -156,11 +153,7 @@ def render_pdf_pages(pdf_bytes: bytes, dpi: int = PDF_RENDER_DPI) -> list[bytes]
 
 
 def prepare_image_for_gemini(image_bytes: bytes) -> bytes:
-    """Full preprocessing pipeline: decode, resize, deskew, and encode to WebP.
-
-    Falls back to the original bytes if any step fails, ensuring OCR can
-    still attempt extraction on unprocessed images.
-    """
+    """Full preprocessing pipeline: decode, resize, deskew, and encode to WebP."""
     img = _decode_image(image_bytes)
     if img is None:
         logger.warning("Could not decode image bytes; returning original.")

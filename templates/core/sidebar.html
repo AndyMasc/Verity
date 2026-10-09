@@ -318,11 +318,6 @@
                                                 <span class="font-medium text-zinc-600 dark:text-zinc-400">Monthly Scans</span>
                                                 {% if monthly_scan_limit %}
                                                     <span class="font-semibold text-zinc-800 dark:text-zinc-200">{{ scan_usage_count|default:0 }}/{{ monthly_scan_limit }}</span>
-                                                    {% if is_fair_use_approaching %}
-                                                        <span class="ml-2 text-xs text-zinc-600 dark:text-zinc-400">Approaching usage limit</span>
-                                                    {% elif is_fair_use_exceeded %}
-                                                        <span class="ml-2 text-xs text-rose-500 dark:text-rose-400">Usage limit exceeded</span>
-                                                    {% endif %}
                                                 {% else %}
                                                     <span class="inline-flex items-center gap-1 font-semibold">
                                                         <span class="size-1 animate-pulse rounded-full"></span>
@@ -332,7 +327,7 @@
                                             </div>
                                             <div class="h-1 w-full overflow-hidden rounded-full bg-zinc-200/80 dark:bg-zinc-800/80">
                                                 {% if monthly_scan_limit %}
-                                                    <div class="h-full {% if is_fair_use_exceeded %}bg-rose-500{% elif is_fair_use_approaching %}bg-orange-500{% else %}bg-[#5A67FF]{% endif %} rounded-full transition-all duration-500"
+                                                    <div class="h-full rounded-full bg-[#5A67FF] transition-all duration-500"
                                                          style="width: {% widthratio scan_usage_count|default:0 monthly_scan_limit 100 %}%">
                                                     </div>
                                                 {% else %}
@@ -342,13 +337,13 @@
                                         </div>
                                         <div>
                                             <div class="mb-1 flex items-center justify-between text-[10px]">
-                                                <span class="font-medium text-zinc-600 dark:text-zinc-400">Cloud Storage</span>
-                                                <span class="font-semibold text-zinc-800 dark:text-zinc-200">{% if storage_metered %}{{ storage_usage_gb|floatformat:2 }} GB · uncapped{% else %}{{ storage_usage_gb|floatformat:2 }}/{{ storage_limit_gb }} GB{% endif %}</span>
+                                                <span class="font-medium text-zinc-600 dark:text-zinc-400">Monthly Uploads</span>
+                                                <span class="font-semibold text-zinc-800 dark:text-zinc-200">{{ upload_usage_count }}{% if monthly_upload_limit %}/{{ monthly_upload_limit }}{% endif %}</span>
                                             </div>
                                             <div class="mb-3 h-1 w-full overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800/80">
-                                                {% if storage_limit_gb %}
+                                                {% if monthly_upload_limit %}
                                                     <div class="h-full rounded-full bg-[#5A67FF] transition-all duration-500"
-                                                         style="width: {% widthratio storage_usage_gb|default:0 storage_limit_gb 100 %}%">
+                                                         style="width: {% widthratio upload_usage_count|default:0 monthly_upload_limit 100 %}%">
                                                     </div>
                                                 {% else %}
                                                     <div class="h-full w-full rounded-full bg-[#5A67FF]"></div>
@@ -357,7 +352,7 @@
                                         </div>
                                     </div>
                                     {% if not user.has_active_subscription %}
-                                        <a href="{% url 'pricing_page' %}"
+                                        <a href="{% url 'billing:pricing_page' %}"
                                            class="group/upgrade inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-black px-2 py-1 text-[11px] text-white transition-all duration-200 dark:bg-white dark:text-black">
                                             <span class="font-medium">Upgrade Plan</span>
                                             <svg xmlns="http://www.w3.org/2000/svg"
@@ -371,7 +366,7 @@
                                         </a>
                                     {% else %}
                                         <form method="post"
-                                              action="{% url 'portal_session' %}"
+                                              action="{% url 'billing:portal_session' %}"
                                               class="mt-2.5 pt-0.5">
                                             {% csrf_token %}
                                             <button type="submit"

@@ -32,8 +32,6 @@ class DocumentDataAdmin(admin.ModelAdmin):
         return actions
 
     def delete_model(self, request, obj):  # noqa: ARG002
-        # Documents have no soft-delete path, so this is the same for everyone;
-        # the superuser restriction lives in get_actions above.
         obj.delete()
 
     def delete_queryset(self, request, queryset):  # noqa: ARG002

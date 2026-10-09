@@ -1,28 +1,15 @@
 from __future__ import annotations
 
-import logging
 from typing import ClassVar
 
-import stripe
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-from djstripe.models import Product, Subscription
 
-from . import metadata, services
-
-logger = logging.getLogger(__name__)
+from . import metadata
 
 
 class CustomUser(AbstractUser):
-    subscription = models.ForeignKey(
-        "djstripe.Subscription",
-        null=True,
-        blank=True,
-        on_delete=models.SET_NULL,
-        related_name="user",
-        help_text="The user's Stripe Subscription object, if it exists",
-    )
     customer = models.ForeignKey(
         "djstripe.Customer",
         null=True,
@@ -30,183 +17,33 @@ class CustomUser(AbstractUser):
         on_delete=models.SET_NULL,
         help_text="The user's Stripe Customer object, if it exists",
     )
-    storage_used_bytes = models.BigIntegerField(
-        default=0,
-        help_text=(
-            "Denormalized count of stored document bytes (active documents only), "
-            "kept in sync by the documents storage signals so quota checks are O(1)."
-        ),
-    )
-
-    @property
-    def storage_used_gb(self) -> float:
-        """Return the user's storage usage in decimal gigabytes (10**9 bytes)."""
-        from .features import BYTES_PER_GB
-
-        return self.storage_used_bytes / BYTES_PER_GB
 
     @property
     def has_active_subscription(self) -> bool:
         """True if the user has any active or trialing subscription."""
-        return bool(metadata._active_subscriptions(self))
-
-    def _session_matches_current_user(
-        self, session: stripe.checkout.Session, customer_email: str | None
-    ) -> bool:
-        """Check if session matches the current user's customer or email."""
-        session_customer_matches = (
-            bool(session.customer)
-            and (self.customer is not None)
-            and (self.customer.id == session.customer)
-        )
-        email_matches = bool(customer_email and customer_email == self.email)
-        return session_customer_matches or email_matches
-
-    def _get_user_from_client_reference(
-        self, session: stripe.checkout.Session
-    ) -> CustomUser | None:
-        """Extract and validate user from client reference ID."""
-        if not session.client_reference_id:
-            return None
-
-        try:
-            client_reference_id = int(session.client_reference_id)
-        except (TypeError, ValueError):
-            return None
-
-        try:
-            return CustomUser.objects.get(id=client_reference_id)
-        except CustomUser.DoesNotExist:
-            return None
-
-    def get_verified_session_holder(self, session: stripe.checkout.Session) -> CustomUser | None:
-        """Validates session ownership against the logged-in user or client reference ID."""
-        customer_email = (getattr(session, "customer_details", None) or {}).get("email")
-
-        if self._session_matches_current_user(session, customer_email):
-            return self
-
-        subscription_holder = self._get_user_from_client_reference(session)
-        if subscription_holder is None:
-            return None
-
-        if subscription_holder != self:
-            logger.warning(
-                "Subscription confirm ownership mismatch: session=%s holder=%s user=%s customer=%s email=%s",
-                session.id,
-                subscription_holder.pk,
-                self.pk,
-                self.customer,
-                customer_email,
-            )
-            return None
-
-        return subscription_holder
-
-    def _get_incoming_categories(self, djstripe_subscription: Subscription) -> set:
-        """Extract product categories from the incoming subscription."""
-        raw_subscription = services.retrieve_subscription(djstripe_subscription.id)
-        product_ids = {
-            item.get("price", {}).get("product")
-            for item in raw_subscription.get("items", {}).get("data", [])
-        }
-        categories = {
-            category
-            for category in Product.objects.filter(id__in=product_ids).values_list(
-                "metadata__category", flat=True
-            )
-            if category
-        }
-        return categories
-
-    def _cancel_overlapping_subscription(
-        self, old_sub: Subscription, new_sub_id: str, incoming_categories: set
-    ) -> bool:
-        """Cancel overlapping subscription if it has conflicting categories. Returns False only when a conflicting plan was found but could not be
-        cancelled at Stripe; True when there was no conflict or the cancellation succeeded.
-        """
-        for old_item in old_sub.items.select_related("price__product").all():
-            old_product = old_item.price.product if old_item.price else None
-            if not old_product:
-                continue
-
-            old_cat = metadata.product_category(old_product)
-            if old_cat not in incoming_categories:
-                continue
-
-            try:
-                # Marked so the deleted event is not reported as the user
-                # cancelling: this is a plan swap, not churn.
-                from .webhooks import mark_cancel_intent
-
-                mark_cancel_intent(old_sub.id, "system")
-                services.cancel_subscription(old_sub.id)
-                logger.info(
-                    "Replaced overlapping category plan %s with new subscription %s",
-                    old_sub.id,
-                    new_sub_id,
-                )
-            except stripe.error.StripeError as e:
-                logger.error(
-                    "Failed to clear old conflicting subscription %s: %s",
-                    old_sub.id,
-                    e,
-                )
-                return False
-            return True
-
-        return True
-
-    def handle_new_subscription(self, djstripe_subscription: Subscription) -> bool:
-        """Processes an incoming checkout, updating the primary subscription and canceling overlapping category subscriptions.
-        Returns True when every overlapping legacy subscription was cleared successfully (or none existed), False when at least one failed."""
-        if not self.customer:
-            self.customer = djstripe_subscription.customer
-            self.save(update_fields=["customer"])
-
-        incoming_categories = self._get_incoming_categories(djstripe_subscription)
-
-        if metadata.BASE_PLAN_CATEGORY in incoming_categories:
-            self.subscription = djstripe_subscription
-            self.save(update_fields=["subscription"])
-
-        from .context_processors import invalidate_plan_usage_caches
-
-        invalidate_plan_usage_caches(self.id)
-
-        overlaps_cleared = True
-        active_subs = Subscription.objects.filter(customer=self.customer)
-        for old_sub in active_subs:
-            sub_status = (old_sub.stripe_data or {}).get("status")
-            if sub_status not in ["active", "trialing"]:
-                continue
-
-            if old_sub.id == djstripe_subscription.id:
-                continue
-
-            if not self._cancel_overlapping_subscription(
-                old_sub, djstripe_subscription.id, incoming_categories
-            ):
-                overlaps_cleared = False
-
-        return overlaps_cleared
+        return bool(metadata.active_subscriptions(self))
 
 
-class ScanUsage(models.Model):
-    """Monthly Quick Scan usage counter for enforcing the free plan limit."""
+class MonthlyUsage(models.Model):
+    """Per-calendar-month counter for a rate-limited action."""
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name="scan_usage",
+        related_name="monthly_usage",
     )
     period = models.CharField(max_length=7, help_text="Calendar month, e.g. 2026-08")
+    action = models.CharField(
+        max_length=16, help_text="The type of action being tracked. E.g. 'scan' or 'upload'."
+    )
     count = models.PositiveIntegerField(default=0)
 
     class Meta:
         constraints: ClassVar[list[models.UniqueConstraint]] = [
-            models.UniqueConstraint(fields=["user", "period"], name="unique_scan_usage_period")
+            models.UniqueConstraint(
+                fields=["user", "period", "action"], name="unique_monthly_usage"
+            )
         ]
 
     def __str__(self):
-        return f"{self.user_id} {self.period}: {self.count}"
+        return f"{self.user_id} {self.period} {self.action}: {self.count}"

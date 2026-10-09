@@ -1,10 +1,3 @@
-"""Domain models for user preferences and in-app notifications.
-
-Provides the UserSettings model for per-user automation and notification
-preferences, and the Notification model for persisting messages that are
-surfaced in the dashboard sidebar.
-"""
-
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
@@ -14,9 +7,7 @@ from core.currencies import CURRENCY_CHOICES, DEFAULT_CURRENCY
 
 class UserSettings(models.Model):
     """Per-user preferences controlling automation and notification behavior.
-
-    Automatically created for every new user via the post_save signal in
-    "core.signals". A single row exists per user through the OneToOneField.
+    Automatically created for every new user via the post_save signal in "core.signals".
     """
 
     user = models.OneToOneField(
@@ -37,6 +28,8 @@ class UserSettings(models.Model):
     )
 
     class AdvanceTimeChoices(models.TextChoices):
+        """For notifications about expiring records, how far in advance to notify the user."""
+
         ONE_DAY = "1", "1 Day"
         THREE_DAYS = "3", "3 Days"
         ONE_WEEK = "7", "1 Week"
@@ -60,11 +53,7 @@ class UserSettings(models.Model):
 
 
 class Notification(models.Model):
-    """An in-app notification message delivered to a specific user.
-
-    Used to persist alerts (e.g. record expiry warnings) that appear in the
-    UI until the user marks them as read.
-    """
+    """An in-app notification message delivered to a specific user."""
 
     recipient = models.ForeignKey(
         settings.AUTH_USER_MODEL,

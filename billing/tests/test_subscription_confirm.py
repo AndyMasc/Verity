@@ -4,49 +4,20 @@ from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.test import TestCase
 from django.urls import reverse
-from django.utils import timezone
-from djstripe.models import Customer, Price, Product, Subscription, SubscriptionItem
 
-from .. import metadata
 from ..context_processors import _SUBSCRIPTION_STATUS_KEY
 from .helpers import FakeSession
 
 
 class SubscriptionConfirmTests(TestCase):
+    """subscription_confirm validates the Checkout Session and redirects.
+
+    It is deliberately not the path that writes state: the customer/subscription
+    link is maintained by dj-stripe and the subscription sync by webhooks, so
+    landing here before the webhook arrives is safe.
+    """
+
     def setUp(self):
-        self.customer = Customer.objects.create(
-            id="cus_existing",
-            livemode=False,
-            created=timezone.now(),
-        )
-        self.subscription = Subscription.objects.create(
-            id="sub_test",
-            livemode=False,
-            created=timezone.now(),
-            customer=self.customer,
-            stripe_data={"status": "active"},
-        )
-        pro_product = Product.objects.create(
-            id=metadata.VERITY_PRO.stripe_id,
-            livemode=False,
-            active=True,
-            name="Verity Pro",
-            metadata={"category": metadata.BASE_PLAN_CATEGORY},
-        )
-        pro_price = Price.objects.create(
-            id="price_pro",
-            livemode=False,
-            active=True,
-            product=pro_product,
-            currency="usd",
-        )
-        SubscriptionItem.objects.create(
-            id="si_pro",
-            livemode=False,
-            created=timezone.now(),
-            subscription=self.subscription,
-            price=pro_price,
-        )
         self.user = get_user_model().objects.create_user(
             username="andy",
             email="andy@example.com",
@@ -59,106 +30,86 @@ class SubscriptionConfirmTests(TestCase):
         )
         self.url = reverse("subscription_confirm")
 
-    def _patch_stripe(self, session):
-        patchers = [
-            mock.patch(
-                "billing.services.retrieve_checkout_session",
-                return_value=session,
-            ),
-            mock.patch(
-                "billing.services.retrieve_subscription",
-                return_value={
-                    "id": "sub_test",
-                    "items": {"data": [{"price": {"product": metadata.VERITY_PRO.stripe_id}}]},
-                },
-            ),
-            mock.patch(
-                "billing.views.Subscription.sync_from_stripe_data",
-                return_value=self.subscription,
-            ),
-        ]
-        for p in patchers:
-            p.start()
-        self.addCleanup(mock.patch.stopall)
-        return self.client
-
-    def test_stale_client_reference_id_matches_checkout_email(self):
-        # The embedded pricing table reused a session whose client_reference_id
-        # belongs to another user, but the email used at checkout is the
-        # logged-in user's own.
-        session = FakeSession(
-            customer=None,
-            customer_details={"email": self.user.email},
-            client_reference_id=str(self.other_user.id),
+    def _get(self, session, user=None):
+        patcher = mock.patch(
+            "stripe.checkout.Session.retrieve",
+            return_value=session,
         )
-        client = self._patch_stripe(session)
-        client.force_login(self.user)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        client = self.client
+        client.force_login(user or self.user)
+        return client.get(self.url, {"session_id": "cs_test"})
 
-        response = client.get(self.url, {"session_id": "cs_test"})
-
+    def test_accepts_own_session(self):
+        response = self._get(FakeSession(client_reference_id=str(self.user.pk)))
         self.assertEqual(response.status_code, 302)
-        self.user.refresh_from_db()
-        self.assertEqual(self.user.subscription_id, self.subscription.djstripe_id)
-        self.assertEqual(self.user.customer_id, self.customer.djstripe_id)
+        self.assertEqual(response.url, reverse("core:dashboard"))
 
-    def test_matches_by_stripe_customer(self):
-        self.user.customer = self.customer
-        self.user.save()
-
-        session = FakeSession(
-            customer="cus_existing",
-            client_reference_id=str(self.other_user.id),
+    def test_accepts_zero_due_trial(self):
+        # Stripe reports no_payment_required when nothing is charged up front.
+        response = self._get(
+            FakeSession(
+                payment_status="no_payment_required",
+                client_reference_id=str(self.user.pk),
+            )
         )
-        client = self._patch_stripe(session)
-        client.force_login(self.user)
-
-        response = client.get(self.url, {"session_id": "cs_test"})
-
         self.assertEqual(response.status_code, 302)
-        self.user.refresh_from_db()
-        self.assertEqual(self.user.subscription_id, self.subscription.djstripe_id)
 
-    def test_rejects_when_no_match(self):
-        session = FakeSession(
-            customer="cus_someone_else",
-            customer_details={"email": "someone@example.com"},
-            client_reference_id=str(self.other_user.id),
+    def test_accepts_completed_metered_session_reported_unpaid(self):
+        # A usage-based line has no fixed amount up front, so Stripe can leave
+        # payment_status on "unpaid" even though the customer completed Checkout.
+        response = self._get(
+            FakeSession(
+                payment_status="unpaid",
+                client_reference_id=str(self.user.pk),
+            )
         )
-        client = self._patch_stripe(session)
-        client.force_login(self.user)
+        self.assertEqual(response.status_code, 302)
 
-        response = client.get(self.url, {"session_id": "cs_test"})
-
-        self.assertEqual(response.status_code, 400)
-        self.user.refresh_from_db()
-        self.assertIsNone(self.user.subscription_id)
-
-    def test_rejects_unpaid_session(self):
-        session = FakeSession(payment_status="unpaid")
-        client = self._patch_stripe(session)
-        client.force_login(self.user)
-
-        response = client.get(self.url, {"session_id": "cs_test"})
-
+    def test_rejects_another_users_session(self):
+        response = self._get(FakeSession(client_reference_id=str(self.other_user.pk)))
         self.assertEqual(response.status_code, 400)
 
-    def test_confirm_invalidates_subscription_status_cache(self):
-        # A primed per-user plan/subscription cache must be dropped when a plan
-        # (e.g. a storage pack) is purchased, so the sidebar updates immediately.
-        self.user.customer = self.customer
-        self.user.save()
+    def test_rejects_session_without_client_reference(self):
+        response = self._get(FakeSession(client_reference_id=None))
+        self.assertEqual(response.status_code, 400)
 
-        cache.set(_SUBSCRIPTION_STATUS_KEY.format(user_id=self.user.id), {"plan": "free"}, 60)
-        self.assertIsNotNone(cache.get(_SUBSCRIPTION_STATUS_KEY.format(user_id=self.user.id)))
-
-        session = FakeSession(
-            customer="cus_existing",
-            client_reference_id=str(self.other_user.id),
+    def test_rejects_incomplete_session(self):
+        response = self._get(
+            FakeSession(
+                status="open",
+                payment_status="unpaid",
+                client_reference_id=str(self.user.pk),
+            )
         )
-        client = self._patch_stripe(session)
-        client.force_login(self.user)
+        self.assertEqual(response.status_code, 400)
 
-        response = client.get(self.url, {"session_id": "cs_test"})
+    def test_rejects_non_subscription_checkout(self):
+        response = self._get(
+            FakeSession(
+                subscription=None,
+                client_reference_id=str(self.user.pk),
+            )
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_confirm_invalidates_the_plan_cache(self):
+        # The webhook that syncs the subscription lands after this redirect. If the
+        # cache is not dropped here, the dashboard renders the pre-purchase plan and
+        # holds it for the full 60s TTL.
+        key = _SUBSCRIPTION_STATUS_KEY.format(user_id=self.user.pk)
+        cache.set(key, {"plan_name": "Free"}, 60)
+
+        response = self._get(FakeSession(client_reference_id=str(self.user.pk)))
 
         self.assertEqual(response.status_code, 302)
-        self.assertIsNone(cache.get(_SUBSCRIPTION_STATUS_KEY.format(user_id=self.user.id)))
+        self.assertIsNone(cache.get(key))
+
+    def test_rejects_missing_session_id(self):
+        patcher = mock.patch("stripe.checkout.Session.retrieve")
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        self.client.force_login(self.user)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 400)

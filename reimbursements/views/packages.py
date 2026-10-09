@@ -182,7 +182,7 @@ def _clamp_days_valid(raw: Any) -> int:
 
 @method_decorator(ratelimit(key="user", rate="5/m", method="POST", block=True), name="dispatch")
 class CreatePackageFromRecordsView(LoginRequiredMixin, ReimbursementRequestRequiredMixin, View):
-    required_feature = features.QUICK_REIMBURSEMENT_REQUEST
+    required_feature = features.REIMBURSEMENT_CREATION_KEY
 
     def post(self, request: HttpRequest) -> HttpResponse:
         if request.content_type and "application/json" in request.content_type:
