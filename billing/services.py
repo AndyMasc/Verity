@@ -71,6 +71,7 @@ def fetch_line_items(
 
 
 def sanitize_line_items(subscription, line_items: list[dict]) -> list[dict]:
+    """Clear stale line items from the subscription and return a list of items to send to Stripe."""
     held_items = metadata.live_items(subscription) if subscription else []
 
     held_by_category: dict[str, list] = {}
