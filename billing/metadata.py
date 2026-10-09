@@ -42,12 +42,14 @@ VERITY_FREE = ProductMetadata(
 
 VERITY_PRO = ProductMetadata(
     stripe_id="prod_VC8WUN1RO4Apqx",
+    name="Pro",
     monthly_upload_limit=features.PRO_MONTHLY_UPLOAD_LIMIT,
     monthly_scan_limit=features.PRO_MONTHLY_SCAN_LIMIT,
 )
 
 USAGE_BASED_STORAGE = ProductMetadata(
     stripe_id="prod_VNkBxaDz3cZbza",
+    name="Usage-Based Storage",
     metered=True,
 )
 

@@ -34,7 +34,9 @@ def _build_subscription_status(user) -> dict[str, Any]:
     active_subscriptions = metadata.active_subscriptions(user)
     is_subscribed = bool(active_subscriptions)
 
-    plan_name = ", ".join(sorted(p.name for p in metadata.held_products(user).values()))
+    plan_name = ", ".join(
+        sorted(p.name for p in metadata.held_products(user).values() if p.name)
+    )
     plan_name = plan_name or metadata.VERITY_FREE.name
     return {
         "is_subscribed": is_subscribed,
