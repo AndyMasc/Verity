@@ -38,7 +38,13 @@ def can_scan(user) -> bool:
 
 
 def can_upload(user) -> bool:
-    return user.is_authenticated and can_use(user, "upload")
+    if not user.is_authenticated:
+        return False
+    # Metered storage is billed for usage beyond the included allowance, so it
+    # must not prevent the upload that creates that usage.
+    if metadata.has_metered_storage(user):
+        return True
+    return can_use(user, "upload")
 
 
 def can_use(user, action: str) -> bool:
