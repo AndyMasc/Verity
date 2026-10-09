@@ -11,9 +11,9 @@ from djstripe.models import Customer, Subscription
 
 from core.apps import posthog_client
 
-from .services import SETTLED_PAYMENT_STATUSES
-
 logger = logging.getLogger(__name__)
+
+SETTLED_PAYMENT_STATUSES = ("paid", "no_payment_required")
 
 
 @receiver(djstripe_signals.webhook_processing_error)

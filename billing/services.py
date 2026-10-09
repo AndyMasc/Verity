@@ -4,9 +4,9 @@ import logging
 from copy import copy
 
 import stripe
-from django.db.models import F
+from django.db.models import Count, F
 from django.http import HttpRequest, HttpResponseBadRequest
-from djstripe.models import Price, Product
+from djstripe.models import Customer, Price, Product
 from djstripe.settings import djstripe_settings
 
 from . import metadata
@@ -16,6 +16,21 @@ logger = logging.getLogger(__name__)
 
 def _configure() -> None:
     stripe.api_key = djstripe_settings.STRIPE_SECRET_KEY
+
+
+def resolve_customer(user):
+    linked = list(Customer.objects.filter(subscriber=user).annotate(subs=Count("subscriptions")))
+    if not linked:
+        return None
+
+    keep = next((c for c in linked if c.pk == user.customer_id), None) or max(
+        linked, key=lambda c: (c.subs, c.pk)
+    )
+    for cust in linked:
+        if cust.pk != keep.pk:
+            cust.subscriber = None
+            cust.save(update_fields=["subscriber"])
+    return keep
 
 
 def fetch_line_items(

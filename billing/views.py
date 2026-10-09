@@ -98,7 +98,7 @@ def purchase_subscription(request: HttpRequest) -> HttpResponse:
     if isinstance(line_items, HttpResponseBadRequest):
         return line_items
 
-    customer = Customer.get_or_create(subscriber=request.user)[0]
+    customer = services.resolve_customer(user) or Customer.get_or_create(subscriber=user)[0]
     lock = f"billing:lock:{user.pk}"
     if not cache.add(lock, 1, timeout=30):
         messages.info(request, "A plan change is already in progress.")
