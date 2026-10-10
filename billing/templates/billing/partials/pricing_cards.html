@@ -27,7 +27,7 @@
             {% with price_id=product.checkout_price_id category=product.stripe_data.metadata.category %}
                 <div {% if price_id and not product.already_active %}@click="togglePrice('{{ price_id }}', '{{ category|escapejs }}')"{% endif %}
                      :class="selectedPrices.includes('{{ price_id }}') ? 'border-indigo-500/50 ring-1 ring-indigo-500/30 bg-indigo-50/30 dark:bg-indigo-950/20 dark:border-indigo-500/40 shadow-xs' : 'border-zinc-200/90 bg-white/70 dark:border-zinc-800/80 dark:bg-zinc-900/40 hover:border-zinc-300 dark:hover:border-zinc-700/80 shadow-xs'"
-                     class="hover:scale-101 hover:shadow-xl group relative flex flex-col justify-between rounded-3xl border p-7 backdrop-blur-md transition-all duration-200 w-full overflow-hidden {% if price_id and not product.already_active %}cursor-pointer{% else %}cursor-default{% endif %}">
+                     class="hover:scale-101 hover:shadow-xl group relative flex flex-col justify-between rounded-xl border p-7 backdrop-blur-md transition-all duration-200 w-full overflow-hidden {% if price_id and not product.already_active %}cursor-pointer{% else %}cursor-default{% endif %}">
                     <div class="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-indigo-500/30 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 {% if product.stripe_data.metadata.recommended %}opacity-100{% endif %}">
                     </div>
                     <div>
