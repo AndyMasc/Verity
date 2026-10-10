@@ -399,7 +399,7 @@ class ReimbursementMoneyFlowTests(TestCase):
         return outcome, create.call_args.kwargs
 
     def test_platform_fee_is_positive_and_leaves_the_creator_a_share(self):
-        from reimbursements.money import PlatformFeeCalculator
+        from reimbursements.fees import PlatformFeeCalculator
 
         fee = PlatformFeeCalculator.compute(10_000, "usd", rates={})
 
@@ -409,7 +409,7 @@ class ReimbursementMoneyFlowTests(TestCase):
         self.assertEqual(10_000 - fee, EXPECTED_CREATOR_CENTS)
 
     def test_platform_fee_never_exceeds_the_charge(self):
-        from reimbursements.money import PlatformFeeCalculator
+        from reimbursements.fees import PlatformFeeCalculator
 
         self.assertEqual(PlatformFeeCalculator.compute(1, "usd", rates={}), 1)
         self.assertEqual(PlatformFeeCalculator.compute(0, "usd", rates={}), 0)

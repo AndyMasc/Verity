@@ -52,7 +52,7 @@
                     <button name="action_primary"
                             type="submit"
                             id="btn-primary"
-                            class="action-btn flex items-center justify-center space-x-2 rounded-2xl border border-zinc-200/50 bg-white px-4 py-2.5 text-xs font-medium text-zinc-700 shadow-xs transition-all duration-200 hover:bg-zinc-50 active:scale-[0.98] disabled:cursor-not-allowed disabled:!border-zinc-200 disabled:!bg-zinc-100 disabled:!text-zinc-400 disabled:shadow-none dark:border-zinc-800/50 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:disabled:!border-zinc-800/60 dark:disabled:!bg-zinc-900 dark:disabled:!text-zinc-600">
+                            class="action-btn flex items-center justify-center space-x-2 rounded-lg border border-zinc-200/50 bg-white px-4 py-2.5 text-xs font-medium text-zinc-700 shadow-xs transition-all duration-200 hover:bg-zinc-50 active:scale-[0.98] disabled:cursor-not-allowed disabled:!border-zinc-200 disabled:!bg-zinc-100 disabled:!text-zinc-400 disabled:shadow-none dark:border-zinc-800/50 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:disabled:!border-zinc-800/60 dark:disabled:!bg-zinc-900 dark:disabled:!text-zinc-600">
                         <svg id="spinner-primary"
                              class="hidden h-3.5 w-3.5 animate-spin text-current"
                              xmlns="http://www.w3.org/2000/svg"
@@ -66,7 +66,7 @@
                     <button name="action_remove"
                             type="submit"
                             id="btn-remove"
-                            class="action-btn flex items-center justify-center space-x-2 rounded-2xl border border-zinc-200/50 bg-white px-4 py-2.5 text-xs font-medium text-zinc-700 shadow-xs transition-all duration-200 hover:bg-rose-500/10 hover:text-rose-500 active:scale-[0.98] disabled:cursor-not-allowed disabled:!border-zinc-200 disabled:!bg-zinc-100 disabled:!text-zinc-400 disabled:shadow-none dark:border-zinc-800/50 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-rose-500/20 dark:disabled:!border-zinc-800/60 dark:disabled:!bg-zinc-900 dark:disabled:!text-zinc-600">
+                            class="action-btn flex items-center justify-center space-x-2 rounded-lg border border-zinc-200/50 bg-white px-4 py-2.5 text-xs font-medium text-zinc-700 shadow-xs transition-all duration-200 hover:bg-rose-500/10 hover:text-rose-500 active:scale-[0.98] disabled:cursor-not-allowed disabled:!border-zinc-200 disabled:!bg-zinc-100 disabled:!text-zinc-400 disabled:shadow-none dark:border-zinc-800/50 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-rose-500/20 dark:disabled:!border-zinc-800/60 dark:disabled:!bg-zinc-900 dark:disabled:!text-zinc-600">
                         <svg id="spinner-remove"
                              class="hidden h-3.5 w-3.5 animate-spin text-rose-500"
                              xmlns="http://www.w3.org/2000/svg"
@@ -82,7 +82,7 @@
         {% endif %}
         {% if can_add_email %}
             <div class="mt-6 border-t border-zinc-100 pt-6 dark:border-zinc-900"
-                 x-data="{ open : $persist(false) }"
+                 x-data="{ open : false }"
                  x-cloak>
                 <button @click="open = !open"
                         type="button"
@@ -99,7 +99,7 @@
                                 name="action_add"
                                 x-data="{ loading: false }"
                                 @click=" loading = true; const hiddenInput = document.createElement('input'); hiddenInput.type = 'hidden'; hiddenInput.name = 'action_add'; hiddenInput.value = 'true'; $el.closest('form').appendChild(hiddenInput); setTimeout(() => { $el.disabled = true; }, 1); "
-                                class="mt-4 mb-2 flex w-full items-center justify-center space-x-2 rounded-2xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white shadow-xs transition-all duration-200 hover:bg-zinc-800 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-400 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200 dark:disabled:bg-zinc-100 dark:disabled:text-zinc-400">
+                                class="mt-4 mb-2 flex w-full items-center justify-center space-x-2 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white shadow-xs transition-all duration-200 hover:bg-zinc-800 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-400 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200 dark:disabled:bg-zinc-100 dark:disabled:text-zinc-400">
                             <svg x-show="loading"
                                  class="h-4 w-4 animate-spin text-current"
                                  xmlns="http://www.w3.org/2000/svg"

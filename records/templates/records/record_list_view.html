@@ -9,7 +9,7 @@
             </div>
             <div class="flex w-full items-center gap-3 sm:w-auto">
                 <a href="{% url 'documents:upload_document' %}"
-                   class="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-black px-4 py-2 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:bg-zinc-800 active:scale-[0.98] sm:w-auto dark:bg-white dark:text-black dark:hover:bg-zinc-200">
+                   class="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-black px-4 py-2 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:bg-zinc-800 active:scale-[0.98] sm:w-auto dark:bg-white dark:text-black dark:hover:bg-zinc-200">
                     <svg class="size-4"
                          fill="none"
                          viewBox="0 0 24 24"
@@ -36,14 +36,14 @@
         </section>
         <hr class="border-zinc-200 dark:border-zinc-800/60">
         <main id="query-results-container"
-              class="shadow-2xs relative min-h-0 w-full min-w-0 overflow-hidden rounded-xl border border-zinc-200 bg-white transition-colors dark:border-zinc-800/60 dark:bg-zinc-900/20"
+              class="shadow-2xs relative min-h-0 w-full min-w-0 overflow-hidden rounded-lg border border-zinc-200 bg-white transition-colors dark:border-zinc-800/60 dark:bg-zinc-900/20"
               hx-trigger="recordChanged from:body"
               hx-get="{% url 'records:view_all_records' %}"
               hx-target="#query-results-container"
               hx-include="#filter-form, #search"
               hx-indicator=".htmx-indicator">
-            <div class="htmx-indicator absolute inset-0 z-10 hidden items-center justify-center rounded-xl bg-white/60 backdrop-blur-[2px] transition-all dark:bg-zinc-950/60">
-                <div class="flex items-center gap-2.5 rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-xs font-medium text-zinc-900 shadow-md dark:border-zinc-800/80 dark:bg-zinc-900 dark:text-zinc-100">
+            <div class="htmx-indicator absolute inset-0 z-10 hidden items-center justify-center rounded-lg bg-white/60 backdrop-blur-[2px] transition-all dark:bg-zinc-950/60">
+                <div class="flex items-center gap-2.5 rounded-lg border border-zinc-200 bg-white px-4 py-2.5 text-xs font-medium text-zinc-900 shadow-md dark:border-zinc-800/80 dark:bg-zinc-900 dark:text-zinc-100">
                     <svg class="h-3.5 w-3.5 animate-spin text-zinc-600"
                          fill="none"
                          viewBox="0 0 24 24">

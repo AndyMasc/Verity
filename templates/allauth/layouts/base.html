@@ -46,8 +46,8 @@
                  x-on:keydown.esc.window="isOpen = false, openedWithKeyboard = false">
                 <button type="button"
                         x-on:click="isOpen = ! isOpen"
-                        class="inline-flex items-center gap-2 rounded-xl border border-zinc-200/50 bg-white/90 px-4 py-2 text-xs font-semibold tracking-tight text-zinc-800 shadow-xs backdrop-blur-md transition-all duration-200 select-none hover:bg-white focus:outline-none active:scale-[0.98] dark:border-zinc-800/50 dark:bg-zinc-950/80 dark:text-zinc-200 dark:hover:bg-zinc-800">
-                    <span>Profile options</span>
+                        class="inline-flex items-center gap-2 rounded-lg border border-zinc-200/50 bg-white px-4 py-2 text-xs font-semibold tracking-tight text-zinc-800 shadow-xs backdrop-blur-md transition-all duration-200 select-none hover:bg-white focus:outline-none active:scale-[0.98] dark:border-zinc-800/50 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800">
+                    <span>Options</span>
                     <svg class="size-3 text-zinc-500 transition-transform duration-200 dark:text-zinc-400"
                          :class="isOpen ? 'rotate-180' : 'rotate-0'"
                          fill="none"
@@ -66,7 +66,7 @@
                      x-transition:leave-start="transform opacity-100 scale-100"
                      x-transition:leave-end="transform opacity-0 scale-98"
                      x-on:click.outside="isOpen = false, openedWithKeyboard = false"
-                     class="absolute top-11 left-0 w-56 overflow-hidden rounded-xl border border-zinc-200/50 bg-white/95 p-1.5 shadow-lg backdrop-blur-xl dark:border-zinc-800/50 dark:bg-zinc-950/95"
+                     class="absolute top-11 left-0 w-56 overflow-hidden rounded-lg border border-zinc-200/50 bg-white/95 p-1.5 shadow-lg backdrop-blur-xl dark:border-zinc-800/50 dark:bg-zinc-950/95"
                      role="menu">
                     {% url 'account_email' as email_url %}
                     {% if email_url %}

@@ -15,8 +15,6 @@ from core.turnstile_forms import TurnstileProtectedForm
 
 
 class RequestVerificationCodeForm(TurnstileProtectedForm):
-    """Request a verification code for a reimbursement payment."""
-
     turnstile_action = ACTION_REQUEST_VERIFICATION
 
     email = forms.EmailField(
@@ -27,7 +25,7 @@ class RequestVerificationCodeForm(TurnstileProtectedForm):
             attrs={
                 "placeholder": "you@example.com",
                 "autocomplete": "email",
-                "class": "shadow-2xs w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-900 placeholder-zinc-400 transition-all focus:border-[#5A67FF] focus:ring-2 focus:ring-[#5A67FF]/20 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950/50 dark:text-zinc-100",
+                "class": "shadow-2xs w-full rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-900 placeholder-zinc-400 transition-all focus:border-[#5A67FF] focus:ring-2 focus:ring-[#5A67FF]/20 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950/50 dark:text-zinc-100",
             }
         ),
     )
@@ -39,8 +37,6 @@ class RequestVerificationCodeForm(TurnstileProtectedForm):
 
 
 class VerifyEmailCodeForm(TurnstileProtectedForm):
-    """Verify the emailed verification code."""
-
     turnstile_action = ACTION_VERIFY_CODE
 
     email = forms.EmailField(
@@ -58,7 +54,7 @@ class VerifyEmailCodeForm(TurnstileProtectedForm):
                 "placeholder": "123 456",
                 "inputmode": "numeric",
                 "autocomplete": "one-time-code",
-                "class": "shadow-2xs w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-center text-lg tracking-widest text-zinc-900 placeholder-zinc-400 transition-all focus:border-[#5A67FF] focus:ring-2 focus:ring-[#5A67FF]/20 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950/50 dark:text-zinc-100",
+                "class": "shadow-2xs w-full rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 text-center text-lg tracking-widest text-zinc-900 placeholder-zinc-400 transition-all focus:border-[#5A67FF] focus:ring-2 focus:ring-[#5A67FF]/20 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950/50 dark:text-zinc-100",
             }
         ),
     )
@@ -70,8 +66,6 @@ class VerifyEmailCodeForm(TurnstileProtectedForm):
 
 
 class CheckoutTurnstileForm(TurnstileProtectedForm):
-    """Protect the final public checkout submission with Turnstile."""
-
     turnstile_action = ACTION_CHECKOUT
 
     def __init__(self, *args, request=None, **kwargs):

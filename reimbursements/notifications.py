@@ -19,13 +19,24 @@ def build_pay_url(package_uuid: str) -> str:
     return f"{site_url}/reimbursements/pay/{package_uuid}/"
 
 
-def send_package_created_notification(package, recipient=None) -> None:
-    """Notify the recipient that a reimbursement package has been sent to them.
+def _render_created_email(package, *, creator_name, recipient_name, amount, currency, url):
+    ctx = {
+        "creator_name": creator_name,
+        "recipient_name": recipient_name,
+        "title": escape(package.title),
+        "amount": amount,
+        "currency": currency,
+        "package_url": url,
+        "records": package.records.filter(is_active=True),
+        **build_site_context(),
+    }
+    return (
+        render_to_string("reimbursements/email/package_created_message.html", ctx),
+        render_to_string("reimbursements/email/package_created_message.txt", ctx),
+    )
 
-    Registered recipients get the full multi-channel notification; external
-    (unauthenticated) recipients are emailed their payment link, which
-    requires email verification before viewing or paying.
-    """
+
+def send_package_created_notification(package, recipient=None) -> None:
     from core.services.notifications import send_multi_channel_notification
 
     recipient = recipient or package.recipient
@@ -40,21 +51,13 @@ def send_package_created_notification(package, recipient=None) -> None:
         if not recipient_name:
             return
         subject = f'{plain_creator} sent you a reimbursement request: "{plain_title}"'
-        template_context = {
-            "creator_name": escape(plain_creator),
-            "recipient_name": escape(recipient_name),
-            "title": escape(package.title),
-            "amount": amount,
-            "currency": currency,
-            "package_url": package_url,
-            "records": package.records.filter(is_active=True),
-            **build_site_context(),
-        }
-        html_body = render_to_string(
-            "reimbursements/email/package_created_message.html", template_context
-        )
-        text_body = render_to_string(
-            "reimbursements/email/package_created_message.txt", template_context
+        html_body, text_body = _render_created_email(
+            package,
+            creator_name=escape(plain_creator),
+            recipient_name=escape(recipient_name),
+            amount=amount,
+            currency=currency,
+            url=package_url,
         )
         send_background_email.send(
             EmailTaskPayload(
@@ -68,27 +71,15 @@ def send_package_created_notification(package, recipient=None) -> None:
         return
 
     package_url = build_package_url(package.uuid)
-    creator_name = escape(plain_creator)
-    safe_title = escape(package.title)
-    safe_recipient = escape(recipient.get_full_name() or recipient.email)
     subject = f'{plain_creator} sent you a reimbursement request: "{plain_title}"'
 
-    template_context = {
-        "creator_name": creator_name,
-        "recipient_name": safe_recipient,
-        "title": safe_title,
-        "amount": amount,
-        "currency": currency,
-        "package_url": package_url,
-        "records": package.records.filter(is_active=True),
-        **build_site_context(),
-    }
-
-    html_body = render_to_string(
-        "reimbursements/email/package_created_message.html", template_context
-    )
-    text_body = render_to_string(
-        "reimbursements/email/package_created_message.txt", template_context
+    html_body, text_body = _render_created_email(
+        package,
+        creator_name=escape(plain_creator),
+        recipient_name=escape(recipient.get_full_name() or recipient.email),
+        amount=amount,
+        currency=currency,
+        url=package_url,
     )
 
     formatted_amount = format_currency(amount, currency)
@@ -110,7 +101,6 @@ def send_package_created_notification(package, recipient=None) -> None:
 
 
 def send_package_paid_notification(package, payer) -> None:
-    """Send email + in-app notification to the package creator when paid."""
     from core.services.notifications import send_multi_channel_notification
 
     package_url = build_package_url(package.uuid)

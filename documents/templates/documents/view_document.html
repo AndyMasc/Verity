@@ -56,13 +56,13 @@
                             <textarea id="id_notes"
                                       name="notes"
                                       rows="4"
-                                      class="focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-600 text-sm w-full p-4 resize-none rounded-xl bg-zinc-50 dark:bg-zinc-800/20 border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 placeholder-zinc-500 dark:placeholder-zinc-600 transition-all duration-200 leading-relaxed"
+                                      class="focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-600 text-sm w-full p-4 resize-none rounded-lg bg-zinc-50 dark:bg-zinc-800/20 border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 placeholder-zinc-500 dark:placeholder-zinc-600 transition-all duration-200 leading-relaxed"
                                       placeholder="Notes regarding this document...">{{ document.notes|default_if_none:'' }}</textarea>
                             {% if form.notes.errors %}
                                 <p class="text-xs text-rose-500 mt-1">{{ form.notes.errors.as_text }}</p>
                             {% endif %}
                         </div>
-                        <div class="bg-white dark:bg-zinc-800/20 border border-zinc-200/50 dark:border-zinc-800/50 rounded-xl p-4 space-y-3.5">
+                        <div class="bg-white dark:bg-zinc-800/20 border border-zinc-200/50 dark:border-zinc-800/50 rounded-lg p-4 space-y-3.5">
                             <h4 class="text-[11px] font-bold tracking-widest text-zinc-500 dark:text-zinc-400 uppercase pl-0.5">Metadata</h4>
                             <div class="grid grid-cols-2 gap-4 text-xs">
                                 <div>
@@ -76,7 +76,7 @@
                             </div>
                             <div class="pt-2.5 border-t border-zinc-200/60 dark:border-zinc-800/60">
                                 <span class="text-[11px] text-zinc-500 dark:text-zinc-400 font-bold tracking-wider uppercase block mb-1">Storage Path</span>
-                                <p class="text-[11px] text-zinc-600 dark:text-zinc-400 break-all select-all bg-white dark:bg-zinc-950 p-2 rounded-xl border border-zinc-200 dark:border-zinc-800/30">
+                                <p class="text-[11px] text-zinc-600 dark:text-zinc-400 break-all select-all bg-white dark:bg-zinc-950 p-2 rounded-lg border border-zinc-200 dark:border-zinc-800/30">
                                     {{ document.filepath }}
                                 </p>
                             </div>
@@ -92,12 +92,12 @@
                     <h3 class="text-[11px] font-bold tracking-widest text-zinc-500 dark:text-zinc-400 uppercase mb-2 pl-0.5">Connected Record</h3>
                     {% if document.associated_record %}
                         <a href="{% url 'records:record_detail' document.associated_record.id %}"
-                           class="w-full bg-black dark:bg-white border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-white dark:text-black font-medium py-2 px-4 rounded-xl text-xs flex items-center justify-center gap-2 transition-all duration-200 shadow-xs active:scale-[0.98]">
+                           class="w-full bg-black dark:bg-white border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-white dark:text-black font-medium py-2 px-4 rounded-lg text-xs flex items-center justify-center gap-2 transition-all duration-200 shadow-xs active:scale-[0.98]">
                             View Associated Record
                         </a>
                     {% else %}
                         <button @click="modalOpen=true"
-                                class="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-medium py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-2 transition-all duration-200 shadow-xs active:scale-[0.98] cursor-pointer">
+                                class="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-medium py-2.5 px-4 rounded-lg text-xs flex items-center justify-center gap-2 transition-all duration-200 shadow-xs active:scale-[0.98] cursor-pointer">
                             <svg class="w-4 h-4 text-zinc-500"
                                  fill="none"
                                  viewBox="0 0 24 24"
@@ -129,7 +129,7 @@
                                      x-transition:leave="ease-in duration-200"
                                      x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
                                      x-transition:leave-end="opacity-0 translate-y-4 sm:scale-95"
-                                     class="relative flex flex-col w-full max-h-[85vh] bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xl sm:max-w-md rounded-xl overflow-y-auto">
+                                     class="relative flex flex-col w-full max-h-[85vh] bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xl sm:max-w-md rounded-lg overflow-y-auto">
                                     <div class="px-6 pt-6 pb-4 border-b border-zinc-100 dark:border-zinc-800/60 space-y-4">
                                         <div class="flex justify-between items-start">
                                             <div class="space-y-1">
@@ -137,7 +137,7 @@
                                                 <p class="text-xs text-zinc-500 dark:text-zinc-400">Select a record to associate with this file.</p>
                                             </div>
                                             <button @click="modalOpen=false"
-                                                    class="flex items-center justify-center w-8 h-8 rounded-xl text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all duration-200 cursor-pointer">
+                                                    class="flex items-center justify-center w-8 h-8 rounded-lg text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all duration-200 cursor-pointer">
                                                 <svg class="w-4 h-4"
                                                      xmlns="http://www.w3.org/2000/svg"
                                                      fill="none"
@@ -161,7 +161,7 @@
                                                    hx-target="#search-results"
                                                    type="search"
                                                    name="search"
-                                                   class="w-full text-xs bg-zinc-50 dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200 border border-zinc-200/50 dark:border-zinc-800/50 pl-10 pr-4 py-2.5 rounded-xl focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-600 transition-all duration-200"
+                                                   class="w-full text-xs bg-zinc-50 dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200 border border-zinc-200/50 dark:border-zinc-800/50 pl-10 pr-4 py-2.5 rounded-lg focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-600 transition-all duration-200"
                                                    placeholder="Search records..."
                                                    autocomplete="off">
                                         </div>
@@ -184,7 +184,7 @@
                                                     Cancel
                                                 </button>
                                                 <button type="submit"
-                                                        class="inline-flex justify-center items-center px-5 py-2 text-xs font-medium text-white dark:text-zinc-950 bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-zinc-200 rounded-xl transition-all duration-200 shadow-xs active:scale-[0.98] cursor-pointer">
+                                                        class="inline-flex justify-center items-center px-5 py-2 text-xs font-medium text-white dark:text-zinc-950 bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-zinc-200 rounded-lg transition-all duration-200 shadow-xs active:scale-[0.98] cursor-pointer">
                                                     Confirm Attachment
                                                 </button>
                                             </div>
@@ -203,15 +203,15 @@
                     {% csrf_token %}
                     <button type="submit"
                             onclick="return confirm('Delete this document?\nThis action is permanent and cannot be undone.')"
-                            class="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:bg-rose-500/5 dark:hover:bg-rose-500/10 text-zinc-500 dark:text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:border-rose-200 dark:hover:border-rose-900/50 font-medium py-2 px-4 rounded-xl text-xs flex items-center justify-center gap-2 transition-all duration-200 shadow-xs active:scale-[0.98] cursor-pointer">
+                            class="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:bg-rose-500/5 dark:hover:bg-rose-500/10 text-zinc-500 dark:text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:border-rose-200 dark:hover:border-rose-900/50 font-medium py-2 px-4 rounded-lg text-xs flex items-center justify-center gap-2 transition-all duration-200 shadow-xs active:scale-[0.98] cursor-pointer">
                         Delete Document
                     </button>
                 </form>
             </div>
         </aside>
         <main x-data="{ zoom: 1 }"
-              class="flex-1 w-full flex flex-col border border-zinc-200/50 dark:border-zinc-800/50 rounded-xl overflow-hidden relative min-h-[600px]">
-            <div class="absolute top-4 right-4 z-10 flex gap-1 bg-white/90 dark:bg-zinc-950/90 backdrop-blur rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xs p-0.5">
+              class="flex-1 w-full flex flex-col border border-zinc-200/50 dark:border-zinc-800/50 rounded-lg overflow-hidden relative min-h-[600px]">
+            <div class="absolute top-4 right-4 z-10 flex gap-1 bg-white/90 dark:bg-zinc-950/90 backdrop-blur rounded-lg border border-zinc-200 dark:border-zinc-800 shadow-xs p-0.5">
                 <button @click="zoom = Math.max(0.5, zoom - 0.1)"
                         class="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-all duration-200 cursor-pointer">
                     <svg xmlns="http://www.w3.org/2000/svg"

@@ -10,7 +10,7 @@
     {% if shares %}
         <ul class="space-y-2.5">
             {% for share in shares %}
-                <li class="group flex items-center justify-between gap-3 py-2.5 px-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.04] hover:border-white/[0.08] transition-all duration-200 {% if not share.is_active %}opacity-60{% endif %}">
+                <li class="group flex items-center justify-between gap-3 py-2.5 px-3 rounded-lg bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.04] hover:border-white/[0.08] transition-all duration-200 {% if not share.is_active %}opacity-60{% endif %}">
                     <div class="flex min-w-0 items-center gap-3">
                         <div class="min-w-0">
                             <p class="truncate text-xs font-medium text-zinc-200 transition-colors group-hover:text-white">
@@ -45,7 +45,7 @@
             {% endfor %}
         </ul>
     {% else %}
-        <div class="rounded-xl border border-dashed border-white/[0.06] bg-white/[0.01] px-4 py-3 text-center">
+        <div class="rounded-lg border border-dashed border-white/[0.06] bg-white/[0.01] px-4 py-3 text-center">
             <p class="text-xs text-zinc-500">Not shared with anyone yet.</p>
         </div>
     {% endif %}
@@ -54,7 +54,7 @@
             To share this record, select it on the records list and use the share action.
         </p>
     {% elif can_share_feature is False %}
-        <div class="rounded-xl border border-rose-500/20 bg-rose-500/10 p-3">
+        <div class="rounded-lg border border-rose-500/20 bg-rose-500/10 p-3">
             <p class="text-[11px] font-medium text-rose-400">Record sharing is a Pro feature.</p>
         </div>
     {% endif %}

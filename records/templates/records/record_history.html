@@ -25,7 +25,7 @@
                 {% endif %}
                 <div class="space-y-2">
                     {% for h in history %}
-                        <div class="group relative -mx-3 flex items-start gap-4 rounded-xl px-3 py-3.5 transition-all duration-200 hover:bg-zinc-100/60 dark:hover:bg-zinc-900/50">
+                        <div class="group relative -mx-3 flex items-start gap-4 rounded-lg px-3 py-3.5 transition-all duration-200 hover:bg-zinc-100/60 dark:hover:bg-zinc-900/50">
                             <div class="relative z-10 mt-1.5 flex h-2 w-2 shrink-0 items-center justify-center">
                                 <span class="absolute h-4 w-4 rounded-full bg-zinc-400/0 transition-colors duration-200 group-hover:bg-[#5A67FF]/15"></span>
                                 <span class="h-1.5 w-1.5 rounded-full bg-white ring-2 ring-zinc-300 transition-all duration-200 group-hover:ring-[#5A67FF] dark:bg-zinc-950 dark:ring-zinc-700 dark:group-hover:ring-[#5A67FF]"></span>
@@ -64,7 +64,7 @@
                                     </p>
                                 </div>
                                 {% if h.source_type == "merge" and h.history_type == '+' and h.merge %}
-                                    <div class="shadow-2xs rounded-xl border border-zinc-200/80 bg-zinc-50/80 p-4 dark:border-zinc-800 dark:bg-zinc-900/45">
+                                    <div class="shadow-2xs rounded-lg border border-zinc-200/80 bg-zinc-50/80 p-4 dark:border-zinc-800 dark:bg-zinc-900/45">
                                         <div class="grid grid-cols-1 gap-6 text-xs sm:grid-cols-2">
                                             <div class="space-y-2.5">
                                                 <div class="flex items-center justify-between">
@@ -116,7 +116,7 @@
                                     </div>
                                 {% endif %}
                                 {% if h.history_type == '~' and h.prev_record %}
-                                    <div class="shadow-2xs rounded-xl border border-zinc-200/80 bg-zinc-50/80 p-4 dark:border-zinc-800 dark:bg-zinc-900/45">
+                                    <div class="shadow-2xs rounded-lg border border-zinc-200/80 bg-zinc-50/80 p-4 dark:border-zinc-800 dark:bg-zinc-900/45">
                                         <div class="grid grid-cols-1 gap-4 text-xs sm:grid-cols-3">
                                             {% if h.source_type == "document" %}
                                                 {% include "records/partials/history_diff.html" with fields=doc_tracked_fields prev_record=h.prev_record entry=h %}
@@ -129,7 +129,7 @@
                             </div>
                         </div>
                     {% empty %}
-                        <div class="rounded-xl border border-dashed border-zinc-200 bg-zinc-50/30 py-16 text-center text-xs text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/10 dark:text-zinc-400">
+                        <div class="rounded-lg border border-dashed border-zinc-200 bg-zinc-50/30 py-16 text-center text-xs text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/10 dark:text-zinc-400">
                             No history yet for this record.
                         </div>
                     {% endfor %}

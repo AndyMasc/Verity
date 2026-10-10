@@ -24,7 +24,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.604 10.604z" />
             </svg>
         </div>
-        <input class="w-full rounded-xl border border-zinc-200 bg-zinc-100 py-2.5 pr-3.5 pl-9 text-xs text-zinc-900 placeholder-zinc-500 transition-all duration-200 focus:border-zinc-400 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:border-zinc-600"
+        <input class="w-full rounded-lg border border-zinc-200 bg-zinc-100 py-2.5 pr-3.5 pl-9 text-xs text-zinc-900 placeholder-zinc-500 transition-all duration-200 focus:border-zinc-400 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:border-zinc-600"
                placeholder="Search {{ label|lower }}..."
                id="modal-{{ mode }}-search"
                type="search"
@@ -43,7 +43,7 @@
           class="scrollbar-none flex items-center gap-2 overflow-x-auto">
         {% for field in filter.form %}
             {% if field.name == 'record_type' or field.name == 'folder' or field.name == 'this_month' %}
-                <div class="flex shrink-0 items-center rounded-xl border border-zinc-200 bg-zinc-100 px-2.5 py-1.5 text-xs font-medium text-zinc-600 transition-all duration-200 hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-300 dark:hover:border-zinc-600">
+                <div class="flex shrink-0 items-center rounded-lg border border-zinc-200 bg-zinc-100 px-2.5 py-1.5 text-xs font-medium text-zinc-600 transition-all duration-200 hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-300 dark:hover:border-zinc-600">
                     {% render_field field class="appearance-none outline-none bg-transparent cursor-pointer text-zinc-700 dark:text-zinc-200 pr-3 text-xs font-medium border-none p-0 focus:ring-0" %}
                 </div>
             {% endif %}
@@ -58,8 +58,8 @@
     <div id="modal-{{ mode }}-results"
          class="relative max-h-[45vh] min-h-0 overflow-y-auto">
         <div id="modal-{{ mode }}-indicator"
-             class="htmx-indicator absolute inset-0 z-10 hidden items-center justify-center rounded-xl bg-white/40 backdrop-blur-[1px] dark:bg-zinc-950/40">
-            <div class="animate-pulse rounded-xl border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-600 shadow-xs dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
+             class="htmx-indicator absolute inset-0 z-10 hidden items-center justify-center rounded-lg bg-white/40 backdrop-blur-[1px] dark:bg-zinc-950/40">
+            <div class="animate-pulse rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-600 shadow-xs dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
                 Updating...
             </div>
         </div>

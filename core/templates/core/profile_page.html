@@ -80,7 +80,7 @@
                      x-transition:enter-start="opacity-0 translate-y-0.5"
                      x-transition:enter-end="opacity-100 translate-y-0"
                      class="space-y-4">
-                    <div class="rounded-xl border border-zinc-200 bg-zinc-100/50 p-5 dark:border-zinc-900 dark:bg-zinc-900/40">
+                    <div class="rounded-lg border border-zinc-200 bg-zinc-100/50 p-5 dark:border-zinc-900 dark:bg-zinc-900/40">
                         <h3 class="text-xs font-medium text-zinc-500 dark:text-zinc-400">General Information</h3>
                         <div class="mt-4 grid grid-cols-1 gap-5 sm:grid-cols-2">
                             {% if user.username %}
@@ -105,7 +105,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="rounded-xl border border-zinc-200 bg-zinc-100/50 p-5 dark:border-zinc-900 dark:bg-zinc-900/40">
+                    <div class="rounded-lg border border-zinc-200 bg-zinc-100/50 p-5 dark:border-zinc-900 dark:bg-zinc-900/40">
                         <h3 class="text-xs font-medium text-zinc-500 dark:text-zinc-400">Subscription plan</h3>
                         <div class="mt-4 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
                             <div class="space-y-1">
@@ -136,7 +136,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="flex flex-col items-start justify-between gap-4 rounded-xl border border-zinc-200 bg-zinc-100/50 p-5 sm:flex-row sm:items-center dark:border-zinc-900 dark:bg-zinc-900/40">
+                    <div class="flex flex-col items-start justify-between gap-4 rounded-lg border border-zinc-200 bg-zinc-100/50 p-5 sm:flex-row sm:items-center dark:border-zinc-900 dark:bg-zinc-900/40">
                         <div>
                             <h3 class="text-xs font-medium text-zinc-900 dark:text-zinc-200">Export records</h3>
                             <p class="mt-0.5 text-[11px] text-zinc-500 dark:text-zinc-500">
@@ -161,7 +161,7 @@
                      x-transition:enter-start="opacity-0 translate-y-0.5"
                      x-transition:enter-end="opacity-100 translate-y-0"
                      class="space-y-4">
-                    <div class="rounded-xl border border-zinc-200 bg-zinc-100/50 dark:border-zinc-900 dark:bg-zinc-900/40">
+                    <div class="rounded-lg border border-zinc-200 bg-zinc-100/50 dark:border-zinc-900 dark:bg-zinc-900/40">
                         <form hx-post="{% url 'core:profile_page' %}"
                               hx-target="#UserSettingsForm"
                               hx-swap="outerHTML"
@@ -180,7 +180,7 @@
                      x-transition:enter-start="opacity-0 translate-y-0.5"
                      x-transition:enter-end="opacity-100 translate-y-0"
                      class="space-y-4">
-                    <div class="rounded-xl border border-zinc-200 bg-zinc-100/50 dark:border-zinc-900 dark:bg-zinc-900/40">
+                    <div class="rounded-lg border border-zinc-200 bg-zinc-100/50 dark:border-zinc-900 dark:bg-zinc-900/40">
                         <form hx-post="{% url 'core:profile_page' %}"
                               hx-target="#UserSettingsForm"
                               hx-swap="outerHTML"
@@ -221,7 +221,7 @@
                             </div>
                         </form>
                     </div>
-                    <div class="flex flex-col items-start justify-between gap-4 rounded-xl border border-zinc-200 bg-zinc-100/50 p-5 sm:flex-row sm:items-center dark:border-zinc-900 dark:bg-zinc-900/40">
+                    <div class="flex flex-col items-start justify-between gap-4 rounded-lg border border-zinc-200 bg-zinc-100/50 p-5 sm:flex-row sm:items-center dark:border-zinc-900 dark:bg-zinc-900/40">
                         <div class="space-y-0.5">
                             <h4 class="text-xs font-medium text-zinc-900 dark:text-zinc-200">Push notification devices</h4>
                             <p class="text-[11px] text-zinc-500 dark:text-zinc-500">
@@ -238,7 +238,7 @@
                      x-transition:enter="transition ease-out duration-150"
                      x-transition:enter-start="opacity-0 translate-y-0.5"
                      x-transition:enter-end="opacity-100 translate-y-0">
-                    <div class="divide-y divide-zinc-200/60 overflow-hidden rounded-xl border border-zinc-200 bg-zinc-100/50 dark:divide-zinc-800/60 dark:border-zinc-900 dark:bg-zinc-900/40">
+                    <div class="divide-y divide-zinc-200/60 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-100/50 dark:divide-zinc-800/60 dark:border-zinc-900 dark:bg-zinc-900/40">
                         {% url 'account_email' as email_url %}
                         {% if email_url %}
                             <a href="{{ email_url }}"

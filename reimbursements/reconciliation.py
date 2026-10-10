@@ -1,12 +1,4 @@
-"""Daily reconciliation of local money state against Stripe.
-
-The 15-minute "reconcile_pending_payments_task" catches payments that settled
-without a webhook. This module is the wider safety net: it verifies that
-locally recorded settlements still match Stripe's view of the world, and that
-package/payment state transitions never drifted apart. Any mismatch is logged
-at CRITICAL (picked up by Sentry) and written to the audit trail so drift
-pages a human instead of waiting for a user to complain.
-"""
+"""Daily reconciliation of local money state against Stripe."""
 
 import logging
 from dataclasses import dataclass
@@ -28,8 +20,6 @@ DEDUP_WINDOW_HOURS = 24
 
 @dataclass(frozen=True)
 class Drift:
-    """One inconsistency between local state and Stripe."""
-
     kind: str
     package_uuid: str
     detail: dict
@@ -44,12 +34,6 @@ class Drift:
 
 
 def run_daily_reconciliation() -> list[Drift]:
-    """Run all reconciliation checks. Returns the list of detected drifts.
-
-    Raises "stripe.error.StripeError" on transient API failure so the caller
-    (Dramatiq) retries the whole run; findings are deduplicated so retries do
-        not create duplicate audit entries.
-    """
     drifts: list[Drift] = []
     drifts.extend(_check_completed_payments())
     drifts.extend(_check_paid_packages_have_completed_payment())
@@ -69,7 +53,6 @@ def run_daily_reconciliation() -> list[Drift]:
 
 
 def _check_completed_payments() -> list[Drift]:
-    """Verify every completed payment against its PaymentIntent at Stripe."""
     drifts: list[Drift] = []
     payments = (
         PackagePayment.objects.filter(is_completed=True)
@@ -140,7 +123,6 @@ def _check_completed_payments() -> list[Drift]:
 
 
 def _check_paid_packages_have_completed_payment() -> list[Drift]:
-    """Every PAID package must have a completed payment backing it."""
     paid_without_payment = ReimbursementPackage.objects.filter(
         status=ReimbursementPackage.Status.PAID, deleted_at__isnull=True
     ).exclude(payments__is_completed=True)
@@ -155,7 +137,6 @@ def _check_paid_packages_have_completed_payment() -> list[Drift]:
 
 
 def _check_completed_payments_have_paid_package() -> list[Drift]:
-    """Every completed payment must belong to a PAID package."""
     unsettled = PackagePayment.objects.filter(is_completed=True).exclude(
         package__status=ReimbursementPackage.Status.PAID
     )
@@ -175,7 +156,6 @@ def _check_completed_payments_have_paid_package() -> list[Drift]:
 
 
 def _flag(drift: Drift) -> None:
-    """Log CRITICAL and persist an audit entry once per unique drift per day."""
     details = drift.as_audit_details()
     window_start = timezone.now() - timezone.timedelta(hours=DEDUP_WINDOW_HOURS)
     already_flagged = AuditLog.objects.filter(

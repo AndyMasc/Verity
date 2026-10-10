@@ -7,7 +7,7 @@
             hx-target="#modal-inner"
             @click="showModal = true; $nextTick(() => document.getElementById('modal-inner').innerHTML = '')">
         <div :class="{{ selectedState }} ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 scale-105' : 'bg-zinc-50 dark:bg-zinc-950 border border-zinc-200/60 dark:border-zinc-800'"
-             class="shadow-2xs rounded-xl p-3 transition-all duration-300">
+             class="shadow-2xs rounded-lg p-3 transition-all duration-300">
             {% if icon == "bank" %}
                 <svg class="size-5 shrink-0"
                      fill="none"

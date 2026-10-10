@@ -150,7 +150,7 @@
                 <p class="mt-1 text-[13px] text-zinc-600 dark:text-zinc-400">Send a secure payment request to anyone with an email.</p>
             </div>
             <template x-if="packageError">
-                <div class="mx-6 mt-4 flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-3.5 py-2.5 text-[13px] text-red-600 dark:text-red-400"
+                <div class="mx-6 mt-4 flex items-center gap-2 rounded-lg border border-red-500/20 bg-red-500/10 px-3.5 py-2.5 text-[13px] text-red-600 dark:text-red-400"
                      x-text="packageError"></div>
             </template>
             <div class="space-y-4 px-6 py-5">
@@ -160,7 +160,7 @@
                     <input id="package-title"
                            type="text"
                            x-model="packageTitle"
-                           class="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3.5 py-2.5 text-[14px] text-zinc-900 placeholder-zinc-500 transition-all duration-200 focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900 focus:outline-none dark:border-white/[0.08] dark:bg-white/[0.03] dark:text-zinc-100 dark:placeholder-zinc-600 dark:focus:border-white dark:focus:ring-white/40"
+                           class="w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3.5 py-2.5 text-[14px] text-zinc-900 placeholder-zinc-500 transition-all duration-200 focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900 focus:outline-none dark:border-white/[0.08] dark:bg-white/[0.03] dark:text-zinc-100 dark:placeholder-zinc-600 dark:focus:border-white dark:focus:ring-white/40"
                            placeholder="Expense Reimbursement">
                 </div>
                 <div>
@@ -171,7 +171,7 @@
                                type="email"
                                x-model="recipientEmail"
                                @input="onEmailInput()"
-                               class="w-full rounded-xl border bg-zinc-50 px-3.5 py-2.5 pr-10 text-[14px] text-zinc-900 placeholder-zinc-500 transition-all duration-200 focus:ring-2 focus:outline-none dark:bg-white/[0.03] dark:text-zinc-100 dark:placeholder-zinc-600"
+                               class="w-full rounded-lg border bg-zinc-50 px-3.5 py-2.5 pr-10 text-[14px] text-zinc-900 placeholder-zinc-500 transition-all duration-200 focus:ring-2 focus:outline-none dark:bg-white/[0.03] dark:text-zinc-100 dark:placeholder-zinc-600"
                                :class="recipientStatus === 'valid' ? 'border-emerald-500/40 focus:ring-emerald-500/40' : recipientStatus === 'invalid' ? 'border-red-500/40 focus:ring-red-500/40' : 'border-zinc-200 dark:border-white/[0.08] focus:ring-zinc-900 dark:focus:ring-white/40 focus:border-zinc-900 dark:focus:border-white'"
                                placeholder="colleague@example.com">
                         <div class="absolute top-1/2 right-3 -translate-y-1/2"
@@ -214,13 +214,13 @@
             <div class="flex items-center justify-end gap-2.5 border-t border-zinc-100 bg-zinc-50/50 px-6 py-4 dark:border-white/[0.04] dark:bg-white/[0.01]">
                 <button type="button"
                         @click="showPackageModal = false"
-                        class="rounded-xl px-4 py-2 text-[13px] font-medium text-zinc-600 transition-all duration-200 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-white/[0.04] dark:hover:text-zinc-200">
+                        class="rounded-lg px-4 py-2 text-[13px] font-medium text-zinc-600 transition-all duration-200 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-white/[0.04] dark:hover:text-zinc-200">
                     Cancel
                 </button>
                 <button type="button"
                         @click="createReimbursementPackage()"
                         :disabled="creatingPackage || recipientStatus !== 'valid'"
-                        class="inline-flex items-center gap-2 rounded-xl bg-black px-5 py-2 text-[13px] font-medium text-white shadow-lg shadow-black/10 transition-all duration-200 hover:bg-zinc-800 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-30 dark:bg-white dark:text-black dark:shadow-white/10 dark:hover:bg-zinc-200">
+                        class="inline-flex items-center gap-2 rounded-lg bg-black px-5 py-2 text-[13px] font-medium text-white shadow-lg shadow-black/10 transition-all duration-200 hover:bg-zinc-800 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-30 dark:bg-white dark:text-black dark:shadow-white/10 dark:hover:bg-zinc-200">
                     <template x-if="creatingPackage">
                         <svg class="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" />
@@ -265,7 +265,7 @@
                 </p>
             </div>
             <template x-if="shareError">
-                <div class="mx-6 mt-4 flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-3.5 py-2.5 text-[13px] text-red-600 dark:text-red-400"
+                <div class="mx-6 mt-4 flex items-center gap-2 rounded-lg border border-red-500/20 bg-red-500/10 px-3.5 py-2.5 text-[13px] text-red-600 dark:text-red-400"
                      x-text="shareError"></div>
             </template>
             <div class="space-y-4 px-6 py-5">
@@ -276,7 +276,7 @@
                               x-model="shareEmails"
                               rows="3"
                               placeholder="colleague@example.com, team@example.com"
-                              class="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3.5 py-2.5 text-[14px] text-zinc-900 placeholder-zinc-500 transition-all duration-200 focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900 focus:outline-none dark:border-white/[0.08] dark:bg-white/[0.03] dark:text-zinc-100 dark:placeholder-zinc-600 dark:focus:border-white dark:focus:ring-white/40"></textarea>
+                              class="w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3.5 py-2.5 text-[14px] text-zinc-900 placeholder-zinc-500 transition-all duration-200 focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900 focus:outline-none dark:border-white/[0.08] dark:bg-white/[0.03] dark:text-zinc-100 dark:placeholder-zinc-600 dark:focus:border-white dark:focus:ring-white/40"></textarea>
                     <p class="mt-1.5 text-[12px] text-zinc-500 dark:text-zinc-400">
                         Comma-separated emails of registered Verity users. Requires the Pro plan.
                     </p>
@@ -310,13 +310,13 @@
             <div class="flex items-center justify-end gap-2.5 border-t border-zinc-100 bg-zinc-50/50 px-6 py-4 dark:border-white/[0.04] dark:bg-white/[0.01]">
                 <button type="button"
                         @click="showShareModal = false"
-                        class="rounded-xl px-4 py-2 text-[13px] font-medium text-zinc-600 transition-all duration-200 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-white/[0.04] dark:hover:text-zinc-200">
+                        class="rounded-lg px-4 py-2 text-[13px] font-medium text-zinc-600 transition-all duration-200 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-white/[0.04] dark:hover:text-zinc-200">
                     Cancel
                 </button>
                 <button type="button"
                         @click="bulkShare()"
                         :disabled="sharing"
-                        class="inline-flex items-center gap-2 rounded-xl bg-black px-5 py-2 text-[13px] font-medium text-white shadow-lg shadow-black/10 transition-all duration-200 hover:bg-zinc-800 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-30 dark:bg-white dark:text-black dark:shadow-white/10 dark:hover:bg-zinc-200">
+                        class="inline-flex items-center gap-2 rounded-lg bg-black px-5 py-2 text-[13px] font-medium text-white shadow-lg shadow-black/10 transition-all duration-200 hover:bg-zinc-800 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-30 dark:bg-white dark:text-black dark:shadow-white/10 dark:hover:bg-zinc-200">
                     <template x-if="sharing">
                         <svg class="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" />

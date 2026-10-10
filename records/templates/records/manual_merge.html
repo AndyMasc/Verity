@@ -32,7 +32,7 @@
                 <button type="submit"
                         x-bind:disabled="!canMerge"
                         x-bind:class="canMerge ? 'bg-black text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200 shadow-lg shadow-black/10 dark:shadow-white/10 cursor-pointer active:scale-[0.99]' : 'bg-zinc-100 dark:bg-zinc-900/45 text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-white/[0.04] cursor-not-allowed'"
-                        class="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-wider uppercase transition-all duration-200">
+                        class="flex w-full items-center justify-center gap-2 rounded-lg px-4 py-3 text-xs font-semibold tracking-wider uppercase transition-all duration-200">
                     <span x-show="!canMerge">Awaiting Record Selection</span>
                     <span x-show="canMerge">Merge</span>
                 </button>

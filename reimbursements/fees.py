@@ -1,26 +1,8 @@
-"""Currency conversion and platform-fee computation for reimbursements.
-
-Pure value helpers over (amount, currency) pairs, kept out of models.py so
-the data layer stays focused on fields and state.
-
-Platform fee model (destination charges)
-----------------------------------------
-Verity bills payers through destination charges, which means Stripe deducts
-its own processing fees (~2.9% + $0.30 on US cards) from OUR application fee,
-not from the connected account's share. A naive "3% of total" fee therefore
-nets the platform roughly nothing (or a loss below ~$300 per transaction).
-
-The calculator instead builds the application fee bottom-up:
-
-    application_fee = estimated_stripe_fees + platform_net_margin
-
-so the platform's NET revenue after Stripe billing is guaranteed to be at
-least PLATFORM_NET_PERCENT x total (floored at PLATFORM_NET_MIN_USD),
-and the connected account keeps everything above that — the maximum take-home
-any charge structure can offer once Stripe's costs are paid.
-
-All constants are plain defaults; each can be overridden via Django settings
-(e.g. after negotiating ic+ pricing with Stripe) using the same names.
+"""Platform-fee computation for destination charges.
+Stripe deducts its processing fees from OUR application fee, not the connected
+account's share, so the fee is built bottom-up as
+"estimated_stripe_fees + platform_net_margin" rather than as a percentage of
+the total. Every constant can be overridden in Django settings by the same name.
 """
 
 from decimal import ROUND_CEILING, Decimal
@@ -30,21 +12,17 @@ from django.conf import settings
 from core.currencies import to_stripe_amount
 from core.exchange_rates import convert_strict as convert_currency
 
-# Estimated Stripe processing costs for destination charges. Defaults match
-# standard US card pricing; raise STRIPE_FEE_SAFETY_PERCENT if your card mix
-# skews international (surcharges there typically add 1%–1.5%).
+# Stripe's cut, estimated. Raise the safety percent for international card mixes.
 STRIPE_FEE_PERCENT = Decimal("0.029")
 STRIPE_FEE_SAFETY_PERCENT = Decimal("0.003")
 STRIPE_FEE_FIXED_USD = Decimal("0.30")
 
-# What the platform nets AFTER Stripe takes its cut: 1% of the transaction,
-# floored at $0.25-equivalent so micro-payments stay worth processing.
+# What the platform nets after Stripe's cut.
 PLATFORM_NET_PERCENT = Decimal("0.01")
 PLATFORM_NET_MIN_USD = Decimal("0.25")
 
 
 def _cfg(name: str, default: Decimal) -> Decimal:
-    """Read a fee constant, allowing settings-level override."""
     value = getattr(settings, name, None)
     if value is None:
         return default
@@ -52,21 +30,13 @@ def _cfg(name: str, default: Decimal) -> Decimal:
 
 
 def _converted_units(usd_amount: Decimal, payer_currency: str, rates) -> int:
-    """Convert a USD-denominated fee component into Stripe units of the payer currency.
-
-    Uses strict conversion: during an FX outage it is correct to fail the
-    checkout rather than silently collect a mispriced fee.
-    """
     converted = convert_currency(usd_amount, "usd", payer_currency, rates=rates)
     return to_stripe_amount(converted, payer_currency)
 
 
 class CurrencyConverter:
-    """Helpers for turning a package's records into a payer-currency total."""
-
     @staticmethod
     def get_active_record_items(cache: dict, records_queryset) -> list[tuple[Decimal, str]]:
-        """Extract active record balance and currency pairs from cache or queryset."""
         if "records" in cache:
             return [(r.balance, r.currency) for r in cache["records"] if r.is_active and r.balance]
         return list(
@@ -77,20 +47,8 @@ class CurrencyConverter:
 
 
 class PlatformFeeCalculator:
-    """Computes the Stripe application fee for a destination charge.
-
-    Guarantees, whenever the fee is not capped at the payment total:
-
-        fee - actual_stripe_fees >= max(net_percent x total, net_min)
-
-    Actual Stripe fees vary slightly by card (see the safety buffer), so the
-    guarantee is against the ESTIMATE; the daily reconciliation task plus the
-    Stripe dashboard are the backstop for blended-rate drift.
-    """
-
     @staticmethod
     def compute(total_cents: int, payer_currency: str, rates) -> int:
-        """Compute the application fee for a total_cents payment."""
         if total_cents <= 0:
             return 0
 
@@ -119,8 +77,6 @@ class PlatformFeeCalculator:
 
         application_fee = estimated_processing_units + net_margin_units
         if application_fee > total:
-            # Degenerate micro-payment: an application fee may not exceed the
-            # charge amount, so take the whole thing (creator gets nothing
-            # either way; Stripe fees exceed the payment).
+            # An application fee cannot exceed the charge; below this size Stripe's own fees exceed the payment anyway.
             return total_cents
         return int(application_fee)

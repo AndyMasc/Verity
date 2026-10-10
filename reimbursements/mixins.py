@@ -1,21 +1,28 @@
+from contextlib import suppress
+from datetime import timedelta
+
+import stripe
 from django.contrib import messages
 from django.contrib.auth.mixins import UserPassesTestMixin
 from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.urls import reverse
+from django.utils import timezone
 
 from billing.mixins import FeatureRequiredMixin
 
+STALE_AFTER = timedelta(minutes=5)
+
 
 class StripeAccountRequiredMixin(UserPassesTestMixin):
-    """Ensures the user has an active, onboarded Stripe Connect account.
-
-    Checks for the presence of 'stripe_account' and whether 'is_active' returns True.
-    """
-
     def test_func(self) -> bool:
         stripe_account = getattr(self.request.user, "stripe_account", None)
-        return bool(stripe_account and stripe_account.is_active)
+        if stripe_account is None:
+            return False
+        if timezone.now() - stripe_account.updated_at > STALE_AFTER:
+            with suppress(stripe.error.StripeError):
+                stripe_account.sync_from_stripe()
+        return bool(stripe_account.is_active)
 
     def handle_no_permission(self):
         if not self.request.user.is_authenticated:
@@ -40,13 +47,6 @@ class StripeAccountRequiredMixin(UserPassesTestMixin):
 
 
 class ReimbursementRequestRequiredMixin(StripeAccountRequiredMixin, FeatureRequiredMixin):
-    """Requires a connected Stripe account and the Quick Reimbursement feature.
-
-    Combines the Stripe Connect onboarding check ("StripeAccountRequiredMixin")
-    with the paid-only "QUICK_REIMBURSEMENT_REQUEST" feature gate, reusing the
-    shared feature-gate logic from "billing.mixins.FeatureRequiredMixin".
-    """
-
     def test_func(self) -> bool:
         if not super().test_func():
             return False

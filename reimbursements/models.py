@@ -1,13 +1,3 @@
-"""Reimbursement domain models.
-
-Data layer for reimbursement packages, Stripe Connect accounts, payments,
-webhook idempotency markers, and external-payer email verification. Workflows
-(marking packages paid, refunds, checkout sessions, access revocation) are
-delegated to services.py and webhooks.py; currency/fee math lives in money.py
-and checkout presentation in checkout.py. Models keep fields, constraints,
-and simple derived state.
-"""
-
 from __future__ import annotations
 
 import hashlib
@@ -35,7 +25,7 @@ from records.models import Record
 
 from . import checkout
 from .checkout import CheckoutItems, PackageDetailItems
-from .money import PlatformFeeCalculator
+from .fees import PlatformFeeCalculator
 
 if TYPE_CHECKING:
     from django.contrib.auth.base_user import AbstractBaseUser as User
@@ -45,13 +35,6 @@ logger = logging.getLogger(__name__)
 
 @dataclass(frozen=True)
 class PackageDraft:
-    """Validated inputs for creating a reimbursement package ("create_for").
-
-    Bundles the parameters so callers pass one object instead of a long
-    argument list. The caller is responsible for validation; the queryset
-    method only builds the row and its record links.
-    """
-
     creator: User
     recipient: User | None
     title: str
@@ -62,7 +45,6 @@ class PackageDraft:
     status: str | None = None
 
     def resolve_currency(self) -> str:
-        """The package currency: the draft's, or the creator's default."""
         return self.currency or getattr(
             getattr(self.creator, "settings", None), "default_currency", "usd"
         )
@@ -80,11 +62,6 @@ class ReimbursementPackageQuerySet(models.QuerySet):
         )
 
     def create_for(self, draft: PackageDraft):
-        """Create a package from a validated "PackageDraft", attaching its records atomically.
-
-        Returns the created package. "recipient_email" records the address
-        the package was sent to, even when it resolves to a registered user.
-        """
         with transaction.atomic():
             package = self.create(
                 creator=draft.creator,
@@ -100,8 +77,6 @@ class ReimbursementPackageQuerySet(models.QuerySet):
 
 
 class StripeAccount(models.Model):
-    """Holds Stripe Connect payment and onboarding information for a user."""
-
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -119,7 +94,6 @@ class StripeAccount(models.Model):
 
     @property
     def is_active(self) -> bool:
-        """Returns True if the user has completed Stripe onboarding and can receive payouts."""
         return bool(
             self.stripe_account_id
             and self.stripe_details_submitted
@@ -128,11 +102,6 @@ class StripeAccount(models.Model):
         )
 
     def sync_from_stripe(self) -> bool:
-        """Refresh onboarding flags from Stripe.
-
-        Raises "stripe.error.StripeError" on API failure (the caller decides
-        whether to surface or swallow it). Returns True once fully active.
-        """
         from . import services
 
         live_account = services.retrieve_stripe_account(self.stripe_account_id)
@@ -160,13 +129,6 @@ def external_payer_distinct_id(email: str) -> str:
 
 
 def _capture_recipient_paid(locked, payer, shared) -> None:
-    """Record the payment from the payer's side of the funnel.
-
-    A registered payer is a real PostHog person. An external payer is not, so
-    the event is attributed to a hash of the verified address instead of being
-    dropped - otherwise every external payment would be an unattributed event
-    and the recipient funnel would only ever describe signed-in users.
-    """
     from core.apps import posthog_client
 
     if posthog_client is None:
@@ -265,17 +227,11 @@ class ReimbursementPackage(models.Model):
 
     @property
     def recipient_address(self) -> str | None:
-        """Email the package was sent to (registered user or external address)."""
         if self.recipient is not None:
             return self.recipient.email
         return self.recipient_email
 
     def activate(self) -> bool:
-        """Transition a queued (external-recipient) package to open for payment.
-
-        Returns True when the package was queued and is now open; False
-        otherwise (already open, paid, or expired).
-        """
         with transaction.atomic():
             locked = (
                 ReimbursementPackage.objects.select_for_update(skip_locked=True)
@@ -290,20 +246,11 @@ class ReimbursementPackage(models.Model):
             return True
 
     def can_delete(self, user: User) -> bool:
-        """Returns True if the given user is allowed to delete this package."""
         if self.deleted_at is not None:
             return False
         return user == self.creator or (self.status == self.Status.PAID and user == self.recipient)
 
     def delete_package(self, user: User) -> bool:
-        """Soft-deletes the package after revoking recipient access.
-
-        Access is revoked BEFORE the package is marked deleted: if revocation
-        fails, the package is left untouched so the deletion can be retried,
-        rather than deleting a package whose recipient still holds live view
-        grants. Returns True if the package was deleted, False if unauthorized
-        or revocation failed.
-        """
         if not self.can_delete(user):
             return False
         from .services import revoke_package_access
@@ -322,15 +269,7 @@ class ReimbursementPackage(models.Model):
 
     def mark_as_paid(self, payer: User | None, payer_currency: str | None = None):
         """Marks package as paid, records who/when, updates linked records, and
-        creates a reimbursement record for the payer (when the payer is a
-        registered user; external payers have no account to attach it to).
-
-        If "payer_currency" is given, the Record is created in that currency
-        using converted amounts.  Falls back to the package currency.
-
-        Idempotent: if already paid, this is a no-op.
-        Uses select_for_update to prevent race conditions from concurrent webhooks.
-        """
+        creates a reimbursement record for the payer."""
         record_currency = payer_currency or self.currency
         converted = self.converted_total(record_currency)
         payer_record: Record | None = None
@@ -387,8 +326,7 @@ class ReimbursementPackage(models.Model):
             _capture_recipient_paid(locked, payer, shared)
 
         if payer_record is not None and posthog_client is not None:
-            # System-generated, not something the payer asked for, so it counts
-            # as imported rather than created.
+            # System-generated, not something the payer asked for, so it counts as imported rather than created.
             posthog_client.capture(
                 "record_imported",
                 distinct_id=str(payer_record.user_id),
@@ -408,10 +346,6 @@ class ReimbursementPackage(models.Model):
             )
 
     def mark_as_refunded(self):
-        """Reverts a paid package back to open and un-marks linked records.
-
-        Idempotent: if already open, this is a no-op.
-        """
         with transaction.atomic():
             locked = (
                 ReimbursementPackage.objects.select_for_update(skip_locked=True)
@@ -469,7 +403,6 @@ class ReimbursementPackage(models.Model):
 
     @property
     def is_expired(self) -> bool:
-        """Checks if the package has passed its expiration date."""
         if not self.expires_at:
             return False
         return timezone.now() > self.expires_at
@@ -493,30 +426,18 @@ class ReimbursementPackage(models.Model):
         return to_stripe_amount(self.total_amount, self.currency)
 
     def converted_total(self, to_currency: str | None = None) -> Decimal:
-        """Sum of active record balances converted to the given currency."""
         return checkout.converted_total(self, to_currency)
 
     def converted_total_cents(self, to_currency: str | None = None) -> int:
-        """ "converted_total" in the target currency's smallest unit."""
         return checkout.converted_total_cents(self, to_currency)
 
     @property
     def payout_account_id(self) -> str | None:
-        """Stripe Connect account that should receive the transfer, or None.
-
-        The package creator (who is being reimbursed) is the transfer
-        destination. Requires an active, onboarded Stripe account.
-        """
         account = getattr(self.creator, "stripe_account", None)
         return account.stripe_account_id if account and account.is_active else None
 
     def can_be_paid_by(self, user: User) -> tuple[bool, str | None]:
-        """Return "(ok, error_message)" describing whether "user" may pay.
-
-        Covers the eligibility checks that don't need a row lock: the payer
-        cannot be the package creator, the package must not be expired or
-        already paid, and the creator must have an active payout account.
-        """
+        """Return "(ok, error_message)" describing whether "user" may pay."""
         if user == self.creator:
             return False, "You cannot pay for your own reimbursement package."
         if self.deleted_at is not None:
@@ -534,11 +455,7 @@ class ReimbursementPackage(models.Model):
         return True, None
 
     def lock_for_payment(self) -> ReimbursementPackage | None:
-        """Atomically claim an open package for a new checkout.
-
-        Returns the locked row, or None when a concurrent checkout already
-        settled or claimed the package in the meantime.
-        """
+        """Atomically claim an open package for a new checkout."""
         return (
             ReimbursementPackage.objects.select_for_update()
             .filter(pk=self.pk, status=self.Status.OPEN)
@@ -569,7 +486,6 @@ class ReimbursementPackage(models.Model):
         return None
 
     def build_line_items(self, payer_currency: str) -> CheckoutItems:
-        """Build Stripe line items and totals for the payer's currency."""
         return checkout.build_line_items(self, payer_currency)
 
     def platform_fee_cents(self, total_cents: int, payer_currency: str, rates) -> int:
@@ -579,29 +495,16 @@ class ReimbursementPackage(models.Model):
         return PlatformFeeCalculator.compute(total_cents, payer_currency, rates)
 
     def detail_items(self, user_currency: str) -> PackageDetailItems:
-        """Compute per-record display values for the package detail page."""
         return checkout.detail_items(self, user_currency)
 
     @classmethod
     def prefetch_converted_totals(
         cls, packages: list[ReimbursementPackage], to_currency: str
     ) -> list[ReimbursementPackage]:
-        """Precompute each package's converted display total in one pass.
-
-        Mutates "_prefetched_converted_total" on the given instances so
-        "display_total" avoids per-record conversion queries on the list page.
-        """
         return checkout.prefetch_converted_totals(packages, to_currency)
 
 
 class ProcessedStripeEvent(models.Model):
-    """Records Stripe webhook events already applied to the reimbursements flow.
-
-    Stripe redelivers webhook events and Dramatiq retries on transient failure, so
-    event handling must be idempotent. The event id is the stable key across
-    every delivery/retry of the same event.
-    """
-
     event_id = models.CharField(max_length=255, primary_key=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -693,11 +596,6 @@ class PackagePayment(models.Model):
         return True
 
     def complete_from_session(self, session) -> None:
-        """Mark this payment completed, storing the payment intent from the session.
-
-        Accepts either a dict (normalized webhook payload) or a
-        "stripe.CheckoutSession" object (direct API retrieval).
-        """
         self.is_completed = True
         payment_intent_id = (
             session.get("payment_intent")
@@ -709,20 +607,11 @@ class PackagePayment(models.Model):
         self.save(update_fields=["is_completed", "stripe_payment_intent_id"])
 
     def mark_failed(self) -> None:
-        """Mark this payment as not completed (failed/refunded)."""
         self.is_completed = False
         self.save(update_fields=["is_completed"])
 
 
 class PackageEmailVerification(models.Model):
-    """One-time email verification for external (unauthenticated) payers.
-
-    External recipients prove they are the intended recipient by entering the
-    code emailed to the package's recipient address before they can view the
-    package or pay. Only the latest issued code is stored (hashed), with an
-    attempt budget and expiry to resist brute force.
-    """
-
     package = models.OneToOneField(
         ReimbursementPackage,
         on_delete=models.CASCADE,

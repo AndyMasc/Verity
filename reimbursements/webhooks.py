@@ -48,7 +48,6 @@ HANDLED_EVENT_TYPES = frozenset(
 
 @receiver(djstripe_signals.webhook_post_process)
 def enqueue_reimbursement_processing(**kwargs: Any) -> None:
-    """Hands the Stripe event to the reimbursements pipeline as a Dramatiq task."""
     trigger = kwargs.get("instance")
     if trigger is None:
         return
@@ -63,7 +62,6 @@ def enqueue_reimbursement_processing(**kwargs: Any) -> None:
 
 @receiver(djstripe_signals.webhook_processing_error)
 def enqueue_reimbursement_processing_on_error(**kwargs: Any) -> None:
-    """Hands the event to the reimbursements pipeline even when djstripe's sync fails."""
     trigger = kwargs.get("instance")
     if trigger is None:
         return
@@ -77,7 +75,6 @@ def enqueue_reimbursement_processing_on_error(**kwargs: Any) -> None:
 
 
 def _trigger_event_type(trigger: Any) -> str:
-    """Best-effort event type for a trigger, from its raw payload or synced Event."""
     try:
         event_type = (trigger.json_body or {}).get("type", "")
         return event_type if event_type else _event_type_from_trigger(trigger)
@@ -87,12 +84,10 @@ def _trigger_event_type(trigger: Any) -> str:
 
 
 def _event_type_from_trigger(trigger: Any) -> str:
-    """Extract event type from trigger's synced Event."""
     return getattr(getattr(trigger, "event", None), "type", "")
 
 
 def _as_dict(obj):
-    """Normalizes webhook payload objects (dict or stripe.StripeObject)."""
     if isinstance(obj, dict):
         return obj
     if hasattr(obj, "to_dict_recursive"):
@@ -101,18 +96,10 @@ def _as_dict(obj):
 
 
 def _has_package_metadata(session: dict) -> bool:
-    """True when the session's metadata points at one of our packages."""
     return bool(dict(session.get("metadata") or {}).get("package_uuid"))
 
 
 def _payment_for_checkout_session(session_id: str) -> PackagePayment | None:
-    """Resolve the local payment row for a Checkout session id.
-
-    Returns None when the session is unknown to Stripe (nothing to do). When
-    the session exists on Stripe but the local payment row is missing, the
-    original "DoesNotExist" is re-raised so the task is redelivered and the
-    lookup is retried.
-    """
     try:
         return PackagePayment.objects.select_related("package", "payer").get(
             stripe_checkout_session_id=session_id
@@ -134,7 +121,6 @@ def _payment_for_checkout_session(session_id: str) -> PackagePayment | None:
 
 
 def apply_paid_session(payment, session, *, source: str) -> bool:
-    """Record a settled Checkout Session against a payment and its package."""
     session_data = _as_dict(session)
     if not payment.amount_matches(session_data):
         return False
@@ -151,15 +137,7 @@ def apply_paid_session(payment, session, *, source: str) -> bool:
         )
         _refund_captured_payment(payment, event="package_deleted_before_settlement")
         payment.mark_failed()
-        AuditLog.objects.create(
-            user=package.creator,
-            action=AuditLog.Action.UPDATE_RECORD,
-            details={
-                "event": "checkout_after_delete_refunded",
-                "package_uuid": str(package.uuid),
-                "stripe_session_id": session_data.get("id"),
-            },
-        )
+        _audit(package, "checkout_after_delete_refunded", stripe_session_id=session_data.get("id"))
         return False
 
     if package.status == ReimbursementPackage.Status.PAID and not payment.is_completed:
@@ -178,16 +156,12 @@ def apply_paid_session(payment, session, *, source: str) -> bool:
     package.mark_as_paid(payer=payment.payer, payer_currency=payer_currency)
 
     if not already_completed:
-        AuditLog.objects.create(
-            user=package.creator,
-            action=AuditLog.Action.UPDATE_RECORD,
-            details={
-                "event": source,
-                "package_uuid": str(package.uuid),
-                "stripe_session_id": session_data.get("id"),
-                "payer_email": payment.payer.email if payment.payer else None,
-                "amount": str(payment.amount_paid),
-            },
+        _audit(
+            package,
+            source,
+            stripe_session_id=session_data.get("id"),
+            payer_email=payment.payer.email if payment.payer else None,
+            amount=str(payment.amount_paid),
         )
         transaction.on_commit(
             lambda: _notify_package_paid(package.pk, payment.payer.pk if payment.payer else None)
@@ -196,7 +170,6 @@ def apply_paid_session(payment, session, *, source: str) -> bool:
 
 
 def _retrieve_stripe_object(retriever, obj_id: str, obj_type: str):
-    """Safely retrieve a Stripe object, logging errors appropriately."""
     try:
         return _as_dict(retriever(obj_id))
     except stripe.error.InvalidRequestError:
@@ -206,8 +179,15 @@ def _retrieve_stripe_object(retriever, obj_id: str, obj_type: str):
         raise
 
 
+def _audit(package, event: str, **extra) -> None:
+    AuditLog.objects.create(
+        user=package.creator,
+        action=AuditLog.Action.UPDATE_RECORD,
+        details={"event": event, "package_uuid": str(package.uuid), **extra},
+    )
+
+
 def _get_or_link_payment(package_uuid: str, payment_intent_id: str):
-    """Get or link a payment to a PaymentIntent."""
     payment = (
         PackagePayment.objects.select_related("package", "payer")
         .filter(package__uuid=package_uuid)
@@ -222,7 +202,6 @@ def _get_or_link_payment(package_uuid: str, payment_intent_id: str):
 
 
 def _payment_for_payment_intent(payment_intent_id: str):
-    """Resolve a package payment from a Stripe PaymentIntent id."""
     payment = (
         PackagePayment.objects.select_related("package", "payer")
         .filter(stripe_payment_intent_id=payment_intent_id)
@@ -245,7 +224,6 @@ def _payment_for_payment_intent(payment_intent_id: str):
 
 
 def _payment_from_charge(charge_id: str):
-    """Resolve a package payment from a Stripe Charge id via its PaymentIntent."""
     charge = _retrieve_stripe_object(services.retrieve_charge, charge_id, "Charge")
     if charge is None:
         return None
@@ -257,33 +235,16 @@ def _payment_from_charge(charge_id: str):
 
 
 def _revert_package_payment(payment, *, event: str, refund: bool = True, **extra) -> None:
-    """Mark a payment failed and revert its package to open, with an audit log.
-
-    Money safety: when the payer's charge was already CAPTURED (transfer.failed
-    leaves funds with the platform while the creator never gets paid), a refund
-    is issued BEFORE reopening. If that refund cannot be created, the package
-    stays settled and ops is flagged instead — reopening would let another
-    payer fund an open package while the original charge sits with us, which
-    previously meant the payer kept paying and was never paid back.
-    Refunds use deterministic idempotency keys, so retries never double-refund.
-
-    Set "refund=False" when the payer has already been made whole through
-    another rail (full external refund, lost chargeback).
-    """
     refunded = False
     if refund:
         refunded = _refund_captured_payment(payment, event=event)
         if not refunded and payment.is_completed:
-            AuditLog.objects.create(
-                user=payment.package.creator,
-                action=AuditLog.Action.UPDATE_RECORD,
-                details={
-                    "event": "auto_refund_failed",
-                    "package_uuid": str(payment.package.uuid),
-                    "payment_intent": payment.stripe_payment_intent_id,
-                    "trigger": event,
-                    **extra,
-                },
+            _audit(
+                payment.package,
+                "auto_refund_failed",
+                payment_intent=payment.stripe_payment_intent_id,
+                trigger=event,
+                **extra,
             )
             logger.critical(
                 "Package %s: captured charge %s could not be auto-refunded after %s — "
@@ -296,24 +257,10 @@ def _revert_package_payment(payment, *, event: str, refund: bool = True, **extra
 
     payment.mark_failed()
     payment.package.mark_as_refunded()
-    AuditLog.objects.create(
-        user=payment.package.creator,
-        action=AuditLog.Action.UPDATE_RECORD,
-        details={
-            "event": event,
-            "package_uuid": str(payment.package.uuid),
-            "payer_refunded": refunded,
-            **extra,
-        },
-    )
+    _audit(payment.package, event, payer_refunded=refunded, **extra)
 
 
 def _refund_captured_payment(payment, *, event: str) -> bool:
-    """Refund a completed payment's captured charge via Stripe.
-
-    Returns True when the refund succeeded, False when there is nothing to
-    refund or the refund failed. Never raises: callers branch on the result.
-    """
     if not payment.is_completed:
         return False
     payment_intent_id = payment.stripe_payment_intent_id
@@ -342,7 +289,6 @@ def _refund_captured_payment(payment, *, event: str) -> bool:
 
 
 def _restore_paid_payment(payment, *, event: str, **extra) -> None:
-    """Restore a payment/package that a won dispute brought back to the platform."""
     package = payment.package
     was_paid = payment.is_completed and package.status == ReimbursementPackage.Status.PAID
     payment.is_completed = True
@@ -350,19 +296,10 @@ def _restore_paid_payment(payment, *, event: str, **extra) -> None:
     payer_currency = getattr(payment, "payer_currency", None) or "usd"
     package.mark_as_paid(payer=payment.payer, payer_currency=payer_currency)
     if not was_paid:
-        AuditLog.objects.create(
-            user=package.creator,
-            action=AuditLog.Action.UPDATE_RECORD,
-            details={
-                "event": event,
-                "package_uuid": str(package.uuid),
-                **extra,
-            },
-        )
+        _audit(package, event, **extra)
 
 
 def _handle_checkout_session_completed(event):
-    """Apply a settled Checkout Session to a package payment."""
     session = _as_dict(event["data"]["object"])
     if session.get("payment_status") != "paid" or not _has_package_metadata(session):
         return
@@ -375,7 +312,6 @@ def _handle_checkout_session_completed(event):
 
 
 def _handle_async_payment(event):
-    """Handle async Checkout payment success/failure events."""
     session = _as_dict(event["data"]["object"])
     if not _has_package_metadata(session):
         return
@@ -399,7 +335,6 @@ def _handle_async_payment(event):
 
 
 def _handle_account_updated(event):
-    """Sync Stripe account status fields to the local account row."""
     account = _as_dict(event["data"]["object"])
     account_id = account.get("id")
     if not account_id:
@@ -421,7 +356,6 @@ def _handle_account_updated(event):
 
 
 def _handle_payment_failure(event):
-    """Revert a payment when a Stripe transfer/charge failure occurs."""
     obj = _as_dict(event["data"]["object"])
     failure_message = obj.get("failure_message") or "unknown reason"
 
@@ -478,7 +412,6 @@ def _handle_payment_failure(event):
 
 
 def _handle_charge_refunded(event):
-    """Handle charge refunds, distinguishing full reversals from partial refunds."""
     charge = _as_dict(event["data"]["object"])
     payment_intent_id = charge.get("payment_intent")
     if not payment_intent_id:
@@ -518,22 +451,17 @@ def _handle_charge_refunded(event):
         return
 
     # Partial refund: log details for tracking without marking the whole payment failed
-    AuditLog.objects.create(
-        user=payment.package.creator,
-        action=AuditLog.Action.UPDATE_RECORD,
-        details={
-            "event": "charge_refunded",
-            "package_uuid": str(payment.package.uuid),
-            "payment_intent": payment_intent_id,
-            "amount_refunded_cents": amount_refunded_cents,
-            "amount_captured_cents": amount_captured_cents,
-            "is_full_refund": False,
-        },
+    _audit(
+        payment.package,
+        "charge_refunded",
+        payment_intent=payment_intent_id,
+        amount_refunded_cents=amount_refunded_cents,
+        amount_captured_cents=amount_captured_cents,
+        is_full_refund=False,
     )
 
 
 def _handle_dispute(event):
-    """Handle Stripe dispute lifecycle events."""
     dispute = _as_dict(event["data"]["object"])
     dispute_id = dispute.get("id") or "unknown"
     status = dispute.get("status") or "unknown"
@@ -574,20 +502,8 @@ def _handle_dispute(event):
         )
         return
 
-    # Non-terminal dispute (created / under_review / evidence submitted): the
-    # package previously reopened here, letting a third party fund it while the
-    # original charge was contested and platform funds sat in limbo. Freeze
-    # instead — the package stays settled until the dispute closes.
-    AuditLog.objects.create(
-        user=payment.package.creator,
-        action=AuditLog.Action.UPDATE_RECORD,
-        details={
-            "event": "charge_dispute_open",
-            "package_uuid": str(payment.package.uuid),
-            "dispute_id": dispute_id,
-            "status": status,
-        },
-    )
+    # Non-terminal dispute (created / under_review / evidence submitted):
+    _audit(payment.package, "charge_dispute_open", dispute_id=dispute_id, status=status)
     logger.critical(
         "Dispute %s open (status=%s) on package %s — package frozen pending resolution",
         dispute_id,
@@ -612,19 +528,6 @@ _EVENT_HANDLERS = {
 
 @transaction.atomic
 def process_stripe_event(event):
-    """Applies a single Stripe webhook event to the reimbursements flow safely.
-
-    Idempotency: the event id is claimed by inserting the ProcessedStripeEvent
-    row before any handler runs, rather than checking for it first. A check-then-act
-    race let two concurrent deliveries of the same event both run the handler --
-    the losing transaction's database work rolled back, but the email it had
-    already enqueued and the refund it had already asked Stripe for did not.
-
-    Claiming first closes that window: the unique primary key means exactly one
-    concurrent delivery proceeds and the rest return immediately. The claim
-    shares the handler's transaction, so a failure still rolls it back and the
-    event is retried whole.
-    """
     event_data = _as_dict(event)
     event_id = event_data.get("id")
 

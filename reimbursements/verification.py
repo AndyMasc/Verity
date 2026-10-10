@@ -1,5 +1,4 @@
 """Email verification for external (unauthenticated) reimbursement payers.
-
 External recipients must prove they are the intended recipient before they
 can view a package or pay for it: they enter the email the package was sent
 to, receive a short-lived one-time code, and enter it back. Codes are stored
@@ -43,12 +42,6 @@ def matches_recipient(package: ReimbursementPackage, email: str) -> bool:
 
 
 def send_verification_code(package: ReimbursementPackage, email: str) -> bool:
-    """Issue and email a verification code to the given address.
-
-    Sends only when the address matches the package's recipient, keeping the
-    emailed code from being sprayed at arbitrary addresses. Returns True when
-    a code was issued (whether or not delivery later fails).
-    """
     if not matches_recipient(package, email):
         return False
 
@@ -65,7 +58,7 @@ def send_verification_code(package: ReimbursementPackage, email: str) -> bool:
         },
     )
 
-    subject = "Your Verity verification code"
+    subject = "Your verification code"
     context = {
         "code": code,
         "minutes": int(CODE_TTL.total_seconds() // 60),
@@ -93,12 +86,6 @@ def send_verification_code(package: ReimbursementPackage, email: str) -> bool:
 
 
 def verify_code(package: ReimbursementPackage, email: str, code: str) -> tuple[bool, str | None]:
-    """Validate a submitted code against the latest issued one.
-
-    Returns "(True, None)" on success or "(False, user-facing error)".
-    Failed attempts count toward a per-code budget; expired codes always
-    fail.
-    """
     verification = PackageEmailVerification.objects.filter(package=package).first()
     if verification is None:
         return False, "No verification code has been requested for this request."

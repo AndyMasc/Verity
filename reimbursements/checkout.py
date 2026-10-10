@@ -1,5 +1,4 @@
 """Stripe checkout presentation and totals for reimbursement packages.
-
 Builds Checkout line items, converts package totals into a payer's currency,
 and prepares per-record display values for the package detail pages. Logic
 lives here (not on the model) so the data layer stays focused on fields and
@@ -15,13 +14,11 @@ from core.exchange_rates import convert_strict as convert_currency
 from core.exchange_rates import get_rates
 from records.models import Record
 
-from .money import CurrencyConverter
+from .fees import CurrencyConverter
 
 
 @dataclass
 class CheckoutItems:
-    """Line items and totals for a Stripe Checkout Session."""
-
     line_items: list[dict] = field(default_factory=list)
     total_cents: int = 0
     total_amount: Decimal = Decimal("0.00")
@@ -29,15 +26,12 @@ class CheckoutItems:
 
 @dataclass
 class PackageDetailItems:
-    """Per-record display values for the package detail page."""
-
     record_items: list[dict] = field(default_factory=list)
     converted_total: Decimal = Decimal("0.00")
     original_total: Decimal = Decimal("0.00")
 
 
 def converted_total(package, to_currency: str | None = None) -> Decimal:
-    """Sum of the package's active record balances converted to "to_currency"."""
     target = to_currency or package.currency
     cache = getattr(package, "_prefetched_objects_cache", {})
     items = CurrencyConverter.get_active_record_items(cache, package.records)
@@ -47,18 +41,11 @@ def converted_total(package, to_currency: str | None = None) -> Decimal:
 
 
 def converted_total_cents(package, to_currency: str | None = None) -> int:
-    """ "converted_total" expressed in the target currency's smallest unit."""
     target = to_currency or package.currency
     return to_stripe_amount(converted_total(package, target), target)
 
 
 def build_line_items(package, payer_currency: str) -> CheckoutItems:
-    """Build Stripe line items and totals for the payer's currency.
-
-    Converts each active record balance into the payer's currency. Falls
-    back to a single line item for the whole package when no individual
-    record converts to a positive Stripe amount.
-    """
     rates = get_rates("USD")
     line_items: list[dict] = []
     total_cents = 0
@@ -132,7 +119,6 @@ def _fallback_line_item(package, payer_currency: str) -> CheckoutItems:
 
 
 def _strict_converted_total(package, to_currency: str) -> Decimal:
-    """Sum of active record balances converted strictly to "to_currency"."""
     cache = getattr(package, "_prefetched_objects_cache", {})
     items = CurrencyConverter.get_active_record_items(cache, package.records)
     if not items:
@@ -145,12 +131,6 @@ def _strict_converted_total(package, to_currency: str) -> Decimal:
 
 
 def detail_items(package, user_currency: str) -> PackageDetailItems:
-    """Compute per-record display values for the package detail page.
-
-    Compares each record's originally requested amount (from its first
-    history entry) against the current balance, both converted to the
-    viewer's currency.
-    """
     records = list(package.records.all())
     if not records:
         return PackageDetailItems()
@@ -181,7 +161,6 @@ def detail_items(package, user_currency: str) -> PackageDetailItems:
 
 
 def _first_requested_histories(records: list[Record]) -> dict[int, object]:
-    """Map each record id to its first history entry (the originally requested amount)."""
     HistoricalRecord = Record.history.model
     first_by_id: dict[int, object] = {}
     history = HistoricalRecord.objects.filter(id__in=[r.id for r in records]).order_by(
@@ -195,7 +174,6 @@ def _first_requested_histories(records: list[Record]) -> dict[int, object]:
 def _detail_item_for(
     record, first_history, package_currency: str, user_currency: str, rates
 ) -> tuple[dict, Decimal, Decimal]:
-    """Display values for one record: "(item dict, converted, original)"."""
     original_balance = first_history.balance if first_history else record.balance
     original_currency = first_history.currency if first_history else record.currency
 
@@ -222,11 +200,6 @@ def _detail_item_for(
 
 
 def prefetch_converted_totals(packages: list, to_currency: str) -> list:
-    """Precompute each package's converted display total in one pass.
-
-    Sets "_prefetched_converted_total" on the given instances so
-    "display_total" avoids per-record conversion queries on the list page.
-    """
     if not packages:
         return packages
     rates = get_rates("USD")
@@ -236,7 +209,6 @@ def prefetch_converted_totals(packages: list, to_currency: str) -> list:
 
 
 def _converted_total_of(package, to_currency: str, rates) -> Decimal:
-    """Sum of the package's active record balances converted to "to_currency"."""
     total = Decimal("0.00")
     for record in package.records.all():
         if record.is_active and record.balance:

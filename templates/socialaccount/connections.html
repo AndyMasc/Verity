@@ -23,7 +23,7 @@
         {% for acc in form.fields.account.choices %}
             {% var account=acc.0.instance.get_provider_account %}
             <div class="flex flex-col">
-                <label class="label flex w-full cursor-pointer items-center justify-center rounded-2xl border border-zinc-200 bg-zinc-100 p-3 font-medium text-zinc-900 transition-all duration-200 hover:bg-zinc-200 dark:border-zinc-800 dark:bg-zinc-800/30 dark:text-zinc-100 dark:hover:bg-zinc-800/50">
+                <label class="label flex w-full cursor-pointer items-center justify-center rounded-lg border border-zinc-200 bg-zinc-100 p-3 font-medium text-zinc-900 transition-all duration-200 hover:bg-zinc-200 dark:border-zinc-800 dark:bg-zinc-800/30 dark:text-zinc-100 dark:hover:bg-zinc-800/50">
                     <div class="flex w-full flex-row items-center justify-center">
                         <span class="text-sm">
                             {% if account.get_brand.id == 'google' %}

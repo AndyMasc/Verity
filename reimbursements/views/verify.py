@@ -33,11 +33,6 @@ _VERIFIED_SESSION_PREFIX = "_reimbursement_verified"
 
 
 def _code_step_url(pay_url: str, email: str) -> str:
-    """The pay page URL at the code-entry step, carrying the verified address.
-
-    The code step needs the recipient email to re-submit it with the code.
-    Without it the email field renders empty and verification can't complete.
-    """
     return f"{pay_url}?step=code&{urlencode({'email': email})}"
 
 
@@ -51,14 +46,6 @@ def _mark_verified_in_session(request: HttpRequest, package: ReimbursementPackag
 
 @method_decorator(ratelimit(key="ip", rate="60/m", method="GET", block=True), name="dispatch")
 class PackagePayView(View):
-    """Public view of a package for external payment.
-
-    Unverified visitors only see the verification step; the package amount,
-    line items, and pay button are hidden until the recipient's email is
-    verified in this session. Opening the page for real also moves a queued
-    package to open.
-    """
-
     template_name = "reimbursements/package_pay.html"
 
     def get(self, request: HttpRequest, package_uuid: str) -> HttpResponse:
@@ -113,8 +100,6 @@ class PackagePayView(View):
 
 @method_decorator(ratelimit(key="ip", rate="5/m", method="POST", block=True), name="dispatch")
 class RequestVerificationCodeView(View):
-    """Email the recipient a one-time code for the package."""
-
     def post(self, request: HttpRequest, package_uuid: str) -> HttpResponse:
         package = get_object_or_404(
             ReimbursementPackage, uuid=package_uuid, deleted_at__isnull=True
@@ -143,8 +128,6 @@ class RequestVerificationCodeView(View):
 
 @method_decorator(ratelimit(key="ip", rate="15/m", method="POST", block=True), name="dispatch")
 class VerifyEmailCodeView(View):
-    """Confirm the emailed code and unlock the package for this session."""
-
     def post(self, request: HttpRequest, package_uuid: str) -> HttpResponse:
         package = get_object_or_404(
             ReimbursementPackage, uuid=package_uuid, deleted_at__isnull=True
@@ -184,13 +167,6 @@ class VerifyEmailCodeView(View):
 
 @method_decorator(ratelimit(key="ip", rate="15/m", method="POST", block=True), name="dispatch")
 class PayPackageCheckoutView(View):
-    """Start a Stripe checkout for an external payer.
-
-    Requires a verified session for anonymous visitors; authenticated users
-    must be the package creator or registered recipient (the usual payment
-    eligibility checks still apply).
-    """
-
     def post(self, request: HttpRequest, package_uuid: str) -> HttpResponse:
         package = get_object_or_404(
             ReimbursementPackage.objects.select_related("creator"),

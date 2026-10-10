@@ -1,5 +1,4 @@
 """Service layer for Stripe reimbursements operations.
-
 Keeps raw Stripe API calls out of models and views so they are mocked and
 tested in one place, and always use djstripe's mode-aware secret key.
 """
@@ -34,32 +33,26 @@ PENDING_SESSION_STALENESS = timedelta(minutes=15)
 
 @dataclass
 class CheckoutOutcome:
-    """Result of initiating a package payment checkout."""
-
     redirect_url: str | None = None
     error: str | None = None
 
 
 def retrieve_checkout_session(session_id: str) -> stripe.checkout.Session:
-    """Fetch a Stripe Checkout Session. Raises StripeError on failure."""
     _configure()
     return stripe.checkout.Session.retrieve(str(session_id))
 
 
 def create_checkout_session(**kwargs: Any) -> stripe.checkout.Session:
-    """Create a Stripe Checkout Session with an idempotency key."""
     _configure()
     return stripe.checkout.Session.create(**kwargs)
 
 
 def retrieve_stripe_account(account_id: str) -> stripe.Account:
-    """Fetch a Stripe Connect account. Raises StripeError on failure."""
     _configure()
     return stripe.Account.retrieve(str(account_id))
 
 
 def create_stripe_account(email: str, user_id: int) -> stripe.Account:
-    """Create an Express Stripe Connect account for a user."""
     _configure()
     return stripe.Account.create(
         type="express",
@@ -70,7 +63,6 @@ def create_stripe_account(email: str, user_id: int) -> stripe.Account:
 
 
 def create_account_link(account_id: str, refresh_url: str, return_url: str) -> stripe.AccountLink:
-    """Create an account-onboarding AccountLink for the given Connect account."""
     _configure()
     return stripe.AccountLink.create(
         account=str(account_id),
@@ -81,13 +73,11 @@ def create_account_link(account_id: str, refresh_url: str, return_url: str) -> s
 
 
 def retrieve_charge(charge_id: str) -> stripe.Charge:
-    """Fetch a Stripe Charge. Raises StripeError on failure."""
     _configure()
     return stripe.Charge.retrieve(str(charge_id))
 
 
 def retrieve_payment_intent(payment_intent_id: str) -> stripe.PaymentIntent:
-    """Fetch a Stripe PaymentIntent. Raises StripeError on failure."""
     _configure()
     return stripe.PaymentIntent.retrieve(str(payment_intent_id))
 
@@ -98,17 +88,7 @@ def create_refund(
     reason: str,
     refund_application_fee: bool = True,
 ) -> stripe.Refund:
-    """Refund a captured PaymentIntent with a deterministic idempotency key.
-
-    The key is stable per (reason, payment intent) so webhook/task retries can
-    never double-refund: Stripe replays the first refund's result instead.
-    Raises "stripe.error.StripeError" on failure.
-
-    Destination charges with a collected application fee must refund that fee
-    back to the payer, otherwise the platform retains it and the payer is not
-    made whole. "refund_application_fee=True" (default) returns the fee
-    proportionally; it is a no-op for charges without an application fee.
-    """
+    """Refund a captured PaymentIntent with a deterministic idempotency key."""
     _configure()
     return stripe.Refund.create(
         payment_intent=str(payment_intent_id),
@@ -118,11 +98,6 @@ def create_refund(
 
 
 def get_payment_success_package(user, package_uuid: str) -> ReimbursementPackage | None:
-    """Return the package referenced by a payment-success redirect, if visible to "user".
-
-    Packages still open are re-checked against Stripe in the background so the
-    page reflects the settled payment status.
-    """
     package = (
         ReimbursementPackage.objects.select_related("creator")
         .filter(
@@ -154,20 +129,6 @@ def create_package_checkout(
     success_url: str,
     cancel_url: str,
 ) -> CheckoutOutcome:
-    """Create a Stripe Checkout Session for "package" and record the payment.
-
-    Concurrency: the package row is locked while an attempt is claimed and a
-    PackagePayment row (with a "pending:" placeholder session id) is inserted,
-    so a concurrent checkout sees the in-flight attempt instead of creating a
-    second session that would both charge and transfer.
-
-    Idempotency: the Stripe key derives from the payment row's primary key, so
-    a retry resolves to the same session at Stripe rather than minting a
-    duplicate.
-
-    Returns the Stripe-hosted checkout URL, or an error when the package is no
-    longer payable, rates are unavailable, or Stripe rejects the session.
-    """
     ok, error = package.can_be_paid_by(payer)
     if not ok:
         return CheckoutOutcome(error=error)
@@ -225,9 +186,6 @@ def create_package_checkout(
         "line_items": items.line_items,
         "mode": "payment",
         "metadata": {"package_uuid": str(package.uuid)},
-        # Also carried on the PaymentIntent so reversal events (charge.refunded,
-        # charge.failed, charge.dispute.*) can be routed back to the payment
-        # even if they arrive before checkout.session.completed is processed.
         "payment_intent_data": {"metadata": {"package_uuid": str(package.uuid)}},
         "success_url": success_url,
         "cancel_url": cancel_url,
@@ -246,23 +204,17 @@ def create_package_checkout(
             }
         )
 
-    # Stable per-attempt key: retries reuse it, concurrent attempts cannot.
     idempotency_key = hashlib.sha256(f"checkout:{payment.pk}".encode()).hexdigest()
 
     try:
         checkout_session = create_checkout_session(**checkout_args, idempotency_key=idempotency_key)
     except stripe.error.StripeError:
         logger.exception("Failed to create Stripe Checkout Session for package %s", package.uuid)
-        # Remove the claim so the next attempt starts clean; nothing financial
-        # was recorded yet.
         payment.delete()
         return CheckoutOutcome(
             error="Unable to initiate payment session with Stripe. Please try again later."
         )
 
-    # Point the payment row at the real session. Until this save lands, webhook
-    # handlers that look the session up re-raise and retry, so settlement waits
-    # for the row instead of being lost.
     payment.stripe_checkout_session_id = checkout_session.id
     payment.save(update_fields=["stripe_checkout_session_id"])
 
@@ -277,20 +229,6 @@ def create_reimbursement_package(
     title: str,
     days_valid: int,
 ) -> tuple[ReimbursementPackage | None, str | None]:
-    """Create a reimbursement package from selected records.
-
-    The package can be sent to any email address. When the address matches a
-    registered Verity user, that user is granted temporary,
-    purpose-bound, view-only access to each packaged record ("RecordShare"
-    with "purpose=reimbursement") and the package starts open. Otherwise the
-    package starts queued, awaiting the external recipient: they pay through
-    a public, unauthenticated page reached from the emailed link. Access is
-    revoked automatically when the package is paid or deleted, and restored
-    if it is refunded.
-
-    Returns "(package, None)" on success, or "(None, user-facing error)"
-    when the sender targets themselves, or no valid records were selected.
-    """
     recipient = get_user_model().objects.filter(email__iexact=recipient_email).first()
     if recipient == creator:
         return None, "You cannot send a reimbursement package to yourself."
@@ -320,12 +258,6 @@ def create_reimbursement_package(
 
 
 def _grant_package_access(package: ReimbursementPackage) -> None:
-    """Grant the recipient purpose-bound view access to each packaged record.
-
-    scoped to "expires_at" (package expiry) so access expires with the
-    package. Idempotent via the share service (active grants are left alone).
-    No-op for external recipients without a registered account.
-    """
     if package.recipient is None:
         return
     from records.models import RecordShare
@@ -347,7 +279,6 @@ def _grant_package_access(package: ReimbursementPackage) -> None:
 
 
 def revoke_package_access(package: ReimbursementPackage) -> None:
-    """Revoke (soft) the access granted when the package was created."""
     if package.recipient is None:
         return
     from records.models import RecordShare
