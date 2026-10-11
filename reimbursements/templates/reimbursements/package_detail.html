@@ -165,7 +165,7 @@
                             </div>
                             <div class="flex items-center justify-between border-t border-black/[0.03] pt-2 text-[11px] text-zinc-600 dark:border-white/[0.03] dark:text-zinc-400">
                                 <div class="flex items-center gap-2">
-                                    <span class="inline-flex items-center rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-medium text-zinc-600 ring-1 ring-black/[0.04] ring-inset dark:bg-zinc-800 dark:text-zinc-400 dark:ring-white/[0.04]">
+                                    <span class="inline-flex items-center rounded-full text-[10px] font-medium {{ record.badge_classes }}">
                                         {{ item.record.get_record_type_display|default:"General" }}
                                     </span>
                                     <span class="text-zinc-500 tabular-nums">
