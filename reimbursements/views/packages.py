@@ -172,7 +172,7 @@ class PackageDeleteView(LoginRequiredMixin, View):
         return redirect(reverse("reimbursements:package-list"))
 
 
-def _clamp_days_valid(raw: Any) -> int:
+def clamp_days_valid(raw: Any) -> int:
     try:
         return max(1, min(365, int(raw)))
     except (TypeError, ValueError):
@@ -193,14 +193,14 @@ class CreatePackageFromRecordsView(LoginRequiredMixin, ReimbursementRequestRequi
             record_ids: list[int] = data.get("record_ids", [])
             title: str = data.get("title", "Reimbursement Package")
             recipient_email: str = data.get("recipient_email", "").strip()
-            days_valid = _clamp_days_valid(data.get("days_valid", 7))
+            days_valid = clamp_days_valid(data.get("days_valid", 7))
         else:
             record_ids = [
                 int(rid) for rid in request.POST.getlist("selected_records") if rid.isdigit()
             ]
             title = request.POST.get("title", "Reimbursement Package")
             recipient_email = request.POST.get("recipient_email", "").strip()
-            days_valid = _clamp_days_valid(request.POST.get("days_valid", 7))
+            days_valid = clamp_days_valid(request.POST.get("days_valid", 7))
 
         if not record_ids:
             return JsonResponse({"error": "No records selected."}, status=400)

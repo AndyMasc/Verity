@@ -23,14 +23,18 @@ from core.currencies import (
 )
 from records.models import Record
 
-from . import checkout
-from .checkout import CheckoutItems, PackageDetailItems
+from . import pricing
 from .fees import PlatformFeeCalculator
+from .pricing import CheckoutItems, PackageDetailItems
 
 if TYPE_CHECKING:
     from django.contrib.auth.base_user import AbstractBaseUser as User
 
 logger = logging.getLogger(__name__)
+
+
+def one_week_from_now():
+    return timezone.now() + timedelta(days=7)
 
 
 @dataclass(frozen=True)
@@ -128,7 +132,7 @@ def external_payer_distinct_id(email: str) -> str:
     return f"external-payer-{digest}"
 
 
-def _capture_recipient_paid(locked, payer, shared) -> None:
+def capture_recipient_paid(locked, payer, shared) -> None:
     from core.apps import posthog_client
 
     if posthog_client is None:
@@ -193,7 +197,7 @@ class ReimbursementPackage(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
-    expires_at = models.DateTimeField(null=True, blank=True)
+    expires_at = models.DateTimeField(default=one_week_from_now)
 
     paid_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -268,8 +272,7 @@ class ReimbursementPackage(models.Model):
         return True
 
     def mark_as_paid(self, payer: User | None, payer_currency: str | None = None):
-        """Marks package as paid, records who/when, updates linked records, and
-        creates a reimbursement record for the payer."""
+        """Marks paid, records payer/time, updates records. Idempotent; row-locked."""
         record_currency = payer_currency or self.currency
         converted = self.converted_total(record_currency)
         payer_record: Record | None = None
@@ -323,7 +326,7 @@ class ReimbursementPackage(models.Model):
                 distinct_id=str(self.creator_id),
                 properties=shared,
             )
-            _capture_recipient_paid(locked, payer, shared)
+            capture_recipient_paid(locked, payer, shared)
 
         if payer_record is not None and posthog_client is not None:
             # System-generated, not something the payer asked for, so it counts as imported rather than created.
@@ -392,9 +395,9 @@ class ReimbursementPackage(models.Model):
 
         # Refunds reopen the workflow, so restore the recipient's access.
         try:
-            from .services import _grant_package_access
+            from .services import grant_package_access
 
-            _grant_package_access(self)
+            grant_package_access(self)
         except Exception:
             logger.exception(
                 "Failed to restore package access after refund (package=%s)",
@@ -426,10 +429,10 @@ class ReimbursementPackage(models.Model):
         return to_stripe_amount(self.total_amount, self.currency)
 
     def converted_total(self, to_currency: str | None = None) -> Decimal:
-        return checkout.converted_total(self, to_currency)
+        return pricing.converted_total(self, to_currency)
 
     def converted_total_cents(self, to_currency: str | None = None) -> int:
-        return checkout.converted_total_cents(self, to_currency)
+        return pricing.converted_total_cents(self, to_currency)
 
     @property
     def payout_account_id(self) -> str | None:
@@ -486,7 +489,7 @@ class ReimbursementPackage(models.Model):
         return None
 
     def build_line_items(self, payer_currency: str) -> CheckoutItems:
-        return checkout.build_line_items(self, payer_currency)
+        return pricing.build_line_items(self, payer_currency)
 
     def platform_fee_cents(self, total_cents: int, payer_currency: str, rates) -> int:
         """Compute the application fee for a destination charge: estimated
@@ -495,13 +498,13 @@ class ReimbursementPackage(models.Model):
         return PlatformFeeCalculator.compute(total_cents, payer_currency, rates)
 
     def detail_items(self, user_currency: str) -> PackageDetailItems:
-        return checkout.detail_items(self, user_currency)
+        return pricing.detail_items(self, user_currency)
 
     @classmethod
     def prefetch_converted_totals(
         cls, packages: list[ReimbursementPackage], to_currency: str
     ) -> list[ReimbursementPackage]:
-        return checkout.prefetch_converted_totals(packages, to_currency)
+        return pricing.prefetch_converted_totals(packages, to_currency)
 
 
 class ProcessedStripeEvent(models.Model):
@@ -533,6 +536,7 @@ class PackagePayment(models.Model):
     # field existed.
     expected_amount_cents = models.PositiveIntegerField(null=True, blank=True)
     payer_currency = models.CharField(max_length=3, default=DEFAULT_CURRENCY)
+    payer_email = models.EmailField(max_length=254, blank=True)
     is_completed = models.BooleanField(default=False, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -609,25 +613,3 @@ class PackagePayment(models.Model):
     def mark_failed(self) -> None:
         self.is_completed = False
         self.save(update_fields=["is_completed"])
-
-
-class PackageEmailVerification(models.Model):
-    package = models.OneToOneField(
-        ReimbursementPackage,
-        on_delete=models.CASCADE,
-        related_name="email_verification",
-    )
-    email = models.EmailField(max_length=254)
-    code_hash = models.CharField(max_length=64)
-    attempts = models.PositiveIntegerField(default=0)
-    expires_at = models.DateTimeField()
-    verified_at = models.DateTimeField(null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    def __str__(self) -> str:
-        return f"Verification for package {self.package_id} ({self.email})"
-
-    @property
-    def is_expired(self) -> bool:
-        return timezone.now() > self.expires_at

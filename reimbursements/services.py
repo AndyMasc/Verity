@@ -1,7 +1,4 @@
-"""Service layer for Stripe reimbursements operations.
-Keeps raw Stripe API calls out of models and views so they are mocked and
-tested in one place, and always use djstripe's mode-aware secret key.
-"""
+"""Service layer for Stripe reimbursements operations."""
 
 import hashlib
 import logging
@@ -125,6 +122,7 @@ def create_package_checkout(
     *,
     package: ReimbursementPackage,
     payer,
+    payer_email: str,
     currency: str,
     success_url: str,
     cancel_url: str,
@@ -167,6 +165,7 @@ def create_package_checkout(
             payment = PackagePayment.objects.create(
                 package=locked,
                 payer=payer,
+                payer_email=payer_email or (payer.email if payer else ""),
                 stripe_checkout_session_id=f"{PENDING_SESSION_PREFIX}{uuid.uuid4()}",
                 amount_paid=items.total_amount,
                 expected_amount_cents=items.total_cents,
@@ -253,11 +252,11 @@ def create_reimbursement_package(
         )
     )
     if recipient is not None:
-        _grant_package_access(package)
+        grant_package_access(package)
     return package, None
 
 
-def _grant_package_access(package: ReimbursementPackage) -> None:
+def grant_package_access(package: ReimbursementPackage) -> None:
     if package.recipient is None:
         return
     from records.models import RecordShare

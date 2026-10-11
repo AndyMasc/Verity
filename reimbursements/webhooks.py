@@ -1,9 +1,6 @@
-"""Stripe webhook handling for the reimbursements pipeline.
+"""Stripe webhook handling: dj-stripe signal -> Dramatiq task -> atomic handler dispatch.
 
-Flow: djstripe fires a signal for each event -> we enqueue a Dramatiq task ->
-"process_stripe_event" runs the matching handler inside an atomic block and
-records an idempotency marker so redelivered events are skipped. Handlers
-mutate package/payment state via the model methods in models.py.
+Events are deduplicated on their Stripe id so redeliveries are skipped.
 """
 
 import logging
@@ -15,6 +12,7 @@ from django.db import IntegrityError, transaction
 from django.db.models import Q
 from django.dispatch import receiver
 from django.utils import timezone
+from djstripe.models import Charge, PaymentIntent, Session
 
 from core.apps import posthog_client
 from core.currencies import from_stripe_amount
@@ -30,29 +28,23 @@ from .models import (
 
 logger = logging.getLogger(__name__)
 
-HANDLED_EVENT_TYPES = frozenset(
-    {
-        "checkout.session.completed",
-        "checkout.session.async_payment_succeeded",
-        "checkout.session.async_payment_failed",
-        "account.updated",
-        "transfer.failed",
-        "charge.failed",
-        "charge.refunded",
-        "charge.dispute.created",
-        "charge.dispute.updated",
-        "charge.dispute.closed",
-    }
-)
+
+def trigger_event_type(trigger: Any) -> str:
+    """Synced event type, or the raw payload when dj-stripe has no Event row yet."""
+    synced = getattr(getattr(trigger, "event", None), "type", "")
+    if synced:
+        return synced
+    try:
+        return (trigger.json_body or {}).get("type", "")
+    except Exception:
+        logger.debug("Unable to read event type from webhook JSON body", exc_info=True)
+        return ""
 
 
 @receiver(djstripe_signals.webhook_post_process)
 def enqueue_reimbursement_processing(**kwargs: Any) -> None:
     trigger = kwargs.get("instance")
-    if trigger is None:
-        return
-
-    if _event_type_from_trigger(trigger) not in HANDLED_EVENT_TYPES:
+    if trigger is None or trigger_event_type(trigger) not in HANDLED_EVENT_TYPES:
         return
 
     from .tasks import process_stripe_event_task
@@ -63,10 +55,7 @@ def enqueue_reimbursement_processing(**kwargs: Any) -> None:
 @receiver(djstripe_signals.webhook_processing_error)
 def enqueue_reimbursement_processing_on_error(**kwargs: Any) -> None:
     trigger = kwargs.get("instance")
-    if trigger is None:
-        return
-
-    if _trigger_event_type(trigger) not in HANDLED_EVENT_TYPES:
+    if trigger is None or trigger_event_type(trigger) not in HANDLED_EVENT_TYPES:
         return
 
     from .tasks import process_stripe_event_task
@@ -74,20 +63,7 @@ def enqueue_reimbursement_processing_on_error(**kwargs: Any) -> None:
     process_stripe_event_task.send(trigger.id)
 
 
-def _trigger_event_type(trigger: Any) -> str:
-    try:
-        event_type = (trigger.json_body or {}).get("type", "")
-        return event_type if event_type else _event_type_from_trigger(trigger)
-    except Exception:
-        logger.debug("Unable to read event type from webhook JSON body", exc_info=True)
-        return _event_type_from_trigger(trigger)
-
-
-def _event_type_from_trigger(trigger: Any) -> str:
-    return getattr(getattr(trigger, "event", None), "type", "")
-
-
-def _as_dict(obj):
+def as_dict(obj):
     if isinstance(obj, dict):
         return obj
     if hasattr(obj, "to_dict_recursive"):
@@ -95,11 +71,11 @@ def _as_dict(obj):
     return dict(obj)
 
 
-def _has_package_metadata(session: dict) -> bool:
+def has_package_metadata(session: dict) -> bool:
     return bool(dict(session.get("metadata") or {}).get("package_uuid"))
 
 
-def _payment_for_checkout_session(session_id: str) -> PackagePayment | None:
+def payment_for_checkout_session(session_id: str) -> PackagePayment | None:
     try:
         return PackagePayment.objects.select_related("package", "payer").get(
             stripe_checkout_session_id=session_id
@@ -121,7 +97,7 @@ def _payment_for_checkout_session(session_id: str) -> PackagePayment | None:
 
 
 def apply_paid_session(payment, session, *, source: str) -> bool:
-    session_data = _as_dict(session)
+    session_data = as_dict(session)
     if not payment.amount_matches(session_data):
         return False
 
@@ -135,9 +111,9 @@ def apply_paid_session(payment, session, *, source: str) -> bool:
             package.uuid,
             session_data.get("id"),
         )
-        _refund_captured_payment(payment, event="package_deleted_before_settlement")
+        refund_captured_payment(payment, event="package_deleted_before_settlement")
         payment.mark_failed()
-        _audit(package, "checkout_after_delete_refunded", stripe_session_id=session_data.get("id"))
+        audit(package, "checkout_after_delete_refunded", stripe_session_id=session_data.get("id"))
         return False
 
     if package.status == ReimbursementPackage.Status.PAID and not payment.is_completed:
@@ -146,7 +122,7 @@ def apply_paid_session(payment, session, *, source: str) -> bool:
             package.uuid,
             session_data.get("id"),
         )
-        _refund_captured_payment(payment, event="duplicate_settlement")
+        refund_captured_payment(payment, event="duplicate_settlement")
         payment.mark_failed()
         return False
 
@@ -156,7 +132,7 @@ def apply_paid_session(payment, session, *, source: str) -> bool:
     package.mark_as_paid(payer=payment.payer, payer_currency=payer_currency)
 
     if not already_completed:
-        _audit(
+        audit(
             package,
             source,
             stripe_session_id=session_data.get("id"),
@@ -164,14 +140,14 @@ def apply_paid_session(payment, session, *, source: str) -> bool:
             amount=str(payment.amount_paid),
         )
         transaction.on_commit(
-            lambda: _notify_package_paid(package.pk, payment.payer.pk if payment.payer else None)
+            lambda: notify_package_paid(package.pk, payment.payer.pk if payment.payer else None)
         )
     return True
 
 
-def _retrieve_stripe_object(retriever, obj_id: str, obj_type: str):
+def retrieve_stripe_object(retriever, obj_id: str, obj_type: str):
     try:
-        return _as_dict(retriever(obj_id))
+        return as_dict(retriever(obj_id))
     except stripe.error.InvalidRequestError:
         logger.error("%s %s unknown to Stripe — skipping", obj_type, obj_id)
         return None
@@ -179,7 +155,7 @@ def _retrieve_stripe_object(retriever, obj_id: str, obj_type: str):
         raise
 
 
-def _audit(package, event: str, **extra) -> None:
+def audit(package, event: str, **extra) -> None:
     AuditLog.objects.create(
         user=package.creator,
         action=AuditLog.Action.UPDATE_RECORD,
@@ -187,21 +163,46 @@ def _audit(package, event: str, **extra) -> None:
     )
 
 
-def _get_or_link_payment(package_uuid: str, payment_intent_id: str):
-    payment = (
+def session_for_intent(payment_intent_id: str) -> str | None:
+    """Checkout session that produced this PaymentIntent, from dj-stripe's local sync."""
+    row = Session.objects.filter(payment_intent=payment_intent_id).only("id").first()
+    return row.id if row else None
+
+
+def intent_metadata(payment_intent_id: str) -> dict | None:
+    row = PaymentIntent.objects.filter(id=payment_intent_id).only("metadata").first()
+    if row is not None:
+        return dict(row.metadata or {})
+    fetched = retrieve_stripe_object(
+        services.retrieve_payment_intent, payment_intent_id, "PaymentIntent"
+    )
+    return dict(fetched.get("metadata") or {}) if fetched else None
+
+
+def link_payment(package_uuid: str, payment_intent_id: str):
+    """Fallback link when no Session points at the intent; refuses to guess between candidates."""
+    candidates = list(
         PackagePayment.objects.select_related("package", "payer")
         .filter(package__uuid=package_uuid)
         .filter(Q(stripe_payment_intent_id="") | Q(stripe_payment_intent_id__isnull=True))
-        .order_by("-created_at")
-        .first()
+        .order_by("-created_at")[:2]
     )
-    if payment is not None:
-        payment.stripe_payment_intent_id = payment_intent_id
-        payment.save(update_fields=["stripe_payment_intent_id"])
+    if len(candidates) != 1:
+        logger.error(
+            "Cannot link payment intent %s to package %s: %d unlinked payments",
+            payment_intent_id,
+            package_uuid,
+            len(candidates),
+        )
+        return None
+
+    payment = candidates[0]
+    payment.stripe_payment_intent_id = payment_intent_id
+    payment.save(update_fields=["stripe_payment_intent_id"])
     return payment
 
 
-def _payment_for_payment_intent(payment_intent_id: str):
+def payment_for_payment_intent(payment_intent_id: str):
     payment = (
         PackagePayment.objects.select_related("package", "payer")
         .filter(stripe_payment_intent_id=payment_intent_id)
@@ -210,36 +211,33 @@ def _payment_for_payment_intent(payment_intent_id: str):
     if payment is not None:
         return payment
 
-    payment_intent = _retrieve_stripe_object(
-        services.retrieve_payment_intent, payment_intent_id, "PaymentIntent"
-    )
-    if payment_intent is None:
+    session_id = session_for_intent(payment_intent_id)
+    if session_id is not None:
+        return PackagePayment.objects.filter(stripe_checkout_session_id=session_id).first()
+
+    metadata = intent_metadata(payment_intent_id)
+    if not metadata:
         return None
-
-    package_uuid = dict(payment_intent.get("metadata") or {}).get("package_uuid")
-    if not package_uuid:
-        return None
-
-    return _get_or_link_payment(package_uuid, payment_intent_id)
+    return link_payment(metadata.get("package_uuid"), payment_intent_id)
 
 
-def _payment_from_charge(charge_id: str):
-    charge = _retrieve_stripe_object(services.retrieve_charge, charge_id, "Charge")
-    if charge is None:
-        return None
+def payment_from_charge(charge_id: str):
+    row = Charge.objects.filter(id=charge_id).only("payment_intent").first()
+    if row is not None:
+        intent_id = row.payment_intent_id
+    else:
+        charge = retrieve_stripe_object(services.retrieve_charge, charge_id, "Charge")
+        intent_id = charge.get("payment_intent") if charge else None
 
-    payment_intent_id = charge.get("payment_intent")
-    if not payment_intent_id:
-        return None
-    return _payment_for_payment_intent(payment_intent_id)
+    return payment_for_payment_intent(intent_id) if intent_id else None
 
 
-def _revert_package_payment(payment, *, event: str, refund: bool = True, **extra) -> None:
+def revert_package_payment(payment, *, event: str, refund: bool = True, **extra) -> None:
     refunded = False
     if refund:
-        refunded = _refund_captured_payment(payment, event=event)
+        refunded = refund_captured_payment(payment, event=event)
         if not refunded and payment.is_completed:
-            _audit(
+            audit(
                 payment.package,
                 "auto_refund_failed",
                 payment_intent=payment.stripe_payment_intent_id,
@@ -257,10 +255,10 @@ def _revert_package_payment(payment, *, event: str, refund: bool = True, **extra
 
     payment.mark_failed()
     payment.package.mark_as_refunded()
-    _audit(payment.package, event, payer_refunded=refunded, **extra)
+    audit(payment.package, event, payer_refunded=refunded, **extra)
 
 
-def _refund_captured_payment(payment, *, event: str) -> bool:
+def refund_captured_payment(payment, *, event: str) -> bool:
     if not payment.is_completed:
         return False
     payment_intent_id = payment.stripe_payment_intent_id
@@ -288,7 +286,7 @@ def _refund_captured_payment(payment, *, event: str) -> bool:
     return True
 
 
-def _restore_paid_payment(payment, *, event: str, **extra) -> None:
+def restore_paid_payment(payment, *, event: str, **extra) -> None:
     package = payment.package
     was_paid = payment.is_completed and package.status == ReimbursementPackage.Status.PAID
     payment.is_completed = True
@@ -296,27 +294,27 @@ def _restore_paid_payment(payment, *, event: str, **extra) -> None:
     payer_currency = getattr(payment, "payer_currency", None) or "usd"
     package.mark_as_paid(payer=payment.payer, payer_currency=payer_currency)
     if not was_paid:
-        _audit(package, event, **extra)
+        audit(package, event, **extra)
 
 
-def _handle_checkout_session_completed(event):
-    session = _as_dict(event["data"]["object"])
-    if session.get("payment_status") != "paid" or not _has_package_metadata(session):
+def handle_checkout_session_completed(event):
+    session = as_dict(event["data"]["object"])
+    if session.get("payment_status") != "paid" or not has_package_metadata(session):
         return
 
-    payment = _payment_for_checkout_session(session["id"])
+    payment = payment_for_checkout_session(session["id"])
     if payment is None:
         return
 
     apply_paid_session(payment, session, source="package_paid")
 
 
-def _handle_async_payment(event):
-    session = _as_dict(event["data"]["object"])
-    if not _has_package_metadata(session):
+def handle_async_payment(event):
+    session = as_dict(event["data"]["object"])
+    if not has_package_metadata(session):
         return
 
-    payment = _payment_for_checkout_session(session["id"])
+    payment = payment_for_checkout_session(session["id"])
     if payment is None:
         return
 
@@ -334,8 +332,8 @@ def _handle_async_payment(event):
     logger.warning("Async payment failed for session %s (package %s)", session["id"], package_uuid)
 
 
-def _handle_account_updated(event):
-    account = _as_dict(event["data"]["object"])
+def handle_account_updated(event):
+    account = as_dict(event["data"]["object"])
     account_id = account.get("id")
     if not account_id:
         return
@@ -355,16 +353,16 @@ def _handle_account_updated(event):
         )
 
 
-def _handle_payment_failure(event):
-    obj = _as_dict(event["data"]["object"])
+def handle_payment_failure(event):
+    obj = as_dict(event["data"]["object"])
     failure_message = obj.get("failure_message") or "unknown reason"
 
     payment_intent_id = obj.get("payment_intent")
     payment = None
     if payment_intent_id:
-        payment = _payment_for_payment_intent(payment_intent_id)
+        payment = payment_for_payment_intent(payment_intent_id)
     elif event["type"] == "transfer.failed" and obj.get("source_transaction"):
-        payment = _payment_from_charge(obj["source_transaction"])
+        payment = payment_from_charge(obj["source_transaction"])
         if payment is not None and payment.stripe_payment_intent_id:
             payment_intent_id = payment.stripe_payment_intent_id
 
@@ -403,7 +401,7 @@ def _handle_payment_failure(event):
         else:
             posthog_client.capture("reimbursement_payment_failed", properties=properties)
 
-    _revert_package_payment(
+    revert_package_payment(
         payment,
         event=event["type"],
         payment_intent=payment_intent_id,
@@ -411,8 +409,8 @@ def _handle_payment_failure(event):
     )
 
 
-def _handle_charge_refunded(event):
-    charge = _as_dict(event["data"]["object"])
+def handle_charge_refunded(event):
+    charge = as_dict(event["data"]["object"])
     payment_intent_id = charge.get("payment_intent")
     if not payment_intent_id:
         return
@@ -430,7 +428,7 @@ def _handle_charge_refunded(event):
         refunded_display,
     )
 
-    payment = _payment_for_payment_intent(payment_intent_id)
+    payment = payment_for_payment_intent(payment_intent_id)
     if payment is None:
         logger.warning("No PackagePayment found for refunded payment_intent %s", payment_intent_id)
         return
@@ -439,7 +437,7 @@ def _handle_charge_refunded(event):
     if is_full_refund:
         # The payer already received this money back via the external refund;
         # issuing another would pay out twice. Revert only.
-        _revert_package_payment(
+        revert_package_payment(
             payment,
             event="charge_refunded",
             refund=False,
@@ -451,7 +449,7 @@ def _handle_charge_refunded(event):
         return
 
     # Partial refund: log details for tracking without marking the whole payment failed
-    _audit(
+    audit(
         payment.package,
         "charge_refunded",
         payment_intent=payment_intent_id,
@@ -461,8 +459,8 @@ def _handle_charge_refunded(event):
     )
 
 
-def _handle_dispute(event):
-    dispute = _as_dict(event["data"]["object"])
+def handle_dispute(event):
+    dispute = as_dict(event["data"]["object"])
     dispute_id = dispute.get("id") or "unknown"
     status = dispute.get("status") or "unknown"
     charge_id = dispute.get("charge")
@@ -477,13 +475,13 @@ def _handle_dispute(event):
     if not charge_id:
         return
 
-    payment = _payment_from_charge(charge_id)
+    payment = payment_from_charge(charge_id)
     if payment is None:
         logger.warning("No PackagePayment found for disputed charge %s", charge_id)
         return
 
     if status == "won":
-        _restore_paid_payment(
+        restore_paid_payment(
             payment,
             event="charge_dispute_won",
             dispute_id=dispute_id,
@@ -493,7 +491,7 @@ def _handle_dispute(event):
     if event["type"] == "charge.dispute.closed" and status == "lost":
         # The chargeback has already returned funds to the cardholder; refunding
         # again would pay out twice. Revert without a Stripe refund.
-        _revert_package_payment(
+        revert_package_payment(
             payment,
             event="charge_dispute_lost",
             refund=False,
@@ -503,7 +501,7 @@ def _handle_dispute(event):
         return
 
     # Non-terminal dispute (created / under_review / evidence submitted):
-    _audit(payment.package, "charge_dispute_open", dispute_id=dispute_id, status=status)
+    audit(payment.package, "charge_dispute_open", dispute_id=dispute_id, status=status)
     logger.critical(
         "Dispute %s open (status=%s) on package %s — package frozen pending resolution",
         dispute_id,
@@ -513,22 +511,24 @@ def _handle_dispute(event):
 
 
 _EVENT_HANDLERS = {
-    "checkout.session.completed": _handle_checkout_session_completed,
-    "checkout.session.async_payment_succeeded": _handle_async_payment,
-    "checkout.session.async_payment_failed": _handle_async_payment,
-    "account.updated": _handle_account_updated,
-    "transfer.failed": _handle_payment_failure,
-    "charge.failed": _handle_payment_failure,
-    "charge.refunded": _handle_charge_refunded,
-    "charge.dispute.created": _handle_dispute,
-    "charge.dispute.updated": _handle_dispute,
-    "charge.dispute.closed": _handle_dispute,
+    "checkout.session.completed": handle_checkout_session_completed,
+    "checkout.session.async_payment_succeeded": handle_async_payment,
+    "checkout.session.async_payment_failed": handle_async_payment,
+    "account.updated": handle_account_updated,
+    "transfer.failed": handle_payment_failure,
+    "charge.failed": handle_payment_failure,
+    "charge.refunded": handle_charge_refunded,
+    "charge.dispute.created": handle_dispute,
+    "charge.dispute.updated": handle_dispute,
+    "charge.dispute.closed": handle_dispute,
 }
+
+HANDLED_EVENT_TYPES = frozenset(_EVENT_HANDLERS)
 
 
 @transaction.atomic
 def process_stripe_event(event):
-    event_data = _as_dict(event)
+    event_data = as_dict(event)
     event_id = event_data.get("id")
 
     if event_id:
@@ -543,7 +543,7 @@ def process_stripe_event(event):
         handler(event_data)
 
 
-def _notify_package_paid(package_pk: int, payer_pk: int | None) -> None:
+def notify_package_paid(package_pk: int, payer_pk: int | None) -> None:
     from .tasks import send_package_paid_notification_task
 
     send_package_paid_notification_task.send(package_pk, payer_pk)

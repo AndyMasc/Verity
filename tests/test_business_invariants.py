@@ -392,6 +392,7 @@ class ReimbursementMoneyFlowTests(TestCase):
             outcome = services.create_package_checkout(
                 package=self.package,
                 payer=self.payer,
+                payer_email=self.payer.email,
                 currency="usd",
                 success_url="https://verity.test/ok",
                 cancel_url="https://verity.test/cancel",

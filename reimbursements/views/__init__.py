@@ -1,4 +1,3 @@
-from .checkout import CreatePackageCheckoutView, PaymentSuccessView
 from .onboarding import StripeOnboardView
 from .packages import (
     CreatePackageFromRecordsView,
@@ -6,13 +5,9 @@ from .packages import (
     PackageDetailView,
     PackageListView,
 )
+from .pay import PackagePayView, PayPackageCheckoutView
+from .payment import CreatePackageCheckoutView, PaymentSuccessView
 from .validation import validate_recipient_email
-from .verify import (
-    PackagePayView,
-    PayPackageCheckoutView,
-    RequestVerificationCodeView,
-    VerifyEmailCodeView,
-)
 
 __all__ = [
     "CreatePackageCheckoutView",
@@ -23,8 +18,6 @@ __all__ = [
     "PackagePayView",
     "PayPackageCheckoutView",
     "PaymentSuccessView",
-    "RequestVerificationCodeView",
     "StripeOnboardView",
-    "VerifyEmailCodeView",
     "validate_recipient_email",
 ]

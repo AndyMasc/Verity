@@ -3,6 +3,7 @@
 import json
 from datetime import timedelta
 from decimal import Decimal
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from django.test import RequestFactory, TestCase
@@ -14,11 +15,9 @@ from records.models import RecordShare
 
 from reimbursements import services
 from reimbursements.models import (
-    PackageEmailVerification,
     PackagePayment,
     ReimbursementPackage,
 )
-from reimbursements.verification import send_verification_code
 from reimbursements.views import validate_recipient_email
 
 from ._helpers import _package, _record, _stripe_account, _user
@@ -365,12 +364,6 @@ class PublicPayFlowTest(TestCase):
             days_valid=7,
         )
         self.pay_url = reverse("reimbursements:pay-package", kwargs={"package_uuid": self.pkg.uuid})
-        self.request_code_url = reverse(
-            "reimbursements:pay-request-code", kwargs={"package_uuid": self.pkg.uuid}
-        )
-        self.verify_code_url = reverse(
-            "reimbursements:pay-verify-code", kwargs={"package_uuid": self.pkg.uuid}
-        )
         self.checkout_url = reverse(
             "reimbursements:pay-checkout", kwargs={"package_uuid": self.pkg.uuid}
         )
@@ -378,97 +371,29 @@ class PublicPayFlowTest(TestCase):
     def _post(self, url, data):
         return self.client.post(url, data)
 
-    def test_unverified_visitor_only_sees_verification_step(self, _mock_rl):
+    def test_link_alone_reaches_package(self, _mock_rl):
         resp = self.client.get(self.pay_url)
         self.assertEqual(resp.status_code, 200)
-        self.assertContains(resp, "Verify identity")
-        self.assertNotContains(resp, "External Request")
-        self.assertNotContains(resp, "Total Due")
+        self.assertContains(resp, "Proceed to Checkout")
 
-    def test_code_step_renders_with_email(self, _mock_rl):
-        resp = self.client.get(self.pay_url, {"step": "code", "email": "external@test.com"})
-        self.assertEqual(resp.status_code, 200)
-        self.assertContains(resp, "external@test.com")
-
-    @patch("reimbursements.verification.send_background_email")
-    def test_request_code_redirects_carries_email(self, _mock_email, _mock_rl):
-        resp = self._post(self.request_code_url, {"email": "external@test.com"})
+    def test_checkout_captures_payer_email(self, _mock_rl):
+        with patch("reimbursements.services.create_checkout_session") as session:
+            session.return_value = SimpleNamespace(
+                id="cs_test_payer", url="https://stripe.test/checkout"
+            )
+            resp = self._post(self.checkout_url, {"email": "payer@outside.com"})
         self.assertEqual(resp.status_code, 302)
-        self.assertIn("step=code", resp.url)
-        self.assertIn("email=external%40test.com", resp.url)
-
-    @patch("reimbursements.verification.send_background_email")
-    def test_verify_code_failure_keeps_email(self, _mock_email, _mock_rl):
-        send_verification_code(self.pkg, "external@test.com")
-        resp = self._post(self.verify_code_url, {"email": "external@test.com", "code": "wrongcode"})
-        self.assertEqual(resp.status_code, 302)
-        self.assertIn("email=external%40test.com", resp.url)
-
-    @patch("reimbursements.verification.send_background_email")
-    @patch("reimbursements.verification._generate_code", return_value="123456")
-    def test_verify_flow_unlocks_package(self, _mock_gen, mock_email, _mock_rl):
-        resp = self._post(self.request_code_url, {"email": "someone@else.com"})
-        self.assertEqual(resp.status_code, 302)
-        mock_email.send.assert_not_called()
-
-        resp = self._post(self.request_code_url, {"email": "external@test.com"})
-        self.assertEqual(resp.status_code, 302)
-        mock_email.send.assert_called_once()
-        verification = PackageEmailVerification.objects.get(package=self.pkg)
-        self.assertIsNone(verification.verified_at)
-
-        resp = self._post(self.verify_code_url, {"email": "external@test.com", "code": "000000"})
-        self.assertEqual(resp.status_code, 302)
-        verification.refresh_from_db()
-        self.assertEqual(verification.attempts, 1)
-        self.assertNotContains(self.client.get(self.pay_url), "External Request")
-
-        resp = self._post(self.verify_code_url, {"email": "external@test.com", "code": "123456"})
-        self.assertEqual(resp.status_code, 302)
-        with patch("reimbursements.checkout.get_rates", return_value={}):
-            page = self.client.get(self.pay_url)
-        self.assertContains(page, "External Request")
-        self.assertContains(page, "Total Due")
-        self.pkg.refresh_from_db()
-        self.assertEqual(self.pkg.status, ReimbursementPackage.Status.OPEN)
-
-    def test_expired_code_rejected(self, _mock_rl):
-        send_verification_code(self.pkg, "external@test.com")
-        verification = PackageEmailVerification.objects.get(package=self.pkg)
-        verification.expires_at = timezone.now() - timedelta(minutes=1)
-        verification.save(update_fields=["expires_at"])
-        resp = self._post(
-            self.verify_code_url,
-            {"email": "external@test.com", "code": "wrongcode"},
-        )
-        self.assertEqual(resp.status_code, 302)
-        verification.refresh_from_db()
-        self.assertIsNone(verification.verified_at)
-
-    def test_checkout_without_verification_redirects(self, _mock_rl):
-        with patch("reimbursements.services.create_checkout_session") as mock_session:
-            resp = self._post(self.checkout_url, {})
-        mock_session.assert_not_called()
-        self.assertEqual(resp.status_code, 302)
-        self.assertTrue(resp.url.startswith(self.pay_url))
-
-    @patch("reimbursements.services.create_checkout_session")
-    def test_verified_checkout_creates_external_payment(self, mock_session, _mock_rl):
-        session = self.client.session
-        session[f"_reimbursement_verified:{self.pkg.uuid}"] = True
-        session.save()
-
-        mock_session.return_value = type(
-            "S", (), {"id": "cs_new", "url": "https://checkout.stripe.com/x"}
-        )()
-        resp = self._post(self.checkout_url, {})
-        self.assertEqual(resp.status_code, 302)
-        self.assertEqual(resp.url, "https://checkout.stripe.com/x")
-        mock_session.assert_called_once()
         payment = PackagePayment.objects.get(package=self.pkg)
-        self.assertIsNone(payment.payer)
-        self.pkg.refresh_from_db()
-        self.assertEqual(self.pkg.status, ReimbursementPackage.Status.OPEN)
+        self.assertEqual(payment.payer_email, "payer@outside.com")
+
+    def test_checkout_without_email_still_works(self, _mock_rl):
+        with patch("reimbursements.services.create_checkout_session") as session:
+            session.return_value = SimpleNamespace(
+                id="cs_test_payer", url="https://stripe.test/checkout"
+            )
+            resp = self._post(self.checkout_url, {})
+        self.assertEqual(resp.status_code, 302)
+        self.assertTrue(PackagePayment.objects.filter(package=self.pkg).exists())
 
     def test_paid_package_shows_already_paid(self, _mock_rl):
         self.pkg.status = ReimbursementPackage.Status.PAID

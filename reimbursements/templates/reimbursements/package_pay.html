@@ -49,110 +49,7 @@
                 </div>
                 <div id="reimburse-receipt"
                      class="lg:max-h-[calc(100vh-10rem)] lg:overflow-y-auto">
-                    {% if state == "verify" %}
-                        <div class="rounded-3xl border border-zinc-200/80 bg-white/80 p-6 shadow-xl shadow-zinc-950/5 backdrop-blur-2xl sm:p-10 dark:border-zinc-800 dark:bg-zinc-900/45">
-                            <div class="mb-6 flex items-center justify-between">
-                                <h1 class="text-xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">Verify identity</h1>
-                            </div>
-                            {% if verify_step == "email" %}
-                                <p class="mb-6 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
-                                    For security, this reimbursement can only be accessed by the intended recipient.
-                                    Enter your destination email address to receive a secure one-time code.
-                                </p>
-                                <form method="post"
-                                      action="{% url 'reimbursements:pay-request-code' package.uuid %}"
-                                      class="space-y-4"
-                                      data-turnstile-form="request-code"
-                                      data-turnstile-widget="request-code-turnstile-widget"
-                                      data-turnstile-response="request-code-turnstile-response">
-                                    {% csrf_token %}
-                                    <div>
-                                        <label class="mb-2 block text-[11px] font-semibold tracking-wider text-zinc-600 uppercase dark:text-zinc-400">Recipient Email</label>
-                                        <input type="email"
-                                               name="email"
-                                               value="{{ email }}"
-                                               required
-                                               autocomplete="email"
-                                               placeholder="you@example.com"
-                                               class="shadow-2xs w-full rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-900 placeholder-zinc-500 transition-all focus:border-[#5A67FF] focus:ring-2 focus:ring-[#5A67FF]/20 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950/50 dark:text-zinc-100">
-                                    </div>
-                                    <button type="submit"
-                                            class="inline-flex w-full items-center justify-center rounded-lg bg-zinc-900 px-6 py-3 text-xs font-semibold text-white shadow-xs transition-all duration-200 hover:bg-zinc-800 active:scale-[0.98] dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200">
-                                        Send verification code
-                                    </button>
-                                    <input type="hidden"
-                                           name="cf_turnstile_response"
-                                           id="request-code-turnstile-response"
-                                           value="">
-                                    <div class="flex justify-center pt-1">
-                                        <div id="request-code-turnstile-widget"
-                                             data-action="{{ turnstile_actions.request_verification }}"></div>
-                                    </div>
-                                </form>
-                            {% else %}
-                                <p class="mb-6 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
-                                    We sent a code to <span class="font-semibold text-zinc-900 dark:text-zinc-100">{{ email|default:"your email" }}</span>. The code expires in 10 minutes.
-                                </p>
-                                <form method="post"
-                                      action="{% url 'reimbursements:pay-verify-code' package.uuid %}"
-                                      class="space-y-4"
-                                      data-turnstile-form="verify-code"
-                                      data-turnstile-widget="verify-code-turnstile-widget"
-                                      data-turnstile-response="verify-code-turnstile-response">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="email" value="{{ email }}">
-                                    <div>
-                                        <label class="mb-2 block text-[11px] font-semibold tracking-wider text-zinc-600 uppercase dark:text-zinc-400">Verification Code</label>
-                                        <input type="text"
-                                               name="code"
-                                               required
-                                               inputmode="numeric"
-                                               autocomplete="one-time-code"
-                                               placeholder="123 456"
-                                               maxlength="6"
-                                               class="shadow-2xs w-full rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 text-center text-lg tracking-widest text-zinc-900 placeholder-zinc-500 transition-all focus:border-[#5A67FF] focus:ring-2 focus:ring-[#5A67FF]/20 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950/50 dark:text-zinc-100">
-                                    </div>
-                                    <button type="submit"
-                                            class="inline-flex w-full items-center justify-center rounded-lg bg-zinc-900 px-6 py-3 text-xs font-semibold text-white shadow-xs transition-all duration-200 hover:bg-zinc-800 active:scale-[0.98] dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200">
-                                        Verify & Continue
-                                    </button>
-                                    <input type="hidden"
-                                           name="cf_turnstile_response"
-                                           id="verify-code-turnstile-response"
-                                           value="">
-                                    <div class="flex justify-center pt-1">
-                                        <div id="verify-code-turnstile-widget"
-                                             data-action="{{ turnstile_actions.verify_code }}"></div>
-                                    </div>
-                                </form>
-                                <div class="mt-4 flex items-center justify-between">
-                                    <form method="post"
-                                          action="{% url 'reimbursements:pay-request-code' package.uuid %}"
-                                          class="space-y-3"
-                                          data-turnstile-form="request-code-resend"
-                                          data-turnstile-widget="request-code-resend-turnstile-widget"
-                                          data-turnstile-response="request-code-resend-turnstile-response">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="email" value="{{ email }}">
-                                        <input type="hidden"
-                                               name="cf_turnstile_response"
-                                               id="request-code-resend-turnstile-response"
-                                               value="">
-                                        <button type="submit"
-                                                class="text-xs font-semibold text-zinc-600 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100">
-                                            Didn't get the code? Resend
-                                        </button>
-                                        <div class="flex justify-center">
-                                            <div id="request-code-resend-turnstile-widget"
-                                                 data-action="{{ turnstile_actions.request_verification }}"></div>
-                                        </div>
-                                    </form>
-                                    <a href="?step=email"
-                                       class="text-xs font-semibold text-[#5A67FF] hover:underline">Change email</a>
-                                </div>
-                            {% endif %}
-                        </div>
-                    {% elif state == "paid" %}
+                    {% if state == "paid" %}
                         <div class="rounded-3xl border border-zinc-200/80 bg-white/80 p-6 text-center shadow-xl shadow-zinc-950/5 backdrop-blur-2xl sm:p-12 dark:border-zinc-800 dark:bg-zinc-900/45">
                             <div class="mx-auto mb-6 flex h-12 w-12 items-center justify-center rounded-2xl border border-emerald-500/20 bg-emerald-500/10 shadow-xs">
                                 <svg class="h-6 w-6 text-emerald-600 dark:text-emerald-400"
@@ -247,6 +144,20 @@
                                       data-turnstile-widget="checkout-turnstile-widget"
                                       data-turnstile-response="checkout-turnstile-response">
                                     {% csrf_token %}
+                                    {% if not user.is_authenticated %}
+                                        <div>
+                                            <label for="payer-email"
+                                                   class="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                                                Your email (for the receipt)
+                                            </label>
+                                            <input type="email"
+                                                   name="email"
+                                                   id="payer-email"
+                                                   autocomplete="email"
+                                                   placeholder="you@example.com"
+                                                   class="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm outline-none focus:border-[#5A67FF] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50">
+                                        </div>
+                                    {% endif %}
                                     <button type="submit"
                                             class="group inline-flex w-full items-center justify-center gap-2 rounded-lg bg-zinc-900 px-5 py-3 text-xs font-semibold text-white shadow-md transition-all duration-200 hover:bg-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 active:scale-[0.98] dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200 dark:focus-visible:outline-zinc-100">
                                         <span>Proceed to Checkout</span>

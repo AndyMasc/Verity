@@ -33,7 +33,7 @@ class StripeWebhookTest(TestCase):
         return {"id": event_id, "type": event_type, "data": {"object": payload}}
 
     @patch("reimbursements.webhooks.transaction.on_commit", side_effect=lambda fn: fn())
-    @patch("reimbursements.webhooks._notify_package_paid")
+    @patch("reimbursements.webhooks.notify_package_paid")
     def test_checkout_session_completed(self, mock_notify, mock_on_commit):
         creator = _user("creator@test.com")
         payer = _user("payer@test.com")
@@ -586,6 +586,7 @@ class WebhookPipelineResilienceTest(TestCase):
         from reimbursements.webhooks import enqueue_reimbursement_processing_on_error
 
         trigger = mock.Mock()
+        trigger.event = None
         trigger.json_body = {"type": "checkout.session.completed"}
         with patch("reimbursements.tasks.process_stripe_event_task.send") as send:
             enqueue_reimbursement_processing_on_error(instance=trigger)
@@ -621,7 +622,7 @@ class ApplyPaidSessionTest(TestCase):
         )
 
     @patch("reimbursements.webhooks.transaction.on_commit", side_effect=lambda fn: fn())
-    @patch("reimbursements.webhooks._notify_package_paid")
+    @patch("reimbursements.webhooks.notify_package_paid")
     def test_applies_paid_session(self, mock_notify, mock_on_commit):
         session = {
             "id": "cs_apply",
@@ -659,7 +660,7 @@ class ApplyPaidSessionTest(TestCase):
         self.assertEqual(self.payment.stripe_payment_intent_id, "pi_obj")
 
     @patch("reimbursements.webhooks.transaction.on_commit", side_effect=lambda fn: fn())
-    @patch("reimbursements.webhooks._notify_package_paid")
+    @patch("reimbursements.webhooks.notify_package_paid")
     def test_already_completed_does_not_notify_again(self, mock_notify, mock_on_commit):
         self.payment.is_completed = True
         self.payment.save(update_fields=["is_completed"])
@@ -791,3 +792,75 @@ class ConcurrentWebhookDeliveryTest(TransactionTestCase):
         )
         self.assertEqual(len(calls), 1, f"handler ran {len(calls)} times")
         self.assertEqual(ProcessedStripeEvent.objects.filter(event_id="evt_race").count(), 1)
+
+
+class LocalStripeSyncResolutionTest(TestCase):
+    """Event resolution should read dj-stripe's synced rows, not call the API.
+
+    dj-stripe syncs models before webhook_post_process fires, so Charge,
+    PaymentIntent and Session are already local by the time a handler runs.
+    """
+
+    def setUp(self):
+        from djstripe.models import Charge, PaymentIntent, Session
+
+        self._models = (Charge, PaymentIntent, Session)
+        self.creator, self.recipient = _user("lr_c@e.com"), _user("lr_p@e.com")
+        self.package = _package(self.creator, self.recipient)
+        self.payment = PackagePayment.objects.create(
+            package=self.package,
+            payer=self.recipient,
+            stripe_checkout_session_id="cs_local",
+            amount_paid=100,
+            payer_currency="usd",
+        )
+        intent = PaymentIntent.objects.create(
+            id="pi_local",
+            livemode=False,
+            metadata={"package_uuid": str(self.package.uuid)},
+        )
+        Session.objects.create(
+            id="cs_local",
+            livemode=False,
+            payment_intent=intent,
+            metadata={"package_uuid": str(self.package.uuid)},
+        )
+        Charge.objects.create(
+            id="ch_local", livemode=False, amount=100, currency="usd", payment_intent=intent
+        )
+
+    def test_resolves_charge_without_calling_stripe(self):
+        from reimbursements.webhooks import payment_from_charge
+
+        with (
+            patch("stripe.Charge.retrieve") as charge,
+            patch("stripe.PaymentIntent.retrieve") as intent,
+            patch("stripe.checkout.Session.retrieve") as session,
+        ):
+            found = payment_from_charge("ch_local")
+
+        self.assertIsNotNone(found)
+        self.assertEqual(found.pk, self.payment.pk)
+        self.assertFalse(charge.called)
+        self.assertFalse(intent.called)
+        self.assertFalse(session.called)
+
+    def test_ambiguous_fallback_refuses_to_guess(self):
+        from reimbursements.webhooks import payment_for_payment_intent
+
+        for name in ("b", "c"):
+            PackagePayment.objects.create(
+                package=self.package,
+                payer=self.recipient,
+                stripe_checkout_session_id=f"cs_amb_{name}",
+                amount_paid=100,
+                payer_currency="usd",
+            )
+
+        with patch(
+            "reimbursements.services.retrieve_payment_intent",
+            return_value={"metadata": {"package_uuid": str(self.package.uuid)}},
+        ):
+            found = payment_for_payment_intent("pi_orphan")
+
+        self.assertIsNone(found)

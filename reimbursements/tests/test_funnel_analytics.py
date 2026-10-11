@@ -35,7 +35,7 @@ class _CaptureMixin:
 
         for target in (
             "core.apps.posthog_client",
-            "reimbursements.views.verify.posthog_client",
+            "reimbursements.views.pay.posthog_client",
             "reimbursements.views.packages.posthog_client",
         ):
             patcher = mock.patch(target)

@@ -6,7 +6,7 @@
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
             async
             defer></script>
-    {% #container heading="Sign in to Verity." subheading=subheading %}
+    {% #container heading="Sign in to your account." subheading=subheading %}
     {% if not SOCIALACCOUNT_ONLY %}
         {% url 'account_login' as action_url %}
         {% #form form=form url=action_url button_text="Sign in" render_fields="true" %}
@@ -42,8 +42,6 @@
                         return;
                     }
 
-            // The widget container renders outside the allauth form block,
-            // so its token is written into this hidden input inside the form.
                     var form = findAuthForm();
                     var input = document.getElementById(RESPONSE_ID);
                     var el = document.getElementById(WIDGET_ID);
@@ -88,7 +86,7 @@
     {% if LOGIN_BY_CODE_ENABLED %}
         <div class="relative my-1 mb-2 flex items-center">
             <div class="h-px flex-grow bg-zinc-200 dark:bg-zinc-800"></div>
-            <span class="px-3 text-sm text-zinc-500 dark:text-zinc-400">Or</span>
+            <span class="px-3 text-sm text-zinc-500 dark:text-zinc-400">Or sign in with</span>
             <div class="h-px flex-grow bg-zinc-200 dark:bg-zinc-800"></div>
         </div>
         <a href="{{ request_login_code_url }}"
@@ -97,12 +95,17 @@
     {% if SOCIALACCOUNT_ENABLED %}
         {% include "socialaccount/snippets/login.html" with page_layout="entrance" %}
     {% endif %}
-    <div class="mt-6 text-center text-sm text-zinc-600 dark:text-zinc-400">
+    <div class="mt-6 text-sm text-zinc-600 dark:text-zinc-400">
         Don't have an account? <a href="{{ signup_url }}"
     class="font-medium text-zinc-900 hover:underline dark:text-zinc-100">Sign up</a>
     </div>
-    <div class="mt-8 flex justify-center">
+    <div class="mt-2 flex justify-center">
         <div id="login-turnstile-widget"></div>
+    </div>
+    <div class="mt-2 text-xs text-zinc-600 dark:text-zinc-400">
+        By signing in, you agree to our <span class="whitespace-nowrap"><a href="{% url 'docs:terms_of_service' %}"
+   class="underline underline-offset-2">ToS</a> and <a href="{% url 'docs:privacy_policy' %}"
+    class="underline underline-offset-2">privacy policy.</a></span>
     </div>
     {% /container %}
 {% endblock content %}

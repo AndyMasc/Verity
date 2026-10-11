@@ -44,11 +44,11 @@ def sync_payment_status(package_uuid: str, payment_id: int) -> None:
     except PackagePayment.DoesNotExist:
         return
 
-    if _sync_payment_from_stripe(payment, source="payment_synced"):
+    if sync_payment_from_stripe(payment, source="payment_synced"):
         logger.info("Background sync: marked package %s as paid", package_uuid)
 
 
-def _sync_payment_from_stripe(payment, *, source: str) -> bool:
+def sync_payment_from_stripe(payment, *, source: str) -> bool:
     session = services.retrieve_checkout_session(payment.stripe_checkout_session_id)
 
     if session.payment_status != "paid":
@@ -87,7 +87,7 @@ def reconcile_pending_payments_task() -> None:
         if payment is None:
             continue
         try:
-            if _sync_payment_from_stripe(payment, source="payment_synced"):
+            if sync_payment_from_stripe(payment, source="payment_synced"):
                 logger.info(
                     "Reconciliation: marked package %s as paid",
                     payment.package.uuid,

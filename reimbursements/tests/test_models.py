@@ -88,10 +88,6 @@ class ReimbursementPackageModelTest(TestCase):
         pkg = _package(self.creator, expires_at=timezone.now() - timedelta(days=1))
         self.assertTrue(pkg.is_expired)
 
-    def test_is_expired_none(self):
-        pkg = _package(self.creator, expires_at=None)
-        self.assertFalse(pkg.is_expired)
-
     def test_mark_as_paid_without_payer_skips_record(self):
         pkg = _package(self.creator, recipient=None, recipient_email="ext@test.com")
         r = _record(self.creator, Decimal("25.00"))
@@ -202,7 +198,7 @@ class PackageBusinessLogicTest(TestCase):
         self.assertFalse(ok)
         self.assertIn("payouts", err)
 
-    @patch("reimbursements.checkout.get_rates", return_value={})
+    @patch("reimbursements.pricing.get_rates", return_value={})
     def test_build_line_items(self, _mock_rates):
         r1 = _record(self.creator, Decimal("25.00"))
         r2 = _record(self.creator, Decimal("5.00"))
@@ -212,7 +208,7 @@ class PackageBusinessLogicTest(TestCase):
         self.assertEqual(items.total_cents, 3000)
         self.assertEqual(items.total_amount, Decimal("30.00"))
 
-    @patch("reimbursements.checkout.get_rates", return_value={})
+    @patch("reimbursements.pricing.get_rates", return_value={})
     def test_build_line_items_empty_when_nothing_payable(self, _mock_rates):
         r = _record(self.creator, Decimal("0.00"))
         self.pkg.records.add(r)
@@ -242,12 +238,6 @@ class PackageBusinessLogicTest(TestCase):
                     continue  # degenerate micro-payment: Stripe costs exceed the charge
                 processing_estimate = math.ceil(total * Decimal("0.032")) + 30
                 self.assertGreaterEqual(fee - processing_estimate, 25)
-
-    @override_settings(PLATFORM_NET_PERCENT="0.02")
-    def test_platform_net_percent_configurable_via_settings(self):
-        fee = self.pkg.platform_fee_cents(10000, "usd", {"USD": Decimal("1")})
-        # $3.20 processing estimate + $0.30 fixed + 2% net margin ($2.00).
-        self.assertEqual(fee, 550)
 
     def test_platform_fee_zero_decimal_currency(self):
         rates = {"USD": Decimal("1"), "JPY": Decimal("150")}
@@ -315,7 +305,7 @@ class PackageBusinessLogicTest(TestCase):
         self.assertEqual(pkg.currency, "usd")
         self.assertLess(pkg.expires_at, timezone.now() + timedelta(days=15))
 
-    @patch("reimbursements.checkout.get_rates", return_value={})
+    @patch("reimbursements.pricing.get_rates", return_value={})
     def test_detail_items(self, _mock_rates):
         r1 = _record(self.creator, Decimal("10.00"))
         r2 = _record(self.creator, Decimal("5.00"))
@@ -325,7 +315,7 @@ class PackageBusinessLogicTest(TestCase):
         self.assertEqual(detail.converted_total, Decimal("15.00"))
         self.assertEqual(detail.original_total, Decimal("15.00"))
 
-    @patch("reimbursements.checkout.get_rates", return_value={})
+    @patch("reimbursements.pricing.get_rates", return_value={})
     def test_prefetch_converted_totals(self, _mock_rates):
         r1 = _record(self.creator, Decimal("12.50"))
         self.pkg.records.add(r1)

@@ -49,6 +49,7 @@ class CheckoutClaimConcurrencyTest(TransactionTestCase):
                 outcomes[index] = services.create_package_checkout(
                     package=self.pkg,
                     payer=self.payer,
+                    payer_email=self.payer.email,
                     currency="usd",
                     success_url="https://app.test/success",
                     cancel_url="https://app.test/cancel",
@@ -133,6 +134,7 @@ class CheckoutRetryAfterStripeFailureTest(TestCase):
         first = services.create_package_checkout(
             package=self.pkg,
             payer=self.payer,
+            payer_email=self.payer.email,
             currency="usd",
             success_url="https://app.test/success",
             cancel_url="https://app.test/cancel",
@@ -145,6 +147,7 @@ class CheckoutRetryAfterStripeFailureTest(TestCase):
         second = services.create_package_checkout(
             package=self.pkg,
             payer=self.payer,
+            payer_email=self.payer.email,
             currency="usd",
             success_url="https://app.test/success",
             cancel_url="https://app.test/cancel",

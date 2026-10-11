@@ -35,12 +35,12 @@ class Drift:
 
 def run_daily_reconciliation() -> list[Drift]:
     drifts: list[Drift] = []
-    drifts.extend(_check_completed_payments())
-    drifts.extend(_check_paid_packages_have_completed_payment())
-    drifts.extend(_check_completed_payments_have_paid_package())
+    drifts.extend(check_completed_payments())
+    drifts.extend(check_paid_packages_have_completed_payment())
+    drifts.extend(check_completed_payments_have_paid_package())
 
     for drift in drifts:
-        _flag(drift)
+        flag_drift(drift)
 
     if drifts:
         logger.critical(
@@ -52,7 +52,7 @@ def run_daily_reconciliation() -> list[Drift]:
     return drifts
 
 
-def _check_completed_payments() -> list[Drift]:
+def check_completed_payments() -> list[Drift]:
     drifts: list[Drift] = []
     payments = (
         PackagePayment.objects.filter(is_completed=True)
@@ -122,7 +122,7 @@ def _check_completed_payments() -> list[Drift]:
     return drifts
 
 
-def _check_paid_packages_have_completed_payment() -> list[Drift]:
+def check_paid_packages_have_completed_payment() -> list[Drift]:
     paid_without_payment = ReimbursementPackage.objects.filter(
         status=ReimbursementPackage.Status.PAID, deleted_at__isnull=True
     ).exclude(payments__is_completed=True)
@@ -136,7 +136,7 @@ def _check_paid_packages_have_completed_payment() -> list[Drift]:
     ]
 
 
-def _check_completed_payments_have_paid_package() -> list[Drift]:
+def check_completed_payments_have_paid_package() -> list[Drift]:
     unsettled = PackagePayment.objects.filter(is_completed=True).exclude(
         package__status=ReimbursementPackage.Status.PAID
     )
@@ -155,7 +155,7 @@ def _check_completed_payments_have_paid_package() -> list[Drift]:
     ]
 
 
-def _flag(drift: Drift) -> None:
+def flag_drift(drift: Drift) -> None:
     details = drift.as_audit_details()
     window_start = timezone.now() - timezone.timedelta(hours=DEDUP_WINDOW_HOURS)
     already_flagged = AuditLog.objects.filter(

@@ -19,7 +19,7 @@ def build_pay_url(package_uuid: str) -> str:
     return f"{site_url}/reimbursements/pay/{package_uuid}/"
 
 
-def _render_created_email(package, *, creator_name, recipient_name, amount, currency, url):
+def render_created_email(package, *, creator_name, recipient_name, amount, currency, url):
     ctx = {
         "creator_name": creator_name,
         "recipient_name": recipient_name,
@@ -51,7 +51,7 @@ def send_package_created_notification(package, recipient=None) -> None:
         if not recipient_name:
             return
         subject = f'{plain_creator} sent you a reimbursement request: "{plain_title}"'
-        html_body, text_body = _render_created_email(
+        html_body, text_body = render_created_email(
             package,
             creator_name=escape(plain_creator),
             recipient_name=escape(recipient_name),
@@ -73,7 +73,7 @@ def send_package_created_notification(package, recipient=None) -> None:
     package_url = build_package_url(package.uuid)
     subject = f'{plain_creator} sent you a reimbursement request: "{plain_title}"'
 
-    html_body, text_body = _render_created_email(
+    html_body, text_body = render_created_email(
         package,
         creator_name=escape(plain_creator),
         recipient_name=escape(recipient.get_full_name() or recipient.email),

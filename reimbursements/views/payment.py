@@ -53,6 +53,7 @@ class CreatePackageCheckoutView(LoginRequiredMixin, View):
         outcome = services.create_package_checkout(
             package=package,
             payer=request.user,
+            payer_email=request.user.email,
             currency=payer_currency,
             success_url=request.build_absolute_uri(
                 reverse("reimbursements:payment-success") + f"?package={package.uuid}"

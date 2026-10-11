@@ -15,7 +15,7 @@ from ._helpers import _FakeSession, _package, _reconcile_session, _user
 class SyncPaymentStatusTest(TestCase):
     @patch("reimbursements.tasks.services.retrieve_checkout_session")
     @patch("reimbursements.webhooks.transaction.on_commit", side_effect=lambda fn: fn())
-    @patch("reimbursements.webhooks._notify_package_paid")
+    @patch("reimbursements.webhooks.notify_package_paid")
     def test_sync_marks_paid_with_audit(self, mock_notify, mock_on_commit, mock_retrieve):
         from reimbursements.tasks import sync_payment_status
 
@@ -102,7 +102,7 @@ class SyncPaymentStatusTest(TestCase):
 class ReconcilePendingPaymentsTaskTest(TestCase):
     @patch("reimbursements.tasks.services.retrieve_checkout_session")
     @patch("reimbursements.webhooks.transaction.on_commit", side_effect=lambda fn: fn())
-    @patch("reimbursements.webhooks._notify_package_paid")
+    @patch("reimbursements.webhooks.notify_package_paid")
     def test_reconcile_marks_paid(self, mock_notify, mock_on_commit, mock_retrieve):
         from reimbursements.tasks import reconcile_pending_payments_task
 
