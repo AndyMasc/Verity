@@ -5967,6 +5967,14 @@
       }
     }
   }
+  .dark\:bg-zinc-900\/70 {
+    @media (prefers-color-scheme: dark) {
+      background-color: color-mix(in srgb, oklch(21% 0.006 285.885) 70%, transparent);
+      @supports (color: color-mix(in lab, red, red)) {
+        background-color: color-mix(in oklab, var(--color-zinc-900) 70%, transparent);
+      }
+    }
+  }
   .dark\:bg-zinc-900\/80 {
     @media (prefers-color-scheme: dark) {
       background-color: color-mix(in srgb, oklch(21% 0.006 285.885) 80%, transparent);
