@@ -17,7 +17,8 @@ class Migration(migrations.Migration):
             model_name="monthlyusage",
             name="action",
             field=models.CharField(
-                help_text="The type of action being tracked. E.g. 'scan' or 'upload'.",
+                help_text=
+                "The type of action being tracked. E.g. 'scan' or 'upload'.",
                 max_length=16,
             ),
         ),

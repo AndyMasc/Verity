@@ -10,6 +10,7 @@ from ..tasks import sync_upload_overage_to_stripe
 
 
 class SyncUploadOverageTests(TestCase):
+
     def setUp(self):
         self.user = get_user_model().objects.create_user(
             username="metered",
@@ -26,9 +27,10 @@ class SyncUploadOverageTests(TestCase):
         self.user.save(update_fields=["customer"])
 
     def _subscribe(self, product_id, status="active"):
-        product = Product.objects.create(
-            id=product_id, livemode=False, active=True, name=product_id
-        )
+        product = Product.objects.create(id=product_id,
+                                         livemode=False,
+                                         active=True,
+                                         name=product_id)
         price = Price.objects.create(
             id=f"price_{product_id}",
             livemode=False,
@@ -59,8 +61,8 @@ class SyncUploadOverageTests(TestCase):
 
     def _run(self):
         with (
-            mock.patch("billing.tasks._configure"),
-            mock.patch("stripe.billing.MeterEvent.create") as create_event,
+                mock.patch("billing.tasks._configure"),
+                mock.patch("stripe.billing.MeterEvent.create") as create_event,
         ):
             sync_upload_overage_to_stripe.fn()
         return create_event
@@ -72,10 +74,11 @@ class SyncUploadOverageTests(TestCase):
         create_event = self._over(limit + 1)
 
         self.assertEqual(create_event.call_count, 1)
-        self.assertEqual(create_event.call_args.kwargs["event_name"], "document_uploads")
+        self.assertEqual(create_event.call_args.kwargs["event_name"],
+                         "document_uploads")
         self.assertEqual(
-            create_event.call_args.kwargs["payload"]["stripe_customer_id"], self.customer.id
-        )
+            create_event.call_args.kwargs["payload"]["stripe_customer_id"],
+            self.customer.id)
 
     def test_reported_value_is_the_overage(self):
         self._subscribe(metadata.USAGE_BASED_STORAGE.stripe_id)
@@ -83,7 +86,8 @@ class SyncUploadOverageTests(TestCase):
 
         create_event = self._over(limit + 7)
 
-        self.assertEqual(create_event.call_args.kwargs["payload"]["value"], "7")
+        self.assertEqual(create_event.call_args.kwargs["payload"]["value"],
+                         "7")
 
     def test_within_allowance_sends_nothing(self):
         self._subscribe(metadata.USAGE_BASED_STORAGE.stripe_id)
@@ -96,5 +100,6 @@ class SyncUploadOverageTests(TestCase):
         self.assertEqual(self._over(100).call_count, 0)
 
     def test_cancelled_subscription_sends_nothing(self):
-        self._subscribe(metadata.USAGE_BASED_STORAGE.stripe_id, status="canceled")
+        self._subscribe(metadata.USAGE_BASED_STORAGE.stripe_id,
+                        status="canceled")
         self.assertEqual(self._over(100).call_count, 0)

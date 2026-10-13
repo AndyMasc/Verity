@@ -21,12 +21,12 @@ class Migration(migrations.Migration):
         ),
         migrations.AddIndex(
             model_name="documentdata",
-            index=models.Index(
-                fields=["user", "file_extension"], name="documents_d_user_id_1a7656_idx"
-            ),
+            index=models.Index(fields=["user", "file_extension"],
+                               name="documents_d_user_id_1a7656_idx"),
         ),
         migrations.AddIndex(
             model_name="documentdata",
-            index=models.Index(fields=["date_added"], name="documents_d_date_ad_26a650_idx"),
+            index=models.Index(fields=["date_added"],
+                               name="documents_d_date_ad_26a650_idx"),
         ),
     ]

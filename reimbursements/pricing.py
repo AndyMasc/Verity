@@ -56,18 +56,22 @@ def build_line_items(package, payer_currency: str) -> CheckoutItems:
         total_amount += converted
 
     if line_items:
-        return CheckoutItems(
-            line_items=line_items, total_cents=total_cents, total_amount=total_amount
-        )
+        return CheckoutItems(line_items=line_items,
+                             total_cents=total_cents,
+                             total_amount=total_amount)
     return fallback_line_item(package, payer_currency)
 
 
-def line_item_for(record, payer_currency: str, rates) -> tuple[dict, Decimal] | None:
+def line_item_for(record, payer_currency: str,
+                  rates) -> tuple[dict, Decimal] | None:
     """Return "(line item, converted amount)" for one record, or None when it
     has no positive balance or converts to zero in the payer's currency."""
     if not record.balance or record.balance <= 0:
         return None
-    converted = convert_currency(record.balance, record.currency, payer_currency, rates=rates)
+    converted = convert_currency(record.balance,
+                                 record.currency,
+                                 payer_currency,
+                                 rates=rates)
     converted_stripe = to_stripe_amount(converted, payer_currency)
     if converted_stripe <= 0:
         return None
@@ -98,16 +102,16 @@ def fallback_line_item(package, payer_currency: str) -> CheckoutItems:
     if fallback_cents <= 0:
         return CheckoutItems()
     return CheckoutItems(
-        line_items=[
-            {
-                "price_data": {
-                    "currency": payer_currency,
-                    "product_data": {"name": package.title or "Reimbursement"},
-                    "unit_amount": fallback_cents,
+        line_items=[{
+            "price_data": {
+                "currency": payer_currency,
+                "product_data": {
+                    "name": package.title or "Reimbursement"
                 },
-                "quantity": 1,
-            }
-        ],
+                "unit_amount": fallback_cents,
+            },
+            "quantity": 1,
+        }],
         total_cents=fallback_cents,
         total_amount=target_total,
     )
@@ -121,7 +125,10 @@ def strict_converted_total(package, to_currency: str) -> Decimal:
     rates = get_rates("USD")
     total = Decimal("0")
     for amount, from_currency in items:
-        total += convert_currency(amount, from_currency, to_currency, rates=rates)
+        total += convert_currency(amount,
+                                  from_currency,
+                                  to_currency,
+                                  rates=rates)
     return total
 
 
@@ -158,31 +165,30 @@ def detail_items(package, user_currency: str) -> PackageDetailItems:
 def first_requested_histories(records: list[Record]) -> dict[int, object]:
     HistoricalRecord = Record.history.model
     first_by_id: dict[int, object] = {}
-    history = HistoricalRecord.objects.filter(id__in=[r.id for r in records]).order_by(
-        "history_date"
-    )
+    history = HistoricalRecord.objects.filter(
+        id__in=[r.id for r in records]).order_by("history_date")
     for entry in history:
         first_by_id.setdefault(entry.id, entry)
     return first_by_id
 
 
-def detail_item_for(
-    record, first_history, package_currency: str, user_currency: str, rates
-) -> tuple[dict, Decimal, Decimal]:
+def detail_item_for(record, first_history, package_currency: str,
+                    user_currency: str,
+                    rates) -> tuple[dict, Decimal, Decimal]:
     original_balance = first_history.balance if first_history else record.balance
     original_currency = first_history.currency if first_history else record.currency
 
-    original_converted = convert_currency(
-        original_balance, original_currency, user_currency, rates=rates
-    )
-    current_converted = (
-        convert_currency(record.balance, record.currency, user_currency, rates=rates)
-        if record.balance
-        else original_converted
-    )
-    original_total = convert_currency(
-        original_balance, original_currency, package_currency, rates=rates
-    )
+    original_converted = convert_currency(original_balance,
+                                          original_currency,
+                                          user_currency,
+                                          rates=rates)
+    current_converted = (convert_currency(
+        record.balance, record.currency, user_currency, rates=rates)
+                         if record.balance else original_converted)
+    original_total = convert_currency(original_balance,
+                                      original_currency,
+                                      package_currency,
+                                      rates=rates)
 
     item = {
         "record": record,
@@ -199,7 +205,8 @@ def prefetch_converted_totals(packages: list, to_currency: str) -> list:
         return packages
     rates = get_rates("USD")
     for package in packages:
-        package._prefetched_converted_total = converted_total_of(package, to_currency, rates)
+        package._prefetched_converted_total = converted_total_of(
+            package, to_currency, rates)
     return packages
 
 
@@ -207,5 +214,8 @@ def converted_total_of(package, to_currency: str, rates) -> Decimal:
     total = Decimal("0.00")
     for record in package.records.all():
         if record.is_active and record.balance:
-            total += convert_currency(record.balance, record.currency, to_currency, rates=rates)
+            total += convert_currency(record.balance,
+                                      record.currency,
+                                      to_currency,
+                                      rates=rates)
     return total

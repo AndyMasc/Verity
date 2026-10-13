@@ -78,7 +78,8 @@ class DocumentDataQuerySet(models.QuerySet):
         """Case-insensitive search across document title and notes."""
         if not (query := query.strip()):
             return self
-        return self.filter(Q(title__icontains=query) | Q(notes__icontains=query))
+        return self.filter(
+            Q(title__icontains=query) | Q(notes__icontains=query))
 
     def with_record(self) -> DocumentDataQuerySet:
         """Eager-load the associated record to avoid N+1 queries."""
@@ -130,12 +131,18 @@ class DocumentData(models.Model):
     class Meta:
         ordering: ClassVar[list[str]] = ["-date_added"]
         indexes: ClassVar[list[models.Index]] = [
-            models.Index(fields=["user", "associated_record"], name="idx_doc_user_record"),
-            models.Index(fields=["user", "file_extension"], name="idx_doc_user_ext"),
-            models.Index(fields=["date_added", "file_hash"], name="idx_doc_date_hash"),
-            models.Index(fields=["user", "status"], name="idx_doc_user_status"),
-            models.Index(fields=["user", "-date_added"], name="idx_doc_list_cover"),
-            models.Index(fields=["user", "did_ocr", "-date_added"], name="idx_doc_main_cover"),
+            models.Index(fields=["user", "associated_record"],
+                         name="idx_doc_user_record"),
+            models.Index(fields=["user", "file_extension"],
+                         name="idx_doc_user_ext"),
+            models.Index(fields=["date_added", "file_hash"],
+                         name="idx_doc_date_hash"),
+            models.Index(fields=["user", "status"],
+                         name="idx_doc_user_status"),
+            models.Index(fields=["user", "-date_added"],
+                         name="idx_doc_list_cover"),
+            models.Index(fields=["user", "did_ocr", "-date_added"],
+                         name="idx_doc_main_cover"),
             models.Index(
                 fields=["associated_record", "date_added"],
                 name="idx_doc_orphaned_cleanup",
@@ -144,7 +151,8 @@ class DocumentData(models.Model):
                 fields=["status", "date_added", "filepath"],
                 name="idx_doc_reconcile_pending",
             ),
-            models.Index(fields=["status", "date_added"], name="idx_doc_reconcile_error"),
+            models.Index(fields=["status", "date_added"],
+                         name="idx_doc_reconcile_error"),
         ]
         constraints: ClassVar[list[models.UniqueConstraint]] = [
             models.UniqueConstraint(

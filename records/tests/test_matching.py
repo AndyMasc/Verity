@@ -19,8 +19,10 @@ from ._helpers import make_plaid_record, make_doc_record
 
 
 class CalculateMatchScoreTest(TestCase):
+
     def setUp(self):
-        self.user = User.objects.create_user(username="match_score", password="pass")
+        self.user = User.objects.create_user(username="match_score",
+                                             password="pass")
         self.plaid = make_plaid_record(self.user, "Amazon Purchase")
         self.doc = make_doc_record(self.user, "Amazon Purchase")
 
@@ -40,13 +42,19 @@ class CalculateMatchScoreTest(TestCase):
         self.assertLess(score, MERGE_SCORE_THRESHOLD)
 
     def test_balance_only_match(self):
-        doc = make_doc_record(self.user, "Unrelated", merchant="", transaction_date=None)
+        doc = make_doc_record(self.user,
+                              "Unrelated",
+                              merchant="",
+                              transaction_date=None)
         score = calculate_match_score(self.plaid, doc)
         self.assertGreaterEqual(score, 40)
         self.assertLess(score, 50)
 
     def test_date_only_match(self):
-        doc = make_doc_record(self.user, "Unrelated", balance=None, merchant="")
+        doc = make_doc_record(self.user,
+                              "Unrelated",
+                              balance=None,
+                              merchant="")
         score = calculate_match_score(self.plaid, doc)
         self.assertGreaterEqual(score, 30)
         self.assertLess(score, 40)
@@ -63,38 +71,53 @@ class CalculateMatchScoreTest(TestCase):
         self.assertEqual(score, 10)
 
     def test_title_partial_match(self):
-        doc = make_doc_record(self.user, "amazon", merchant="", balance=None, transaction_date=None)
+        doc = make_doc_record(self.user,
+                              "amazon",
+                              merchant="",
+                              balance=None,
+                              transaction_date=None)
         score = calculate_match_score(self.plaid, doc)
         self.assertEqual(score, 8)
 
     def test_balance_within_tolerance(self):
-        doc = make_doc_record(self.user, "Amazon Purchase", balance=Decimal("100.50"))
+        doc = make_doc_record(self.user,
+                              "Amazon Purchase",
+                              balance=Decimal("100.50"))
         score = calculate_match_score(self.plaid, doc)
         self.assertEqual(score, 110)
 
     def test_date_one_day_off(self):
-        doc = make_doc_record(self.user, "Amazon Purchase", transaction_date=date(2024, 6, 16))
+        doc = make_doc_record(self.user,
+                              "Amazon Purchase",
+                              transaction_date=date(2024, 6, 16))
         score = calculate_match_score(self.plaid, doc)
         self.assertEqual(score, 110)
 
     def test_both_none_balance_and_date(self):
-        doc = make_doc_record(self.user, "Amazon Purchase", balance=None, transaction_date=None)
+        doc = make_doc_record(self.user,
+                              "Amazon Purchase",
+                              balance=None,
+                              transaction_date=None)
         score = calculate_match_score(self.plaid, doc)
         self.assertGreaterEqual(score, 50)
 
     def test_empty_strings_do_not_raise(self):
         self.plaid.merchant = ""
         self.plaid.title = ""
-        doc = make_doc_record(
-            self.user, "Something", merchant="", balance=None, transaction_date=None
-        )
+        doc = make_doc_record(self.user,
+                              "Something",
+                              merchant="",
+                              balance=None,
+                              transaction_date=None)
         score = calculate_match_score(self.plaid, doc)
         self.assertEqual(score, 0)
 
 
 class FindBestPlaidMatchTest(TestCase):
+
     def setUp(self):
-        self.user = User.objects.create_user(username="best_plaid", password="pass")
+        self.user = User.objects.create_user(username="best_plaid",
+                                             password="pass")
         self.plaid = make_plaid_record(self.user, "Target Purchase")
         self.doc = make_doc_record(self.user, "Target Purchase")
 
@@ -115,13 +138,15 @@ class FindBestPlaidMatchTest(TestCase):
         self.assertIsNone(match)
 
     def test_excludes_own_pk(self):
-        other = User.objects.create_user(username="exclude_pk", password="pass")
+        other = User.objects.create_user(username="exclude_pk",
+                                         password="pass")
         plaid = make_plaid_record(other, "Self")
         match = find_best_plaid_match(plaid)
         self.assertIsNone(match)
 
     def test_user_isolation(self):
-        other = User.objects.create_user(username="other_best", password="pass")
+        other = User.objects.create_user(username="other_best",
+                                         password="pass")
         make_plaid_record(other, "Other User Purchase")
         doc = make_doc_record(
             other,
@@ -163,7 +188,9 @@ class FindBestPlaidMatchTest(TestCase):
         Two near-identical candidates both clear any early-exit bar, but only
         one is the better match; the exact-amount one must win.
         """
-        make_plaid_record(self.user, "Duplicate Lookalike", balance=Decimal("100.01"))
+        make_plaid_record(self.user,
+                          "Duplicate Lookalike",
+                          balance=Decimal("100.01"))
         match = find_best_plaid_match(self.doc)
         self.assertEqual(match.pk, self.plaid.pk)
         self.assertEqual(match.balance, self.plaid.balance)
@@ -180,8 +207,10 @@ class FindBestPlaidMatchTest(TestCase):
 
 
 class FindDocumentMatchesForPlaidTest(TestCase):
+
     def setUp(self):
-        self.user = User.objects.create_user(username="find_doc", password="pass")
+        self.user = User.objects.create_user(username="find_doc",
+                                             password="pass")
         self.plaid = make_plaid_record(self.user, "Best Buy")
 
     def test_finds_matching_docs(self):
@@ -191,7 +220,10 @@ class FindDocumentMatchesForPlaidTest(TestCase):
         self.assertEqual(matches[0][0].pk, doc.pk)
 
     def test_returns_empty_when_no_match(self):
-        make_doc_record(self.user, "Not Matching", balance=Decimal("999.99"), merchant="Different")
+        make_doc_record(self.user,
+                        "Not Matching",
+                        balance=Decimal("999.99"),
+                        merchant="Different")
         matches = find_document_matches_for_plaid(self.plaid)
         self.assertEqual(matches, [])
 
@@ -214,7 +246,8 @@ class FindDocumentMatchesForPlaidTest(TestCase):
         self.assertEqual(match, [])
 
     def test_user_isolation(self):
-        other = User.objects.create_user(username="other_find", password="pass")
+        other = User.objects.create_user(username="other_find",
+                                         password="pass")
         make_doc_record(other, "Best Buy")
         matches = find_document_matches_for_plaid(self.plaid)
         self.assertEqual(matches, [])
@@ -225,6 +258,8 @@ class FindDocumentMatchesForPlaidTest(TestCase):
         self.assertEqual(matches, [])
 
     def test_ignores_docs_with_plaid_id(self):
-        make_doc_record(self.user, "Best Buy", plaid_transaction_id="already_merged")
+        make_doc_record(self.user,
+                        "Best Buy",
+                        plaid_transaction_id="already_merged")
         matches = find_document_matches_for_plaid(self.plaid)
         self.assertEqual(matches, [])

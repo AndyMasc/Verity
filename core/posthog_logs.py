@@ -25,7 +25,9 @@ posthog_logger = logging.getLogger(POSTHOG_LOGGER_NAME)
 
 def configure_posthog_log_export(project_token: str, host: str) -> None:
     """Export only records written to the dedicated PostHog logger."""
-    if any(getattr(handler, "_posthog_log_export", False) for handler in posthog_logger.handlers):
+    if any(
+            getattr(handler, "_posthog_log_export", False)
+            for handler in posthog_logger.handlers):
         return
 
     logger_provider = LoggerProvider()
@@ -35,9 +37,7 @@ def configure_posthog_log_export(project_token: str, host: str) -> None:
             OTLPLogExporter(
                 endpoint=f"{host.rstrip('/')}/i/v1/logs",
                 headers={"Authorization": f"Bearer {project_token}"},
-            )
-        )
-    )
+            )))
     handler = LoggingHandler(logger_provider=logger_provider)
     handler._posthog_log_export = True
     posthog_logger.addHandler(handler)

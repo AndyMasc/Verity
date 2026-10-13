@@ -14,9 +14,10 @@ User = get_user_model()
 
 def _user(email="test@example.com", **kwargs):
     username = kwargs.pop("username", email.split("@")[0])
-    return User.objects.create_user(
-        username=username, email=email, password="testpass123", **kwargs
-    )
+    return User.objects.create_user(username=username,
+                                    email=email,
+                                    password="testpass123",
+                                    **kwargs)
 
 
 def _package(creator, recipient=None, status="open", **kwargs):
@@ -25,7 +26,10 @@ def _package(creator, recipient=None, status="open", **kwargs):
         recipient=recipient,
         title=kwargs.get("title", "Test Package"),
         status=status,
-        **{k: v for k, v in kwargs.items() if k not in ("title", "status")},
+        **{
+            k: v
+            for k, v in kwargs.items() if k not in ("title", "status")
+        },
     )
 
 
@@ -74,5 +78,5 @@ class _FakeSession:
         for key, value in data.items():
             setattr(self, key, value)
 
-    def to_dict_recursive(self):
+    def to_dict(self):
         return dict(self._data)

@@ -25,6 +25,7 @@ def _make_hash(content: bytes = b"test") -> str:
 
 @pytest.mark.django_db
 class TestParseRequestData:
+
     def test_json_body(self):
         request = HttpRequest()
         request.content_type = "application/json"
@@ -49,6 +50,7 @@ class TestParseRequestData:
 
 @pytest.mark.django_db
 class TestResolveHash:
+
     def test_returns_original_when_not_forced(self):
         h = _make_hash()
         result = UploadService._resolve_hash(h, force_upload=False)
@@ -69,6 +71,7 @@ class TestResolveHash:
 
 @pytest.mark.django_db
 class TestUploadServiceHandle:
+
     def test_missing_file_hash_returns_error(self, user):
         request = HttpRequest()
         request.content_type = "application/x-www-form-urlencoded"
@@ -91,7 +94,8 @@ class TestUploadServiceHandle:
     def test_invalid_content_type_returns_error(self, user):
         request = HttpRequest()
         request.content_type = "application/x-www-form-urlencoded"
-        request.POST = QueryDict("filename=test.pdf&file_hash=abc123&content_type=text/plain")
+        request.POST = QueryDict(
+            "filename=test.pdf&file_hash=abc123&content_type=text/plain")
         request.user = user
         svc = UploadService(request)
         result = svc.handle()
@@ -104,7 +108,8 @@ class TestUploadServiceHandle:
     def test_new_upload_returns_url(self, mock_presign, user):
         request = HttpRequest()
         request.content_type = "application/x-www-form-urlencoded"
-        request.POST = QueryDict("filename=test.pdf&file_hash=abc123&content_type=application/pdf")
+        request.POST = QueryDict(
+            "filename=test.pdf&file_hash=abc123&content_type=application/pdf")
         request.user = user
         svc = UploadService(request)
         result = svc.handle()
@@ -125,7 +130,8 @@ class TestUploadServiceHandle:
         )
         request = HttpRequest()
         request.content_type = "application/x-www-form-urlencoded"
-        request.POST = QueryDict(f"filename=dup.pdf&file_hash={h}&content_type=application/pdf")
+        request.POST = QueryDict(
+            f"filename=dup.pdf&file_hash={h}&content_type=application/pdf")
         request.user = user
         svc = UploadService(request)
         result = svc.handle()
@@ -159,7 +165,8 @@ class TestUploadServiceHandle:
     def test_creates_document_with_correct_status(self, mock_presign, user):
         request = HttpRequest()
         request.content_type = "application/x-www-form-urlencoded"
-        request.POST = QueryDict("filename=new.pdf&file_hash=abc123&content_type=application/pdf")
+        request.POST = QueryDict(
+            "filename=new.pdf&file_hash=abc123&content_type=application/pdf")
         request.user = user
         svc = UploadService(request)
         result = svc.handle()
@@ -173,7 +180,8 @@ class TestUploadServiceHandle:
     def test_sets_did_ocr_when_no_record(self, mock_presign, user):
         request = HttpRequest()
         request.content_type = "application/x-www-form-urlencoded"
-        request.POST = QueryDict("filename=new.pdf&file_hash=abc123&content_type=application/pdf")
+        request.POST = QueryDict(
+            "filename=new.pdf&file_hash=abc123&content_type=application/pdf")
         request.user = user
         svc = UploadService(request)
         result = svc.handle()
@@ -202,7 +210,8 @@ class TestUploadServiceHandle:
         )
         request = HttpRequest()
         request.content_type = "application/x-www-form-urlencoded"
-        request.POST = QueryDict(f"filename=dup.pdf&file_hash={h}&content_type=application/pdf")
+        request.POST = QueryDict(
+            f"filename=dup.pdf&file_hash={h}&content_type=application/pdf")
         request.user = user
         svc = UploadService(request)
         result = svc.handle()
@@ -229,7 +238,8 @@ class TestUploadServiceHandle:
         "documents.services.upload.generate_presigned_post",
         return_value="https://upload.url",
     )
-    def test_upload_over_monthly_allowance_is_rejected(self, mock_presign, user):
+    def test_upload_over_monthly_allowance_is_rejected(self, mock_presign,
+                                                       user):
         from billing.entitlements import (
             get_monthly_upload_count,
             get_monthly_upload_limit,
@@ -238,11 +248,14 @@ class TestUploadServiceHandle:
 
         for _ in range(get_monthly_upload_limit(user, "upload")):
             record_monthly_upload_usage(user, "upload")
-        assert get_monthly_upload_count(user, "upload") == get_monthly_upload_limit(user, "upload")
+        assert get_monthly_upload_count(user,
+                                        "upload") == get_monthly_upload_limit(
+                                            user, "upload")
 
         request = HttpRequest()
         request.content_type = "application/x-www-form-urlencoded"
-        request.POST = QueryDict("filename=new.pdf&file_hash=abc123&content_type=application/pdf")
+        request.POST = QueryDict(
+            "filename=new.pdf&file_hash=abc123&content_type=application/pdf")
         request.user = user
         result = UploadService(request).handle()
 

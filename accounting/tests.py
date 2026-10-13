@@ -28,9 +28,12 @@ def _parse_xlsx_sheet_rows(content: bytes) -> list[list[str]]:
 
 @patch("django_ratelimit.decorators.is_ratelimited", return_value=False)
 class ExportExcelAllViewTest(TestCase):
+
     def setUp(self):
-        self.user = User.objects.create_user(username="exporter", password="pass")
-        self.other_user = User.objects.create_user(username="other", password="pass")
+        self.user = User.objects.create_user(username="exporter",
+                                             password="pass")
+        self.other_user = User.objects.create_user(username="other",
+                                                   password="pass")
 
     def test_login_required(self, _mock_rl):
         response = self.client.get(EXPORT_URL)
@@ -55,7 +58,10 @@ class ExportExcelAllViewTest(TestCase):
         response = self.client.get(EXPORT_URL)
         self.assertEqual(response.status_code, 200)
         rows = _parse_xlsx_sheet_rows(response.content)
-        titles = [row[rows[0].index("title")] for row in rows[1:] if "title" in rows[0]]
+        titles = [
+            row[rows[0].index("title")] for row in rows[1:]
+            if "title" in rows[0]
+        ]
         self.assertIn("My receipt", titles)
         self.assertNotIn("Their receipt", titles)
 
@@ -67,7 +73,10 @@ class ExportExcelAllViewTest(TestCase):
         response = self.client.get(EXPORT_URL)
         self.assertEqual(response.status_code, 200)
         rows = _parse_xlsx_sheet_rows(response.content)
-        titles = [row[rows[0].index("title")] for row in rows[1:] if "title" in rows[0]]
+        titles = [
+            row[rows[0].index("title")] for row in rows[1:]
+            if "title" in rows[0]
+        ]
         self.assertIn("Trashed record", titles)
 
     def test_excludes_internal_fields(self, _mock_rl):
@@ -92,7 +101,8 @@ class ExportExcelAllViewTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("Record_export.xlsx", response["Content-Disposition"])
 
-    @patch("accounting.views.export_records_to_excel", side_effect=RuntimeError("db down"))
+    @patch("accounting.views.export_records_to_excel",
+           side_effect=RuntimeError("db down"))
     def test_returns_500_on_export_failure(self, _mock_export, _mock_rl):
         self.client.force_login(self.user)
         response = self.client.get(EXPORT_URL)
@@ -100,6 +110,7 @@ class ExportExcelAllViewTest(TestCase):
 
 
 class ExportExcelAllServiceTest(TestCase):
+
     def test_user_scoping(self):
         from accounting.services import export_records_to_excel
 
@@ -114,16 +125,22 @@ class ExportExcelAllServiceTest(TestCase):
         self.assertGreater(len(result), 0)
 
         rows = _parse_xlsx_sheet_rows(result)
-        titles = [row[rows[0].index("title")] for row in rows[1:] if "title" in rows[0]]
+        titles = [
+            row[rows[0].index("title")] for row in rows[1:]
+            if "title" in rows[0]
+        ]
         self.assertIn("owned", titles)
         self.assertNotIn("not owned", titles)
 
 
 @patch("django_ratelimit.decorators.is_ratelimited", return_value=False)
 class ExportSelectedExcelViewTest(TestCase):
+
     def setUp(self):
-        self.user = User.objects.create_user(username="export_sel", password="pass")
-        self.other_user = User.objects.create_user(username="export_other", password="pass")
+        self.user = User.objects.create_user(username="export_sel",
+                                             password="pass")
+        self.other_user = User.objects.create_user(username="export_other",
+                                                   password="pass")
 
     def test_login_required(self, _mock_rl):
         response = self.client.post(
@@ -144,12 +161,16 @@ class ExportSelectedExcelViewTest(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         rows = _parse_xlsx_sheet_rows(response.content)
-        titles = [row[rows[0].index("title")] for row in rows[1:] if "title" in rows[0]]
+        titles = [
+            row[rows[0].index("title")] for row in rows[1:]
+            if "title" in rows[0]
+        ]
         self.assertIn("Keep this", titles)
         self.assertNotIn("Not this", titles)
 
     def test_does_not_export_other_users_records(self, _mock_rl):
-        other_record = Record.objects.create(user=self.other_user, title="Their record")
+        other_record = Record.objects.create(user=self.other_user,
+                                             title="Their record")
         own_record = Record.objects.create(user=self.user, title="My record")
         self.client.force_login(self.user)
         response = self.client.post(
@@ -159,12 +180,16 @@ class ExportSelectedExcelViewTest(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         rows = _parse_xlsx_sheet_rows(response.content)
-        titles = [row[rows[0].index("title")] for row in rows[1:] if "title" in rows[0]]
+        titles = [
+            row[rows[0].index("title")] for row in rows[1:]
+            if "title" in rows[0]
+        ]
         self.assertNotIn("Their record", titles)
         self.assertIn("My record", titles)
 
     def test_no_exportable_records_returns_400(self, _mock_rl):
-        other_record = Record.objects.create(user=self.other_user, title="Their record")
+        other_record = Record.objects.create(user=self.other_user,
+                                             title="Their record")
         self.client.force_login(self.user)
         response = self.client.post(
             EXPORT_SELECTED_URL,

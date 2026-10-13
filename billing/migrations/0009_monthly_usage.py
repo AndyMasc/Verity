@@ -9,9 +9,10 @@ def forwards(apps, schema_editor):
     ScanUsage = apps.get_model("billing", "ScanUsage")
     MonthlyUsage = apps.get_model("billing", "MonthlyUsage")
     for row in ScanUsage.objects.all():
-        MonthlyUsage.objects.create(
-            user_id=row.user_id, period=row.period, action="scan", count=row.count
-        )
+        MonthlyUsage.objects.create(user_id=row.user_id,
+                                    period=row.period,
+                                    action="scan",
+                                    count=row.count)
 
 
 class Migration(migrations.Migration):
@@ -34,7 +35,8 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "period",
-                    models.CharField(help_text="Calendar month, e.g. 2026-08", max_length=7),
+                    models.CharField(help_text="Calendar month, e.g. 2026-08",
+                                     max_length=7),
                 ),
                 ("action", models.CharField(max_length=16)),
                 ("count", models.PositiveIntegerField(default=0)),
@@ -60,11 +62,9 @@ class Migration(migrations.Migration):
         ),
         migrations.AddConstraint(
             model_name="monthlyusage",
-            constraint=models.UniqueConstraint(
-                fields=("user", "period", "action"), name="unique_monthly_usage"
-            ),
+            constraint=models.UniqueConstraint(fields=("user", "period",
+                                                       "action"),
+                                               name="unique_monthly_usage"),
         ),
-        migrations.DeleteModel(
-            name="ScanUsage",
-        ),
+        migrations.DeleteModel(name="ScanUsage", ),
     ]

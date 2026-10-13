@@ -57,9 +57,13 @@ def plaid_connect_page(request: Request) -> HttpResponse:
         return render(
             request,
             "plaid/connect.html",
-            {"plaid_items": [], "upgrade_required": True},
+            {
+                "plaid_items": [],
+                "upgrade_required": True
+            },
         )
-    plaid_items = PlaidItem.objects.filter(user=request.user).prefetch_related("records")
+    plaid_items = PlaidItem.objects.filter(
+        user=request.user).prefetch_related("records")
     return render(request, "plaid/connect.html", {"plaid_items": plaid_items})
 
 
@@ -67,48 +71,61 @@ class CreateLinkTokenView(FeatureRequiredMixin, APIView):
     """Create a Plaid Link token for a new bank connection."""
 
     required_feature = "transaction-sync"
-    authentication_classes: ClassVar[list] = [authentication.SessionAuthentication]
+    authentication_classes: ClassVar[list] = [
+        authentication.SessionAuthentication
+    ]
     permission_classes: ClassVar[list] = [permissions.IsAuthenticated]
 
     def post(self, request: Request) -> Response:
         """Issue a new link token for the requesting user."""
         try:
-            response = client.link_token_create(_link_token_request(request.user.id))
+            response = client.link_token_create(
+                _link_token_request(request.user.id))
             return Response({"link_token": response["link_token"]})
         except plaid.ApiException:
-            logger.exception("Link token creation failed for user %s", request.user.id)
-            return Response({"error": "Failed to create link token with Plaid"}, status=400)
+            logger.exception("Link token creation failed for user %s",
+                             request.user.id)
+            return Response(
+                {"error": "Failed to create link token with Plaid"},
+                status=400)
 
 
 class CreateUpdateLinkTokenView(FeatureRequiredMixin, APIView):
     """Create a Plaid Link token to update credentials for an existing bank item."""
 
     required_feature = "transaction-sync"
-    authentication_classes: ClassVar[list] = [authentication.SessionAuthentication]
+    authentication_classes: ClassVar[list] = [
+        authentication.SessionAuthentication
+    ]
     permission_classes: ClassVar[list] = [permissions.IsAuthenticated]
 
     def post(self, request: Request, item_id: str) -> Response:
         """Issue an update-mode link token for the specified bank item."""
         try:
-            plaid_item = PlaidItem.objects.get(user=request.user, item_id=item_id)
+            plaid_item = PlaidItem.objects.get(user=request.user,
+                                               item_id=item_id)
         except PlaidItem.DoesNotExist:
             return Response({"error": "Bank connection not found"}, status=404)
 
         try:
             response = client.link_token_create(
-                _link_token_request(request.user.id, plaid_item.access_token)
-            )
+                _link_token_request(request.user.id, plaid_item.access_token))
             return Response({"link_token": response["link_token"]})
         except plaid.ApiException:
-            logger.exception("Update link token creation failed for item %s", item_id)
-            return Response({"error": "Failed to create update token with Plaid"}, status=400)
+            logger.exception("Update link token creation failed for item %s",
+                             item_id)
+            return Response(
+                {"error": "Failed to create update token with Plaid"},
+                status=400)
 
 
 class PublicTokenExchange(FeatureRequiredMixin, APIView):
     """Exchange a Plaid public token for a persistent access token."""
 
     required_feature = "transaction-sync"
-    authentication_classes: ClassVar[list] = [authentication.SessionAuthentication]
+    authentication_classes: ClassVar[list] = [
+        authentication.SessionAuthentication
+    ]
     permission_classes: ClassVar[list] = [permissions.IsAuthenticated]
 
     def post(self, request: Request) -> Response:
@@ -136,7 +153,9 @@ class PublicTokenExchange(FeatureRequiredMixin, APIView):
             if posthog_client is not None:
                 posthog_client.capture("bank_linked")
 
-            return Response({"success": "Bank linked successfully! Syncing transactions…"})
+            return Response(
+                {"success": "Bank linked successfully! Syncing transactions…"})
         except Exception:
-            logger.exception("Failed to exchange public token for user %s", request.user.id)
+            logger.exception("Failed to exchange public token for user %s",
+                             request.user.id)
             return Response({"error": "Failed to exchange token"}, status=400)

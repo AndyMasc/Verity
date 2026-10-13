@@ -25,10 +25,11 @@ database_config = env.db("DATABASE_URL")
 if "sqlite" in database_config["ENGINE"]:
     database_config.setdefault("OPTIONS", {})["timeout"] = 30
 else:
-    database_config.setdefault("OPTIONS", {})["sslmode"] = env("DB_SSLMODE", default="require")
+    database_config.setdefault("OPTIONS",
+                               {})["sslmode"] = env("DB_SSLMODE",
+                                                    default="require")
     database_config.setdefault("OPTIONS", {})["connect_timeout"] = env.int(
-        "DB_CONNECT_TIMEOUT", default=15
-    )
+        "DB_CONNECT_TIMEOUT", default=15)
     database_config["DISABLE_SERVER_SIDE_CURSORS"] = True
 
 _db_host = database_config.get("HOST", "")
@@ -41,7 +42,8 @@ DATABASES["default"].setdefault(
     "CONN_MAX_AGE",
     env.int("DB_CONN_MAX_AGE", default=0 if _is_neon else 600),
 )
-DATABASES["default"]["CONN_HEALTH_CHECKS"] = env.bool("DB_CONN_HEALTH_CHECKS", default=True)
+DATABASES["default"]["CONN_HEALTH_CHECKS"] = env.bool("DB_CONN_HEALTH_CHECKS",
+                                                      default=True)
 
 # Apps
 INSTALLED_APPS = [
@@ -154,9 +156,9 @@ CONTENT_SECURITY_POLICY = {
         "img-src": ("'self'", "data:", "blob:", "https:"),
         "connect-src": ("'self'", "https:"),
         "frame-src": ("'self'", "https:"),
-        "frame-ancestors": ("'none'",),
-        "base-uri": ("'self'",),
-        "object-src": ("'none'",),
+        "frame-ancestors": ("'none'", ),
+        "base-uri": ("'self'", ),
+        "object-src": ("'none'", ),
     }
 }
 
@@ -216,9 +218,11 @@ AUTH_PASSWORD_VALIDATORS: list = []
 AUTH_USER_MODEL = "billing.CustomUser"
 
 # Turnstile (Cloudflare CAPTCHA)
-TURNSTILE_SITEKEY = env("TURNSTILE_SITEKEY", default="0x4AAAAAAE-iMWMy2QJlviQc")
+TURNSTILE_SITEKEY = env("TURNSTILE_SITEKEY",
+                        default="0x4AAAAAAE-iMWMy2QJlviQc")
 TURNSTILE_SECRET = env("TURNSTILE_SECRET", default="")
-TURNSTILE_HOSTNAMES = env.list("TURNSTILE_HOSTNAMES", default=["localhost", "127.0.0.1"])
+TURNSTILE_HOSTNAMES = env.list("TURNSTILE_HOSTNAMES",
+                               default=["localhost", "127.0.0.1"])
 TURNSTILE_ENABLED = env.bool("TURNSTILE_ENABLED", default=True)
 
 # Compressor
@@ -268,7 +272,9 @@ CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
         "LOCATION": env("REDIS_URL"),
-        "OPTIONS": {"CLIENT_CLASS": "django_redis.client.DefaultClient"},  # type: ignore[dict-item]
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient"
+        },  # type: ignore[dict-item]
     },
 }
 
@@ -278,9 +284,14 @@ SESSION_COOKIE_AGE = 60 * 60 * 24 * 7
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
 # Email
-EMAIL_BACKEND = "core.backends.DramatiqEmailBackend"  # Queue email sends as background tasks
+if not DEBUG:
+    EMAIL_BACKEND = "core.backends.DramatiqEmailBackend"  # Queue email sends as background tasks
+else:
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
 ANYMAIL = {"RESEND_API_KEY": env("RESEND_API_KEY")}
-DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="Verity <notifications@veritypay.app>")
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL",
+                         default="Verity <notifications@veritypay.app>")
 
 # Storage (S3/R2) - Uploads use signed urls in Cloudflare R2
 R2_ACCESS_KEY_ID = env("R2_ACCESS_KEY_ID")
@@ -331,7 +342,6 @@ USE_I18N = True
 USE_TZ = True
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATIC_URL = "/static/"
-
 
 TAILWIND_APP_NAME = "theme"
 TAILWIND_USE_STANDALONE_BINARY = True
@@ -424,7 +434,8 @@ PLAID_CLIENT_ID = env("PLAID_CLIENT_ID")
 PLAID_SECRET = env("PLAID_SECRET")
 PLAID_ENV = env("PLAID_ENV")
 PLAID_WEBHOOK_URL = env("PLAID_WEBHOOK_URL")
-PLAID_SYNC_COOLDOWN_SECONDS = env.int("PLAID_SYNC_COOLDOWN_SECONDS", default=60)
+PLAID_SYNC_COOLDOWN_SECONDS = env.int("PLAID_SYNC_COOLDOWN_SECONDS",
+                                      default=60)
 
 # Accounting
 IMPORT_EXPORT_ESCAPE_FORMULAE_ON_EXPORT = (
@@ -438,7 +449,8 @@ FERNET_KEYS = [
 
 # Stripe
 STRIPE_SECRET_KEY = env("STRIPE_SECRET_KEY")
-STRIPE_LIVE_MODE = env.bool("STRIPE_LIVE_MODE", default=STRIPE_SECRET_KEY.startswith("sk_live_"))
+STRIPE_LIVE_MODE = env.bool("STRIPE_LIVE_MODE",
+                            default=STRIPE_SECRET_KEY.startswith("sk_live_"))
 STRIPE_PUBLISHABLE_KEY = env("STRIPE_PUBLISHABLE_KEY")
 DJSTRIPE_FOREIGN_KEY_TO_FIELD = env("DJSTRIPE_FOREIGN_KEY_TO_FIELD")
 DJSTRIPE_WEBHOOK_SECRET = env("STRIPE_WEBHOOK_SECRET", default="")

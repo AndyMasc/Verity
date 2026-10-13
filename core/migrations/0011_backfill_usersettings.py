@@ -10,7 +10,10 @@ def backfill_user_settings(apps, schema_editor):
     users_without_settings = User.objects.exclude(id__in=existing_user_ids)
 
     UserSettings.objects.bulk_create(
-        [UserSettings(user=user) for user in users_without_settings.iterator()],
+        [
+            UserSettings(user=user)
+            for user in users_without_settings.iterator()
+        ],
         ignore_conflicts=True,
     )
 
@@ -22,5 +25,6 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(backfill_user_settings, migrations.RunPython.noop),
+        migrations.RunPython(backfill_user_settings,
+                             migrations.RunPython.noop),
     ]

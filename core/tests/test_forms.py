@@ -8,6 +8,7 @@ from core.forms import UpdateUserSettingsForm
 
 
 class UpdateUserSettingsFormTest(TestCase):
+
     def test_form_fields(self):
         form = UpdateUserSettingsForm()
         expected = [
@@ -30,8 +31,7 @@ class UpdateUserSettingsFormTest(TestCase):
                 "enable_push_notifications": False,
                 "enable_email_notifications": False,
                 "expiring_notifications_advance_time": "30",
-            }
-        )
+            })
         self.assertTrue(form.is_valid())
 
 
@@ -51,11 +51,12 @@ class PasswordlessSignupFormTurnstileTest(TestCase):
 
         request = RequestFactory().post("/accounts/signup/")
         with (
-            patch("core.turnstile_forms.turnstile_enabled", return_value=True),
-            patch(
-                "core.turnstile_forms.verify_turnstile_token",
-                return_value={"success": True},
-            ) as mock_verify,
+                patch("core.turnstile_forms.turnstile_enabled",
+                      return_value=True),
+                patch(
+                    "core.turnstile_forms.verify_turnstile_token",
+                    return_value={"success": True},
+                ) as mock_verify,
         ):
             form = self._form(
                 {
@@ -71,33 +72,33 @@ class PasswordlessSignupFormTurnstileTest(TestCase):
     def test_verify_turnstile_without_request_does_not_raise(self):
         # Regression: allauth's SignupView does not pass `request` to the form.
         with (
-            patch("core.turnstile_forms.turnstile_enabled", return_value=True),
-            patch(
-                "core.turnstile_forms.verify_turnstile_token",
-                return_value={"success": True},
-            ) as mock_verify,
+                patch("core.turnstile_forms.turnstile_enabled",
+                      return_value=True),
+                patch(
+                    "core.turnstile_forms.verify_turnstile_token",
+                    return_value={"success": True},
+                ) as mock_verify,
         ):
             form = self._form(
                 {
                     "username": "bob",
                     "email": "bob@example.com",
                     "cf_turnstile_response": "token-123",
-                },
-            )
+                }, )
             self.assertTrue(form.is_valid())
             mock_verify.assert_called_once_with("token-123", "signup", None)
 
     def test_turnstile_disabled_skips_verification(self):
         with (
-            patch("core.turnstile_forms.turnstile_enabled", return_value=False),
-            patch("core.turnstile_forms.verify_turnstile_token") as mock_verify,
+                patch("core.turnstile_forms.turnstile_enabled",
+                      return_value=False),
+                patch("core.turnstile_forms.verify_turnstile_token") as
+                mock_verify,
         ):
-            form = self._form(
-                {
-                    "username": "bob",
-                    "email": "bob@example.com",
-                },
-            )
+            form = self._form({
+                "username": "bob",
+                "email": "bob@example.com",
+            }, )
             self.assertTrue(form.is_valid())
             mock_verify.assert_not_called()
 
@@ -125,14 +126,18 @@ class PasswordlessLoginFormTurnstileTest(TestCase):
 
         request = RequestFactory().post("/accounts/login/")
         with (
-            patch("core.turnstile_forms.turnstile_enabled", return_value=True),
-            patch(
-                "core.turnstile_forms.verify_turnstile_token",
-                return_value={"success": True},
-            ) as mock_verify,
+                patch("core.turnstile_forms.turnstile_enabled",
+                      return_value=True),
+                patch(
+                    "core.turnstile_forms.verify_turnstile_token",
+                    return_value={"success": True},
+                ) as mock_verify,
         ):
             form, valid = self._clean(
-                {"login": "bob@example.com", "cf_turnstile_response": "token-123"},
+                {
+                    "login": "bob@example.com",
+                    "cf_turnstile_response": "token-123"
+                },
                 request,
             )
             self.assertTrue(valid)
@@ -148,15 +153,17 @@ class PasswordlessLoginFormTurnstileTest(TestCase):
 
         request = RequestFactory().post("/accounts/login/")
         with (
-            patch("core.turnstile_forms.turnstile_enabled", return_value=True),
-            patch(
-                "core.turnstile_forms.verify_turnstile_token",
-                return_value={"success": True},
-            ) as mock_verify,
+                patch("core.turnstile_forms.turnstile_enabled",
+                      return_value=True),
+                patch(
+                    "core.turnstile_forms.verify_turnstile_token",
+                    return_value={"success": True},
+                ) as mock_verify,
         ):
-            form = PasswordlessLoginForm(
-                data={"login": "bob@example.com", "cf_turnstile_response": "token-123"},
-            )
+            form = PasswordlessLoginForm(data={
+                "login": "bob@example.com",
+                "cf_turnstile_response": "token-123"
+            }, )
             with allauth_context.request_context(request):
                 valid = form.is_valid()
             self.assertTrue(valid)
@@ -167,8 +174,10 @@ class PasswordlessLoginFormTurnstileTest(TestCase):
 
         request = RequestFactory().post("/accounts/login/")
         with (
-            patch("core.turnstile_forms.turnstile_enabled", return_value=False),
-            patch("core.turnstile_forms.verify_turnstile_token") as mock_verify,
+                patch("core.turnstile_forms.turnstile_enabled",
+                      return_value=False),
+                patch("core.turnstile_forms.verify_turnstile_token") as
+                mock_verify,
         ):
             form, valid = self._clean({"login": "bob@example.com"}, request)
             self.assertTrue(valid)

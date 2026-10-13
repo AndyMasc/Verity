@@ -18,7 +18,6 @@ from core.currencies import (
     CURRENCY_CHOICES,
     DEFAULT_CURRENCY,
     format_currency,
-    from_stripe_amount,
     to_stripe_amount,
 )
 from records.models import Record
@@ -50,20 +49,19 @@ class PackageDraft:
 
     def resolve_currency(self) -> str:
         return self.currency or getattr(
-            getattr(self.creator, "settings", None), "default_currency", "usd"
-        )
+            getattr(self.creator, "settings", None), "default_currency", "usd")
 
 
 class ReimbursementPackageQuerySet(models.QuerySet):
+
     def with_annotated_total(self):
-        return self.annotate(
-            _annotated_total=Sum("records__balance", filter=Q(records__is_active=True))
-        )
+        return self.annotate(_annotated_total=Sum(
+            "records__balance", filter=Q(records__is_active=True)))
 
     def with_prefetched_active_records(self):
         return self.prefetch_related(
-            models.Prefetch("records", queryset=Record.objects.filter(is_active=True))
-        )
+            models.Prefetch("records",
+                            queryset=Record.objects.filter(is_active=True)))
 
     def create_for(self, draft: PackageDraft):
         with transaction.atomic():
@@ -86,7 +84,9 @@ class StripeAccount(models.Model):
         on_delete=models.CASCADE,
         related_name="stripe_account",
     )
-    stripe_account_id = models.CharField(max_length=255, blank=True, default="")
+    stripe_account_id = models.CharField(max_length=255,
+                                         blank=True,
+                                         default="")
     stripe_details_submitted = models.BooleanField(default=False)
     charges_enabled = models.BooleanField(default=False)
     payouts_enabled = models.BooleanField(default=False)
@@ -98,12 +98,8 @@ class StripeAccount(models.Model):
 
     @property
     def is_active(self) -> bool:
-        return bool(
-            self.stripe_account_id
-            and self.stripe_details_submitted
-            and self.charges_enabled
-            and self.payouts_enabled
-        )
+        return bool(self.stripe_account_id and self.stripe_details_submitted
+                    and self.charges_enabled and self.payouts_enabled)
 
     def sync_from_stripe(self) -> bool:
         from . import services
@@ -112,13 +108,11 @@ class StripeAccount(models.Model):
         self.stripe_details_submitted = live_account.details_submitted
         self.charges_enabled = live_account.charges_enabled
         self.payouts_enabled = live_account.payouts_enabled
-        self.save(
-            update_fields=[
-                "stripe_details_submitted",
-                "charges_enabled",
-                "payouts_enabled",
-            ]
-        )
+        self.save(update_fields=[
+            "stripe_details_submitted",
+            "charges_enabled",
+            "payouts_enabled",
+        ])
         return self.is_active
 
 
@@ -146,32 +140,40 @@ def capture_recipient_paid(locked, payer, shared) -> None:
         posthog_client.capture(
             "recipient_paid_reimbursement",
             distinct_id=str(payer.pk),
-            properties={**properties, "payer_type": "registered"},
+            properties={
+                **properties, "payer_type": "registered"
+            },
         )
         return
 
-    email = (
-        getattr(getattr(locked, "email_verification", None), "email", "") or locked.recipient_email
-    )
+    email = (getattr(getattr(locked, "email_verification", None), "email", "")
+             or locked.recipient_email)
     if not email:
         # Nothing identifies this payer, so leave the event anonymous rather
         # than attributing it to the wrong person.
-        posthog_client.capture("recipient_paid_reimbursement", properties=properties)
+        posthog_client.capture("recipient_paid_reimbursement",
+                               properties=properties)
         return
     posthog_client.capture(
         "recipient_paid_reimbursement",
         distinct_id=external_payer_distinct_id(email),
-        properties={**properties, "payer_type": "external"},
+        properties={
+            **properties, "payer_type": "external"
+        },
     )
 
 
 class ReimbursementPackage(models.Model):
+
     class Status(models.TextChoices):
         QUEUED = "queued", "Awaiting Payer"
         OPEN = "open", "Open for Payment"
         PAID = "paid", "Fully Paid"
 
-    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, db_index=True)
+    uuid = models.UUIDField(default=uuid.uuid4,
+                            editable=False,
+                            unique=True,
+                            db_index=True)
     creator = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -184,7 +186,10 @@ class ReimbursementPackage(models.Model):
         blank=True,
         related_name="reimbursements_received",
     )
-    recipient_email = models.EmailField(max_length=254, blank=True, default="", db_index=True)
+    recipient_email = models.EmailField(max_length=254,
+                                        blank=True,
+                                        default="",
+                                        db_index=True)
     title = models.CharField(max_length=255)
     currency = models.CharField(
         max_length=3,
@@ -192,9 +197,10 @@ class ReimbursementPackage(models.Model):
         default=DEFAULT_CURRENCY,
     )
     records = models.ManyToManyField(Record, related_name="packages")
-    status = models.CharField(
-        max_length=20, choices=Status.choices, default=Status.OPEN, db_index=True
-    )
+    status = models.CharField(max_length=20,
+                              choices=Status.choices,
+                              default=Status.OPEN,
+                              db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     expires_at = models.DateTimeField(default=one_week_from_now)
@@ -237,11 +243,9 @@ class ReimbursementPackage(models.Model):
 
     def activate(self) -> bool:
         with transaction.atomic():
-            locked = (
-                ReimbursementPackage.objects.select_for_update(skip_locked=True)
-                .filter(pk=self.pk, status=self.Status.QUEUED)
-                .first()
-            )
+            locked = (ReimbursementPackage.objects.select_for_update(
+                skip_locked=True).filter(pk=self.pk,
+                                         status=self.Status.QUEUED).first())
             if locked is None:
                 return False
             locked.status = self.Status.OPEN
@@ -252,7 +256,8 @@ class ReimbursementPackage(models.Model):
     def can_delete(self, user: User) -> bool:
         if self.deleted_at is not None:
             return False
-        return user == self.creator or (self.status == self.Status.PAID and user == self.recipient)
+        return user == self.creator or (self.status == self.Status.PAID
+                                        and user == self.recipient)
 
     def delete_package(self, user: User) -> bool:
         if not self.can_delete(user):
@@ -271,18 +276,21 @@ class ReimbursementPackage(models.Model):
         self.save(update_fields=["deleted_at"])
         return True
 
-    def mark_as_paid(self, payer: User | None, payer_currency: str | None = None):
+    def mark_as_paid(self,
+                     payer: User | None,
+                     payer_currency: str | None = None):
         """Marks paid, records payer/time, updates records. Idempotent; row-locked."""
         record_currency = payer_currency or self.currency
         converted = self.converted_total(record_currency)
         payer_record: Record | None = None
 
         with transaction.atomic():
-            locked = (
-                ReimbursementPackage.objects.select_for_update(skip_locked=True)
-                .filter(pk=self.pk, status=self.Status.OPEN)
-                .first()
-            )
+            # QUEUED is the normal resting state for an external recipient now
+            # that there is no pay page to activate it, so both are payable.
+            locked = (ReimbursementPackage.objects.select_for_update(
+                skip_locked=True).filter(
+                    pk=self.pk,
+                    status__in=(self.Status.OPEN, self.Status.QUEUED)).first())
             if not locked:
                 return
             locked.status = self.Status.PAID
@@ -298,8 +306,7 @@ class ReimbursementPackage(models.Model):
                     f"Reimbursement package '{self.title}' paid to {self.creator.email}. "
                     f"Amount: {format_currency(converted, record_currency)}. "
                     f"Date: {locked.paid_at.strftime('%Y-%m-%d')}. "
-                    f"(package {self.uuid})"
-                )
+                    f"(package {self.uuid})")
                 payer_record = Record.objects.create(
                     user=payer,
                     title=f"Reimbursement: {self.title}",
@@ -333,7 +340,10 @@ class ReimbursementPackage(models.Model):
             posthog_client.capture(
                 "record_imported",
                 distinct_id=str(payer_record.user_id),
-                properties={"import_source": "reimbursement", "record_count": 1},
+                properties={
+                    "import_source": "reimbursement",
+                    "record_count": 1
+                },
             )
 
         # Access expires when the workflow ends: the recipient no longer needs
@@ -350,11 +360,9 @@ class ReimbursementPackage(models.Model):
 
     def mark_as_refunded(self):
         with transaction.atomic():
-            locked = (
-                ReimbursementPackage.objects.select_for_update(skip_locked=True)
-                .filter(pk=self.pk, status=self.Status.PAID)
-                .first()
-            )
+            locked = (ReimbursementPackage.objects.select_for_update(
+                skip_locked=True).filter(pk=self.pk,
+                                         status=self.Status.PAID).first())
             if not locked:
                 return
             previous_payer = locked.paid_by
@@ -379,8 +387,8 @@ class ReimbursementPackage(models.Model):
                     | Q(
                         title=f"Reimbursement: {self.title}",
                         merchant=self.creator.email,
-                    )
-                ).update(notes=Concat("notes", models.Value(" [REFUNDED]")))
+                    )).update(
+                        notes=Concat("notes", models.Value(" [REFUNDED]")))
         from core.apps import posthog_client
 
         if self.status == self.Status.OPEN and posthog_client is not None:
@@ -412,11 +420,12 @@ class ReimbursementPackage(models.Model):
 
     @property
     def total_amount(self) -> Decimal:
-        if hasattr(self, "_annotated_total") and self._annotated_total is not None:
+        if hasattr(self,
+                   "_annotated_total") and self._annotated_total is not None:
             return self._annotated_total
-        return self.records.filter(is_active=True).exclude(balance__isnull=True).aggregate(
-            total=Sum("balance")
-        )["total"] or Decimal("0.00")
+        return self.records.filter(is_active=True).exclude(
+            balance__isnull=True).aggregate(
+                total=Sum("balance"))["total"] or Decimal("0.00")
 
     @property
     def display_total(self) -> Decimal:
@@ -458,52 +467,33 @@ class ReimbursementPackage(models.Model):
         return True, None
 
     def lock_for_payment(self) -> ReimbursementPackage | None:
-        """Atomically claim an open package for a new checkout."""
-        return (
-            ReimbursementPackage.objects.select_for_update()
-            .filter(pk=self.pk, status=self.Status.OPEN)
-            .first()
-        )
+        """Atomically claim a payable package for an invoice.
 
-    def resumable_session_url(self) -> str | None:
-        """Return the URL of an existing in-progress checkout session, if still open.
-
-        Returns None (after logging) when the previous session cannot be
-        retrieved or has already completed, so the caller creates a new one.
+        QUEUED counts: an external recipient is queued until they open the pay
+        page, and there is no pay page now, so the invoice itself is the handoff.
         """
-        from . import services
-
-        payment = self.payments.filter(is_completed=False).order_by("-created_at").first()
-        if not payment:
-            return None
-        try:
-            session = services.retrieve_checkout_session(payment.stripe_checkout_session_id)
-        except Exception:  # any Stripe API failure falls back to a new session
-            logger.warning(
-                "Failed to retrieve existing session %s, creating new one",
-                payment.stripe_checkout_session_id,
-            )
-            return None
-        if session.status == "open" and session.url:
-            return session.url
-        return None
+        return (ReimbursementPackage.objects.select_for_update().filter(
+            pk=self.pk,
+            status__in=(self.Status.OPEN, self.Status.QUEUED)).first())
 
     def build_line_items(self, payer_currency: str) -> CheckoutItems:
         return pricing.build_line_items(self, payer_currency)
 
-    def platform_fee_cents(self, total_cents: int, payer_currency: str, rates) -> int:
+    def platform_fee_cents(self, total_cents: int, payer_currency: str,
+                           rates) -> int:
         """Compute the application fee for a destination charge: estimated
         Stripe processing costs plus the guaranteed platform net margin,
         clamped to the payment total."""
-        return PlatformFeeCalculator.compute(total_cents, payer_currency, rates)
+        return PlatformFeeCalculator.compute(total_cents, payer_currency,
+                                             rates)
 
     def detail_items(self, user_currency: str) -> PackageDetailItems:
         return pricing.detail_items(self, user_currency)
 
     @classmethod
     def prefetch_converted_totals(
-        cls, packages: list[ReimbursementPackage], to_currency: str
-    ) -> list[ReimbursementPackage]:
+            cls, packages: list[ReimbursementPackage],
+            to_currency: str) -> list[ReimbursementPackage]:
         return pricing.prefetch_converted_totals(packages, to_currency)
 
 
@@ -516,9 +506,9 @@ class ProcessedStripeEvent(models.Model):
 
 
 class PackagePayment(models.Model):
-    package = models.ForeignKey(
-        ReimbursementPackage, on_delete=models.CASCADE, related_name="payments"
-    )
+    package = models.ForeignKey(ReimbursementPackage,
+                                on_delete=models.CASCADE,
+                                related_name="payments")
     payer = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -526,10 +516,17 @@ class PackagePayment(models.Model):
         blank=True,
         related_name="payments_made",
     )
-    stripe_checkout_session_id = models.CharField(max_length=255, unique=True)
-    stripe_payment_intent_id = models.CharField(
-        max_length=255, blank=True, default="", db_index=True
-    )
+    stripe_checkout_session_id = models.CharField(max_length=255,
+                                                  unique=True,
+                                                  null=True,
+                                                  blank=True)
+    stripe_invoice_id = models.CharField(max_length=255,
+                                         blank=True,
+                                         db_index=True)
+    stripe_payment_intent_id = models.CharField(max_length=255,
+                                                blank=True,
+                                                default="",
+                                                db_index=True)
     amount_paid = models.DecimalField(max_digits=12, decimal_places=2)
     # Exact expected total in Stripe's smallest unit, captured when the
     # checkout attempt is claimed. Null for legacy rows created before this
@@ -543,23 +540,16 @@ class PackagePayment(models.Model):
     def __str__(self) -> str:
         return f"Payment {self.amount_paid} {self.payer_currency} for {self.package_id} (Paid: {self.is_completed})"
 
-    def amount_matches(self, session) -> bool:
-        """Cross-check the settled checkout amount against the expected total.
-
-        Prevents a session for a different/edited amount from being treated as
-        a completed payment. When "expected_amount_cents" was recorded at
-        claim time (all new payments), settlement must match to the exact
-        cent: per-line-item rounding is already baked into that figure, so no
-        tolerance is needed — and a tolerance would let small systematic
-        underpayments settle a package.
-        """
-        session_currency = (session.get("currency") or self.payer_currency).lower()
-        amount_total = session.get("amount_total")
+    def amount_matches(self, settled, *, key: str = "amount_total") -> bool:
+        """Settlement must equal expected_amount_cents exactly; a tolerance would admit systematic underpayment."""
+        session_currency = (settled.get("currency")
+                            or self.payer_currency).lower()
+        amount_total = settled.get(key)
         if session_currency != self.payer_currency.lower():
             logger.error(
                 "Package %s: session %s currency mismatch (%s vs %s) — refusing to mark as paid",
                 self.package_id,
-                session.get("id"),
+                settled.get("id"),
                 session_currency,
                 self.payer_currency,
             )
@@ -568,16 +558,15 @@ class PackagePayment(models.Model):
             logger.error(
                 "Package %s: session %s has no amount_total — refusing to mark as paid",
                 self.package_id,
-                session.get("id"),
+                settled.get("id"),
             )
             return False
-        settled = from_stripe_amount(amount_total, session_currency)
         if self.expected_amount_cents is not None:
             if int(amount_total) != int(self.expected_amount_cents):
                 logger.error(
                     "Package %s: session %s settled %s cents but %s were expected — refusing to mark as paid",
                     self.package_id,
-                    session.get("id"),
+                    settled.get("id"),
                     amount_total,
                     self.expected_amount_cents,
                 )
@@ -585,12 +574,13 @@ class PackagePayment(models.Model):
             return True
         # Legacy rows without a recorded expectation: compare against the
         # stored decimal with a one-cent allowance for rounding only.
-        expected_cents = to_stripe_amount(self.amount_paid, self.payer_currency)
+        expected_cents = to_stripe_amount(self.amount_paid,
+                                          self.payer_currency)
         if abs(int(amount_total) - expected_cents) > 1:
             logger.error(
                 "Package %s: session %s settled amount %s %s does not match expected %s %s — refusing to mark as paid",
                 self.package_id,
-                session.get("id"),
+                settled.get("id"),
                 settled,
                 session_currency,
                 self.amount_paid,
@@ -601,11 +591,8 @@ class PackagePayment(models.Model):
 
     def complete_from_session(self, session) -> None:
         self.is_completed = True
-        payment_intent_id = (
-            session.get("payment_intent")
-            if isinstance(session, dict)
-            else getattr(session, "payment_intent", None)
-        )
+        payment_intent_id = (session.get("payment_intent") if isinstance(
+            session, dict) else getattr(session, "payment_intent", None))
         if payment_intent_id:
             self.stripe_payment_intent_id = payment_intent_id
         self.save(update_fields=["is_completed", "stripe_payment_intent_id"])

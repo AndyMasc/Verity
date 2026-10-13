@@ -28,7 +28,8 @@ _PAY_FLOW_ACTIONS = {
 
 def _test_env() -> bool:
     """True when running under pytest (module import or active test session)."""
-    return "pytest" in sys.modules or bool(os.environ.get("PYTEST_CURRENT_TEST"))
+    return "pytest" in sys.modules or bool(
+        os.environ.get("PYTEST_CURRENT_TEST"))
 
 
 def _stub_result(action: str) -> dict[str, Any]:
@@ -36,7 +37,11 @@ def _stub_result(action: str) -> dict[str, Any]:
     return {
         "success": True,
         "message": "Turnstile disabled in test environment",
-        "raw_response": {"success": True, "action": action, "hostname": "testserver"},
+        "raw_response": {
+            "success": True,
+            "action": action,
+            "hostname": "testserver"
+        },
     }
 
 
@@ -101,15 +106,18 @@ def verify_turnstile_token(
             timeout=10.0,
         )
         if response.status_code != 200:
-            logger.error("Turnstile siteverify failed: %s", response.status_code)
-            return _failure("Verification service error", {"status_code": response.status_code})
+            logger.error("Turnstile siteverify failed: %s",
+                         response.status_code)
+            return _failure("Verification service error",
+                            {"status_code": response.status_code})
         result = response.json()
     except Exception as e:
         logger.error("Turnstile verification error: %s", e)
         return _failure("Verification service unavailable", {})
 
     if not result.get("success"):
-        logger.warning("Turnstile verification failed: %s", result.get("error-codes", []))
+        logger.warning("Turnstile verification failed: %s",
+                       result.get("error-codes", []))
         return _failure("Verification failed", result)
 
     if result.get("action") != action:

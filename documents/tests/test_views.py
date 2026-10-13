@@ -18,8 +18,10 @@ def _make_hash(content: bytes = b"test content") -> str:
 
 
 class UploadViewTest(TestCase):
+
     def setUp(self):
-        self.user = User.objects.create_user(username="uploaduser", password="pass")
+        self.user = User.objects.create_user(username="uploaduser",
+                                             password="pass")
         self.url = reverse("documents:upload_document")
 
     def test_get_returns_form_page(self):
@@ -98,7 +100,10 @@ class UploadViewTest(TestCase):
         self.client.force_login(self.user)
         response = self.client.post(
             self.url,
-            {"filename": "test.pdf", "content_type": "application/pdf"},
+            {
+                "filename": "test.pdf",
+                "content_type": "application/pdf"
+            },
         )
         if response.status_code == 200:
             self.fail("Should have returned 400 for missing file_hash")
@@ -120,8 +125,10 @@ class UploadViewTest(TestCase):
 
 
 class ConfirmUploadViewTest(TestCase):
+
     def setUp(self):
-        self.user = User.objects.create_user(username="confirmuser", password="pass")
+        self.user = User.objects.create_user(username="confirmuser",
+                                             password="pass")
         self.url = reverse("documents:confirm_upload")
         self.doc = DocumentData.objects.create(
             user=self.user,
@@ -131,11 +138,17 @@ class ConfirmUploadViewTest(TestCase):
 
     @patch("documents.services.validation.get_r2_object_head")
     def test_confirm_valid(self, mock_head):
-        mock_head.return_value = {"ContentLength": 100, "ContentType": "image/jpeg"}
+        mock_head.return_value = {
+            "ContentLength": 100,
+            "ContentType": "image/jpeg"
+        }
         self.client.force_login(self.user)
         response = self.client.post(
             self.url,
-            {"document_id": self.doc.id, "key": self.doc.filepath},
+            {
+                "document_id": self.doc.id,
+                "key": self.doc.filepath
+            },
         )
         self.assertEqual(response.status_code, 200)
         data = response.json()
@@ -146,7 +159,10 @@ class ConfirmUploadViewTest(TestCase):
     @patch("documents.services.validation.get_r2_object_head")
     @patch("records.services.kickoff_ocr_scan")
     def test_confirm_supporting_doc_skips_ocr(self, mock_kickoff, mock_head):
-        mock_head.return_value = {"ContentLength": 100, "ContentType": "image/jpeg"}
+        mock_head.return_value = {
+            "ContentLength": 100,
+            "ContentType": "image/jpeg"
+        }
         record = Record.objects.create(
             user=self.user,
             title="Supporting host record",
@@ -162,7 +178,10 @@ class ConfirmUploadViewTest(TestCase):
         self.client.force_login(self.user)
         response = self.client.post(
             self.url,
-            {"document_id": doc.id, "key": doc.filepath},
+            {
+                "document_id": doc.id,
+                "key": doc.filepath
+            },
         )
         self.assertEqual(response.status_code, 200)
         mock_kickoff.assert_not_called()
@@ -174,13 +193,19 @@ class ConfirmUploadViewTest(TestCase):
         self.client.force_login(user2)
         response = self.client.post(
             self.url,
-            {"document_id": self.doc.id, "key": self.doc.filepath},
+            {
+                "document_id": self.doc.id,
+                "key": self.doc.filepath
+            },
         )
         self.assertEqual(response.status_code, 404)
 
     def test_confirm_not_found(self):
         self.client.force_login(self.user)
-        response = self.client.post(self.url, {"document_id": 99999, "key": "nonexistent"})
+        response = self.client.post(self.url, {
+            "document_id": 99999,
+            "key": "nonexistent"
+        })
         self.assertEqual(response.status_code, 404)
 
     def test_confirm_no_id(self):
@@ -190,8 +215,10 @@ class ConfirmUploadViewTest(TestCase):
 
 
 class ViewDocumentViewTest(TestCase):
+
     def setUp(self):
-        self.user = User.objects.create_user(username="viewuser", password="pass")
+        self.user = User.objects.create_user(username="viewuser",
+                                             password="pass")
         self.doc = DocumentData.objects.create(
             user=self.user,
             filepath="users/1/viewable.pdf",
@@ -214,7 +241,8 @@ class ViewDocumentViewTest(TestCase):
 
     def test_not_found(self):
         self.client.force_login(self.user)
-        response = self.client.get(reverse("documents:view_document", args=[99999]))
+        response = self.client.get(
+            reverse("documents:view_document", args=[99999]))
         self.assertEqual(response.status_code, 404)
 
     def test_context_has_document(self):
@@ -224,8 +252,10 @@ class ViewDocumentViewTest(TestCase):
 
 
 class DeleteDocumentViewTest(TestCase):
+
     def setUp(self):
-        self.user = User.objects.create_user(username="deleteuser", password="pass")
+        self.user = User.objects.create_user(username="deleteuser",
+                                             password="pass")
         self.doc = DocumentData.objects.create(
             user=self.user,
             filepath="users/1/deletable.pdf",
@@ -248,8 +278,10 @@ class DeleteDocumentViewTest(TestCase):
 
 
 class AddSupportDocumentsViewTest(TestCase):
+
     def setUp(self):
-        self.user = User.objects.create_user(username="supuser", password="pass")
+        self.user = User.objects.create_user(username="supuser",
+                                             password="pass")
         self.record = Record.objects.create(
             user=self.user,
             title="Support Record",
@@ -261,7 +293,8 @@ class AddSupportDocumentsViewTest(TestCase):
         self.client.force_login(self.user)
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "documents/upload_supporting_files.html")
+        self.assertTemplateUsed(response,
+                                "documents/upload_supporting_files.html")
 
     def test_other_user_cannot_access(self):
         user2 = User.objects.create_user(username="othersup", password="pass")
@@ -271,17 +304,24 @@ class AddSupportDocumentsViewTest(TestCase):
 
     def test_nonexistent_record(self):
         self.client.force_login(self.user)
-        response = self.client.get(reverse("documents:add_support_docs", args=[99999]))
+        response = self.client.get(
+            reverse("documents:add_support_docs", args=[99999]))
         self.assertEqual(response.status_code, 404)
 
 
 @override_settings(
-    CACHES={"default": {"BACKEND": "django.core.cache.backends.dummy.DummyCache"}},
+    CACHES={
+        "default": {
+            "BACKEND": "django.core.cache.backends.dummy.DummyCache"
+        }
+    },
     SESSION_ENGINE="django.contrib.sessions.backends.db",
 )
 class DocumentListViewTest(TestCase):
+
     def setUp(self):
-        self.user = User.objects.create_user(username="listuser", password="pass")
+        self.user = User.objects.create_user(username="listuser",
+                                             password="pass")
         self.url = reverse("documents:document_list_view")
 
     def test_authenticated_access(self):
@@ -301,7 +341,8 @@ class DocumentListViewTest(TestCase):
             )
         response = self.client.get(self.url)
         self.assertTrue(response.context["is_paginated"])
-        self.assertEqual(len(response.context["documents"]), settings.PAGINATE_BY)
+        self.assertEqual(len(response.context["documents"]),
+                         settings.PAGINATE_BY)
 
     def test_pagination_second_page(self):
         self.client.force_login(self.user)

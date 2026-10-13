@@ -12,8 +12,7 @@ def create_index(apps, schema_editor):
         concurrent = "CONCURRENTLY "
     schema_editor.execute(
         f"CREATE INDEX {concurrent}IF NOT EXISTS idx_mergelog_search_trgm "
-        f"ON records_mergelog USING gin (search_text gin_trgm_ops)"
-    )
+        f"ON records_mergelog USING gin (search_text gin_trgm_ops)")
 
 
 def drop_index(apps, schema_editor):

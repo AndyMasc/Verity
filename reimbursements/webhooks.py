@@ -9,10 +9,9 @@ from typing import Any
 import djstripe.signals as djstripe_signals
 import stripe
 from django.db import IntegrityError, transaction
-from django.db.models import Q
 from django.dispatch import receiver
 from django.utils import timezone
-from djstripe.models import Charge, PaymentIntent, Session
+from djstripe.models import Charge
 
 from core.apps import posthog_client
 from core.currencies import from_stripe_amount
@@ -34,17 +33,14 @@ def trigger_event_type(trigger: Any) -> str:
     synced = getattr(getattr(trigger, "event", None), "type", "")
     if synced:
         return synced
-    try:
-        return (trigger.json_body or {}).get("type", "")
-    except Exception:
-        logger.debug("Unable to read event type from webhook JSON body", exc_info=True)
-        return ""
+    return (trigger.json_body or {}).get("type", "")
 
 
 @receiver(djstripe_signals.webhook_post_process)
 def enqueue_reimbursement_processing(**kwargs: Any) -> None:
     trigger = kwargs.get("instance")
-    if trigger is None or trigger_event_type(trigger) not in HANDLED_EVENT_TYPES:
+    if trigger is None or trigger_event_type(
+            trigger) not in HANDLED_EVENT_TYPES:
         return
 
     from .tasks import process_stripe_event_task
@@ -55,94 +51,13 @@ def enqueue_reimbursement_processing(**kwargs: Any) -> None:
 @receiver(djstripe_signals.webhook_processing_error)
 def enqueue_reimbursement_processing_on_error(**kwargs: Any) -> None:
     trigger = kwargs.get("instance")
-    if trigger is None or trigger_event_type(trigger) not in HANDLED_EVENT_TYPES:
+    if trigger is None or trigger_event_type(
+            trigger) not in HANDLED_EVENT_TYPES:
         return
 
     from .tasks import process_stripe_event_task
 
     process_stripe_event_task.send(trigger.id)
-
-
-def as_dict(obj):
-    if isinstance(obj, dict):
-        return obj
-    if hasattr(obj, "to_dict_recursive"):
-        return obj.to_dict_recursive()
-    return dict(obj)
-
-
-def has_package_metadata(session: dict) -> bool:
-    return bool(dict(session.get("metadata") or {}).get("package_uuid"))
-
-
-def payment_for_checkout_session(session_id: str) -> PackagePayment | None:
-    try:
-        return PackagePayment.objects.select_related("package", "payer").get(
-            stripe_checkout_session_id=session_id
-        )
-    except PackagePayment.DoesNotExist:
-        try:
-            services.retrieve_checkout_session(session_id)
-        except stripe.error.InvalidRequestError:
-            logger.error(
-                "No PackagePayment for session %s and it is unknown to Stripe — skipping",
-                session_id,
-            )
-            return None
-        except stripe.error.StripeError:
-            # Transient Stripe failure. Fall through so the original
-            # DoesNotExist is re-raised and the task is retried later.
-            pass
-        raise
-
-
-def apply_paid_session(payment, session, *, source: str) -> bool:
-    session_data = as_dict(session)
-    if not payment.amount_matches(session_data):
-        return False
-
-    package = payment.package
-
-    # A deleted package must never move money: refund the payer instead of
-    # completing the settlement (the creator deleted it mid-checkout).
-    if package.is_deleted:
-        logger.warning(
-            "Package %s was deleted before settlement of session %s — auto-refunding",
-            package.uuid,
-            session_data.get("id"),
-        )
-        refund_captured_payment(payment, event="package_deleted_before_settlement")
-        payment.mark_failed()
-        audit(package, "checkout_after_delete_refunded", stripe_session_id=session_data.get("id"))
-        return False
-
-    if package.status == ReimbursementPackage.Status.PAID and not payment.is_completed:
-        logger.error(
-            "Package %s is already paid — refusing duplicate settlement of session %s",
-            package.uuid,
-            session_data.get("id"),
-        )
-        refund_captured_payment(payment, event="duplicate_settlement")
-        payment.mark_failed()
-        return False
-
-    already_completed = payment.is_completed
-    payment.complete_from_session(session_data)
-    payer_currency = payment.payer_currency or "usd"
-    package.mark_as_paid(payer=payment.payer, payer_currency=payer_currency)
-
-    if not already_completed:
-        audit(
-            package,
-            source,
-            stripe_session_id=session_data.get("id"),
-            payer_email=payment.payer.email if payment.payer else None,
-            amount=str(payment.amount_paid),
-        )
-        transaction.on_commit(
-            lambda: notify_package_paid(package.pk, payment.payer.pk if payment.payer else None)
-        )
-    return True
 
 
 def retrieve_stripe_object(retriever, obj_id: str, obj_type: str):
@@ -159,90 +74,78 @@ def audit(package, event: str, **extra) -> None:
     AuditLog.objects.create(
         user=package.creator,
         action=AuditLog.Action.UPDATE_RECORD,
-        details={"event": event, "package_uuid": str(package.uuid), **extra},
+        details={
+            "event": event,
+            "package_uuid": str(package.uuid),
+            **extra
+        },
     )
 
 
-def session_for_intent(payment_intent_id: str) -> str | None:
-    """Checkout session that produced this PaymentIntent, from dj-stripe's local sync."""
-    row = Session.objects.filter(payment_intent=payment_intent_id).only("id").first()
-    return row.id if row else None
+def restore_paid_payment(payment, *, event: str, **extra) -> None:
+    package = payment.package
+    was_paid = payment.is_completed and package.status == ReimbursementPackage.Status.PAID
+    payment.is_completed = True
+    payment.save(update_fields=["is_completed"])
+    payer_currency = getattr(payment, "payer_currency", None) or "usd"
+    package.mark_as_paid(payer=payment.payer, payer_currency=payer_currency)
+    if not was_paid:
+        audit(package, event, **extra)
 
 
-def intent_metadata(payment_intent_id: str) -> dict | None:
-    row = PaymentIntent.objects.filter(id=payment_intent_id).only("metadata").first()
+def payment_for_payment_intent(
+        payment_intent_id: str) -> PackagePayment | None:
+    return (PackagePayment.objects.select_related(
+        "package",
+        "payer").filter(stripe_payment_intent_id=payment_intent_id).first())
+
+
+def payment_from_charge(charge_id: str) -> PackagePayment | None:
+    """Resolve the payment behind a charge.
+
+    Invoices put package_uuid on the invoice, not the PaymentIntent, so the
+    intent id is the primary key and the invoice id is the fallback - that
+    covers charges even when the intent id was never recorded.
+    """
+    row = Charge.objects.filter(id=charge_id).only("payment_intent",
+                                                   "invoice").first()
     if row is not None:
-        return dict(row.metadata or {})
-    fetched = retrieve_stripe_object(
-        services.retrieve_payment_intent, payment_intent_id, "PaymentIntent"
-    )
-    return dict(fetched.get("metadata") or {}) if fetched else None
-
-
-def link_payment(package_uuid: str, payment_intent_id: str):
-    """Fallback link when no Session points at the intent; refuses to guess between candidates."""
-    candidates = list(
-        PackagePayment.objects.select_related("package", "payer")
-        .filter(package__uuid=package_uuid)
-        .filter(Q(stripe_payment_intent_id="") | Q(stripe_payment_intent_id__isnull=True))
-        .order_by("-created_at")[:2]
-    )
-    if len(candidates) != 1:
-        logger.error(
-            "Cannot link payment intent %s to package %s: %d unlinked payments",
-            payment_intent_id,
-            package_uuid,
-            len(candidates),
-        )
-        return None
-
-    payment = candidates[0]
-    payment.stripe_payment_intent_id = payment_intent_id
-    payment.save(update_fields=["stripe_payment_intent_id"])
-    return payment
-
-
-def payment_for_payment_intent(payment_intent_id: str):
-    payment = (
-        PackagePayment.objects.select_related("package", "payer")
-        .filter(stripe_payment_intent_id=payment_intent_id)
-        .first()
-    )
-    if payment is not None:
-        return payment
-
-    session_id = session_for_intent(payment_intent_id)
-    if session_id is not None:
-        return PackagePayment.objects.filter(stripe_checkout_session_id=session_id).first()
-
-    metadata = intent_metadata(payment_intent_id)
-    if not metadata:
-        return None
-    return link_payment(metadata.get("package_uuid"), payment_intent_id)
-
-
-def payment_from_charge(charge_id: str):
-    row = Charge.objects.filter(id=charge_id).only("payment_intent").first()
-    if row is not None:
-        intent_id = row.payment_intent_id
+        intent_id, invoice_id = row.payment_intent_id, row.invoice_id
     else:
-        charge = retrieve_stripe_object(services.retrieve_charge, charge_id, "Charge")
-        intent_id = charge.get("payment_intent") if charge else None
+        charge = retrieve_stripe_object(services.retrieve_charge, charge_id,
+                                        "Charge") or {}
+        intent_id = charge.get("payment_intent")
+        invoice_id = charge.get("invoice")
 
-    return payment_for_payment_intent(intent_id) if intent_id else None
+    if intent_id:
+        payment = payment_for_payment_intent(intent_id)
+        if payment is not None:
+            return payment
+    if invoice_id:
+        return invoice_payment_for(invoice_id)
+    return None
 
 
-def revert_package_payment(payment, *, event: str, refund: bool = True, **extra) -> None:
+def revert_package_payment(payment,
+                           *,
+                           event: str,
+                           refund: bool = True,
+                           **extra) -> None:
     refunded = False
     if refund:
         refunded = refund_captured_payment(payment, event=event)
         if not refunded and payment.is_completed:
+            # Caller-supplied extras win: several handlers already pass
+            # payment_intent, and a duplicate kwarg here would mask the very
+            # failure this branch exists to report.
             audit(
                 payment.package,
                 "auto_refund_failed",
-                payment_intent=payment.stripe_payment_intent_id,
                 trigger=event,
-                **extra,
+                **{
+                    "payment_intent": payment.stripe_payment_intent_id,
+                    **extra,
+                },
             )
             logger.critical(
                 "Package %s: captured charge %s could not be auto-refunded after %s — "
@@ -268,7 +171,8 @@ def refund_captured_payment(payment, *, event: str) -> bool:
         services.create_refund(payment_intent_id, reason=event)
     except stripe.error.InvalidRequestError as e:
         # Typically "already refunded" / "charge not capturable" — nothing more to do.
-        logger.warning("Refund skipped for payment intent %s (%s): %s", payment_intent_id, event, e)
+        logger.warning("Refund skipped for payment intent %s (%s): %s",
+                       payment_intent_id, event, e)
         return False
     except stripe.error.StripeError:
         logger.exception(
@@ -286,50 +190,12 @@ def refund_captured_payment(payment, *, event: str) -> bool:
     return True
 
 
-def restore_paid_payment(payment, *, event: str, **extra) -> None:
-    package = payment.package
-    was_paid = payment.is_completed and package.status == ReimbursementPackage.Status.PAID
-    payment.is_completed = True
-    payment.save(update_fields=["is_completed"])
-    payer_currency = getattr(payment, "payer_currency", None) or "usd"
-    package.mark_as_paid(payer=payment.payer, payer_currency=payer_currency)
-    if not was_paid:
-        audit(package, event, **extra)
-
-
-def handle_checkout_session_completed(event):
-    session = as_dict(event["data"]["object"])
-    if session.get("payment_status") != "paid" or not has_package_metadata(session):
-        return
-
-    payment = payment_for_checkout_session(session["id"])
-    if payment is None:
-        return
-
-    apply_paid_session(payment, session, source="package_paid")
-
-
-def handle_async_payment(event):
-    session = as_dict(event["data"]["object"])
-    if not has_package_metadata(session):
-        return
-
-    payment = payment_for_checkout_session(session["id"])
-    if payment is None:
-        return
-
-    package_uuid = session["metadata"]["package_uuid"]
-    if event["type"] == "checkout.session.async_payment_succeeded":
-        if not apply_paid_session(payment, session, source="async_payment_succeeded"):
-            logger.error(
-                "Package %s: session %s amount check failed — skipping mark-as-paid",
-                package_uuid,
-                session["id"],
-            )
-        return
-
-    payment.mark_failed()
-    logger.warning("Async payment failed for session %s (package %s)", session["id"], package_uuid)
+def as_dict(obj):
+    if isinstance(obj, dict):
+        return obj
+    if hasattr(obj, "to_dict"):
+        return obj.to_dict()
+    return dict(obj)
 
 
 def handle_account_updated(event):
@@ -344,12 +210,16 @@ def handle_account_updated(event):
     )
     if posthog_client is None:
         return
-    row = StripeAccount.objects.filter(stripe_account_id=account_id).select_related("user").first()
+    row = StripeAccount.objects.filter(
+        stripe_account_id=account_id).select_related("user").first()
     if row is not None and row.is_active:
         posthog_client.capture(
             "stripe_onboarding_completed",
             distinct_id=str(row.user_id),
-            properties={"duration_seconds": int((timezone.now() - row.created_at).total_seconds())},
+            properties={
+                "duration_seconds": int(
+                    (timezone.now() - row.created_at).total_seconds())
+            },
         )
 
 
@@ -399,7 +269,8 @@ def handle_payment_failure(event):
                 properties=properties,
             )
         else:
-            posthog_client.capture("reimbursement_payment_failed", properties=properties)
+            posthog_client.capture("reimbursement_payment_failed",
+                                   properties=properties)
 
     revert_package_payment(
         payment,
@@ -419,7 +290,8 @@ def handle_charge_refunded(event):
     amount_refunded_cents = charge.get("amount_refunded") or 0
     amount_captured_cents = charge.get("amount_captured") or 0
 
-    refunded_display = from_stripe_amount(amount_refunded_cents, charge_currency)
+    refunded_display = from_stripe_amount(amount_refunded_cents,
+                                          charge_currency)
 
     logger.warning(
         "Charge refunded — payment_intent: %s, amount: %s %s",
@@ -430,7 +302,9 @@ def handle_charge_refunded(event):
 
     payment = payment_for_payment_intent(payment_intent_id)
     if payment is None:
-        logger.warning("No PackagePayment found for refunded payment_intent %s", payment_intent_id)
+        logger.warning(
+            "No PackagePayment found for refunded payment_intent %s",
+            payment_intent_id)
         return
 
     is_full_refund = amount_refunded_cents >= amount_captured_cents
@@ -477,7 +351,8 @@ def handle_dispute(event):
 
     payment = payment_from_charge(charge_id)
     if payment is None:
-        logger.warning("No PackagePayment found for disputed charge %s", charge_id)
+        logger.warning("No PackagePayment found for disputed charge %s",
+                       charge_id)
         return
 
     if status == "won":
@@ -501,7 +376,10 @@ def handle_dispute(event):
         return
 
     # Non-terminal dispute (created / under_review / evidence submitted):
-    audit(payment.package, "charge_dispute_open", dispute_id=dispute_id, status=status)
+    audit(payment.package,
+          "charge_dispute_open",
+          dispute_id=dispute_id,
+          status=status)
     logger.critical(
         "Dispute %s open (status=%s) on package %s — package frozen pending resolution",
         dispute_id,
@@ -510,10 +388,112 @@ def handle_dispute(event):
     )
 
 
+def invoice_payment_for(invoice_id: str):
+    return (PackagePayment.objects.select_related(
+        "package", "payer").filter(stripe_invoice_id=invoice_id).first())
+
+
+def apply_paid_invoice(payment, invoice_data, *, source: str) -> bool:
+    """Settle a package from a Stripe invoice, mirroring the checkout path."""
+    if not payment.amount_matches(invoice_data, key="amount_paid"):
+        return False
+
+    package = payment.package
+
+    if package.is_deleted:
+        logger.warning(
+            "Package %s was deleted before invoice %s settled — auto-refunding",
+            package.uuid,
+            invoice_data.get("id"),
+        )
+        refund_captured_payment(payment,
+                                event="package_deleted_before_settlement")
+        payment.mark_failed()
+        audit(package,
+              "invoice_after_delete_refunded",
+              invoice_id=invoice_data.get("id"))
+        return False
+
+    if package.status == ReimbursementPackage.Status.PAID and not payment.is_completed:
+        logger.error(
+            "Package %s is already paid — refusing duplicate settlement of invoice %s",
+            package.uuid,
+            invoice_data.get("id"),
+        )
+        refund_captured_payment(payment, event="duplicate_settlement")
+        payment.mark_failed()
+        return False
+
+    already_completed = payment.is_completed
+    # The payload carries the intent on older API versions; the current one
+    # nests it under payments, so fall back to an expanded fetch. Refunds and
+    # daily reconciliation both key off this column.
+    intent_id = invoice_data.get("payment_intent") or ""
+    if not intent_id and not payment.stripe_payment_intent_id and payment.stripe_invoice_id:
+        intent_id = services.invoice_payment_intent(payment.stripe_invoice_id)
+    if intent_id:
+        payment.stripe_payment_intent_id = intent_id
+    payment.complete_from_session(invoice_data)
+    package.mark_as_paid(payer=payment.payer,
+                         payer_currency=payment.payer_currency or "usd")
+
+    if not already_completed:
+        audit(
+            package,
+            source,
+            invoice_id=invoice_data.get("id"),
+            payer_email=payment.payer_email,
+            amount=str(payment.amount_paid),
+        )
+        transaction.on_commit(lambda: notify_package_paid(
+            package.pk, payment.payer.pk if payment.payer else None))
+    return True
+
+
+def handle_invoice_paid(event):
+    invoice = as_dict(event["data"]["object"])
+    payment = invoice_payment_for(invoice.get("id") or "")
+    if payment is None:
+        return
+    if not apply_paid_invoice(payment, invoice, source="invoice_paid"):
+        logger.error(
+            "Package %s: invoice %s amount check failed — skipping mark-as-paid",
+            payment.package.uuid,
+            invoice.get("id"),
+        )
+
+
+def handle_invoice_payment_failed(event):
+    """Retryable. Stripe keeps attempting collection and emails the customer.
+    Reverting here would mark a recoverable payment as refunded, so a later
+    successful retry would land on a package already marked failed.
+    """
+    invoice = as_dict(event["data"]["object"])
+    payment = invoice_payment_for(invoice.get("id") or "")
+    if payment is None:
+        return
+    logger.warning(
+        "Invoice %s payment attempt failed for package %s; Stripe will retry",
+        invoice.get("id"),
+        payment.package.uuid,
+    )
+    audit(payment.package,
+          "invoice_payment_failed",
+          invoice_id=invoice.get("id"))
+
+
+def handle_invoice_voided(event):
+    """Terminal. A voided invoice can never be collected, so unwind it."""
+    invoice = as_dict(event["data"]["object"])
+    payment = invoice_payment_for(invoice.get("id") or "")
+    if payment is None:
+        return
+    revert_package_payment(payment,
+                           event="invoice_voided",
+                           invoice_id=invoice.get("id"))
+
+
 _EVENT_HANDLERS = {
-    "checkout.session.completed": handle_checkout_session_completed,
-    "checkout.session.async_payment_succeeded": handle_async_payment,
-    "checkout.session.async_payment_failed": handle_async_payment,
     "account.updated": handle_account_updated,
     "transfer.failed": handle_payment_failure,
     "charge.failed": handle_payment_failure,
@@ -521,6 +501,9 @@ _EVENT_HANDLERS = {
     "charge.dispute.created": handle_dispute,
     "charge.dispute.updated": handle_dispute,
     "charge.dispute.closed": handle_dispute,
+    "invoice.paid": handle_invoice_paid,
+    "invoice.payment_failed": handle_invoice_payment_failed,
+    "invoice.voided": handle_invoice_voided,
 }
 
 HANDLED_EVENT_TYPES = frozenset(_EVENT_HANDLERS)
@@ -535,7 +518,8 @@ def process_stripe_event(event):
         try:
             ProcessedStripeEvent.objects.create(event_id=event_id)
         except IntegrityError:
-            logger.info("Stripe event %s already processed — skipping", event_id)
+            logger.info("Stripe event %s already processed — skipping",
+                        event_id)
             return
 
     handler = _EVENT_HANDLERS.get(event_data.get("type"))

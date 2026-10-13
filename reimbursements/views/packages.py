@@ -2,6 +2,7 @@ import json
 import logging
 from typing import Any
 
+import stripe
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q, Sum
@@ -18,7 +19,7 @@ from core.apps import posthog_client
 from .. import services
 from ..mixins import ReimbursementRequestRequiredMixin
 from ..models import ReimbursementPackage
-from ..notifications import send_package_created_notification
+from ..notifications import invoice_invoice_sent
 
 logger = logging.getLogger(__name__)
 
@@ -30,43 +31,33 @@ class PackageListView(LoginRequiredMixin, ListView):
     paginate_by = 15
 
     def get_queryset(self):
-        return (
-            super()
-            .get_queryset()
-            .filter(creator=self.request.user, deleted_at__isnull=True)
-            .with_annotated_total()
-            .with_prefetched_active_records()
-            .select_related("recipient", "paid_by")
-            .order_by("-id")
-        )
+        return (super().get_queryset().filter(
+            creator=self.request.user,
+            deleted_at__isnull=True).with_annotated_total().
+                with_prefetched_active_records().select_related(
+                    "recipient", "paid_by").order_by("-id"))
 
     def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
         context = super().get_context_data(**kwargs)
         sent_packages = list(context["packages"])
 
         paid_by_me = list(
-            ReimbursementPackage.objects.filter(paid_by=self.request.user, deleted_at__isnull=True)
-            .with_annotated_total()
-            .with_prefetched_active_records()
-            .select_related("creator", "recipient", "paid_by")
-            .order_by("-paid_at")[:25]
-        )
+            ReimbursementPackage.objects.filter(
+                paid_by=self.request.user,
+                deleted_at__isnull=True).with_annotated_total().
+            with_prefetched_active_records().select_related(
+                "creator", "recipient", "paid_by").order_by("-paid_at")[:25])
         sent_to_me = list(
             ReimbursementPackage.objects.filter(
-                recipient=self.request.user, deleted_at__isnull=True
-            )
-            .with_annotated_total()
-            .with_prefetched_active_records()
-            .select_related("creator", "paid_by")
-            .order_by("-created_at")[:25]
-        )
+                recipient=self.request.user,
+                deleted_at__isnull=True).with_annotated_total().
+            with_prefetched_active_records().select_related(
+                "creator", "paid_by").order_by("-created_at")[:25])
 
-        user_currency = getattr(
-            getattr(self.request.user, "settings", None), "default_currency", "usd"
-        )
+        user_currency = getattr(getattr(self.request.user, "settings", None),
+                                "default_currency", "usd")
         ReimbursementPackage.prefetch_converted_totals(
-            sent_packages + paid_by_me + sent_to_me, user_currency
-        )
+            sent_packages + paid_by_me + sent_to_me, user_currency)
 
         context["sections"] = [
             ("Sent by You", sent_packages, "sent"),
@@ -74,11 +65,29 @@ class PackageListView(LoginRequiredMixin, ListView):
             ("Sent to You", sent_to_me, "received"),
         ]
         stripe_account = getattr(self.request.user, "stripe_account", None)
-        context["stripe_connected"] = bool(stripe_account and stripe_account.is_active)
+        context["stripe_connected"] = bool(stripe_account
+                                           and stripe_account.is_active)
         return context
 
 
-@method_decorator(ratelimit(key="user", rate="30/m", method="GET"), name="dispatch")
+def hosted_invoice_url(package) -> str | None:
+    """Stripe's hosted pay page, so the recipient can pay without hunting the email."""
+    if package.status == ReimbursementPackage.Status.PAID:
+        return None
+    payment = package.payments.order_by("-created_at").first()
+    if payment is None or not payment.stripe_invoice_id:
+        return None
+    try:
+        return services.retrieve_invoice(
+            payment.stripe_invoice_id).get("hosted_invoice_url")
+    except stripe.error.StripeError:
+        logger.warning("Could not load hosted invoice URL for package %s",
+                       package.uuid)
+        return None
+
+
+@method_decorator(ratelimit(key="user", rate="30/m", method="GET"),
+                  name="dispatch")
 class PackageDetailView(LoginRequiredMixin, DetailView):
     model = ReimbursementPackage
     template_name = "reimbursements/package_detail.html"
@@ -87,24 +96,18 @@ class PackageDetailView(LoginRequiredMixin, DetailView):
     slug_url_kwarg = "package_uuid"
 
     def get_queryset(self):
-        return (
-            super()
-            .get_queryset()
-            .filter(
-                Q(creator=self.request.user) | Q(recipient=self.request.user),
-                deleted_at__isnull=True,
-            )
-            .prefetch_related("records")
-            .select_related("creator", "paid_by", "recipient")
-        )
+        return (super().get_queryset().filter(
+            Q(creator=self.request.user) | Q(recipient=self.request.user),
+            deleted_at__isnull=True,
+        ).prefetch_related("records").select_related("creator", "paid_by",
+                                                     "recipient"))
 
     def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
         context = super().get_context_data(**kwargs)
         package: ReimbursementPackage = self.object
 
-        user_currency = getattr(
-            getattr(self.request.user, "settings", None), "default_currency", "usd"
-        )
+        user_currency = getattr(getattr(self.request.user, "settings", None),
+                                "default_currency", "usd")
         context["user_currency"] = user_currency
 
         detail = package.detail_items(user_currency)
@@ -112,15 +115,21 @@ class PackageDetailView(LoginRequiredMixin, DetailView):
         context["converted_total"] = detail.converted_total
         context["original_total"] = detail.original_total
         context["package_currency"] = package.currency
-        context["is_recipient"] = package.recipient == self.request.user
+        is_recipient = package.recipient == self.request.user
+        context["is_recipient"] = is_recipient
+        context["pay_url"] = hosted_invoice_url(
+            package) if is_recipient else None
         context["is_payer"] = package.paid_by == self.request.user
         context["is_sender"] = package.creator == self.request.user
         context["can_delete"] = package.can_delete(self.request.user)
         return context
 
 
-@method_decorator(ratelimit(key="user", rate="10/m", method="POST", block=True), name="dispatch")
+@method_decorator(ratelimit(key="user", rate="10/m", method="POST",
+                            block=True),
+                  name="dispatch")
 class PackageDeleteView(LoginRequiredMixin, View):
+
     def post(self, request: HttpRequest, package_uuid: str) -> HttpResponse:
         package = get_object_or_404(
             ReimbursementPackage,
@@ -132,16 +141,18 @@ class PackageDeleteView(LoginRequiredMixin, View):
         if not package.can_delete(request.user):
             if request.headers.get("X-Requested-With") == "XMLHttpRequest":
                 return JsonResponse(
-                    {"error": "You do not have permission to delete this package."},
+                    {
+                        "error": "You do not have permission to delete this package."
+                    },
                     status=403,
                 )
-            messages.error(request, "You do not have permission to delete this package.")
+            messages.error(
+                request, "You do not have permission to delete this package.")
             return redirect(
                 reverse(
                     "reimbursements:package-detail",
                     kwargs={"package_uuid": package.uuid},
-                )
-            )
+                ))
 
         if not package.delete_package(request.user):
             logger.error(
@@ -151,8 +162,7 @@ class PackageDeleteView(LoginRequiredMixin, View):
             )
             error_msg = (
                 "We couldn't revoke the recipient's access, so the package wasn't "
-                "deleted. Please try again."
-            )
+                "deleted. Please try again.")
             if request.headers.get("X-Requested-With") == "XMLHttpRequest":
                 return JsonResponse({"error": error_msg}, status=502)
             messages.error(request, error_msg)
@@ -160,14 +170,16 @@ class PackageDeleteView(LoginRequiredMixin, View):
                 reverse(
                     "reimbursements:package-detail",
                     kwargs={"package_uuid": package.uuid},
-                )
-            )
+                ))
 
-        logger.info("Package %s soft-deleted by user %s", package.uuid, request.user.id)
+        logger.info("Package %s soft-deleted by user %s", package.uuid,
+                    request.user.id)
         messages.success(request, "Package deleted.")
 
         if request.headers.get("HX-Request"):
-            return HttpResponse(headers={"HX-Redirect": reverse("reimbursements:package-list")})
+            return HttpResponse(headers={
+                "HX-Redirect": reverse("reimbursements:package-list")
+            })
 
         return redirect(reverse("reimbursements:package-list"))
 
@@ -179,8 +191,10 @@ def clamp_days_valid(raw: Any) -> int:
         return 7
 
 
-@method_decorator(ratelimit(key="user", rate="5/m", method="POST", block=True), name="dispatch")
-class CreatePackageFromRecordsView(LoginRequiredMixin, ReimbursementRequestRequiredMixin, View):
+@method_decorator(ratelimit(key="user", rate="5/m", method="POST", block=True),
+                  name="dispatch")
+class CreatePackageFromRecordsView(LoginRequiredMixin,
+                                   ReimbursementRequestRequiredMixin, View):
     required_feature = "reimbursement-creation"
 
     def post(self, request: HttpRequest) -> HttpResponse:
@@ -188,7 +202,8 @@ class CreatePackageFromRecordsView(LoginRequiredMixin, ReimbursementRequestRequi
             try:
                 data: dict[str, Any] = json.loads(request.body)
             except json.JSONDecodeError:
-                return JsonResponse({"error": "Invalid JSON payload."}, status=400)
+                return JsonResponse({"error": "Invalid JSON payload."},
+                                    status=400)
 
             record_ids: list[int] = data.get("record_ids", [])
             title: str = data.get("title", "Reimbursement Package")
@@ -196,7 +211,8 @@ class CreatePackageFromRecordsView(LoginRequiredMixin, ReimbursementRequestRequi
             days_valid = clamp_days_valid(data.get("days_valid", 7))
         else:
             record_ids = [
-                int(rid) for rid in request.POST.getlist("selected_records") if rid.isdigit()
+                int(rid) for rid in request.POST.getlist("selected_records")
+                if rid.isdigit()
             ]
             title = request.POST.get("title", "Reimbursement Package")
             recipient_email = request.POST.get("recipient_email", "").strip()
@@ -223,13 +239,14 @@ class CreatePackageFromRecordsView(LoginRequiredMixin, ReimbursementRequestRequi
         if error:
             return JsonResponse({"error": error}, status=400)
         if package is None:
-            return JsonResponse({"error": "Unable to create reimbursement package."}, status=500)
+            return JsonResponse(
+                {"error": "Unable to create reimbursement package."},
+                status=500)
 
         attached = package.records.count()
         requested = len(set(record_ids))
-        total_amount = (
-            package.records.filter(is_active=True).aggregate(total=Sum("balance"))["total"] or 0
-        )
+        total_amount = (package.records.filter(is_active=True).aggregate(
+            total=Sum("balance"))["total"] or 0)
         if posthog_client is not None:
             posthog_client.capture(
                 "reimbursement_package_created",
@@ -248,11 +265,24 @@ class CreatePackageFromRecordsView(LoginRequiredMixin, ReimbursementRequestRequi
                 "the rest are unavailable.",
             )
 
-        send_package_created_notification(package)
-
-        redirect_url = reverse(
-            "reimbursements:package-detail", kwargs={"package_uuid": package.uuid}
+        # The recipient pays; the creator only raises the request. Passing the
+        # creator as payer would fail can_be_paid_by.
+        outcome = services.create_package_invoice(
+            package=package,
+            payer=package.recipient,
+            payer_email=recipient_email,
+            currency=package.currency,
         )
+        if outcome.error:
+            messages.warning(
+                request,
+                f"Package created, but the invoice was not raised: {outcome.error}",
+            )
+        else:
+            invoice_invoice_sent(package)
+
+        redirect_url = reverse("reimbursements:package-detail",
+                               kwargs={"package_uuid": package.uuid})
 
         if request.content_type and "application/json" in request.content_type:
             return JsonResponse({"redirect_url": redirect_url})

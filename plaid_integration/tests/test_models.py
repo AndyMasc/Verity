@@ -20,7 +20,8 @@ class PlaidItemModelTest(TestCase):
     """Tests for the PlaidItem model."""
 
     def setUp(self):
-        self.user = User.objects.create_user(username="testuser", password="pass")
+        self.user = User.objects.create_user(username="testuser",
+                                             password="pass")
         self.plaid_item = PlaidItem.objects.create(
             user=self.user,
             item_id="test-item-123",
@@ -81,7 +82,8 @@ class ChooseFolderTest(TestCase):
     """Tests for the choose_folder utility function."""
 
     def setUp(self):
-        self.user = User.objects.create_user(username="testuser", password="pass")
+        self.user = User.objects.create_user(username="testuser",
+                                             password="pass")
 
     def test_returns_none_for_empty_category(self):
         self.assertIsNone(choose_folder(self.user, None))
@@ -119,14 +121,23 @@ class GetPaymentMethodTest(TestCase):
     """Tests for the _get_payment_method helper."""
 
     def setUp(self):
-        self.user = User.objects.create_user(username="testuser", password="pass")
+        self.user = User.objects.create_user(username="testuser",
+                                             password="pass")
         self.plaid_item = PlaidItem.objects.create(
             user=self.user,
             item_id="item-1",
             access_token="access-1",
             accounts_data=[
-                {"id": "acc1", "name": "Checking", "mask": "1234"},
-                {"id": "acc2", "name": "Savings", "mask": "5678"},
+                {
+                    "id": "acc1",
+                    "name": "Checking",
+                    "mask": "1234"
+                },
+                {
+                    "id": "acc2",
+                    "name": "Savings",
+                    "mask": "5678"
+                },
             ],
         )
 
@@ -139,7 +150,10 @@ class GetPaymentMethodTest(TestCase):
             user=self.user,
             item_id="item-no-mask",
             access_token="access-no-mask",
-            accounts_data=[{"id": "acc1", "name": "Checking"}],
+            accounts_data=[{
+                "id": "acc1",
+                "name": "Checking"
+            }],
         )
         result = _get_payment_method(item, "acc1")
         self.assertEqual(result, "Checking")
@@ -167,14 +181,19 @@ class TxnToRecordTest(TestCase):
     """Tests for the _txn_to_record helper."""
 
     def setUp(self):
-        self.user = User.objects.create_user(username="testuser", password="pass")
+        self.user = User.objects.create_user(username="testuser",
+                                             password="pass")
         self.user.settings.auto_create_and_organize_folders = False
         self.user.settings.save()
         self.plaid_item = PlaidItem.objects.create(
             user=self.user,
             item_id="item-1",
             access_token="access-1",
-            accounts_data=[{"id": "acc1", "name": "Checking", "mask": "1234"}],
+            accounts_data=[{
+                "id": "acc1",
+                "name": "Checking",
+                "mask": "1234"
+            }],
         )
 
     def test_basic_transaction_conversion(self):

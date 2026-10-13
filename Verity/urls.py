@@ -41,18 +41,25 @@ urlpatterns = [
     path("accounting/", include("accounting.urls")),
     path("reimbursements/", include("reimbursements.urls")),
     path("billing/", include("billing.urls")),
-    path("subscription-confirm/", subscription_confirm, name="subscription_confirm"),
+    path("subscription-confirm/",
+         subscription_confirm,
+         name="subscription_confirm"),
     # Stripe webhook endpoint (djstripe). The Stripe dashboard URL must include
     # the djstripe_uuid of a synced WebhookEndpoint, e.g. /stripe/webhook/<uuid>/
     path("stripe/", include("djstripe.urls", namespace="djstripe")),
     # Webpush
-    path("webpush/save_information", safe_webpush_save_info, name="save_webpush_info"),
+    path("webpush/save_information",
+         safe_webpush_save_info,
+         name="save_webpush_info"),
     path("webpush/", include("webpush.urls")),
-    path("service-worker.js", ServiceWorkerView.as_view(), name="service_worker"),
+    path("service-worker.js",
+         ServiceWorkerView.as_view(),
+         name="service_worker"),
     path("serviceworker.js", ServiceWorkerView.as_view()),
     path("plaid/", include("plaid_integration.urls")),
 ]
 
 if settings.DEBUG:
-    urlpatterns.insert(3, path("__reload__/", include("django_browser_reload.urls")))
+    urlpatterns.insert(
+        3, path("__reload__/", include("django_browser_reload.urls")))
     urlpatterns.insert(-1, path("__debug__/", include("debug_toolbar.urls")))

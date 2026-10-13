@@ -35,8 +35,10 @@ def _build_subscription_status(user) -> dict[str, Any]:
     names = Product.objects.filter(id__in=held).values_list("name", flat=True)
     return {
         "is_subscribed": bool(metadata.active_subscriptions(user)),
-        "plan_name": ", ".join(sorted(n for n in names if n)) or metadata.VERITY_FREE.name,
-        "monthly_scan_limit": entitlements.get_monthly_upload_limit(user, "scan"),
+        "plan_name": ", ".join(sorted(n for n in names if n))
+        or metadata.VERITY_FREE.name,
+        "monthly_scan_limit": entitlements.get_monthly_upload_limit(
+            user, "scan"),
     }
 
 
@@ -67,9 +69,12 @@ def monthly_usage(request: HttpRequest) -> dict[str, Any]:
         return cached
 
     value = {
-        "scan_usage_count": entitlements.get_monthly_upload_count(user, "scan"),
-        "upload_usage_count": entitlements.get_monthly_upload_count(user, "upload"),
-        "monthly_upload_limit": entitlements.get_monthly_upload_limit(user, "upload"),
+        "scan_usage_count": entitlements.get_monthly_upload_count(
+            user, "scan"),
+        "upload_usage_count": entitlements.get_monthly_upload_count(
+            user, "upload"),
+        "monthly_upload_limit": entitlements.get_monthly_upload_limit(
+            user, "upload"),
     }
     cache.set(cache_key, value, BILLING_CONTEXT_CACHE_TTL)
     return value

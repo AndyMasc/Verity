@@ -1,4 +1,5 @@
-worker: python manage.py rundramatiq --threads 4 -Q default ocr-tasks maintenance
 web: python manage.py tailwind dev
 stripe: python manage.py stripe_listen
 ngrok: ngrok http 8000
+dramatiq: python manage.py rundramatiq
+periodiq: python manage.py runperiodiq

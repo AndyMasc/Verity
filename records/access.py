@@ -1,15 +1,9 @@
 """Record sharing services.
 
-Every grant and revocation funnels through this module:
-
-* Only the record owner may share or revoke.
-* A grant is idempotent. Re-granting an already-active share changes nothing
-  and does not re-notify; re-granting a revoked or expired one reactivates the
-  same row (this is what a refunded-then-repaid reimbursement needs).
-* Grants are scoped by permission, purpose, "include_documents" and
-  "expires_at". Revoking stamps "revoked_at" rather than deleting, so the
-  grant survives in the audit trail.
-* Every grant and revoke is appended to AuditLog.
+Invariants: only the owner may grant or revoke; grants are idempotent (a
+revoked or expired row reactivates rather than duplicating); revoke stamps
+revoked_at instead of deleting, so grants survive in the audit trail; every
+grant and revoke is appended to AuditLog.
 """
 
 from __future__ import annotations
@@ -66,12 +60,9 @@ def grant_access(
     requester,
     config: ShareConfig | None = None,
 ) -> tuple[RecordShare, bool]:
-    """Grant (or reactivate) a permission-scoped share.
+    """Grant (or reactivate) a permission-scoped share. Returns "(share, granted_now)" where granted_now is True for a new or
+    reactivated grant and False when an active share was already in place — i.e. exactly the cases worth notifying about."""
 
-    Returns "(share, granted_now)" where granted_now is True for a new or
-    reactivated grant and False when an active share was already in place —
-    i.e. exactly the cases worth notifying about.
-    """
     config = config or ShareConfig()
 
     if not can_share(requester, record):
@@ -103,16 +94,14 @@ def grant_access(
             share.expires_at = config.expires_at
             share.revoked_at = None
             share.shared_by = requester
-            share.save(
-                update_fields=[
-                    "permission",
-                    "purpose",
-                    "include_documents",
-                    "expires_at",
-                    "revoked_at",
-                    "shared_by",
-                ]
-            )
+            share.save(update_fields=[
+                "permission",
+                "purpose",
+                "include_documents",
+                "expires_at",
+                "revoked_at",
+                "shared_by",
+            ])
 
         details: dict[str, Any] = {
             "user": user.email,
@@ -133,11 +122,8 @@ def grant_access(
 
 
 def resolve_recipients(emails: list[str]) -> tuple[list[User], list[str]]:
-    """Match emails to accounts in one query.
-
-    Returns "(recipients, unknown_emails)"; unknown emails are reported back
-    to the user rather than silently dropped.
-    """
+    """Match emails to accounts in one query. Returns "(recipients, unknown_emails)"; unknown emails are reported back
+    to the user rather than silently dropped."""
     email_set = {e.strip().lower() for e in emails if e.strip()}
     if not email_set:
         return [], []
@@ -146,7 +132,10 @@ def resolve_recipients(emails: list[str]) -> tuple[list[User], list[str]]:
     for email in email_set:
         email_filter |= Q(email__iexact=email)
 
-    users_by_email = {u.email.lower(): u for u in User.objects.filter(email_filter)}
+    users_by_email = {
+        u.email.lower(): u
+        for u in User.objects.filter(email_filter)
+    }
 
     recipients = [users_by_email[e] for e in email_set if e in users_by_email]
     unknown = [e for e in email_set if e not in users_by_email]
@@ -161,19 +150,17 @@ def grant_shares(
     config: ShareConfig | None = None,
 ) -> list[RecordShare]:
     """Grant "record" to each recipient; return only the newly granted shares.
-
     The owner is skipped rather than rejected, so one self-addressed entry in
-    a bulk list cannot stop the other recipients from being shared with.
+    a bulk list cannot stop the other recipients from being shared with."""
 
-    Notification is left to the caller: a bulk share collects the shares from
-    every record and sends one email per recipient, which this per-record
-    function cannot do.
-    """
     granted: list[RecordShare] = []
     for user in recipients:
         if user.pk == record.user_id:
             continue
-        share, granted_now = grant_access(record=record, user=user, requester=owner, config=config)
+        share, granted_now = grant_access(record=record,
+                                          user=user,
+                                          requester=owner,
+                                          config=config)
         if granted_now:
             granted.append(share)
     return granted
@@ -181,7 +168,6 @@ def grant_shares(
 
 def notify_share_recipients(*, shares: list[RecordShare], actor) -> None:
     """Send each recipient one email covering every record just granted to them.
-
     Runs after the shares are committed and can never fail the grant:
     deliverability issues are logged, not raised. Only newly granted shares
     reach this point, so duplicates never re-notify.
@@ -200,9 +186,7 @@ def notify_share_recipients(*, shares: list[RecordShare], actor) -> None:
 
 
 def revoke_share(*, record: Record, actor, share: RecordShare) -> None:
-    """Revoke a record share; only the owner may revoke.
-
-    The row is kept with "revoked_at" set so the audit trail shows access
+    """Revoke a record share; only the owner may revoke. The row is kept with "revoked_at" set so the audit trail shows access
     was granted and later removed.
     """
     if not can_share(actor, record):
@@ -214,7 +198,10 @@ def revoke_share(*, record: Record, actor, share: RecordShare) -> None:
             user=actor,
             action=AuditLog.Action.REVOKE_SHARE,
             record=record,
-            details={"user": share.user.email, "user_id": share.user_id},
+            details={
+                "user": share.user.email,
+                "user_id": share.user_id
+            },
         )
 
 

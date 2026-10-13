@@ -1,5 +1,4 @@
 """Views for archiving, unarchiving, and deleting records.
-
 Each action creates an AuditLog entry and, for HTMX requests, returns
 a 204 response so the client can update the UI without a full page reload.
 """
@@ -36,14 +35,16 @@ logger = logging.getLogger(__name__)
 class ArchiveRecord(LoginRequiredMixin, View):
     """Soft-delete a record by marking it inactive and logging the action."""
 
-    @method_decorator(ratelimit(key="user", rate="30/m", method="POST", block=True))
+    @method_decorator(
+        ratelimit(key="user", rate="30/m", method="POST", block=True))
     def post(self, request: HttpRequest, record_id: int) -> HttpResponse:
-        record = get_object_or_404(Record, id=record_id, user=request.user, is_active=True)
+        record = get_object_or_404(Record,
+                                   id=record_id,
+                                   user=request.user,
+                                   is_active=True)
         archive_record(request.user, record)
         if posthog_client is not None:
-            posthog_client.capture(
-                "record_archived",
-            )
+            posthog_client.capture("record_archived", )
         if request.headers.get("HX-Request") == "true":
             response = HttpResponse(status=204)
             response["HX-Trigger"] = json.dumps({"recordChanged": {}})
@@ -55,9 +56,13 @@ class ArchiveRecord(LoginRequiredMixin, View):
 class UnarchiveRecord(LoginRequiredMixin, View):
     """Restore a soft-deleted record and log the action."""
 
-    @method_decorator(ratelimit(key="user", rate="30/m", method="POST", block=True))
+    @method_decorator(
+        ratelimit(key="user", rate="30/m", method="POST", block=True))
     def post(self, request: HttpRequest, record_id: int) -> HttpResponse:
-        record = get_object_or_404(Record, id=record_id, user=request.user, is_active=False)
+        record = get_object_or_404(Record,
+                                   id=record_id,
+                                   user=request.user,
+                                   is_active=False)
         unarchive_record(request.user, record)
         if posthog_client is not None:
             posthog_client.capture(
@@ -95,7 +100,6 @@ def _bulk_response(
     skip_reason: str = "they must be in the opposite state, and be yours",
 ) -> HttpResponse:
     """Build the response for a bulk state change.
-
     "requested" is the number of records the client asked for; when fewer than
     that were actually changed the response says so, so the toast can report
     "N of M" instead of a bare count.
@@ -116,25 +120,21 @@ def _bulk_response(
         text = f"{count} record{'s' if count != 1 else ''} {verb}."
         if skipped:
             text += f" {skipped} skipped — {skip_reason}."
-        response["HX-Trigger"] = json.dumps(
-            {
-                "recordChanged": {},
-                "showToast": {
-                    "text": text,
-                    "tags": "success" if not skipped else "warning",
-                },
-            }
-        )
+        response["HX-Trigger"] = json.dumps({
+            "recordChanged": {},
+            "showToast": {
+                "text": text,
+                "tags": "success" if not skipped else "warning",
+            },
+        })
         return response
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-        return JsonResponse(
-            {
-                "success": True,
-                "count": count,
-                "skipped": skipped,
-                "verb": verb,
-            }
-        )
+        return JsonResponse({
+            "success": True,
+            "count": count,
+            "skipped": skipped,
+            "verb": verb,
+        })
     return redirect("records:view_all_records")
 
 
@@ -142,21 +142,20 @@ def _bulk_response(
 @ratelimit(key="user", rate="10/m", method="POST", block=True)
 @require_POST
 def BulkArchiveView(request: HttpRequest) -> HttpResponse:
-    """Archive multiple records at once.
-
-    Accepts a JSON body with "{"record_ids": [1, 2, 3]}" and archives
-    all active records belonging to the user.
-    """
+    """Accepts a JSON body with "{"record_ids": [1, 2, 3]}" and archives
+    all active records belonging to the user."""
     record_ids, error = parse_record_ids(request)
     if error:
         return error
 
     try:
-        count = bulk_toggle_archive(record_ids=record_ids, user=request.user, archive=True)  # type: ignore[arg-type]
+        count = bulk_toggle_archive(record_ids=record_ids,
+                                    user=request.user,
+                                    archive=True)  # type: ignore[arg-type]
     except BulkLimitExceededError as exc:
-        return HttpResponse(
-            json.dumps({"error": str(exc)}), status=400, content_type="application/json"
-        )
+        return HttpResponse(json.dumps({"error": str(exc)}),
+                            status=400,
+                            content_type="application/json")
 
     invalidate_dashboard_cache(request.user.id)
     if posthog_client is not None and count:
@@ -168,27 +167,28 @@ def BulkArchiveView(request: HttpRequest) -> HttpResponse:
 @ratelimit(key="user", rate="10/m", method="POST", block=True)
 @require_POST
 def BulkUnarchiveView(request: HttpRequest) -> HttpResponse:
-    """Restore multiple archived records at once.
-
-    Accepts a JSON body with "{"record_ids": [1, 2, 3]}" and restores
-    all inactive records belonging to the user.
-    """
+    """Accepts a JSON body with "{"record_ids": [1, 2, 3]}" and restores
+    all inactive records belonging to the user."""
     record_ids, error = parse_record_ids(request)
     if error:
         return error
 
     try:
-        count = bulk_toggle_archive(record_ids=record_ids, user=request.user, archive=False)  # type: ignore[arg-type]
+        count = bulk_toggle_archive(record_ids=record_ids,
+                                    user=request.user,
+                                    archive=False)  # type: ignore[arg-type]
     except BulkLimitExceededError as exc:
-        return HttpResponse(
-            json.dumps({"error": str(exc)}), status=400, content_type="application/json"
-        )
+        return HttpResponse(json.dumps({"error": str(exc)}),
+                            status=400,
+                            content_type="application/json")
 
     invalidate_dashboard_cache(request.user.id)
     if posthog_client is not None and count:
-        posthog_client.capture(
-            "record_unarchived", properties={"bulk": True, "record_count": count}
-        )
+        posthog_client.capture("record_unarchived",
+                               properties={
+                                   "bulk": True,
+                                   "record_count": count
+                               })
     return _bulk_response(request, count, verb="restored")
 
 
@@ -197,7 +197,6 @@ def BulkUnarchiveView(request: HttpRequest) -> HttpResponse:
 @require_POST
 def BulkHardDeleteView(request: HttpRequest) -> HttpResponse:
     """Permanently delete selected records that are past the retention window.
-
     Accepts a JSON body with "{"record_ids": [1, 2, 3]}". Records the user
     does not own, or that are still inside the seven-year window, are skipped
     and reported back so the confirmation can say what actually happened.
@@ -207,12 +206,13 @@ def BulkHardDeleteView(request: HttpRequest) -> HttpResponse:
         return error
 
     try:
-        count = bulk_hard_delete_record(record_ids=record_ids, user=request.user)  # type: ignore[arg-type]
+        count = bulk_hard_delete_record(
+            record_ids=record_ids, user=request.user)  # type: ignore[arg-type]
     except BulkLimitExceededError as exc:
         logger.error("Error occurred while hard deleting records: %s", exc)
-        return HttpResponse(
-            json.dumps({"error": str(exc)}), status=400, content_type="application/json"
-        )
+        return HttpResponse(json.dumps({"error": str(exc)}),
+                            status=400,
+                            content_type="application/json")
 
     invalidate_dashboard_cache(request.user.id)
     return _bulk_response(
@@ -220,5 +220,6 @@ def BulkHardDeleteView(request: HttpRequest) -> HttpResponse:
         count,
         verb="permanently deleted",
         requested=len(record_ids),
-        skip_reason="they are not past the 7-year retention window, or are not yours",
+        skip_reason=
+        "they are not past the 7-year retention window, or are not yours",
     )

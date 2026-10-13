@@ -18,8 +18,10 @@ User = get_user_model()
 
 
 class RecordQuerySetDeleteGuardTest(TestCase):
+
     def setUp(self):
-        self.user = User.objects.create_user(username="guarduser", password="pass")
+        self.user = User.objects.create_user(username="guarduser",
+                                             password="pass")
 
     def test_bulk_delete_raises_typeerror(self):
         qs = Record.objects.filter(user=self.user)
@@ -39,8 +41,10 @@ class RecordQuerySetDeleteGuardTest(TestCase):
 
 
 class RecordSmartSearchTest(TestCase):
+
     def setUp(self):
-        self.user = User.objects.create_user(username="searchuser", password="pass")
+        self.user = User.objects.create_user(username="searchuser",
+                                             password="pass")
         self.record = Record.objects.create(
             user=self.user,
             title="Starbucks Coffee",
@@ -64,8 +68,10 @@ class RecordSmartSearchTest(TestCase):
 
 
 class FolderQuerySetTest(TestCase):
+
     def setUp(self):
-        self.user = User.objects.create_user(username="foldertest", password="pass")
+        self.user = User.objects.create_user(username="foldertest",
+                                             password="pass")
 
     def test_with_record_counts(self):
         folder = Folder.objects.create(user=self.user, name="Test")
@@ -88,8 +94,10 @@ class FolderQuerySetTest(TestCase):
 
 
 class RecordModelEdgeCasesTest(TestCase):
+
     def setUp(self):
-        self.user = User.objects.create_user(username="edgeuser", password="pass")
+        self.user = User.objects.create_user(username="edgeuser",
+                                             password="pass")
 
     def test_is_expiring_soon_boundary_30(self):
         record = Record.objects.create(

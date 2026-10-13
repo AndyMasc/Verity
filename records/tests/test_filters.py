@@ -13,8 +13,10 @@ from ._helpers import make_filter_request
 
 
 class RecordFilterTest(TestCase):
+
     def setUp(self):
-        self.user = User.objects.create_user(username="filteruser", password="pass")
+        self.user = User.objects.create_user(username="filteruser",
+                                             password="pass")
         self.active = Record.objects.create(
             user=self.user,
             title="Active Record",
@@ -94,6 +96,7 @@ class RecordFilterTest(TestCase):
             queryset=Record.objects.for_user(self.user),
             request=make_filter_request(self.user),
         )
-        result = f.filter_by_folder(Record.objects.for_user(self.user), "folder", str(folder.id))
+        result = f.filter_by_folder(Record.objects.for_user(self.user),
+                                    "folder", str(folder.id))
         self.assertIn(self.active, result)
         self.assertNotIn(self.inactive, result)

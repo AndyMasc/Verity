@@ -17,6 +17,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AddIndex(
             model_name="mergelog",
-            index=models.Index(fields=["search_text"], name="idx_mergelog_search"),
+            index=models.Index(fields=["search_text"],
+                               name="idx_mergelog_search"),
         ),
     ]

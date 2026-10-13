@@ -27,7 +27,8 @@ class DramatiqEmailBackend(BaseEmailBackend):
         sent_count = 0
         for message in email_messages:
             html_message = next(
-                (content for content, mimetype in message.alternatives if mimetype == "text/html"),
+                (content for content, mimetype in message.alternatives
+                 if mimetype == "text/html"),
                 None,
             )
 
@@ -35,11 +36,11 @@ class DramatiqEmailBackend(BaseEmailBackend):
                 EmailTaskPayload(
                     subject=message.subject,
                     message=message.body,
-                    from_email=message.from_email or settings.DEFAULT_FROM_EMAIL,
+                    from_email=message.from_email
+                    or settings.DEFAULT_FROM_EMAIL,
                     recipient_list=message.to,
                     html_message=html_message,
-                )
-            )
+                ))
             sent_count += 1
 
         return sent_count

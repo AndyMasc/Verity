@@ -24,7 +24,8 @@ class Migration(migrations.Migration):
             name="include_documents",
             field=models.BooleanField(
                 default=True,
-                help_text="Recipient may also view documents attached to the record.",
+                help_text=
+                "Recipient may also view documents attached to the record.",
             ),
         ),
         migrations.AddField(
@@ -33,7 +34,8 @@ class Migration(migrations.Migration):
             field=models.CharField(
                 choices=[("edit", "View and edit"), ("view", "View only")],
                 default="edit",
-                help_text="Edit grants the recipient the full view+edit experience.",
+                help_text=
+                "Edit grants the recipient the full view+edit experience.",
                 max_length=10,
             ),
         ),
@@ -44,7 +46,8 @@ class Migration(migrations.Migration):
                 blank=True,
                 choices=[("reimbursement", "Reimbursement")],
                 default="",
-                help_text="Optional reason for the grant (shown in audit trails).",
+                help_text=
+                "Optional reason for the grant (shown in audit trails).",
                 max_length=32,
             ),
         ),
@@ -54,7 +57,8 @@ class Migration(migrations.Migration):
             field=models.DateTimeField(
                 blank=True,
                 db_index=True,
-                help_text="Access was explicitly revoked at this time (audit keeps the row).",
+                help_text=
+                "Access was explicitly revoked at this time (audit keeps the row).",
                 null=True,
             ),
         ),

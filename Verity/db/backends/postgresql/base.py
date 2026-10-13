@@ -34,7 +34,8 @@ class DatabaseWrapper(postgresql_base.DatabaseWrapper):
             try:
                 return super().get_new_connection(conn_params)
             except postgresql_base.Database.OperationalError as exc:
-                if not any(marker in str(exc) for marker in _TRANSIENT_MARKERS):
+                if not any(marker in str(exc)
+                           for marker in _TRANSIENT_MARKERS):
                     raise
                 if attempt == _MAX_ATTEMPTS - 1:
                     raise

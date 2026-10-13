@@ -20,8 +20,10 @@ from documents.services.cleanup import bulk_delete_documents as _bulk_delete_doc
 
 
 class BulkDeleteDocumentsTest(TestCase):
+
     def setUp(self):
-        self.user = User.objects.create_user(username="cleanupuser", password="pass")
+        self.user = User.objects.create_user(username="cleanupuser",
+                                             password="pass")
         self.docs = []
         for i in range(3):
             doc = DocumentData.objects.create(
@@ -50,7 +52,10 @@ class BulkDeleteDocumentsTest(TestCase):
         _bulk_delete_documents(file_data)
         expected_keys = [f"users/1/doc_{i}.pdf" for i in range(3)]
         mock_s3.delete_objects.assert_called_once()
-        actual_keys = [o["Key"] for o in mock_s3.delete_objects.call_args[1]["Delete"]["Objects"]]
+        actual_keys = [
+            o["Key"]
+            for o in mock_s3.delete_objects.call_args[1]["Delete"]["Objects"]
+        ]
         self.assertCountEqual(actual_keys, expected_keys)
 
     @patch("documents.services.cleanup.get_s3_client")

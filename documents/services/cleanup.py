@@ -26,7 +26,7 @@ def bulk_delete_documents(file_data: list[tuple[int, str]]) -> None:
     CHUNK_SIZE = 1000
 
     for i in range(0, len(file_data), CHUNK_SIZE):
-        chunk = file_data[i : i + CHUNK_SIZE]
+        chunk = file_data[i:i + CHUNK_SIZE]
         chunk_ids = [item[0] for item in chunk]
         chunk_paths = [normalize_s3_key(item[1]) for item in chunk if item[1]]
 
@@ -36,7 +36,9 @@ def bulk_delete_documents(file_data: list[tuple[int, str]]) -> None:
         try:
             DocumentData.objects.filter(id__in=chunk_ids).delete()
         except Exception as e:
-            logger.error("Failed to delete orphaned DB records: %s", e, exc_info=True)
+            logger.error("Failed to delete orphaned DB records: %s",
+                         e,
+                         exc_info=True)
             continue
 
         if not chunk_paths:
@@ -46,7 +48,9 @@ def bulk_delete_documents(file_data: list[tuple[int, str]]) -> None:
             s3 = get_s3_client()
             s3.delete_objects(
                 Bucket=BUCKET,
-                Delete={"Objects": [{"Key": path} for path in chunk_paths]},
+                Delete={"Objects": [{
+                    "Key": path
+                } for path in chunk_paths]},
             )
         except Exception as e:
             logger.error(
@@ -117,11 +121,14 @@ def reconcile_documents() -> None:
             try:
                 delete_r2_objects_batch(upload_paths)
             except Exception as e:
-                logger.error("Failed cleanup of object storage for stale uploads: %s", e)
+                logger.error(
+                    "Failed cleanup of object storage for stale uploads: %s",
+                    e)
                 storage_ok = False
         if storage_ok:
             DocumentData.objects.filter(id__in=upload_ids).delete()
-            logger.info("Reconciliation: cleaned up %d stale pending uploads.", len(upload_ids))
+            logger.info("Reconciliation: cleaned up %d stale pending uploads.",
+                        len(upload_ids))
 
     dangling_records = DocumentData.objects.filter(
         status=DocumentStatus.ERROR,
@@ -132,5 +139,7 @@ def reconcile_documents() -> None:
         dangling_paths = [path for _, path in dangling_ids if path]
         if dangling_paths:
             delete_r2_objects_batch(dangling_paths)
-        DocumentData.objects.filter(id__in=[d[0] for d in dangling_ids]).delete()
-        logger.info("Reconciliation: removed %d dangling error records.", len(dangling_ids))
+        DocumentData.objects.filter(id__in=[d[0]
+                                            for d in dangling_ids]).delete()
+        logger.info("Reconciliation: removed %d dangling error records.",
+                    len(dangling_ids))

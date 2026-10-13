@@ -38,7 +38,8 @@ class R2UploadForm(forms.Form):
 
     def clean_content_type(self):
         """Validate that the MIME type is within the allowed set of supported formats."""
-        content_type = self.cleaned_data["content_type"].lower().split(";")[0].strip()
+        content_type = self.cleaned_data["content_type"].lower().split(
+            ";")[0].strip()
         allowed = {
             "application/pdf",
             "image/jpeg",
@@ -59,7 +60,10 @@ class DocumentUpdateForm(forms.ModelForm):
         model = DocumentData
         fields: ClassVar[list[str]] = ["title", "notes", "associated_record"]
         widgets: ClassVar[dict[str, object]] = {
-            "title": forms.TextInput(attrs={"maxlength": "200", "data-maxlength": "200"}),
+            "title": forms.TextInput(attrs={
+                "maxlength": "200",
+                "data-maxlength": "200"
+            }),
         }
 
     def __init__(self, *args, **kwargs):

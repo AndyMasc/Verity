@@ -32,13 +32,14 @@ def _retry_message(retries: int) -> Message:
     return Message(
         queue_name="default",
         actor_name="extract_document",
-        args=(1,),
+        args=(1, ),
         kwargs={},
         options={"retries": retries},
     )
 
 
 class TestGetCacheKey:
+
     def test_returns_expected_format(self):
         assert get_cache_key(42) == "ocr_status_42"
 
@@ -48,6 +49,7 @@ class TestGetCacheKey:
 
 @pytest.mark.django_db
 class TestSetDocumentStatus:
+
     def test_updates_status(self, user):
         doc = DocumentData.objects.create(
             user=user,
@@ -70,6 +72,7 @@ class TestSetDocumentStatus:
 
 
 class TestRenderPdfPages:
+
     def test_returns_none_for_invalid_pdf_bytes(self):
         from documents.ocr_helpers import render_pdf_pages
 
@@ -93,6 +96,7 @@ class TestRenderPdfPages:
 
 @pytest.mark.django_db
 class TestExtract:
+
     def test_returns_error_for_nonexistent_doc(self):
         result = extract(99999)
         assert "error" in result
@@ -109,7 +113,8 @@ class TestExtract:
         assert "error" in result
         assert "Already processed" in result["error"]
 
-    @patch("documents.services.ocr.cache.get", return_value={"title": "Cached"})
+    @patch("documents.services.ocr.cache.get",
+           return_value={"title": "Cached"})
     def test_returns_cached_result_when_available(self, mock_cache_get, user):
         doc = DocumentData.objects.create(
             user=user,
@@ -120,11 +125,14 @@ class TestExtract:
         result = extract(doc.id)
         assert result["title"] == "Cached"
 
-    @patch("documents.services.ocr.fetch_from_r2", return_value=b"%PDF-1.4 valid")
+    @patch("documents.services.ocr.fetch_from_r2",
+           return_value=b"%PDF-1.4 valid")
     @patch("documents.services.ocr.validate_uploaded_bytes", return_value=None)
     @patch("documents.services.ocr.process_image")
-    @patch("documents.services.ocr.call_gemini", return_value={"title": "Receipt"})
-    def test_full_pipeline_success(self, mock_gemini, mock_process, mock_validate, mock_r2, user):
+    @patch("documents.services.ocr.call_gemini",
+           return_value={"title": "Receipt"})
+    def test_full_pipeline_success(self, mock_gemini, mock_process,
+                                   mock_validate, mock_r2, user):
         mock_part = MagicMock()
         mock_process.return_value = mock_part
         doc = DocumentData.objects.create(
@@ -139,9 +147,11 @@ class TestExtract:
         assert doc.status == DocumentStatus.COMPLETED
         assert doc.did_ocr is True
 
-    @patch("documents.services.ocr.fetch_from_r2", return_value=b"not a valid file")
+    @patch("documents.services.ocr.fetch_from_r2",
+           return_value=b"not a valid file")
     @patch("documents.services.ocr.call_gemini")
-    def test_rejects_invalid_bytes_without_gemini(self, mock_gemini, mock_r2, user):
+    def test_rejects_invalid_bytes_without_gemini(self, mock_gemini, mock_r2,
+                                                  user):
         doc = DocumentData.objects.create(
             user=user,
             filepath="users/1/doc.pdf",
@@ -150,12 +160,14 @@ class TestExtract:
         )
         result = extract(doc.id)
         assert "error" in result
-        assert "Unable to validate" in result["error"] or "not allowed" in result["error"]
+        assert "Unable to validate" in result[
+            "error"] or "not allowed" in result["error"]
         mock_gemini.assert_not_called()
         doc.refresh_from_db()
         assert doc.status == DocumentStatus.ERROR
 
-    @patch("documents.services.ocr.fetch_from_r2", side_effect=Exception("R2 error"))
+    @patch("documents.services.ocr.fetch_from_r2",
+           side_effect=Exception("R2 error"))
     def test_failure_marks_error_outside_worker(self, mock_r2, user):
         doc = DocumentData.objects.create(
             user=user,
@@ -168,12 +180,14 @@ class TestExtract:
         doc.refresh_from_db()
         assert doc.status == DocumentStatus.ERROR
 
-    @patch("documents.services.ocr.fetch_from_r2", side_effect=Exception("R2 error"))
+    @patch("documents.services.ocr.fetch_from_r2",
+           side_effect=Exception("R2 error"))
     @patch(
         "documents.services.ocr.CurrentMessage.get_current_message",
         return_value=_retry_message(retries=0),
     )
-    def test_retryable_failure_reraises_without_marking_error(self, mock_msg, mock_r2, user):
+    def test_retryable_failure_reraises_without_marking_error(
+            self, mock_msg, mock_r2, user):
         doc = DocumentData.objects.create(
             user=user,
             filepath="users/1/doc.pdf",
@@ -185,7 +199,8 @@ class TestExtract:
         doc.refresh_from_db()
         assert doc.status == DocumentStatus.PROCESSING
 
-    @patch("documents.services.ocr.fetch_from_r2", side_effect=Exception("R2 error"))
+    @patch("documents.services.ocr.fetch_from_r2",
+           side_effect=Exception("R2 error"))
     @patch(
         "documents.services.ocr.CurrentMessage.get_current_message",
         return_value=_retry_message(retries=MAX_OCR_RETRIES),

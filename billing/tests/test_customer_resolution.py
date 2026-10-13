@@ -15,10 +15,10 @@ from ..services import resolve_customer
 
 
 class ResolveCustomerTests(TestCase):
+
     def setUp(self):
         self.user = get_user_model().objects.create_user(
-            username="dupes", email="dupes@example.com", password="password"
-        )
+            username="dupes", email="dupes@example.com", password="password")
 
     def _customer(self, suffix, subscriber=True):
         return Customer.objects.create(
@@ -60,9 +60,11 @@ class ResolveCustomerTests(TestCase):
             name="Pro",
             metadata={"category": "base_plan"},
         )
-        price = Price.objects.create(
-            id="price_dupes", livemode=False, active=True, product=product, currency="usd"
-        )
+        price = Price.objects.create(id="price_dupes",
+                                     livemode=False,
+                                     active=True,
+                                     product=product,
+                                     currency="usd")
         Subscription.objects.create(
             id="sub_dupes",
             livemode=False,
@@ -90,8 +92,7 @@ class ResolveCustomerTests(TestCase):
     def test_unlinked_rows_are_left_alone(self):
         """Only rows claiming this user as subscriber are touched."""
         other_user = get_user_model().objects.create_user(
-            username="other", email="other@example.com", password="password"
-        )
+            username="other", email="other@example.com", password="password")
         theirs = Customer.objects.create(
             id="cus_theirs",
             livemode=False,
@@ -100,4 +101,5 @@ class ResolveCustomerTests(TestCase):
         )
         self._customer("mine")
         resolve_customer(self.user)
-        self.assertEqual(Customer.objects.get(pk=theirs.pk).subscriber, other_user)
+        self.assertEqual(
+            Customer.objects.get(pk=theirs.pk).subscriber, other_user)

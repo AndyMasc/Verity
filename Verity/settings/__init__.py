@@ -4,7 +4,10 @@ from django.core.exceptions import ImproperlyConfigured
 
 from . import base
 
-globals().update({k: v for k, v in vars(base).items() if not k.startswith("_")})
+globals().update({
+    k: v
+    for k, v in vars(base).items() if not k.startswith("_")
+})
 
 # Strip trailing whitespace and inline comments (e.g. "production # note") so a
 # stray comment in .env can't silently switch the settings mode.
@@ -36,5 +39,4 @@ else:
     # Secure — a one-missing-env-var downgrade of the entire security posture.
     raise ImproperlyConfigured(
         "DJANGO_ENV must be set explicitly to one of: 'local', 'ci', 'production'. "
-        f"Got {django_env!r}. See .env.example."
-    )
+        f"Got {django_env!r}. See .env.example.")

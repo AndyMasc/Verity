@@ -24,6 +24,7 @@ def _make_hash(content: bytes = b"test") -> str:
 
 @pytest.mark.django_db
 class TestBuildContext:
+
     @patch(
         "documents.services.detail.generate_read_presigned_url",
         return_value="https://view.url",
@@ -73,6 +74,7 @@ class TestBuildContext:
 
 @pytest.mark.django_db
 class TestAssociateRecord:
+
     def test_sets_record(self, user):
         record = Record.objects.create(
             user=user,

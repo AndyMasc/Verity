@@ -22,6 +22,7 @@ def _make_hash(content: bytes = b"test") -> str:
 
 @pytest.mark.django_db
 class TestSoftDelete:
+
     def test_permanently_deletes_document(self, user):
         doc = DocumentData.objects.create(
             user=user,
@@ -78,7 +79,9 @@ class TestSoftDelete:
             filepath="users/1/doc.pdf",
             file_hash=_make_hash(),
         )
-        with patch.object(DocumentData, "delete", side_effect=Exception("DB down")):
+        with patch.object(DocumentData,
+                          "delete",
+                          side_effect=Exception("DB down")):
             result = DocumentDeletionService.delete(doc)
             assert result.success is False
             assert "system error" in result.error.lower()
@@ -86,6 +89,7 @@ class TestSoftDelete:
 
 @pytest.mark.django_db
 class TestHardDelete:
+
     def test_permanently_removes_document(self, user):
         doc = DocumentData.objects.create(
             user=user,

@@ -19,7 +19,9 @@ def get_monthly_upload_count(user, action: str) -> int:
     from .models import MonthlyUploadUsage
 
     period = timezone.now().strftime("%Y-%m")
-    usage = MonthlyUploadUsage.objects.filter(user=user, period=period, action=action).first()
+    usage = MonthlyUploadUsage.objects.filter(user=user,
+                                              period=period,
+                                              action=action).first()
     return usage.count if usage else 0
 
 
@@ -28,10 +30,11 @@ def record_monthly_upload_usage(user, action: str) -> None:
     from .models import MonthlyUploadUsage
 
     period = timezone.now().strftime("%Y-%m")
-    MonthlyUploadUsage.objects.get_or_create(user=user, period=period, action=action)
-    MonthlyUploadUsage.objects.filter(user=user, period=period, action=action).update(
-        count=F("count") + 1
-    )
+    MonthlyUploadUsage.objects.get_or_create(user=user,
+                                             period=period,
+                                             action=action)
+    MonthlyUploadUsage.objects.filter(
+        user=user, period=period, action=action).update(count=F("count") + 1)
     invalidate_monthly_usage_cache(user.pk, period)
 
 

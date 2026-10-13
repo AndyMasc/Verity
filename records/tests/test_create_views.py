@@ -17,12 +17,18 @@ User = get_user_model()
 
 
 @override_settings(
-    CACHES={"default": {"BACKEND": "django.core.cache.backends.dummy.DummyCache"}},
+    CACHES={
+        "default": {
+            "BACKEND": "django.core.cache.backends.dummy.DummyCache"
+        }
+    },
     SESSION_ENGINE="django.contrib.sessions.backends.db",
 )
 class AddRecordViewTest(TestCase):
+
     def setUp(self):
-        self.user = User.objects.create_user(username="creator", password="pass")
+        self.user = User.objects.create_user(username="creator",
+                                             password="pass")
         self.url = reverse("records:add_record_manual")
 
     def test_get_form(self):
@@ -48,7 +54,8 @@ class AddRecordViewTest(TestCase):
             },
         )
         self.assertIn(response.status_code, [200, 302])
-        self.assertTrue(Record.objects.filter(title="New Record", user=self.user).exists())
+        self.assertTrue(
+            Record.objects.filter(title="New Record", user=self.user).exists())
 
     def test_post_with_document_id_creates_record(self):
         doc = DocumentData.objects.create(
@@ -104,12 +111,18 @@ class AddRecordViewTest(TestCase):
 
 
 @override_settings(
-    CACHES={"default": {"BACKEND": "django.core.cache.backends.dummy.DummyCache"}},
+    CACHES={
+        "default": {
+            "BACKEND": "django.core.cache.backends.dummy.DummyCache"
+        }
+    },
     SESSION_ENGINE="django.contrib.sessions.backends.db",
 )
 class CheckOCRStatusTest(TestCase):
+
     def setUp(self):
-        self.user = User.objects.create_user(username="ocrchecker", password="pass")
+        self.user = User.objects.create_user(username="ocrchecker",
+                                             password="pass")
         self.doc = DocumentData.objects.create(
             user=self.user,
             filepath="users/1/doc.pdf",

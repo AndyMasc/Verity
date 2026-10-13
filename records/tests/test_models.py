@@ -11,8 +11,10 @@ from records.models import Record, Folder
 
 
 class RecordModelTest(TestCase):
+
     def setUp(self):
-        self.user = User.objects.create_user(username="testuser", password="pass")
+        self.user = User.objects.create_user(username="testuser",
+                                             password="pass")
         self.record = Record.objects.create(
             user=self.user,
             title="Test Record",
@@ -68,8 +70,12 @@ class RecordModelTest(TestCase):
         self.assertTrue(self.record.is_active)
 
     def test_ordering_by_last_edited_desc(self):
-        r1 = Record.objects.create(user=self.user, title="First", record_type="expense_receipt")
-        r2 = Record.objects.create(user=self.user, title="Second", record_type="voucher")
+        r1 = Record.objects.create(user=self.user,
+                                   title="First",
+                                   record_type="expense_receipt")
+        r2 = Record.objects.create(user=self.user,
+                                   title="Second",
+                                   record_type="voucher")
         qs = Record.objects.all()
         self.assertEqual(qs.first(), r2)
 
@@ -87,7 +93,9 @@ class RecordModelTest(TestCase):
 
     def test_queryset_for_user(self):
         user2 = User.objects.create_user(username="user2", password="pass")
-        Record.objects.create(user=user2, title="Other", record_type="expense_receipt")
+        Record.objects.create(user=user2,
+                              title="Other",
+                              record_type="expense_receipt")
         self.assertEqual(Record.objects.for_user(self.user).count(), 1)
         self.assertEqual(Record.objects.for_user(user2).count(), 1)
 
@@ -312,17 +320,23 @@ class RecordModelTest(TestCase):
 
 
 class RecordModelExpiryNotificationTest(TestCase):
+
     def setUp(self):
-        self.user = User.objects.create_user(username="testuser", password="pass")
+        self.user = User.objects.create_user(username="testuser",
+                                             password="pass")
 
     def test_expiry_notification_sent_default(self):
-        record = Record.objects.create(user=self.user, title="Test", record_type="expense_receipt")
+        record = Record.objects.create(user=self.user,
+                                       title="Test",
+                                       record_type="expense_receipt")
         self.assertFalse(record.expiry_notification_sent)
 
 
 class RecordModelPlaidTest(TestCase):
+
     def setUp(self):
-        self.user = User.objects.create_user(username="plaidtest", password="pass")
+        self.user = User.objects.create_user(username="plaidtest",
+                                             password="pass")
         self.record = Record.objects.create(
             user=self.user,
             title="Test Record",
@@ -368,8 +382,10 @@ class RecordModelPlaidTest(TestCase):
 
 
 class FolderModelTest(TestCase):
+
     def setUp(self):
-        self.user = User.objects.create_user(username="folderuser", password="pass")
+        self.user = User.objects.create_user(username="folderuser",
+                                             password="pass")
 
     def test_create_folder(self):
         folder = Folder.objects.create(user=self.user, name="Tax Documents")

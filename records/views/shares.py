@@ -20,7 +20,7 @@ from core.apps import posthog_client
 from records.models import Record, RecordShare
 from Verity.views import parse_record_ids
 
-from .. import shares as share_services
+from .. import access as share_services
 
 
 def _owned_record_or_404(request: HttpRequest, pk: int) -> Record:
@@ -41,13 +41,15 @@ class RecordSharingSectionView(LoginRequiredMixin, View):
         has_share_feature = has_feature(request.user, "record-sharing")
         context = {
             "record": record,
-            "shares": share_services.shares_for_viewer(record=record, viewer=request.user),
+            "shares": share_services.shares_for_viewer(record=record,
+                                                       viewer=request.user),
             "can_grant": has_share_feature and is_owner,
             "can_share_feature": has_share_feature,
-            "is_recipient": not is_owner
-            and RecordShare.objects.filter(record=record, user=request.user).exists(),
+            "is_recipient": not is_owner and RecordShare.objects.filter(
+                record=record, user=request.user).exists(),
         }
-        return render(request, "records/partials/shares/share_panel.html", context)
+        return render(request, "records/partials/shares/share_panel.html",
+                      context)
 
 
 @method_decorator(require_POST, name="dispatch")
@@ -60,10 +62,12 @@ class BulkShareView(LoginRequiredMixin, View):
     and returns a JSON summary for the bulk action bar.
     """
 
-    @method_decorator(ratelimit(key="user", rate="10/m", method="POST", block=True))
+    @method_decorator(
+        ratelimit(key="user", rate="10/m", method="POST", block=True))
     def post(self, request: HttpRequest) -> HttpResponse:
         if not has_feature(request.user, "record-sharing"):
-            return JsonResponse({"error": "Record sharing requires the Pro plan"}, status=403)
+            return JsonResponse(
+                {"error": "Record sharing requires the Pro plan"}, status=403)
 
         record_ids, error = parse_record_ids(request)
         if error:
@@ -74,9 +78,13 @@ class BulkShareView(LoginRequiredMixin, View):
         except json.JSONDecodeError:
             return JsonResponse({"error": "Invalid request body."}, status=400)
 
-        emails = [e.strip() for e in body.get("emails", "").split(",") if e.strip()]
+        emails = [
+            e.strip() for e in body.get("emails", "").split(",") if e.strip()
+        ]
         if not emails:
-            return JsonResponse({"error": "At least one recipient email is required."}, status=400)
+            return JsonResponse(
+                {"error": "At least one recipient email is required."},
+                status=400)
 
         permission = body.get("permission", RecordShare.Permission.EDIT)
         if permission not in RecordShare.Permission.values:
@@ -87,11 +95,13 @@ class BulkShareView(LoginRequiredMixin, View):
             include_documents=include_documents,
         )
 
-        owned = list(Record.objects.filter(pk__in=record_ids, user=request.user).distinct())
+        owned = list(
+            Record.objects.filter(pk__in=record_ids,
+                                  user=request.user).distinct())
         if not owned:
             return JsonResponse(
-                {"error": "None of the selected records can be shared."}, status=403
-            )
+                {"error": "None of the selected records can be shared."},
+                status=403)
 
         # Resolve once for the whole batch, and drop the owner up front: they
         # already have access, and leaving them in would be a no-op at best.
@@ -107,12 +117,12 @@ class BulkShareView(LoginRequiredMixin, View):
                     owner=request.user,
                     recipients=recipients,
                     config=config,
-                )
-            )
+                ))
 
         # One notification per recipient covering everything they were granted,
         # rather than one email per record.
-        share_services.notify_share_recipients(shares=granted_shares, actor=request.user)
+        share_services.notify_share_recipients(shares=granted_shares,
+                                               actor=request.user)
 
         total_shares = len(granted_shares)
 
@@ -129,27 +139,29 @@ class BulkShareView(LoginRequiredMixin, View):
                 },
             )
 
-        return JsonResponse(
-            {
-                "success": True,
-                "shared": total_shares,
-                "records": len(owned),
-                "recipients": len(recipients),
-                "unknown": sorted(unknown),
-                "self_skipped": len(owned) if self_addressed else 0,
-            }
-        )
+        return JsonResponse({
+            "success": True,
+            "shared": total_shares,
+            "records": len(owned),
+            "recipients": len(recipients),
+            "unknown": sorted(unknown),
+            "self_skipped": len(owned) if self_addressed else 0,
+        })
 
 
 class RevokeShareView(LoginRequiredMixin, View):
     """Revoke a record share (owner only)."""
 
-    @method_decorator(ratelimit(key="user", rate="30/m", method="POST", block=True))
-    def post(self, request: HttpRequest, pk: int, share_pk: int) -> HttpResponse:
+    @method_decorator(
+        ratelimit(key="user", rate="30/m", method="POST", block=True))
+    def post(self, request: HttpRequest, pk: int,
+             share_pk: int) -> HttpResponse:
         record = _owned_record_or_404(request, pk)
         share = get_object_or_404(RecordShare, pk=share_pk, record=record)
         try:
-            share_services.revoke_share(record=record, actor=request.user, share=share)
+            share_services.revoke_share(record=record,
+                                        actor=request.user,
+                                        share=share)
         except share_services.NotOwnerError as exc:
             messages.error(request, str(exc))
         else:

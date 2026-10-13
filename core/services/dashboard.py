@@ -34,8 +34,7 @@ async def _fetch(queryset) -> list:
 async def _fetch_notifications(user) -> list:
     """Fetch recent unread notifications for the user."""
     return [
-        n
-        async for n in Notification.objects.filter(
+        n async for n in Notification.objects.filter(
             recipient=user,
             is_read=False,
         ).order_by("-sent_at")[:3]
@@ -92,15 +91,14 @@ async def get_dashboard_context(user) -> dict:
     )
     expiring_cutoff = now + timedelta(days=30)
 
-    user_settings = await sync_to_async(UserSettings.objects.get_or_create)(user=user)
+    user_settings = await sync_to_async(UserSettings.objects.get_or_create
+                                        )(user=user)
     user_currency = user_settings[0].default_currency
 
     active_records_qs = (
-        Record.objects.visible_to(user)
-        .active()
-        .only(*DASHBOARD_RECORD_FIELDS)  # type: ignore
-        .annotate(active_share_count=Record.with_active_share_count())
-    )
+        Record.objects.visible_to(user).active().only(
+            *DASHBOARD_RECORD_FIELDS)  # type: ignore
+        .annotate(active_share_count=Record.with_active_share_count()))
 
     (
         merge_count,
@@ -114,54 +112,51 @@ async def get_dashboard_context(user) -> dict:
         notifications,
         unread_notifications_count,
     ) = await asyncio.gather(
-        MergeLog.objects.filter(plaid_record__user=user, undone_at__isnull=True).acount(),
+        MergeLog.objects.filter(plaid_record__user=user,
+                                undone_at__isnull=True).acount(),
         _fetch(
             active_records_qs.filter(
                 transaction_date__gte=start_of_month,
                 transaction_date__lte=now,
                 balance__isnull=False,
-            ).values_list("balance", "currency")
-        ),
+            ).values_list("balance", "currency")),
         _fetch(active_records_qs.order_by("-last_edited")[:5]),
         _fetch(
             active_records_qs.filter(
-                expiry_date__gte=now.date(), expiry_date__lte=expiring_cutoff.date()
-            ).order_by("expiry_date")
-        ),
+                expiry_date__gte=now.date(),
+                expiry_date__lte=expiring_cutoff.date()).order_by(
+                    "expiry_date")),
         get_webpush_warning(user),
         _fetch(
             PackagePayment.objects.filter(
                 package__creator=user,
                 is_completed=True,
-            ).values_list("amount_paid", "payer_currency")
-        ),
-        sync_to_async(
-            lambda: ReimbursementPackage.objects.filter(
-                Q(creator=user) | Q(recipient=user),
-                deleted_at__isnull=True,
-            ).aggregate(
-                sent_pending_count=Count(
-                    "id",
-                    filter=Q(
-                        creator=user,
-                        status__in=[
-                            ReimbursementPackage.Status.OPEN,
-                            ReimbursementPackage.Status.QUEUED,
-                        ],
-                    ),
+            ).values_list("amount_paid", "payer_currency")),
+        sync_to_async(lambda: ReimbursementPackage.objects.filter(
+            Q(creator=user) | Q(recipient=user),
+            deleted_at__isnull=True,
+        ).aggregate(
+            sent_pending_count=Count(
+                "id",
+                filter=Q(
+                    creator=user,
+                    status__in=[
+                        ReimbursementPackage.Status.OPEN,
+                        ReimbursementPackage.Status.QUEUED,
+                    ],
                 ),
-                received_count=Count(
-                    "id",
-                    filter=Q(recipient=user, status=ReimbursementPackage.Status.PAID),
-                ),
-            )
-        )(),
+            ),
+            received_count=Count(
+                "id",
+                filter=Q(recipient=user,
+                         status=ReimbursementPackage.Status.PAID),
+            ),
+        ))(),
         _fetch(
             PackagePayment.objects.filter(
                 package__recipient=user,
                 is_completed=True,
-            ).values_list("amount_paid", "payer_currency")
-        ),
+            ).values_list("amount_paid", "payer_currency")),
         _fetch_notifications(user),
         _fetch_unread_notifications_count(user),
     )
@@ -180,14 +175,11 @@ async def get_dashboard_context(user) -> dict:
     unread_notifications_count = cast(int, unread_notifications_count)
 
     monthly_expenses_total = await sync_to_async(_convert_total)(
-        [(b, c) for b, c in monthly_expense_rows if b], user_currency
-    )
+        [(b, c) for b, c in monthly_expense_rows if b], user_currency)
     sent_reimbursements_total = await sync_to_async(_convert_total)(
-        [(a, c) for a, c in sent_payment_rows], user_currency
-    )
+        [(a, c) for a, c in sent_payment_rows], user_currency)
     received_reimbursements_total = await sync_to_async(_convert_total)(
-        [(a, c) for a, c in received_payment_rows], user_currency
-    )
+        [(a, c) for a, c in received_payment_rows], user_currency)
 
     records_list_url = reverse("records:view_all_records")
     expiring_soon_count = len(expiring_soon)

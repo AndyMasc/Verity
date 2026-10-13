@@ -11,7 +11,7 @@
     {% csrf_token %}
     <div id="record-errors"
          {% if blocking %}hx-swap-oob="innerHTML:#record-errors"{% endif %}
-         class="mt-4 empty:hidden">
+         class="my-4 empty:hidden">
         {% if blocking %}
             <div class="flex items-start gap-2.5 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3.5 py-3">
                 <svg class="mt-px size-4 shrink-0 text-rose-600 dark:text-rose-400"

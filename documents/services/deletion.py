@@ -45,7 +45,8 @@ class DocumentDeletionService:
             )
             return DeletionResult(
                 success=False,
-                error="Failed to complete deletion safely due to a system error.",
+                error=
+                "Failed to complete deletion safely due to a system error.",
                 record_id=record_id,
             )
 

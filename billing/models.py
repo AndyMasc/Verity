@@ -32,17 +32,17 @@ class MonthlyUploadUsage(models.Model):
         on_delete=models.CASCADE,
         related_name="monthly_usage",
     )
-    period = models.CharField(max_length=7, help_text="Calendar month, e.g. 2026-08")
+    period = models.CharField(max_length=7,
+                              help_text="Calendar month, e.g. 2026-08")
     action = models.CharField(
-        max_length=16, help_text="The type of action being tracked. E.g. 'scan' or 'upload'."
-    )
+        max_length=16,
+        help_text="The type of action being tracked. E.g. 'scan' or 'upload'.")
     count = models.PositiveIntegerField(default=0)
 
     class Meta:
         constraints: ClassVar[list[models.UniqueConstraint]] = [
-            models.UniqueConstraint(
-                fields=["user", "period", "action"], name="unique_monthly_usage"
-            )
+            models.UniqueConstraint(fields=["user", "period", "action"],
+                                    name="unique_monthly_usage")
         ]
 
     def __str__(self):

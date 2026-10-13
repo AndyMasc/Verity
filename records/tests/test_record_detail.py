@@ -13,12 +13,18 @@ from records.models import MergeLog, Record
 
 
 @override_settings(
-    CACHES={"default": {"BACKEND": "django.core.cache.backends.dummy.DummyCache"}},
+    CACHES={
+        "default": {
+            "BACKEND": "django.core.cache.backends.dummy.DummyCache"
+        }
+    },
     SESSION_ENGINE="django.contrib.sessions.backends.db",
 )
 class AddRecordViewTest(TestCase):
+
     def setUp(self):
-        self.user = User.objects.create_user(username="adduser", password="pass")
+        self.user = User.objects.create_user(username="adduser",
+                                             password="pass")
         self.url = reverse("records:add_record_manual")
 
     def test_get_form(self):
@@ -44,7 +50,8 @@ class AddRecordViewTest(TestCase):
             },
         )
         self.assertIn(response.status_code, [200, 302])
-        self.assertTrue(Record.objects.filter(title="New Record", user=self.user).exists())
+        self.assertTrue(
+            Record.objects.filter(title="New Record", user=self.user).exists())
 
     def test_post_invalid(self):
         self.client.force_login(self.user)
@@ -117,8 +124,10 @@ class AddRecordViewTest(TestCase):
 
 
 class RecordDetailViewTest(TestCase):
+
     def setUp(self):
-        self.user = User.objects.create_user(username="detailuser", password="pass")
+        self.user = User.objects.create_user(username="detailuser",
+                                             password="pass")
         self.record = Record.objects.create(
             user=self.user,
             title="Detail View",
@@ -142,7 +151,8 @@ class RecordDetailViewTest(TestCase):
 
     def test_nonexistent_record(self):
         self.client.force_login(self.user)
-        response = self.client.get(reverse("records:record_detail", args=[99999]))
+        response = self.client.get(
+            reverse("records:record_detail", args=[99999]))
         self.assertEqual(response.status_code, 404)
 
     def test_legacy_merge_snapshot_without_currency_renders(self):
@@ -170,10 +180,14 @@ class RecordDetailViewTest(TestCase):
                 "balance": "1000.00",
                 "payment_method": "Card",
             },
-            document_snapshot={"title": "Receipt", "balance": "10.00"},
+            document_snapshot={
+                "title": "Receipt",
+                "balance": "10.00"
+            },
         )
         self.client.force_login(self.user)
-        response = self.client.get(reverse("records:record_detail", args=[plaid_record.id]))
+        response = self.client.get(
+            reverse("records:record_detail", args=[plaid_record.id]))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "€")
 
@@ -249,7 +263,9 @@ class RecordDetailViewTest(TestCase):
         html = response.content.decode()
         for name in ("products", "notes"):
             with self.subTest(field=name):
-                match = re.search(rf'<textarea[^>]*name="{name}"[^>]*>(.*?)</textarea>', html, re.S)
+                match = re.search(
+                    rf'<textarea[^>]*name="{name}"[^>]*>(.*?)</textarea>',
+                    html, re.S)
                 self.assertIsNotNone(match, f"{name} textarea not found")
                 self.assertEqual(
                     match.group(1).lstrip(),

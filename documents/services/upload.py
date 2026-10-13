@@ -70,21 +70,21 @@ class UploadService:
 
         file_hash = data.get("file_hash", "").strip()
         filename = data.get("filename", "").strip()
-        content_type = data.get("content_type", "").strip().split(";")[0].strip()
+        content_type = data.get("content_type",
+                                "").strip().split(";")[0].strip()
         notes = data.get("notes", "").strip()
         force_upload = data.get("force_upload") == "true"
 
         if not file_hash or not filename:
-            return PresignResult(status="error", error="Missing file_hash or filename.")
+            return PresignResult(status="error",
+                                 error="Missing file_hash or filename.")
 
-        form = R2UploadForm(
-            {
-                "filename": filename,
-                "content_type": content_type,
-                "notes": notes,
-                "file_size": data.get("file_size", ""),
-            }
-        )
+        form = R2UploadForm({
+            "filename": filename,
+            "content_type": content_type,
+            "notes": notes,
+            "file_size": data.get("file_size", ""),
+        })
         if not form.is_valid():
             return PresignResult(
                 status="error",
@@ -101,7 +101,8 @@ class UploadService:
             limit = get_monthly_upload_limit(self.user, "upload")
             return PresignResult(
                 status="error",
-                error=f"Upload limit reached ({limit}/month). Upgrade for more.",
+                error=
+                f"Upload limit reached ({limit}/month). Upgrade for more.",
             )
 
         effective_hash = self._resolve_hash(file_hash, force_upload)
@@ -131,12 +132,9 @@ class UploadService:
 
     def _find_duplicate(self, file_hash: str) -> DocumentData | None:
         """Search for an existing active document with the same file hash for this user."""
-        return (
-            DocumentData.objects.filter(user=self.user, file_hash=file_hash)
-            .exclude(status=DocumentStatus.DELETING)
-            .with_record()
-            .first()
-        )
+        return (DocumentData.objects.filter(
+            user=self.user, file_hash=file_hash).exclude(
+                status=DocumentStatus.DELETING).with_record().first())
 
     def _duplicate_result(self, existing: DocumentData) -> PresignResult:
         """Build a PresignResult reflecting a detected duplicate upload."""

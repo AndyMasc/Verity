@@ -28,6 +28,7 @@ STORAGE_PRICE = "price_storage_monthly"
 
 
 class CheckoutLineItemTests(TestCase):
+
     def setUp(self):
         self.user = get_user_model().objects.create_user(
             username="checkout",
@@ -44,8 +45,8 @@ class CheckoutLineItemTests(TestCase):
         self.user.save(update_fields=["customer"])
         self.client.force_login(self.user)
         for meta, price_ids in (
-            (metadata.VERITY_PRO, (PRO_PRICE,)),
-            (metadata.VERITY_FREE, (FREE_PRICE,)),
+            (metadata.VERITY_PRO, (PRO_PRICE, )),
+            (metadata.VERITY_FREE, (FREE_PRICE, )),
         ):
             product = Product.objects.create(
                 id=meta.stripe_id,
@@ -87,12 +88,12 @@ class CheckoutLineItemTests(TestCase):
     def _checkout(self, *price_ids):
         """Post the pricing form and return the line items handed to Stripe."""
         with (
-            self.captureOnCommitCallbacks(execute=True),
-            mock.patch(
-                "stripe.checkout.Session.create",
-                return_value=FakeSession(),
-            ) as create_session,
-            mock.patch("djstripe.models.Subscription.update") as update,
+                self.captureOnCommitCallbacks(execute=True),
+                mock.patch(
+                    "stripe.checkout.Session.create",
+                    return_value=FakeSession(),
+                ) as create_session,
+                mock.patch("djstripe.models.Subscription.update") as update,
         ):
             response = self.client.post(
                 reverse("billing:purchase_subscription"),
@@ -106,18 +107,26 @@ class CheckoutLineItemTests(TestCase):
 
     def test_a_plan_alone_carries_a_quantity(self):
         for price_id in (PRO_PRICE, FREE_PRICE):
-            self.assertEqual(self._checkout(price_id), [{"price": price_id, "quantity": 1}])
+            self.assertEqual(self._checkout(price_id), [{
+                "price": price_id,
+                "quantity": 1
+            }])
 
     def test_metered_line_item_omits_quantity(self):
-        (line_item,) = self._checkout(STORAGE_PRICE)
+        (line_item, ) = self._checkout(STORAGE_PRICE)
         self.assertNotIn("quantity", line_item)
 
     def test_plan_and_usage_storage_together(self):
         self.assertEqual(
             self._checkout(PRO_PRICE, STORAGE_PRICE),
             [
-                {"price": PRO_PRICE, "quantity": 1},
-                {"price": STORAGE_PRICE},
+                {
+                    "price": PRO_PRICE,
+                    "quantity": 1
+                },
+                {
+                    "price": STORAGE_PRICE
+                },
             ],
         )
 
@@ -133,7 +142,12 @@ class CheckoutLineItemTests(TestCase):
     def test_free_plan_buys_the_free_metered_rate(self):
         self.assertEqual(
             self._checkout(FREE_PRICE, STORAGE_PRICE),
-            [{"price": FREE_PRICE, "quantity": 1}, {"price": STORAGE_PRICE}],
+            [{
+                "price": FREE_PRICE,
+                "quantity": 1
+            }, {
+                "price": STORAGE_PRICE
+            }],
         )
 
     def test_two_plans_are_rejected(self):
@@ -154,7 +168,9 @@ class SubscriptionUpdateTests(TestCase):
             defaults={
                 "active": True,
                 "name": "Verity Pro",
-                "metadata": {"category": "base_plan"},
+                "metadata": {
+                    "category": "base_plan"
+                },
             },
         )
         Product.objects.get_or_create(
@@ -163,7 +179,9 @@ class SubscriptionUpdateTests(TestCase):
             defaults={
                 "active": True,
                 "name": "Usage-Based Storage",
-                "metadata": {"category": "storage_plan"},
+                "metadata": {
+                    "category": "storage_plan"
+                },
             },
         )
         Price.objects.get_or_create(
@@ -172,7 +190,8 @@ class SubscriptionUpdateTests(TestCase):
             defaults={
                 "active": True,
                 "currency": "usd",
-                "product": Product.objects.get(id=metadata.USAGE_BASED_STORAGE.stripe_id),
+                "product": Product.objects.get(
+                    id=metadata.USAGE_BASED_STORAGE.stripe_id),
             },
         )
         self.user = get_user_model().objects.create_user(
@@ -217,23 +236,24 @@ class SubscriptionUpdateTests(TestCase):
 
     def _post(self, *price_ids):
         with (
-            mock.patch(
-                "stripe.checkout.Session.create", return_value=FakeSession()
-            ) as create_session,
-            mock.patch("billing.services._configure"),
+                mock.patch("stripe.checkout.Session.create",
+                           return_value=FakeSession()) as create_session,
+                mock.patch("billing.services._configure"),
         ):
             response = self.client.post(
-                reverse("billing:purchase_subscription"), {"price_ids": price_ids}
-            )
+                reverse("billing:purchase_subscription"),
+                {"price_ids": price_ids})
         return response, create_session
 
     def test_adding_storage_updates_in_place(self):
         self._hold_subscription(["price_pro_update"])
         with mock.patch.object(Subscription, "update") as update:
-            response, create_session = self._post("price_pro_update", STORAGE_PRICE)
+            response, create_session = self._post("price_pro_update",
+                                                  STORAGE_PRICE)
 
         self.assertEqual(response.status_code, 302)
-        self.assertFalse(create_session.called, "must not open a second checkout")
+        self.assertFalse(create_session.called,
+                         "must not open a second checkout")
         self.assertTrue(update.called)
 
     def test_reselecting_a_held_price_does_not_duplicate_it(self):
@@ -242,8 +262,12 @@ class SubscriptionUpdateTests(TestCase):
         with mock.patch.object(Subscription, "update") as update:
             self._post("price_pro_update", STORAGE_PRICE)
 
-        prices = [item["price"] for item in update.call_args.kwargs["items"] if "price" in item]
-        self.assertEqual(len(prices), len(set(prices)), f"duplicate prices: {prices}")
+        prices = [
+            item["price"] for item in update.call_args.kwargs["items"]
+            if "price" in item
+        ]
+        self.assertEqual(len(prices), len(set(prices)),
+                         f"duplicate prices: {prices}")
         self.assertEqual(prices, [STORAGE_PRICE])
 
     def test_unknown_price_id_is_rejected_not_a_crash(self):
@@ -253,15 +277,16 @@ class SubscriptionUpdateTests(TestCase):
     def test_new_customer_without_one_does_not_crash(self):
         """user.customer was None here, so reading user.customer.id used to 500."""
         user = get_user_model().objects.create_user(
-            username="brandnew", email="brandnew@example.com", password="password"
-        )
-        Customer.objects.create(
-            id="cus_brandnew", livemode=False, created=timezone.now(), subscriber=user
-        )
+            username="brandnew",
+            email="brandnew@example.com",
+            password="password")
+        Customer.objects.create(id="cus_brandnew",
+                                livemode=False,
+                                created=timezone.now(),
+                                subscriber=user)
         self.client.force_login(user)
-        with (
-            mock.patch("stripe.checkout.Session.create", return_value=FakeSession()),
-        ):
+        with (mock.patch("stripe.checkout.Session.create",
+                         return_value=FakeSession()), ):
             response = self.client.post(
                 reverse("billing:purchase_subscription"),
                 {"price_ids": ["price_pro_update"]},
@@ -274,8 +299,7 @@ class PurchaseSubscriptionErrorTests(TestCase):
 
     def setUp(self):
         self.user = get_user_model().objects.create_user(
-            username="errors", email="errors@example.com", password="password"
-        )
+            username="errors", email="errors@example.com", password="password")
         self.customer = Customer.objects.create(
             id="cus_errors",
             livemode=False,
@@ -328,8 +352,9 @@ class SuccessUrlPlaceholderTests(TestCase):
 
     def test_success_url_keeps_the_placeholder_unencoded(self):
         user = get_user_model().objects.create_user(
-            username="placeholder", email="placeholder@example.com", password="password"
-        )
+            username="placeholder",
+            email="placeholder@example.com",
+            password="password")
         customer = Customer.objects.create(
             id="cus_placeholder",
             livemode=False,
@@ -354,9 +379,8 @@ class SuccessUrlPlaceholderTests(TestCase):
             currency="usd",
         )
 
-        with mock.patch(
-            "stripe.checkout.Session.create", return_value=FakeSession()
-        ) as create_session:
+        with mock.patch("stripe.checkout.Session.create",
+                        return_value=FakeSession()) as create_session:
             self.client.post(
                 reverse("billing:purchase_subscription"),
                 {"price_ids": ["price_pro_placeholder"]},
@@ -381,7 +405,9 @@ class UpdateSubscriptionPayloadTests(TestCase):
             defaults={
                 "active": True,
                 "name": "Verity Pro",
-                "metadata": {"category": "base_plan"},
+                "metadata": {
+                    "category": "base_plan"
+                },
             },
         )
         Product.objects.get_or_create(
@@ -390,7 +416,9 @@ class UpdateSubscriptionPayloadTests(TestCase):
             defaults={
                 "active": True,
                 "name": "Usage-Based Storage",
-                "metadata": {"category": "storage_plan"},
+                "metadata": {
+                    "category": "storage_plan"
+                },
             },
         )
         Price.objects.get_or_create(
@@ -399,12 +427,14 @@ class UpdateSubscriptionPayloadTests(TestCase):
             defaults={
                 "active": True,
                 "currency": "usd",
-                "product": Product.objects.get(id=metadata.USAGE_BASED_STORAGE.stripe_id),
+                "product": Product.objects.get(
+                    id=metadata.USAGE_BASED_STORAGE.stripe_id),
             },
         )
         self.user = get_user_model().objects.create_user(
-            username="payload", email="payload@example.com", password="password"
-        )
+            username="payload",
+            email="payload@example.com",
+            password="password")
         customer = Customer.objects.create(
             id="cus_payload",
             livemode=False,
@@ -441,8 +471,8 @@ class UpdateSubscriptionPayloadTests(TestCase):
     def _items(self, *price_ids):
         with mock.patch.object(Subscription, "update") as update:
             response = self.client.post(
-                reverse("billing:purchase_subscription"), {"price_ids": price_ids}
-            )
+                reverse("billing:purchase_subscription"),
+                {"price_ids": price_ids})
         self.assertEqual(response.status_code, 302)
         return update.call_args.kwargs["items"]
 
@@ -465,7 +495,12 @@ class UpdateSubscriptionPayloadTests(TestCase):
         self._hold("si_pro_b", "price_pro_dup")
         self.assertEqual(
             self._items("price_pro_payload"),
-            [{"id": "si_pro_a"}, {"id": "si_pro_b", "deleted": True}],
+            [{
+                "id": "si_pro_a"
+            }, {
+                "id": "si_pro_b",
+                "deleted": True
+            }],
         )
 
 

@@ -30,9 +30,9 @@ from ..forms import RecordUpdateForm
 from ..models import MergeLog, Record, RecordShare
 
 
-def snapshot_with_currency(snapshot: dict[str, Any] | None, fallback: str) -> dict[str, Any]:
+def snapshot_with_currency(snapshot: dict[str, Any] | None,
+                           fallback: str) -> dict[str, Any]:
     """Ensure a MergeLog snapshot dict carries a "currency" key for templates.
-
     Snapshots created before currency was recorded lack the key; the detail
     and history templates use it as a "currency_format" filter argument,
     which raises "VariableDoesNotExist" when absent.
@@ -78,7 +78,6 @@ RECORD_LIST_METRICS_TTL = 30
 
 def _build_record_metrics(user) -> dict[str, int]:
     """Compute the summary counts shown on the record list page.
-
     The metrics are user-scoped (independent of the active filters) and are
     cached briefly so repeated page/HTMX loads skip the share-join aggregate.
     """
@@ -92,18 +91,18 @@ def _build_record_metrics(user) -> dict[str, int]:
         expiring_count=Count(
             "id",
             distinct=True,
-            filter=Q(expiry_date__gte=now, expiry_date__lte=expiring_cutoff) & Q(is_active=True),
+            filter=Q(expiry_date__gte=now, expiry_date__lte=expiring_cutoff)
+            & Q(is_active=True),
         ),
         inactive_count=Count("id", distinct=True, filter=Q(is_active=False)),
         shared_count=Count(
             "id",
             distinct=True,
-            filter=(
-                (Q(shares__user=user) | Q(shares__shared_by=user))
-                & Q(shares__revoked_at__isnull=True)
-                & (Q(shares__expires_at__isnull=True) | Q(shares__expires_at__gt=timezone.now()))
-                & Q(is_active=True)
-            ),
+            filter=((Q(shares__user=user) | Q(shares__shared_by=user))
+                    & Q(shares__revoked_at__isnull=True)
+                    & (Q(shares__expires_at__isnull=True)
+                       | Q(shares__expires_at__gt=timezone.now()))
+                    & Q(is_active=True)),
         ),
     )
 
@@ -111,18 +110,15 @@ def _build_record_metrics(user) -> dict[str, int]:
         plaid_record__user=user,
         undone_at__isnull=True,
     ).values_list("plaid_record_id", flat=True)
-    metrics["merged_count"] = base_qs.filter(pk__in=merged_plaid_ids, is_active=True).count()
+    metrics["merged_count"] = base_qs.filter(pk__in=merged_plaid_ids,
+                                             is_active=True).count()
 
     return metrics
 
 
 class RecordListView(LoginRequiredMixin, CachedPaginatorMixin, FilterView):
-    """Paginated, filterable list of the current user's records.
-
-    Supports "smart_search" via the "search" query param and HTMX
-    partial rendering for in-page updates. Uses "CachedPaginator" to
-    avoid re-evaluating the queryset on repeated page requests.
-    """
+    """Paginated, filterable list of the current user's records. Supports "smart_search" via the "search" query param and HTMX
+    partial rendering for in-page updates. Uses "CachedPaginator" to avoid re-evaluating the queryset on repeated page requests."""
 
     model = Record
     template_name = "records/record_list_view.html"
@@ -130,17 +126,14 @@ class RecordListView(LoginRequiredMixin, CachedPaginatorMixin, FilterView):
     filterset_class = RecordFilter
     paginate_by = settings.PAGINATE_BY
 
-    @method_decorator(ratelimit(key="user", rate="120/m", method="GET", block=True))
+    @method_decorator(
+        ratelimit(key="user", rate="120/m", method="GET", block=True))
     def dispatch(self, *args, **kwargs):
         return super().dispatch(*args, **kwargs)
 
     def get_queryset(self):
         qs = Record.objects.visible_to(self.request.user).annotate(
-            active_share_count=Record.with_active_share_count()
-        )
-        # Archived records are only reachable via the explicit "is_active" filter
-        # (the sidebar Archive link, the Active/All chips). Without a filter the
-        # list shows active records only, so archiving visibly removes a record.
+            active_share_count=Record.with_active_share_count())
         if "is_active" not in self.request.GET:
             qs = qs.filter(is_active=True)
         search_query = self.request.GET.get("search", "").strip()
@@ -153,11 +146,12 @@ class RecordListView(LoginRequiredMixin, CachedPaginatorMixin, FilterView):
                 search_text__icontains=search_query,
             ).values_list("plaid_record_id", flat=True)
             if merged_plaid_ids:
-                qs = qs | Record.objects.visible_to(self.request.user).filter(
-                    pk__in=merged_plaid_ids
-                )
+                qs = qs | Record.objects.visible_to(
+                    self.request.user).filter(pk__in=merged_plaid_ids)
 
-        self.filterset = self.filterset_class(self.request.GET, queryset=qs, request=self.request)
+        self.filterset = self.filterset_class(self.request.GET,
+                                              queryset=qs,
+                                              request=self.request)
         return self.filterset.qs.order_by("-last_edited").only(*LIST_FIELDS)
 
     def get_context_data(self, **kwargs):
@@ -169,11 +163,10 @@ class RecordListView(LoginRequiredMixin, CachedPaginatorMixin, FilterView):
             metrics = _build_record_metrics(self.request.user)
             cache.set(cache_key, metrics, RECORD_LIST_METRICS_TTL)
 
-        # Counts above are active-only (they must match the default list, which
-        # hides archived records). The "All Records" card deliberately counts
-        # everything and links with an explicit is_active="" so the list shows
-        # all records, archived included.
-        all_records_url = _record_list_url(self.request, is_active="", merged=None, shared=None)
+        all_records_url = _record_list_url(self.request,
+                                           is_active="",
+                                           merged=None,
+                                           shared=None)
         context["metrics"] = [
             {
                 "label": "All Records",
@@ -198,7 +191,8 @@ class RecordListView(LoginRequiredMixin, CachedPaginatorMixin, FilterView):
             {
                 "label": "Merged",
                 "value": metrics["merged_count"],
-                "subtext": "match" if metrics["merged_count"] == 1 else "matches",
+                "subtext": "match"
+                if metrics["merged_count"] == 1 else "matches",
                 "url": _record_list_url(self.request, merged="True"),
             },
             {
@@ -221,11 +215,8 @@ class RecordListView(LoginRequiredMixin, CachedPaginatorMixin, FilterView):
 
 class RecordDetailView(LoginRequiredMixin, UpdateView):
     """Detail view that doubles as an inline edit form for a single record.
-
-    When accessed via HTMX, returns the form partial for in-place editing.
-    Otherwise renders the full detail page with merge context when the
-    record is a Plaid transaction.
-    """
+    When accessed via HTMX, returns the form partial for inline editing. Otherwise renders the full
+    detail page with merge context when the record is a Plaid transaction."""
 
     template_name = "records/record_detail_view.html"
     form_class = RecordUpdateForm
@@ -243,17 +234,14 @@ class RecordDetailView(LoginRequiredMixin, UpdateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # The seven-year retention rule lives on the model as
-        # "Record.can_hard_delete"; the template reads that instead of
-        # re-deriving a cutoff here.
 
         if self.object.user_id != self.request.user.pk:
-            share = RecordShare.active_for(self.request.user).filter(record=self.object).first()
-            context["share_permission"] = (
-                share.permission if share is not None else RecordShare.Permission.VIEW
-            )
-            # Documents follow the grant: include_documents=False hides them
-            # from the recipient even though the record itself is visible.
+            share = RecordShare.active_for(
+                self.request.user).filter(record=self.object).first()
+            context["share_permission"] = (share.permission
+                                           if share is not None else
+                                           RecordShare.Permission.VIEW)
+            # Documents follow the grant: include_documents=False hides them from the recipient even though the record itself is visible.
             if share is None or not share.include_documents:
                 context["documents"] = []
             else:
@@ -263,22 +251,16 @@ class RecordDetailView(LoginRequiredMixin, UpdateView):
             context["documents"] = list(self.object.documents.all())
 
         if self.object.is_plaid_record:
-            active_merge = (
-                MergeLog.objects.filter(
-                    plaid_record=self.object,
-                    undone_at__isnull=True,
-                )
-                .select_related("document_record", "document")
-                .first()
-            )
+            active_merge = (MergeLog.objects.filter(
+                plaid_record=self.object,
+                undone_at__isnull=True,
+            ).select_related("document_record", "document").first())
             if active_merge:
                 context["active_merge"] = active_merge
                 context["plaid_snapshot"] = snapshot_with_currency(
-                    active_merge.plaid_snapshot, self.object.currency
-                )
+                    active_merge.plaid_snapshot, self.object.currency)
                 context["document_snapshot"] = snapshot_with_currency(
-                    active_merge.document_snapshot, self.object.currency
-                )
+                    active_merge.document_snapshot, self.object.currency)
 
         return context
 
@@ -286,27 +268,28 @@ class RecordDetailView(LoginRequiredMixin, UpdateView):
     def form_valid(self, form):
         # Only the owner or an editor-permission sharee may mutate the record.
         if self.object.user_id != self.request.user.pk:
-            share = RecordShare.active_for(self.request.user).filter(record=self.object).first()
+            share = RecordShare.active_for(
+                self.request.user).filter(record=self.object).first()
             if share is None or share.permission != RecordShare.Permission.EDIT:
                 if self.request.headers.get("HX-Request") == "true":
                     response = HttpResponse(status=204)
-                    response["HX-Trigger"] = json.dumps(
-                        {
-                            "showToast": {
-                                "text": "This record is shared with you as view-only.",
-                                "tags": "error",
-                            }
+                    response["HX-Trigger"] = json.dumps({
+                        "showToast": {
+                            "text": "This record is shared with you as view-only.",
+                            "tags": "error",
                         }
-                    )
+                    })
                     return response
                 from django.http import HttpResponseForbidden
 
-                return HttpResponseForbidden("This record is shared with you as view-only.")
+                return HttpResponseForbidden(
+                    "This record is shared with you as view-only.")
 
         messages.success(self.request, "Record updated successfully.")
         self.object = form.save()
 
-        resp = htmx_response(self.request, toast="Record updated successfully.")
+        resp = htmx_response(self.request,
+                             toast="Record updated successfully.")
         if resp is not None:
             return resp
 
@@ -315,11 +298,8 @@ class RecordDetailView(LoginRequiredMixin, UpdateView):
     def form_invalid(self, form):
         messages.error(self.request, "An error was left in a record")
         is_htmx = self.request.headers.get("HX-Request") == "true"
-        blocking = [
-            (str(form[name].label), f"id_{name}")
-            for name in form.errors
-            if name != NON_FIELD_ERRORS
-        ]
+        blocking = [(str(form[name].label), f"id_{name}")
+                    for name in form.errors if name != NON_FIELD_ERRORS]
         response = render(
             self.request,
             self.get_template_names(),
@@ -329,25 +309,23 @@ class RecordDetailView(LoginRequiredMixin, UpdateView):
         if is_htmx:
             response["HX-Reswap"] = "none"
             names = ", ".join(label for label, _ in blocking)
-            response["HX-Trigger"] = json.dumps(
-                {
-                    "showToast": {
-                        "text": f"Not saved \u2014 {names} required",
-                        "tags": "error",
-                    }
+            response["HX-Trigger"] = json.dumps({
+                "showToast": {
+                    "text": f"Not saved \u2014 {names} required",
+                    "tags": "error",
                 }
-            )
+            })
         return response
 
 
 class HardDeleteRecordView(LoginRequiredMixin, View):
     """Permanently delete a record that is at least seven years old.
-
     Hard-deletes are irreversible and also remove associated DocumentData
     and S3 files. Rate-limited to 5 POSTs per minute per user.
     """
 
-    @method_decorator(ratelimit(key="user", rate="5/m", method="POST", block=True))
+    @method_decorator(
+        ratelimit(key="user", rate="5/m", method="POST", block=True))
     def post(self, request, pk: int) -> HttpResponse:
         record = get_object_or_404(Record, pk=pk, user=request.user)
         if not record.can_hard_delete:
@@ -359,7 +337,9 @@ class HardDeleteRecordView(LoginRequiredMixin, View):
             )
             if resp is not None:
                 return resp
-            messages.error(request, "This record is not old enough for permanent deletion.")
+            messages.error(
+                request,
+                "This record is not old enough for permanent deletion.")
             return redirect("records:record_detail", pk=pk)
 
         services.hard_delete_record(request.user, record)
@@ -368,7 +348,10 @@ class HardDeleteRecordView(LoginRequiredMixin, View):
             age_days = (timezone.now().date() - record.date_added).days
             posthog_client.capture(
                 "record_deleted",
-                properties={"record_type": record.record_type, "age_days": age_days},
+                properties={
+                    "record_type": record.record_type,
+                    "age_days": age_days
+                },
             )
 
         resp = htmx_response(

@@ -59,7 +59,8 @@ class RecordAdmin(admin.ModelAdmin):
         else:
             if "delete_selected" in actions:
                 _func, name, description = actions["delete_selected"]
-                actions["delete_selected"] = (safe_delete_selected, name, description)
+                actions["delete_selected"] = (safe_delete_selected, name,
+                                              description)
         return actions
 
     def delete_model(self, request, obj):
@@ -88,7 +89,7 @@ admin.site.register(Folder)
 @admin.register(RecordShare)
 class RecordShareAdmin(admin.ModelAdmin):
     list_display = ("record", "user", "shared_by", "created_at")
-    list_filter = ("created_at",)
+    list_filter = ("created_at", )
     search_fields = ("record__title", "user__email")
     date_hierarchy = "created_at"
     raw_id_fields = ("record", "user", "shared_by")

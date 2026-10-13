@@ -1,5 +1,4 @@
 """Background tasks for the records module, executed via Dramatiq.
-
 Covers automated record matching on save, archival of expired records,
 permanent deletion of records older than seven years, and expiry
 notification dispatch (DB, email, and web push).
@@ -47,14 +46,16 @@ def _capture_auto_match(user_id: int, count: int) -> None:
     posthog_client.capture(
         "record_merged",
         distinct_id=str(user_id),
-        properties={"matched_by": "auto", "merged_count": count},
+        properties={
+            "matched_by": "auto",
+            "merged_count": count
+        },
     )
 
 
 @dramatiq.actor
 def run_auto_match(record_pk: int, has_plaid: bool) -> None:
     """Attempt to automatically match a newly saved record with its counterpart.
-
     When "has_plaid" is True the record is a Plaid transaction and is matched
     against document records; otherwise it is a document record matched against
     Plaid transactions.
@@ -88,7 +89,6 @@ def run_auto_match(record_pk: int, has_plaid: bool) -> None:
 @dramatiq.actor(periodic=cron("0 2 * * *"))
 def archive_expired_records() -> None:
     """Soft-delete all active records whose expiry date has passed.
-
     Only archives records belonging to users who opted into auto-archiving.
     Records added after expiry are excluded ("expiry_date >= date_added").
     """
@@ -107,7 +107,6 @@ def archive_expired_records() -> None:
 @dramatiq.actor(periodic=cron("0 3 * * *"))
 def delete_7year_archived_records() -> None:
     """Permanently delete archived records older than seven years.
-
     Respects the user's "auto_delete_archived_records" setting. Merged
     document records (still referenced by an active MergeLog) are excluded.
     Associated S3 document objects are also deleted asynchronously.
@@ -118,10 +117,11 @@ def delete_7year_archived_records() -> None:
     from .models import MergeLog
 
     merged_ids = set(
-        MergeLog.objects.filter(undone_at__isnull=True).values_list("document_record_id", flat=True)
-    )
+        MergeLog.objects.filter(undone_at__isnull=True).values_list(
+            "document_record_id", flat=True))
 
-    seven_years_ago = timezone.now() - timedelta(days=365 * COMPLIANCE_RETENTION_YEARS)
+    seven_years_ago = timezone.now() - timedelta(days=365 *
+                                                 COMPLIANCE_RETENTION_YEARS)
     seven_year_expired_records = Record.objects.filter(
         date_added__lte=seven_years_ago,
         is_active=False,
@@ -129,10 +129,9 @@ def delete_7year_archived_records() -> None:
     ).exclude(pk__in=merged_ids)
 
     document_paths = list(
-        DocumentData.objects.filter(associated_record__in=seven_year_expired_records).values_list(
-            "filepath", flat=True
-        )
-    )
+        DocumentData.objects.filter(
+            associated_record__in=seven_year_expired_records).values_list(
+                "filepath", flat=True))
 
     deleted_count = 0
     pks = list(seven_year_expired_records.values_list("pk", flat=True))
@@ -151,40 +150,29 @@ def delete_7year_archived_records() -> None:
 @dramatiq.actor(periodic=cron("0 * * * *"))
 def send_expiry_notifications() -> None:
     """Send expiry notifications for records approaching their expiry date.
-
     Respects each user's "expiring_notifications_advance_time" preference
-    (1, 3, 7, or 30 days). Creates DB notifications and dispatches email
-    and web-push notifications per user. Records already notified are
-    skipped via the "expiry_notification_sent" flag.
+    (1, 3, 7, or 30 days).
     """
     today = timezone.now().date()
-
-    # One branch per supported preference value, plus a default for users who
-    # have no settings row at all.
     advance_conditions = [
         Q(
             user__settings__expiring_notifications_advance_time=str(days),
             expiry_date__lte=today + timedelta(days=days),
-        )
-        for days in (1, 3, 7, 30)
+        ) for days in (1, 3, 7, 30)
     ]
     advance_conditions.append(
         Q(
             user__settings__isnull=True,
             expiry_date__lte=today + timedelta(days=7),
-        )
-    )
+        ))
 
-    expiring_records = (
-        Record.objects.filter(
-            is_active=True,
-            expiry_notification_sent=False,
-            expiry_date__isnull=False,
-            expiry_date__gte=F("date_added"),
-        )
-        .filter(functools.reduce(operator.or_, advance_conditions))
-        .select_related("user__settings")
-    )
+    expiring_records = (Record.objects.filter(
+        is_active=True,
+        expiry_notification_sent=False,
+        expiry_date__isnull=False,
+        expiry_date__gte=F("date_added"),
+    ).filter(functools.reduce(
+        operator.or_, advance_conditions)).select_related("user__settings"))
 
     notifications_to_create: list = []
     user_records_map: dict[int, list] = {}
@@ -197,9 +185,9 @@ def send_expiry_notifications() -> None:
             Notification(
                 recipient=user,
                 subject="Expiring Records on Verity",
-                message=f"Your record '{record.title}' is expiring on {record.expiry_date}.",
-            )
-        )
+                message=
+                f"Your record '{record.title}' is expiring on {record.expiry_date}.",
+            ))
 
         user_records_map.setdefault(user.id, []).append(record)
         if user.id not in user_object_map:
@@ -213,8 +201,11 @@ def send_expiry_notifications() -> None:
 
     Notification.objects.bulk_create(notifications_to_create)
 
-    all_record_ids = [r.id for records in user_records_map.values() for r in records]
-    Record.objects.filter(id__in=all_record_ids).update(expiry_notification_sent=True)
+    all_record_ids = [
+        r.id for records in user_records_map.values() for r in records
+    ]
+    Record.objects.filter(id__in=all_record_ids).update(
+        expiry_notification_sent=True)
     logger.info("Created %d DB notifications.", len(notifications_to_create))
 
     MAX_DISPLAY_RECORDS = (
@@ -231,9 +222,8 @@ def send_expiry_notifications() -> None:
         user_settings = user_settings_cache.get(user_id)
         auto_archive_msg = (
             "Since you have enabled auto-archiving, your records will be automatically archived once the expiry passes."
-            if user_settings and getattr(user_settings, "auto_archive_expired_records", False)
-            else ""
-        )
+            if user_settings and getattr(
+                user_settings, "auto_archive_expired_records", False) else "")
 
         action_url = f"{site_url.rstrip('/')}{reverse('core:dashboard')}"
         total_records_count = len(records)
@@ -253,11 +243,15 @@ def send_expiry_notifications() -> None:
         send_multi_channel_notification(
             user=user,
             subject="Expiring Records on Verity",
-            text_body=render_to_string("notifications/expiring_record_email.txt", context),
-            html_body=render_to_string("notifications/expiring_record_email.html", context),
+            text_body=render_to_string(
+                "notifications/expiring_record_email.txt", context),
+            html_body=render_to_string(
+                "notifications/expiring_record_email.html", context),
             webpush_payload=webpush_payload,
             send_db=True,
-            db_message=f"Your record '{', '.join(r.title for r in records[:3])}' is expiring soon.",
+            db_message=
+            f"Your record '{', '.join(r.title for r in records[:3])}' is expiring soon.",
         )
 
-    logger.info("Successfully scheduled notices for %d unique users.", len(user_records_map))
+    logger.info("Successfully scheduled notices for %d unique users.",
+                len(user_records_map))

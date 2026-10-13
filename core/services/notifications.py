@@ -110,8 +110,7 @@ def send_email_notification(
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[user.email],
             html_message=html_body,
-        )
-    )
+        ))
     logger.info("Dispatched background email request for %s", user.email)
 
 
@@ -154,7 +153,9 @@ def send_multi_channel_notification(
     and a message is provided.
     """
     if send_push and webpush_payload and _user_can_receive_push(user):
-        fire_single_webpush.send(user_id=user.id, payload=webpush_payload, ttl=webpush_ttl)
+        fire_single_webpush.send(user_id=user.id,
+                                 payload=webpush_payload,
+                                 ttl=webpush_ttl)
 
     if send_email and _user_can_receive_email(user):
         send_email_notification(
@@ -167,4 +168,6 @@ def send_multi_channel_notification(
     if send_db and db_message:
         from core.models import Notification
 
-        Notification.objects.create(recipient=user, subject=subject, message=db_message)
+        Notification.objects.create(recipient=user,
+                                    subject=subject,
+                                    message=db_message)

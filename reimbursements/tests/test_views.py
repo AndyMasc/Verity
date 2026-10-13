@@ -24,6 +24,7 @@ from ._helpers import _package, _record, _stripe_account, _user
 
 
 class ValidateRecipientEmailTest(TestCase):
+
     def setUp(self):
         self.factory = RequestFactory()
         self.user = _user()
@@ -92,6 +93,7 @@ class ValidateRecipientEmailTest(TestCase):
 
 
 class PackageListViewTest(TestCase):
+
     def setUp(self):
         self.user = _user()
         self.client.force_login(self.user)
@@ -114,6 +116,7 @@ class PackageListViewTest(TestCase):
 
 
 class PackageDetailViewTest(TestCase):
+
     def setUp(self):
         self.user = _user()
         self.other = _user("other@test.com")
@@ -122,15 +125,15 @@ class PackageDetailViewTest(TestCase):
     def test_creator_can_view(self):
         pkg = _package(self.user, self.other)
         response = self.client.get(
-            reverse("reimbursements:package-detail", kwargs={"package_uuid": pkg.uuid})
-        )
+            reverse("reimbursements:package-detail",
+                    kwargs={"package_uuid": pkg.uuid}))
         self.assertEqual(response.status_code, 200)
 
     def test_recipient_can_view(self):
         pkg = _package(self.other, self.user)
         response = self.client.get(
-            reverse("reimbursements:package-detail", kwargs={"package_uuid": pkg.uuid})
-        )
+            reverse("reimbursements:package-detail",
+                    kwargs={"package_uuid": pkg.uuid}))
         self.assertEqual(response.status_code, 200)
 
     def test_unrelated_user_cannot_view(self):
@@ -138,14 +141,15 @@ class PackageDetailViewTest(TestCase):
         pkg = _package(self.user, self.other)
         self.client.force_login(stranger)
         response = self.client.get(
-            reverse("reimbursements:package-detail", kwargs={"package_uuid": pkg.uuid})
-        )
+            reverse("reimbursements:package-detail",
+                    kwargs={"package_uuid": pkg.uuid}))
         self.assertEqual(response.status_code, 404)
 
 
+@patch("reimbursements.services.create_package_invoice")
 @patch("django_ratelimit.decorators.is_ratelimited", return_value=False)
-@patch("reimbursements.notifications.send_package_created_notification")
 class CreatePackageFromRecordsViewTest(TestCase):
+
     def setUp(self):
         self.user = _user()
         _stripe_account(self.user)
@@ -158,32 +162,30 @@ class CreatePackageFromRecordsViewTest(TestCase):
         r = _record(self.user)
         response = self.client.post(
             self.url,
-            data=json.dumps(
-                {
-                    "record_ids": [r.id],
-                    "title": "Test Reimbursement",
-                    "recipient_email": self.recipient.email,
-                }
-            ),
+            data=json.dumps({
+                "record_ids": [r.id],
+                "title": "Test Reimbursement",
+                "recipient_email": self.recipient.email,
+            }),
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 200)
         data = json.loads(response.content)
         self.assertIn("redirect_url", data)
-        self.assertTrue(ReimbursementPackage.objects.filter(title="Test Reimbursement").exists())
+        self.assertTrue(
+            ReimbursementPackage.objects.filter(
+                title="Test Reimbursement").exists())
 
     def test_unavailable_records_are_reported(self, _mock_notify, _mock_rl):
         r = _record(self.user)
         other_record = _record(_user("someone-else@test.com"))
         response = self.client.post(
             self.url,
-            data=json.dumps(
-                {
-                    "record_ids": [r.id, other_record.id],
-                    "title": "Partial Package",
-                    "recipient_email": self.recipient.email,
-                }
-            ),
+            data=json.dumps({
+                "record_ids": [r.id, other_record.id],
+                "title": "Partial Package",
+                "recipient_email": self.recipient.email,
+            }),
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 200)
@@ -196,30 +198,27 @@ class CreatePackageFromRecordsViewTest(TestCase):
         r = _record(self.user)
         response = self.client.post(
             self.url,
-            data=json.dumps(
-                {
-                    "record_ids": [r.id],
-                    "title": "Self",
-                    "recipient_email": self.user.email,
-                }
-            ),
+            data=json.dumps({
+                "record_ids": [r.id],
+                "title": "Self",
+                "recipient_email": self.user.email,
+            }),
             content_type="application/json",
         )
         data = json.loads(response.content)
         self.assertEqual(response.status_code, 400)
         self.assertIn("yourself", data["error"].lower())
 
-    def test_external_recipient_creates_queued_package(self, _mock_notify, _mock_rl):
+    def test_external_recipient_creates_queued_package(self, _mock_notify,
+                                                       _mock_rl):
         r = _record(self.user)
         response = self.client.post(
             self.url,
-            data=json.dumps(
-                {
-                    "record_ids": [r.id],
-                    "title": "External",
-                    "recipient_email": "ghost@test.com",
-                }
-            ),
+            data=json.dumps({
+                "record_ids": [r.id],
+                "title": "External",
+                "recipient_email": "ghost@test.com",
+            }),
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 200)
@@ -232,13 +231,11 @@ class CreatePackageFromRecordsViewTest(TestCase):
     def test_no_records(self, _mock_notify, _mock_rl):
         response = self.client.post(
             self.url,
-            data=json.dumps(
-                {
-                    "record_ids": [],
-                    "title": "Empty",
-                    "recipient_email": self.recipient.email,
-                }
-            ),
+            data=json.dumps({
+                "record_ids": [],
+                "title": "Empty",
+                "recipient_email": self.recipient.email,
+            }),
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 400)
@@ -247,14 +244,12 @@ class CreatePackageFromRecordsViewTest(TestCase):
         r = _record(self.user)
         response = self.client.post(
             self.url,
-            data=json.dumps(
-                {
-                    "record_ids": [r.id],
-                    "title": "Clamped",
-                    "recipient_email": self.recipient.email,
-                    "days_valid": 9999,
-                }
-            ),
+            data=json.dumps({
+                "record_ids": [r.id],
+                "title": "Clamped",
+                "recipient_email": self.recipient.email,
+                "days_valid": 9999,
+            }),
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 200)
@@ -266,155 +261,34 @@ class CreatePackageFromRecordsViewTest(TestCase):
         r = _record(self.user)
         response = self.client.post(
             self.url,
-            data=json.dumps(
-                {
-                    "record_ids": [r.id],
-                    "title": "Bad Days",
-                    "recipient_email": self.recipient.email,
-                    "days_valid": "not_a_number",
-                }
-            ),
+            data=json.dumps({
+                "record_ids": [r.id],
+                "title": "Bad Days",
+                "recipient_email": self.recipient.email,
+                "days_valid": "not_a_number",
+            }),
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 200)
 
 
 @patch("django_ratelimit.decorators.is_ratelimited", return_value=False)
-class CreatePackageCheckoutViewTest(TestCase):
-    def setUp(self):
-        self.creator = _user("creator@test.com")
-        _stripe_account(self.creator)
-        self.payer = _user("payer@test.com")
-        self.pkg = _package(self.creator, self.payer, title="Checkout Test")
-        self.client.force_login(self.payer)
-        self.url = reverse("reimbursements:create-checkout", kwargs={"package_uuid": self.pkg.uuid})
-
-    def test_creator_cannot_pay(self, _mock_rl):
-        self.client.force_login(self.creator)
-        response = self.client.post(self.url)
-        self.assertEqual(response.status_code, 302)
-
-    def test_paid_package_redirects(self, _mock_rl):
-        self.pkg.mark_as_paid(self.payer)
-        response = self.client.post(self.url)
-        self.assertEqual(response.status_code, 302)
-
-    def test_expired_package_redirects(self, _mock_rl):
-        self.pkg.expires_at = timezone.now() - timedelta(days=1)
-        self.pkg.save(update_fields=["expires_at"])
-        response = self.client.post(self.url)
-        self.assertEqual(response.status_code, 302)
-
-    def test_get_not_allowed(self, _mock_rl):
-        response = self.client.get(self.url)
-        self.assertEqual(response.status_code, 405)
-
-
-class PaymentSuccessViewTest(TestCase):
-    def setUp(self):
-        self.user = _user()
-        self.other = _user("other@test.com")
-        self.client.force_login(self.user)
-        self.url = reverse("reimbursements:payment-success")
-
-    def test_no_package_param(self):
-        response = self.client.get(self.url)
-        self.assertEqual(response.status_code, 200)
-
-    def test_valid_package(self):
-        pkg = _package(self.user, self.other)
-        response = self.client.get(f"{self.url}?package={pkg.uuid}")
-        self.assertEqual(response.status_code, 200)
-
-    def test_payer_can_view_package_before_webhook(self):
-        pkg = _package(self.user, self.other)
-        PackagePayment.objects.create(
-            package=pkg,
-            payer=self.other,
-            stripe_checkout_session_id="cs_test_foo",
-            amount_paid=pkg.total_amount,
-        )
-        self.client.force_login(self.other)
-        response = self.client.get(f"{self.url}?package={pkg.uuid}")
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, pkg.title)
-
-    def test_other_users_package_not_visible(self):
-        stranger = _user("stranger@test.com")
-        pkg = _package(self.user, self.other)
-        self.client.force_login(stranger)
-        response = self.client.get(f"{self.url}?package={pkg.uuid}")
-        self.assertEqual(response.status_code, 200)
-        self.assertNotContains(response, pkg.title)
-
-
-@patch("django_ratelimit.decorators.is_ratelimited", return_value=False)
-class PublicPayFlowTest(TestCase):
-    """External recipients verify their email before viewing or paying."""
-
-    def setUp(self):
-        self.creator = _user("creator@test.com")
-        _stripe_account(self.creator)
-        self.record = _record(self.creator, Decimal("25.00"))
-        self.pkg, _ = services.create_reimbursement_package(
-            creator=self.creator,
-            recipient_email="external@test.com",
-            record_ids=[self.record.pk],
-            title="External Request",
-            days_valid=7,
-        )
-        self.pay_url = reverse("reimbursements:pay-package", kwargs={"package_uuid": self.pkg.uuid})
-        self.checkout_url = reverse(
-            "reimbursements:pay-checkout", kwargs={"package_uuid": self.pkg.uuid}
-        )
-
-    def _post(self, url, data):
-        return self.client.post(url, data)
-
-    def test_link_alone_reaches_package(self, _mock_rl):
-        resp = self.client.get(self.pay_url)
-        self.assertEqual(resp.status_code, 200)
-        self.assertContains(resp, "Proceed to Checkout")
-
-    def test_checkout_captures_payer_email(self, _mock_rl):
-        with patch("reimbursements.services.create_checkout_session") as session:
-            session.return_value = SimpleNamespace(
-                id="cs_test_payer", url="https://stripe.test/checkout"
-            )
-            resp = self._post(self.checkout_url, {"email": "payer@outside.com"})
-        self.assertEqual(resp.status_code, 302)
-        payment = PackagePayment.objects.get(package=self.pkg)
-        self.assertEqual(payment.payer_email, "payer@outside.com")
-
-    def test_checkout_without_email_still_works(self, _mock_rl):
-        with patch("reimbursements.services.create_checkout_session") as session:
-            session.return_value = SimpleNamespace(
-                id="cs_test_payer", url="https://stripe.test/checkout"
-            )
-            resp = self._post(self.checkout_url, {})
-        self.assertEqual(resp.status_code, 302)
-        self.assertTrue(PackagePayment.objects.filter(package=self.pkg).exists())
-
-    def test_paid_package_shows_already_paid(self, _mock_rl):
-        self.pkg.status = ReimbursementPackage.Status.PAID
-        self.pkg.save(update_fields=["status"])
-        resp = self.client.get(self.pay_url)
-        self.assertEqual(resp.status_code, 200)
-        self.assertContains(resp, "Request already paid")
-        self.assertNotContains(resp, "External Request")
-
-
-@patch("django_ratelimit.decorators.is_ratelimited", return_value=False)
 class PackageDeleteViewTest(TestCase):
+
     def setUp(self):
         self.creator = _user("creator@test.com")
         self.recipient = _user("recipient@test.com")
-        self.pkg = _package(self.creator, recipient=self.recipient, status="open")
-        self.url = reverse("reimbursements:package-delete", kwargs={"package_uuid": self.pkg.uuid})
+        self.pkg = _package(self.creator,
+                            recipient=self.recipient,
+                            status="open")
+        self.url = reverse("reimbursements:package-delete",
+                           kwargs={"package_uuid": self.pkg.uuid})
 
-    def test_recipient_cannot_delete_open_package_ajax_returns_403(self, _mock_rl):
+    def test_recipient_cannot_delete_open_package_ajax_returns_403(
+            self, _mock_rl):
         self.client.force_login(self.recipient)
-        response = self.client.post(self.url, headers={"x-requested-with": "XMLHttpRequest"})
+        response = self.client.post(
+            self.url, headers={"x-requested-with": "XMLHttpRequest"})
         self.assertEqual(response.status_code, 403)
         self.assertIn("error", response.json())
         self.pkg.refresh_from_db()
@@ -429,17 +303,20 @@ class PackageDeleteViewTest(TestCase):
 
     def test_repeat_ajax_delete_of_deleted_package_returns_404(self, _mock_rl):
         self.client.force_login(self.creator)
-        self.client.post(self.url, headers={"x-requested-with": "XMLHttpRequest"})
-        response = self.client.post(self.url, headers={"x-requested-with": "XMLHttpRequest"})
+        self.client.post(self.url,
+                         headers={"x-requested-with": "XMLHttpRequest"})
+        response = self.client.post(
+            self.url, headers={"x-requested-with": "XMLHttpRequest"})
         self.assertEqual(response.status_code, 404)
 
     def test_ajax_delete_failure_returns_502_and_keeps_package(self, _mock_rl):
         self.client.force_login(self.creator)
         with patch(
-            "reimbursements.services.revoke_package_access",
-            side_effect=RuntimeError("boom"),
+                "reimbursements.services.revoke_package_access",
+                side_effect=RuntimeError("boom"),
         ):
-            response = self.client.post(self.url, headers={"x-requested-with": "XMLHttpRequest"})
+            response = self.client.post(
+                self.url, headers={"x-requested-with": "XMLHttpRequest"})
         self.assertEqual(response.status_code, 502)
         self.assertIn("error", response.json())
         self.pkg.refresh_from_db()

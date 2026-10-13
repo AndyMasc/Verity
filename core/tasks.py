@@ -8,6 +8,7 @@ import logging
 
 import dramatiq
 from anymail.exceptions import AnymailRequestsAPIError
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.mail import EmailMultiAlternatives, get_connection
 from webpush import send_user_notification
@@ -48,8 +49,12 @@ def send_background_email(payload: EmailTaskPayload | dict):
     """
     if isinstance(payload, dict):
         payload = EmailTaskPayload(**payload)
-    resend_connection = get_connection(backend="anymail.backends.resend.EmailBackend")
-    email = _build_email_message(payload, resend_connection)
+    # settings.EMAIL_BACKEND is DramatiqEmailBackend in production and this
+    # function is already a Dramatiq task, so using it here would re-queue the
+    # message forever. DEBUG gets the console backend so local runs need no key.
+    backend = ("django.core.mail.backends.console.EmailBackend"
+               if settings.DEBUG else "anymail.backends.resend.EmailBackend")
+    email = _build_email_message(payload, get_connection(backend=backend))
 
     try:
         email.send()

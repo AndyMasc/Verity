@@ -30,7 +30,9 @@ class PlaidStatusView(APIView):
     frontend polls for connection health.
     """
 
-    authentication_classes: ClassVar[list] = [authentication.SessionAuthentication]
+    authentication_classes: ClassVar[list] = [
+        authentication.SessionAuthentication
+    ]
     permission_classes: ClassVar[list] = [permissions.IsAuthenticated]
 
     def get(self, request: Request) -> Response:
@@ -41,27 +43,24 @@ class PlaidStatusView(APIView):
             return Response(cached)
 
         plaid_items = list(
-            PlaidItem.objects.filter(user=request.user).annotate(record_count=Count("records"))
-        )
+            PlaidItem.objects.filter(user=request.user).annotate(
+                record_count=Count("records")))
 
         data = {
             "connected": bool(plaid_items),
-            "items": [
-                {
-                    "item_id": item.item_id,
-                    "created_at": (item.created_at.isoformat() if item.created_at else None),
-                    "has_cursor": bool(item.next_cursor),
-                    "record_count": item.record_count,
-                    "account_name": item.institution_name,
-                    "accounts_data": item.accounts_data,
-                    "last_error_code": item.last_error_code,
-                    "last_error_message": item.last_error_message,
-                    "last_error_at": (
-                        item.last_error_at.isoformat() if item.last_error_at else None
-                    ),
-                }
-                for item in plaid_items
-            ],
+            "items": [{
+                "item_id": item.item_id,
+                "created_at": (item.created_at.isoformat()
+                               if item.created_at else None),
+                "has_cursor": bool(item.next_cursor),
+                "record_count": item.record_count,
+                "account_name": item.institution_name,
+                "accounts_data": item.accounts_data,
+                "last_error_code": item.last_error_code,
+                "last_error_message": item.last_error_message,
+                "last_error_at": (item.last_error_at.isoformat()
+                                  if item.last_error_at else None),
+            } for item in plaid_items],
         }
         cache.set(cache_key, data, PLAID_STATUS_CACHE_TTL)
         return Response(data)
@@ -70,7 +69,9 @@ class PlaidStatusView(APIView):
 class SyncTransactionsView(APIView):
     """Trigger an on-demand transaction sync for a Plaid bank item."""
 
-    authentication_classes: ClassVar[list] = [authentication.SessionAuthentication]
+    authentication_classes: ClassVar[list] = [
+        authentication.SessionAuthentication
+    ]
     permission_classes: ClassVar[list] = [permissions.IsAuthenticated]
 
     def post(self, request: Request) -> Response:
@@ -78,7 +79,8 @@ class SyncTransactionsView(APIView):
         item_id: str | None = request.data.get("item_id")
 
         items = PlaidItem.objects.filter(user=request.user)
-        plaid_item = items.filter(item_id=item_id).first() if item_id else items.first()
+        plaid_item = items.filter(
+            item_id=item_id).first() if item_id else items.first()
         if plaid_item is None:
             return Response(
                 {"error": "No Plaid link found for the specified item"},
@@ -92,14 +94,14 @@ class SyncTransactionsView(APIView):
                         access_token=plaid_item.access_token,
                         webhook_code="SYNC_UPDATES_AVAILABLE",
                         webhook_type=WebhookType("TRANSACTIONS"),
-                    )
-                )
+                    ))
             except plaid.ApiException:
                 logger.exception(
                     "Failed to fire Plaid sandbox webhook for item %s",
                     plaid_item.item_id,
                 )
-                return Response({"error": "Failed to trigger sync via Plaid"}, status=502)
+                return Response({"error": "Failed to trigger sync via Plaid"},
+                                status=502)
         else:
             # Route through the atomic per-item cooldown so a user hammering
             # this button cannot overlap an in-flight webhook or periodic sync
@@ -108,12 +110,10 @@ class SyncTransactionsView(APIView):
 
             dispatched = dispatch_sync(plaid_item)
             if not dispatched:
-                return Response(
-                    {
-                        "status": "sync_skipped",
-                        "detail": "A sync already ran recently. Try again in a minute.",
-                    }
-                )
+                return Response({
+                    "status": "sync_skipped",
+                    "detail": "A sync already ran recently. Try again in a minute.",
+                })
 
         # Invalidate status cache on manual sync trigger
         cache.delete(f"plaid_status:{request.user.id}")
@@ -123,22 +123,26 @@ class SyncTransactionsView(APIView):
 class DisconnectBankView(APIView):
     """Remove a linked bank item from both Plaid and the local database."""
 
-    authentication_classes: ClassVar[list] = [authentication.SessionAuthentication]
+    authentication_classes: ClassVar[list] = [
+        authentication.SessionAuthentication
+    ]
     permission_classes: ClassVar[list] = [permissions.IsAuthenticated]
 
     def post(self, request: Request, item_id: str) -> Response:
         """Disconnect and delete the specified bank item."""
         try:
-            plaid_item = PlaidItem.objects.get(user=request.user, item_id=item_id)
+            plaid_item = PlaidItem.objects.get(user=request.user,
+                                               item_id=item_id)
         except PlaidItem.DoesNotExist:
             return Response({"error": "Bank connection not found"}, status=404)
 
         try:
-            client.item_remove(ItemRemoveRequest(access_token=plaid_item.access_token))
+            client.item_remove(
+                ItemRemoveRequest(access_token=plaid_item.access_token))
         except plaid.ApiException:
             logger.exception(
-                "Failed to remove Plaid item %s at Plaid; keeping local record", item_id
-            )
+                "Failed to remove Plaid item %s at Plaid; keeping local record",
+                item_id)
             cache.delete(f"plaid_status:{request.user.id}")
             return Response(
                 {

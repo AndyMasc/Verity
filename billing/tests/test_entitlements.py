@@ -20,10 +20,11 @@ from .helpers import add_subscription, give_pro_subscription
 
 
 class EntitlementTests(TestCase):
+
     def setUp(self):
-        self.customer = Customer.objects.create(
-            id="cus_ent", livemode=False, created=timezone.now()
-        )
+        self.customer = Customer.objects.create(id="cus_ent",
+                                                livemode=False,
+                                                created=timezone.now())
         self.user = get_user_model().objects.create_user(
             username="plan",
             email="plan@example.com",
@@ -31,18 +32,30 @@ class EntitlementTests(TestCase):
         )
 
     def _add_subscription(self, status="active", product_id=None):
-        add_subscription(self.user, self.customer, status=status, product_id=product_id)
+        add_subscription(self.user,
+                         self.customer,
+                         status=status,
+                         product_id=product_id)
 
     def _attach_feature(self, product_id, lookup_key):
         Product.objects.get_or_create(
             id=product_id,
             livemode=False,
-            defaults={"active": True, "name": product_id, "metadata": {"category": "base_plan"}},
+            defaults={
+                "active": True,
+                "name": product_id,
+                "metadata": {
+                    "category": "base_plan"
+                }
+            },
         )
         feature = Feature.objects.create(
             id=f"feat_{lookup_key}",
             livemode=False,
-            stripe_data={"lookup_key": lookup_key, "name": lookup_key},
+            stripe_data={
+                "lookup_key": lookup_key,
+                "name": lookup_key
+            },
         )
         ProductFeature.objects.create(
             id=f"pf_{lookup_key}",
@@ -53,47 +66,62 @@ class EntitlementTests(TestCase):
 
     def test_free_plan_holds_no_stripe_features(self):
         self.assertEqual(
-            metadata.plan_for_user(self.user).stripe_id, metadata.VERITY_FREE.stripe_id
-        )
+            metadata.plan_for_user(self.user).stripe_id,
+            metadata.VERITY_FREE.stripe_id)
         self.assertEqual(metadata.granted_features(self.user), set())
-        self.assertFalse(entitlements.has_feature(self.user, "transaction-sync"))
+        self.assertFalse(
+            entitlements.has_feature(self.user, "transaction-sync"))
 
     def test_pro_product_grants_its_attached_features(self):
         self._attach_feature(metadata.VERITY_PRO.stripe_id, "transaction-sync")
         self._attach_feature(metadata.VERITY_PRO.stripe_id, "record-sharing")
-        self._add_subscription(status="active", product_id=metadata.VERITY_PRO.stripe_id)
+        self._add_subscription(status="active",
+                               product_id=metadata.VERITY_PRO.stripe_id)
 
-        self.assertEqual(metadata.plan_for_user(self.user).stripe_id, metadata.VERITY_PRO.stripe_id)
+        self.assertEqual(
+            metadata.plan_for_user(self.user).stripe_id,
+            metadata.VERITY_PRO.stripe_id)
         self.assertEqual(
             metadata.granted_features(self.user),
             {"transaction-sync", "record-sharing"},
         )
-        self.assertTrue(entitlements.has_feature(self.user, "transaction-sync"))
+        self.assertTrue(entitlements.has_feature(self.user,
+                                                 "transaction-sync"))
         self.assertTrue(entitlements.has_feature(self.user, "record-sharing"))
 
     def test_feature_on_a_product_the_user_does_not_hold_is_not_granted(self):
         self._attach_feature(metadata.VERITY_PRO.stripe_id, "transaction-sync")
-        self._add_subscription(status="active", product_id=metadata.USAGE_BASED_STORAGE.stripe_id)
-        self.assertFalse(entitlements.has_feature(self.user, "transaction-sync"))
+        self._add_subscription(
+            status="active", product_id=metadata.USAGE_BASED_STORAGE.stripe_id)
+        self.assertFalse(
+            entitlements.has_feature(self.user, "transaction-sync"))
 
     def test_feature_on_the_metered_addon_is_granted_when_held(self):
-        self._attach_feature(metadata.USAGE_BASED_STORAGE.stripe_id, "transaction-sync")
-        self._add_subscription(status="active", product_id=metadata.USAGE_BASED_STORAGE.stripe_id)
-        self.assertTrue(entitlements.has_feature(self.user, "transaction-sync"))
+        self._attach_feature(metadata.USAGE_BASED_STORAGE.stripe_id,
+                             "transaction-sync")
+        self._add_subscription(
+            status="active", product_id=metadata.USAGE_BASED_STORAGE.stripe_id)
+        self.assertTrue(entitlements.has_feature(self.user,
+                                                 "transaction-sync"))
         self.assertEqual(
-            metadata.plan_for_user(self.user).stripe_id, metadata.VERITY_FREE.stripe_id
-        )
+            metadata.plan_for_user(self.user).stripe_id,
+            metadata.VERITY_FREE.stripe_id)
 
     def test_trialing_counts_as_paid(self):
-        self._add_subscription(status="trialing", product_id=metadata.VERITY_PRO.stripe_id)
-        self.assertEqual(metadata.plan_for_user(self.user).stripe_id, metadata.VERITY_PRO.stripe_id)
+        self._add_subscription(status="trialing",
+                               product_id=metadata.VERITY_PRO.stripe_id)
+        self.assertEqual(
+            metadata.plan_for_user(self.user).stripe_id,
+            metadata.VERITY_PRO.stripe_id)
 
     def test_canceled_subscription_is_free(self):
-        self._add_subscription(status="canceled", product_id=metadata.VERITY_PRO.stripe_id)
+        self._add_subscription(status="canceled",
+                               product_id=metadata.VERITY_PRO.stripe_id)
         self.assertEqual(
-            metadata.plan_for_user(self.user).stripe_id, metadata.VERITY_FREE.stripe_id
-        )
-        self.assertFalse(entitlements.has_feature(self.user, "transaction-sync"))
+            metadata.plan_for_user(self.user).stripe_id,
+            metadata.VERITY_FREE.stripe_id)
+        self.assertFalse(
+            entitlements.has_feature(self.user, "transaction-sync"))
 
     def test_cancel_at_period_end_keeps_paid_access_until_cycle_end(self):
         self._attach_feature(metadata.VERITY_PRO.stripe_id, "transaction-sync")
@@ -102,13 +130,20 @@ class EntitlementTests(TestCase):
             livemode=False,
             created=timezone.now(),
             customer=self.customer,
-            stripe_data={"status": "canceled", "cancel_at_period_end": True},
+            stripe_data={
+                "status": "canceled",
+                "cancel_at_period_end": True
+            },
         )
         product = Product.objects.get(id=metadata.VERITY_PRO.stripe_id)
         price = Price.objects.get_or_create(
             id=f"price_{metadata.VERITY_PRO.stripe_id}",
             livemode=False,
-            defaults={"active": True, "product": product, "currency": "usd"},
+            defaults={
+                "active": True,
+                "product": product,
+                "currency": "usd"
+            },
         )[0]
         SubscriptionItem.objects.create(
             id="si_cancel_at_period_end",
@@ -119,14 +154,18 @@ class EntitlementTests(TestCase):
         )
         sub.customer.subscriber = self.user
         sub.customer.save(update_fields=["subscriber"])
-        self.assertEqual(metadata.plan_for_user(self.user).stripe_id, metadata.VERITY_PRO.stripe_id)
-        self.assertTrue(entitlements.has_feature(self.user, "transaction-sync"))
+        self.assertEqual(
+            metadata.plan_for_user(self.user).stripe_id,
+            metadata.VERITY_PRO.stripe_id)
+        self.assertTrue(entitlements.has_feature(self.user,
+                                                 "transaction-sync"))
 
     def test_unauthenticated_user_has_no_features(self):
         self.assertFalse(entitlements.has_feature(None, "transaction-sync"))
 
 
 class ContextProcessorTests(TestCase):
+
     def setUp(self):
         # The subscription context is cached per user id (Redis), and user
         # primary keys repeat across rollback-isolated tests, so start each
@@ -134,7 +173,9 @@ class ContextProcessorTests(TestCase):
         from django.core.cache import cache
 
         cache.clear()
-        self.customer = Customer.objects.create(id="cus_cp", livemode=False, created=timezone.now())
+        self.customer = Customer.objects.create(id="cus_cp",
+                                                livemode=False,
+                                                created=timezone.now())
         self.user = get_user_model().objects.create_user(
             username="cp",
             email="cp@example.com",
@@ -170,28 +211,41 @@ class ContextProcessorTests(TestCase):
         ctx = subscription_status(self._request())
         self.assertFalse(ctx["is_subscribed"])
         self.assertEqual(
-            metadata.plan_for_user(self.user).stripe_id, metadata.VERITY_FREE.stripe_id
-        )
+            metadata.plan_for_user(self.user).stripe_id,
+            metadata.VERITY_FREE.stripe_id)
 
     def test_paid_plan_name_renders(self):
         from ..context_processors import subscription_status
 
         give_pro_subscription(self.user)
-        self.assertEqual(subscription_status(self._request())["plan_name"], "Verity Pro")
+        self.assertEqual(
+            subscription_status(self._request())["plan_name"], "Verity Pro")
 
     def _add_subscription(self, status="active", product_id=None):
-        add_subscription(self.user, self.customer, status=status, product_id=product_id)
+        add_subscription(self.user,
+                         self.customer,
+                         status=status,
+                         product_id=product_id)
 
     def _attach_feature(self, product_id, lookup_key):
         Product.objects.get_or_create(
             id=product_id,
             livemode=False,
-            defaults={"active": True, "name": product_id, "metadata": {"category": "base_plan"}},
+            defaults={
+                "active": True,
+                "name": product_id,
+                "metadata": {
+                    "category": "base_plan"
+                }
+            },
         )
         feature = Feature.objects.create(
             id=f"feat_{lookup_key}",
             livemode=False,
-            stripe_data={"lookup_key": lookup_key, "name": lookup_key},
+            stripe_data={
+                "lookup_key": lookup_key,
+                "name": lookup_key
+            },
         )
         ProductFeature.objects.create(
             id=f"pf_{lookup_key}",
@@ -215,9 +269,9 @@ class ProSubscriptionResolvesTests(TestCase):
             email="resolved@example.com",
             password="password",
         )
-        self.customer = Customer.objects.create(
-            id="cus_resolved", livemode=False, created=timezone.now()
-        )
+        self.customer = Customer.objects.create(id="cus_resolved",
+                                                livemode=False,
+                                                created=timezone.now())
         self.user.customer = self.customer
         self.user.save(update_fields=["customer"])
 
@@ -253,15 +307,19 @@ class ProSubscriptionResolvesTests(TestCase):
 
     def test_pro_subscriber_resolves_to_pro(self):
         self._subscribe(metadata.VERITY_PRO, "base_plan")
-        self.assertEqual(metadata.plan_for_user(self.user), metadata.VERITY_PRO)
-        self.assertEqual(metadata.plan_for_user(self.user).stripe_id, metadata.VERITY_PRO.stripe_id)
+        self.assertEqual(metadata.plan_for_user(self.user),
+                         metadata.VERITY_PRO)
+        self.assertEqual(
+            metadata.plan_for_user(self.user).stripe_id,
+            metadata.VERITY_PRO.stripe_id)
         self.assertEqual(
             entitlements.get_monthly_upload_limit(self.user, "scan"),
             metadata.VERITY_PRO.monthly_scan_limit,
         )
 
     def test_metered_only_subscriber_stays_free(self):
-        self.assertEqual(metadata.plan_for_user(self.user), metadata.VERITY_FREE)
+        self.assertEqual(metadata.plan_for_user(self.user),
+                         metadata.VERITY_FREE)
 
 
 class MeteredIsNotAPlanTests(TestCase):
@@ -278,9 +336,9 @@ class MeteredIsNotAPlanTests(TestCase):
             email="metered@example.com",
             password="password",
         )
-        self.customer = Customer.objects.create(
-            id="cus_metered", livemode=False, created=timezone.now()
-        )
+        self.customer = Customer.objects.create(id="cus_metered",
+                                                livemode=False,
+                                                created=timezone.now())
 
     def _subscribe_usage_storage(self):
         add_subscription(
@@ -293,8 +351,8 @@ class MeteredIsNotAPlanTests(TestCase):
     def test_usage_storage_alone_leaves_the_user_free(self):
         self._subscribe_usage_storage()
         self.assertEqual(
-            metadata.plan_for_user(self.user).stripe_id, metadata.VERITY_FREE.stripe_id
-        )
+            metadata.plan_for_user(self.user).stripe_id,
+            metadata.VERITY_FREE.stripe_id)
         self.assertTrue(metadata.has_metered_storage(self.user))
 
     def test_usage_storage_alone_grants_no_paid_features(self):
@@ -308,8 +366,11 @@ class MeteredIsNotAPlanTests(TestCase):
             status="active",
             product_id=metadata.VERITY_PRO.stripe_id,
         )
-        self.assertEqual(metadata.plan_for_user(self.user), metadata.VERITY_PRO)
-        self.assertEqual(metadata.plan_for_user(self.user).stripe_id, metadata.VERITY_PRO.stripe_id)
+        self.assertEqual(metadata.plan_for_user(self.user),
+                         metadata.VERITY_PRO)
+        self.assertEqual(
+            metadata.plan_for_user(self.user).stripe_id,
+            metadata.VERITY_PRO.stripe_id)
 
 
 class OrphanedSubscriptionItemTests(TestCase):
@@ -320,8 +381,7 @@ class OrphanedSubscriptionItemTests(TestCase):
 
     def setUp(self):
         self.user = get_user_model().objects.create_user(
-            username="orphan", email="orphan@example.com", password="password"
-        )
+            username="orphan", email="orphan@example.com", password="password")
         self.customer = Customer.objects.create(
             id="cus_orphan",
             livemode=False,
@@ -365,7 +425,13 @@ class OrphanedSubscriptionItemTests(TestCase):
             customer=self.customer,
             stripe_data={
                 "status": "active",
-                "items": {"data": [{"price": {"id": self.pro_price.id}}]},
+                "items": {
+                    "data": [{
+                        "price": {
+                            "id": self.pro_price.id
+                        }
+                    }]
+                },
             },
         )
         for item_id, price in (
@@ -388,15 +454,21 @@ class OrphanedSubscriptionItemTests(TestCase):
         self.assertFalse(metadata.has_metered_storage(self.user))
 
     def test_plan_still_resolves(self):
-        self.assertEqual(metadata.plan_for_user(self.user).stripe_id, metadata.VERITY_PRO.stripe_id)
+        self.assertEqual(
+            metadata.plan_for_user(self.user).stripe_id,
+            metadata.VERITY_PRO.stripe_id)
 
     def test_unsynced_row_falls_back_to_the_item_table(self):
         # A row never synced with an items payload carries nothing to reconcile
         # against, so its table is used rather than reporting nothing.
         self.subscription.stripe_data = {"status": "active"}
         self.subscription.save(update_fields=["stripe_data"])
-        ids = sorted(m.stripe_id for m in metadata.held_products(self.user).values())
+        ids = sorted(m.stripe_id
+                     for m in metadata.held_products(self.user).values())
         self.assertEqual(
             ids,
-            sorted([metadata.VERITY_PRO.stripe_id, metadata.USAGE_BASED_STORAGE.stripe_id]),
+            sorted([
+                metadata.VERITY_PRO.stripe_id,
+                metadata.USAGE_BASED_STORAGE.stripe_id
+            ]),
         )

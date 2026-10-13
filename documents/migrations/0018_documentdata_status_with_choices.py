@@ -28,12 +28,12 @@ class Migration(migrations.Migration):
         ),
         migrations.AddIndex(
             model_name="documentdata",
-            index=models.Index(fields=["user", "status"], name="documents_doc_user_status_idx"),
+            index=models.Index(fields=["user", "status"],
+                               name="documents_doc_user_status_idx"),
         ),
         migrations.AddIndex(
             model_name="documentdata",
-            index=models.Index(
-                fields=["status", "date_added"], name="documents_doc_status_date_idx"
-            ),
+            index=models.Index(fields=["status", "date_added"],
+                               name="documents_doc_status_date_idx"),
         ),
     ]

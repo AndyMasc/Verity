@@ -1,5 +1,4 @@
 """Views for managing merges between Plaid transactions and document records.
-
 Includes manual merge initiation, undo, and the merge list view. All
 mutation endpoints are rate-limited and create AuditLog entries.
 """
@@ -33,14 +32,15 @@ MANUAL_MERGE_PAGE_SIZE = 10
 _merge_mode_labels = {"plaid": "Bank Transaction", "doc": "Uploaded Receipt"}
 
 
-def _get_merge_candidate_qs(request: HttpRequest, mode: str) -> QuerySet[Record]:
+def _get_merge_candidate_qs(request: HttpRequest,
+                            mode: str) -> QuerySet[Record]:
     """Return a queryset of merge candidates filtered by "mode".
-
     "mode" must be "plaid" (bank transactions) or "doc" (uploaded receipts).
     """
     if mode not in ("plaid", "doc"):
         raise ValueError("Invalid mode")
-    qs = Record.objects.for_user(request.user).filter(is_active=True).select_related("folder")
+    qs = Record.objects.for_user(
+        request.user).filter(is_active=True).select_related("folder")
     if mode == "plaid":
         qs = qs.filter(plaid_transaction_id__isnull=False)
     else:
@@ -50,17 +50,15 @@ def _get_merge_candidate_qs(request: HttpRequest, mode: str) -> QuerySet[Record]
 
 class ManualMergeView(LoginRequiredMixin, FormView):
     """Process a manual merge between a Plaid record and a document record.
-
     Validates that both records belong to the current user, are active, and
-    have the correct Plaid status before delegating to "merge_document_into_plaid".
-    Rate-limited to 30 merges per hour.
-    """
+    have the correct Plaid status before delegating to "merge_document_into_plaid"."""
 
     template_name = "records/manual_merge.html"
     form_class = ManualMergeForm
     success_url = reverse_lazy("records:view_all_records")
 
-    @method_decorator(ratelimit(key="user", rate="30/h", method="POST", block=True))
+    @method_decorator(
+        ratelimit(key="user", rate="30/h", method="POST", block=True))
     def dispatch(self, *args, **kwargs):
         return super().dispatch(*args, **kwargs)
 
@@ -84,20 +82,20 @@ class ManualMergeView(LoginRequiredMixin, FormView):
             plaid_transaction_id__isnull=True,
             is_active=True,
         )
-        document = DocumentData.objects.filter(associated_record=document_record).first()
-        result = merge_document_into_plaid(plaid_record, document_record, document)
+        document = DocumentData.objects.filter(
+            associated_record=document_record).first()
+        result = merge_document_into_plaid(plaid_record, document_record,
+                                           document)
         if result is None:
             if self.request.headers.get("HX-Request") == "true":
                 response = HttpResponse(status=409)
-                response["HX-Trigger"] = json.dumps(
-                    {
-                        "recordChanged": {},
-                        "showToast": {
-                            "text": "Could not merge — the receipt may have already been merged.",
-                            "tags": "error",
-                        },
-                    }
-                )
+                response["HX-Trigger"] = json.dumps({
+                    "recordChanged": {},
+                    "showToast": {
+                        "text": "Could not merge — the receipt may have already been merged.",
+                        "tags": "error",
+                    },
+                })
                 return response
             messages.error(
                 self.request,
@@ -127,21 +125,20 @@ class ManualMergeView(LoginRequiredMixin, FormView):
                 )
             if self.request.headers.get("HX-Request") == "true":
                 response = HttpResponse(status=204)
-                response["HX-Trigger"] = json.dumps(
-                    {
-                        "recordChanged": {},
-                        "showToast": {
-                            "text": "Records merged successfully.",
-                            "tags": "success",
-                        },
-                    }
-                )
+                response["HX-Trigger"] = json.dumps({
+                    "recordChanged": {},
+                    "showToast": {
+                        "text": "Records merged successfully.",
+                        "tags": "success",
+                    },
+                })
                 return response
             messages.success(self.request, "Records merged successfully.")
         return redirect(self.success_url)
 
 
-def _next_merge_page_url(request: HttpRequest, mode: str, page_obj: Page) -> str | None:
+def _next_merge_page_url(request: HttpRequest, mode: str,
+                         page_obj: Page) -> str | None:
     """Absolute URL for the next page of merge search results, or None on the last page."""
     if not page_obj.has_next():
         return None
@@ -157,7 +154,10 @@ class ManualMergeSearchView(LoginRequiredMixin, View):
         try:
             qs = _get_merge_candidate_qs(request, mode)
         except ValueError:
-            return api_error(request, "Invalid mode", code="invalid_mode", status=400)
+            return api_error(request,
+                             "Invalid mode",
+                             code="invalid_mode",
+                             status=400)
         search_query = request.GET.get("search", "").strip()
         if search_query:
             qs = qs.smart_search(search_query)
@@ -175,7 +175,8 @@ class ManualMergeSearchView(LoginRequiredMixin, View):
                 "target_prefix": f"modal-{mode}",
                 "page_obj": page_obj,
                 "is_paginated": page_obj.has_other_pages(),
-                "pagination_url": _next_merge_page_url(request, mode, page_obj),
+                "pagination_url": _next_merge_page_url(request, mode,
+                                                       page_obj),
             },
         )
 
@@ -187,11 +188,16 @@ class ManualMergeModalView(LoginRequiredMixin, View):
         try:
             qs = _get_merge_candidate_qs(request, mode)
         except ValueError:
-            return api_error(request, "Invalid mode", code="invalid_mode", status=400)
+            return api_error(request,
+                             "Invalid mode",
+                             code="invalid_mode",
+                             status=400)
         qs = qs.order_by("-transaction_date")
         paginator = Paginator(qs, MANUAL_MERGE_PAGE_SIZE)
         page_obj = paginator.get_page(1)
-        filter_instance = RecordFilter(request=request, data=None, queryset=Record.objects.none())
+        filter_instance = RecordFilter(request=request,
+                                       data=None,
+                                       queryset=Record.objects.none())
         return render(
             request,
             "records/partials/merge/merge_modal_content.html",
@@ -202,22 +208,24 @@ class ManualMergeModalView(LoginRequiredMixin, View):
                 "filter": filter_instance,
                 "page_obj": page_obj,
                 "is_paginated": page_obj.has_other_pages(),
-                "pagination_url": _next_merge_page_url(request, mode, page_obj),
+                "pagination_url": _next_merge_page_url(request, mode,
+                                                       page_obj),
             },
         )
 
 
 class UndoMergeView(LoginRequiredMixin, View):
     """Reverse a previously completed merge and restore both original records.
-
     Rate-limited to 10 undo operations per minute. Returns HTMX toast on
     success for in-page updates.
     """
 
-    @method_decorator(ratelimit(key="user", rate="10/m", method="POST", block=True))
+    @method_decorator(
+        ratelimit(key="user", rate="10/m", method="POST", block=True))
     def post(self, request, merge_id: int) -> HttpResponse:
         merge_log = get_object_or_404(
-            MergeLog.objects.select_related("plaid_record", "document_record", "document"),
+            MergeLog.objects.select_related("plaid_record", "document_record",
+                                            "document"),
             pk=merge_id,
             plaid_record__user=request.user,
         )
@@ -225,15 +233,13 @@ class UndoMergeView(LoginRequiredMixin, View):
         if restored is None:
             if request.headers.get("HX-Request") == "true":
                 response = HttpResponse(status=204)
-                response["HX-Trigger"] = json.dumps(
-                    {
-                        "recordChanged": {},
-                        "showToast": {
-                            "text": "This merge was already undone.",
-                            "tags": "info",
-                        },
-                    }
-                )
+                response["HX-Trigger"] = json.dumps({
+                    "recordChanged": {},
+                    "showToast": {
+                        "text": "This merge was already undone.",
+                        "tags": "info",
+                    },
+                })
                 return response
             messages.info(request, "This merge was already undone.")
         else:
@@ -245,15 +251,14 @@ class UndoMergeView(LoginRequiredMixin, View):
             )
             if request.headers.get("HX-Request") == "true":
                 response = HttpResponse(status=204)
-                response["HX-Trigger"] = json.dumps(
-                    {
-                        "recordChanged": {},
-                        "showToast": {
-                            "text": "Merge undone. Records and document restored.",
-                            "tags": "success",
-                        },
-                    }
-                )
+                response["HX-Trigger"] = json.dumps({
+                    "recordChanged": {},
+                    "showToast": {
+                        "text": "Merge undone. Records and document restored.",
+                        "tags": "success",
+                    },
+                })
                 return response
-            messages.success(request, "Merge undone. Records and document restored.")
+            messages.success(request,
+                             "Merge undone. Records and document restored.")
         return redirect("records:view_all_records")

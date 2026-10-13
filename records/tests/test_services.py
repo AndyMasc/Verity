@@ -31,11 +31,13 @@ from records.services import (
 
 
 class ArchiveRecordTest(TestCase):
+
     def setUp(self):
-        self.user = User.objects.create_user(username="testuser", password="pass")
-        self.record = Record.objects.create(
-            user=self.user, title="Test", record_type="expense_receipt"
-        )
+        self.user = User.objects.create_user(username="testuser",
+                                             password="pass")
+        self.record = Record.objects.create(user=self.user,
+                                            title="Test",
+                                            record_type="expense_receipt")
 
     def test_archive_sets_inactive(self):
         archive_record(self.user, self.record)
@@ -51,11 +53,16 @@ class ArchiveRecordTest(TestCase):
 
 
 class BulkToggleArchiveTest(TestCase):
+
     def setUp(self):
-        self.user = User.objects.create_user(username="testuser", password="pass")
-        self.other_user = User.objects.create_user(username="other", password="pass")
+        self.user = User.objects.create_user(username="testuser",
+                                             password="pass")
+        self.other_user = User.objects.create_user(username="other",
+                                                   password="pass")
         self.records = [
-            Record.objects.create(user=self.user, title=f"Rec {i}", record_type="expense_receipt")
+            Record.objects.create(user=self.user,
+                                  title=f"Rec {i}",
+                                  record_type="expense_receipt")
             for i in range(5)
         ]
 
@@ -90,9 +97,9 @@ class BulkToggleArchiveTest(TestCase):
         self.assertEqual(count, 2)
 
     def test_skips_other_users_records(self):
-        other_record = Record.objects.create(
-            user=self.other_user, title="Other", record_type="expense_receipt"
-        )
+        other_record = Record.objects.create(user=self.other_user,
+                                             title="Other",
+                                             record_type="expense_receipt")
         ids = [self.records[0].id, other_record.id]
         count = bulk_toggle_archive(ids, self.user, archive=True)
         self.assertEqual(count, 1)
@@ -106,7 +113,8 @@ class BulkToggleArchiveTest(TestCase):
     def test_creates_audit_logs(self):
         ids = [r.id for r in self.records[:2]]
         bulk_toggle_archive(ids, self.user, archive=True)
-        log_count = AuditLog.objects.filter(user=self.user, action=AuditLog.Action.ARCHIVE).count()
+        log_count = AuditLog.objects.filter(
+            user=self.user, action=AuditLog.Action.ARCHIVE).count()
         self.assertEqual(log_count, 2)
 
     def test_raises_on_limit_exceeded(self):
@@ -126,7 +134,9 @@ class BulkToggleArchiveTest(TestCase):
     def test_transaction_rolls_back_on_error(self):
         ids = [r.id for r in self.records[:2]]
         with self.assertRaises(BulkLimitExceededError):
-            bulk_toggle_archive(list(range(1, BULK_LIMIT + 2)) + ids, self.user, archive=True)
+            bulk_toggle_archive(list(range(1, BULK_LIMIT + 2)) + ids,
+                                self.user,
+                                archive=True)
         for r in self.records[:2]:
             r.refresh_from_db()
             self.assertTrue(r.is_active)
@@ -137,8 +147,10 @@ def _make_hash(content: bytes = b"ocr") -> str:
 
 
 class CreateRecordFromOCRTest(TestCase):
+
     def setUp(self):
-        self.user = User.objects.create_user(username="ocrsvc", password="pass")
+        self.user = User.objects.create_user(username="ocrsvc",
+                                             password="pass")
 
     def _doc(self, data=None, **kwargs):
         return DocumentData.objects.create(
@@ -151,17 +163,15 @@ class CreateRecordFromOCRTest(TestCase):
         )
 
     def test_creates_record_from_persisted_data(self):
-        doc = self._doc(
-            {
-                "title": "Coffee Shop",
-                "merchant": "Coffee Shop Inc",
-                "balance": 12.5,
-                "currency": "usd",
-                "transaction_date": "2024-06-15",
-                "products": ["Latte", "Croissant"],
-                "record_type": "expense_receipt",
-            }
-        )
+        doc = self._doc({
+            "title": "Coffee Shop",
+            "merchant": "Coffee Shop Inc",
+            "balance": 12.5,
+            "currency": "usd",
+            "transaction_date": "2024-06-15",
+            "products": ["Latte", "Croissant"],
+            "record_type": "expense_receipt",
+        })
         record = create_record_from_ocr(doc.id)
         self.assertIsNotNone(record)
         doc.refresh_from_db()
@@ -201,14 +211,22 @@ class CreateRecordFromOCRTest(TestCase):
         self.assertIsNone(create_record_from_ocr(99999))
 
     def test_falls_back_on_invalid_type_and_currency(self):
-        doc = self._doc({"title": "Coffee", "currency": "xxx", "record_type": "bogus"})
+        doc = self._doc({
+            "title": "Coffee",
+            "currency": "xxx",
+            "record_type": "bogus"
+        })
         record = create_record_from_ocr(doc.id)
         record.refresh_from_db()
-        self.assertEqual(record.record_type, Record.RecordTypes.FINANCIAL_DOCUMENT)
+        self.assertEqual(record.record_type,
+                         Record.RecordTypes.FINANCIAL_DOCUMENT)
         self.assertEqual(record.currency, DEFAULT_CURRENCY)
 
     def test_coerces_iso_datetime(self):
-        doc = self._doc({"title": "Coffee", "transaction_date": "2024-06-15T10:30:00Z"})
+        doc = self._doc({
+            "title": "Coffee",
+            "transaction_date": "2024-06-15T10:30:00Z"
+        })
         record = create_record_from_ocr(doc.id)
         record.refresh_from_db()
         self.assertEqual(record.transaction_date, date(2024, 6, 15))
@@ -220,8 +238,10 @@ class CreateRecordFromOCRTest(TestCase):
 
 
 class KickoffOCRScanTest(TestCase):
+
     def setUp(self):
-        self.user = User.objects.create_user(username="scanner", password="pass")
+        self.user = User.objects.create_user(username="scanner",
+                                             password="pass")
         self.doc = DocumentData.objects.create(
             user=self.user,
             filepath="users/1/scan.pdf",

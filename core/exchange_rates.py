@@ -73,12 +73,15 @@ def get_rates(base: str = "USD") -> dict[str, Decimal]:
     cache.set(cache_key, {}, CACHE_TTL_EMPTY)
     stale = cache.get(stale_key)
     if stale:
-        logger.warning("Frankfurter API unavailable — serving stale exchange rates for %s", base)
+        logger.warning(
+            "Frankfurter API unavailable — serving stale exchange rates for %s",
+            base)
         return {code: Decimal(rate) for code, rate in stale.items()}
     return {}
 
 
-def convert(amount: Decimal, from_curr: str, to_curr: str, rates: dict[str, Decimal]) -> Decimal:
+def convert(amount: Decimal, from_curr: str, to_curr: str,
+            rates: dict[str, Decimal]) -> Decimal:
     from_curr = from_curr.upper()
     to_curr = to_curr.upper()
 
@@ -89,10 +92,12 @@ def convert(amount: Decimal, from_curr: str, to_curr: str, rates: dict[str, Deci
     to_rate = rates.get(to_curr)
 
     if from_rate is None:
-        logger.warning("No exchange rate for %s — returning amount unchanged", from_curr)
+        logger.warning("No exchange rate for %s — returning amount unchanged",
+                       from_curr)
         return Decimal(str(amount))
     if to_rate is None:
-        logger.warning("No exchange rate for %s — returning amount unchanged", to_curr)
+        logger.warning("No exchange rate for %s — returning amount unchanged",
+                       to_curr)
         return Decimal(str(amount))
     if from_rate == 0:
         return Decimal("0")
@@ -100,14 +105,14 @@ def convert(amount: Decimal, from_curr: str, to_curr: str, rates: dict[str, Deci
     converted = Decimal(str(amount)) * (to_rate / from_rate)
 
     decimals = get_currency_decimals(to_curr)
-    quant_target = Decimal("1") if decimals == 0 else Decimal(f"0.{'0' * decimals}")
+    quant_target = Decimal("1") if decimals == 0 else Decimal(
+        f"0.{'0' * decimals}")
 
     return converted.quantize(quant_target, rounding=ROUND_HALF_UP)
 
 
-def convert_strict(
-    amount: Decimal, from_curr: str, to_curr: str, rates: dict[str, Decimal]
-) -> Decimal:
+def convert_strict(amount: Decimal, from_curr: str, to_curr: str,
+                   rates: dict[str, Decimal]) -> Decimal:
     """Convert like convert(), but raise instead of passing amounts through unchanged.
 
     Money-moving paths (checkout line items, platform fees) must never bill a
@@ -123,11 +128,14 @@ def convert_strict(
     from_rate = rates.get(from_curr)
     to_rate = rates.get(to_curr)
     if from_rate is None:
-        raise ExchangeRateUnavailableError(f"No exchange rate available for {from_curr}")
+        raise ExchangeRateUnavailableError(
+            f"No exchange rate available for {from_curr}")
     if to_rate is None:
-        raise ExchangeRateUnavailableError(f"No exchange rate available for {to_curr}")
+        raise ExchangeRateUnavailableError(
+            f"No exchange rate available for {to_curr}")
     if from_rate == 0 or to_rate == 0:
-        raise ExchangeRateUnavailableError(f"Invalid zero exchange rate for {from_curr}/{to_curr}")
+        raise ExchangeRateUnavailableError(
+            f"Invalid zero exchange rate for {from_curr}/{to_curr}")
 
     # Rates are now known good, so convert() takes its normal arithmetic path.
     return convert(amount, from_curr, to_curr, rates)

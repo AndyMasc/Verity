@@ -15,12 +15,18 @@ from ._helpers import _package, _user
 
 
 def _intent(**overrides):
-    data = {"id": "pi_ok", "status": "succeeded", "amount": 5000, "currency": "usd"}
+    data = {
+        "id": "pi_ok",
+        "status": "succeeded",
+        "amount": 5000,
+        "currency": "usd"
+    }
     data.update(overrides)
     return data
 
 
 class DailyReconciliationTest(TestCase):
+
     def setUp(self):
         self.creator = _user("recon-creator@test.com")
         self.payer = _user("recon-payer@test.com")
@@ -37,7 +43,8 @@ class DailyReconciliationTest(TestCase):
             is_completed=True,
         )
 
-    @patch("reimbursements.services.retrieve_payment_intent", return_value=_intent())
+    @patch("reimbursements.services.retrieve_payment_intent",
+           return_value=_intent())
     def test_clean_state_produces_no_drift(self, _mock_intent):
         pkg = _package(self.creator, status="paid")
         self._completed_payment(pkg)
@@ -56,47 +63,51 @@ class DailyReconciliationTest(TestCase):
         payment.package.mark_as_paid(payer=self.payer)  # no-op: already paid
 
         run_daily_reconciliation()
-        entry = AuditLog.objects.get(details__drift_kind="settled_amount_mismatch")
+        entry = AuditLog.objects.get(
+            details__drift_kind="settled_amount_mismatch")
         self.assertEqual(entry.details["stripe_amount_cents"], 4000)
         self.assertEqual(entry.details["expected_cents"], 5000)
 
-    @patch("reimbursements.services.retrieve_payment_intent", return_value=_intent())
-    def test_paid_package_without_completed_payment_is_flagged(self, _mock_intent):
+    @patch("reimbursements.services.retrieve_payment_intent",
+           return_value=_intent())
+    def test_paid_package_without_completed_payment_is_flagged(
+            self, _mock_intent):
         _package(self.creator, status="paid")  # no payments at all
 
         run_daily_reconciliation()
         self.assertTrue(
             AuditLog.objects.filter(
-                details__drift_kind="paid_package_without_completed_payment"
-            ).exists()
-        )
+                details__drift_kind="paid_package_without_completed_payment").
+            exists())
 
-    @patch("reimbursements.services.retrieve_payment_intent", return_value=_intent())
-    def test_completed_payment_on_unpaid_package_is_flagged(self, _mock_intent):
+    @patch("reimbursements.services.retrieve_payment_intent",
+           return_value=_intent())
+    def test_completed_payment_on_unpaid_package_is_flagged(
+            self, _mock_intent):
         pkg = _package(self.creator, status="open")
         self._completed_payment(pkg)
 
         run_daily_reconciliation()
         self.assertTrue(
             AuditLog.objects.filter(
-                details__drift_kind="completed_payment_on_unpaid_package"
-            ).exists()
-        )
+                details__drift_kind="completed_payment_on_unpaid_package").
+            exists())
 
-    @patch("reimbursements.services.retrieve_payment_intent", return_value=_intent())
+    @patch("reimbursements.services.retrieve_payment_intent",
+           return_value=_intent())
     def test_missing_intent_at_stripe_is_flagged(self, mock_intent):
         mock_intent.side_effect = stripe.error.InvalidRequestError(
-            "No such payment_intent: 'pi_gone'", "id"
-        )
+            "No such payment_intent: 'pi_gone'", "id")
         pkg = _package(self.creator, status="paid")
         self._completed_payment(pkg, pi="pi_gone")
 
         run_daily_reconciliation()
         self.assertTrue(
-            AuditLog.objects.filter(details__drift_kind="payment_intent_missing").exists()
-        )
+            AuditLog.objects.filter(
+                details__drift_kind="payment_intent_missing").exists())
 
-    @patch("reimbursements.services.retrieve_payment_intent", return_value=_intent())
+    @patch("reimbursements.services.retrieve_payment_intent",
+           return_value=_intent())
     def test_same_drift_is_not_flagged_twice_within_window(self, _mock_intent):
         _package(self.creator, status="paid")  # drift: no completed payment
 
@@ -104,18 +115,20 @@ class DailyReconciliationTest(TestCase):
         second = run_daily_reconciliation()
 
         self.assertEqual(len(first), 1)
-        self.assertEqual(len(second), 1, "second run should still report the drift")
+        self.assertEqual(len(second), 1,
+                         "second run should still report the drift")
         self.assertEqual(
             AuditLog.objects.filter(
-                details__drift_kind="paid_package_without_completed_payment"
-            ).count(),
+                details__drift_kind="paid_package_without_completed_payment").
+            count(),
             1,
             "audit dedup failed — retries would spam the trail",
         )
 
     @patch("reimbursements.services.retrieve_payment_intent")
     def test_transient_stripe_error_raises_for_retry(self, mock_intent):
-        mock_intent.side_effect = stripe.error.APIConnectionError("network down")
+        mock_intent.side_effect = stripe.error.APIConnectionError(
+            "network down")
         pkg = _package(self.creator, status="paid")
         self._completed_payment(pkg)
 

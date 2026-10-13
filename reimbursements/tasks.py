@@ -19,7 +19,8 @@ def process_stripe_event_task(trigger_id: int) -> None:
     try:
         trigger = WebhookEventTrigger.objects.get(pk=trigger_id)
     except WebhookEventTrigger.DoesNotExist:
-        logger.warning("process_stripe_event_task: trigger %s not found", trigger_id)
+        logger.warning("process_stripe_event_task: trigger %s not found",
+                       trigger_id)
         return
 
     with transaction.atomic():
@@ -31,16 +32,17 @@ def sync_payment_status(package_uuid: str, payment_id: int) -> None:
     try:
         package = ReimbursementPackage.objects.get(uuid=package_uuid)
     except ReimbursementPackage.DoesNotExist:
-        logger.warning("sync_payment_status: package %s not found", package_uuid)
+        logger.warning("sync_payment_status: package %s not found",
+                       package_uuid)
         return
 
-    if package.status != ReimbursementPackage.Status.OPEN:
+    if package.status not in (ReimbursementPackage.Status.OPEN,
+                              ReimbursementPackage.Status.QUEUED):
         return
 
     try:
-        payment = PackagePayment.objects.select_related("package", "payer").get(
-            pk=payment_id, package=package
-        )
+        payment = PackagePayment.objects.select_related(
+            "package", "payer").get(pk=payment_id, package=package)
     except PackagePayment.DoesNotExist:
         return
 
@@ -49,41 +51,48 @@ def sync_payment_status(package_uuid: str, payment_id: int) -> None:
 
 
 def sync_payment_from_stripe(payment, *, source: str) -> bool:
-    session = services.retrieve_checkout_session(payment.stripe_checkout_session_id)
+    """Backstop for a missed webhook: ask Stripe whether this invoice settled.
 
-    if session.payment_status != "paid":
-        return False
+    Only invoice-raised payments can be outstanding, so a lost webhook
+    self-heals on the next sweep.
+    """
+    from .webhooks import apply_paid_invoice
 
-    from .webhooks import apply_paid_session
+    if payment.stripe_invoice_id:
+        invoice = services.retrieve_invoice(payment.stripe_invoice_id)
+        if invoice.get("status") != "paid":
+            return False
+        settled = {
+            "id": invoice.get("id"),
+            "amount_paid": invoice.get("amount_paid"),
+            "currency": invoice.get("currency"),
+            "payment_intent": invoice.get("payment_intent"),
+        }
+        if not apply_paid_invoice(payment, settled, source=source):
+            logger.error(
+                "Package %s: invoice %s amount check failed — skipping mark-as-paid",
+                payment.package.uuid,
+                payment.stripe_invoice_id,
+            )
+            return False
+        return True
 
-    if not apply_paid_session(payment, session, source=source):
-        logger.error(
-            "Package %s: session %s amount check failed — skipping mark-as-paid",
-            payment.package.uuid,
-            session.id,
-        )
-        return False
-    return True
+    return False
 
 
 @dramatiq.actor(max_retries=3, min_backoff=2, periodic=cron("*/15 * * * *"))
 def reconcile_pending_payments_task() -> None:
-    package_ids = (
-        ReimbursementPackage.objects.filter(
-            status=ReimbursementPackage.Status.OPEN,
-            payments__is_completed=False,
-        )
-        .values_list("pk", flat=True)
-        .distinct()
-    )
+    package_ids = (ReimbursementPackage.objects.filter(
+        status__in=(ReimbursementPackage.Status.OPEN,
+                    ReimbursementPackage.Status.QUEUED),
+        payments__is_completed=False,
+    ).values_list("pk", flat=True).distinct())
 
     for package_id in package_ids:
-        payment = (
-            PackagePayment.objects.select_related("package", "payer")
-            .filter(package_id=package_id, is_completed=False)
-            .order_by("-created_at")
-            .first()
-        )
+        payment = (PackagePayment.objects.select_related(
+            "package", "payer").filter(
+                package_id=package_id,
+                is_completed=False).order_by("-created_at").first())
         if payment is None:
             continue
         try:
@@ -107,7 +116,8 @@ def daily_stripe_reconciliation_task() -> None:
 
 
 @dramatiq.actor
-def send_package_paid_notification_task(package_pk: int, payer_pk: int | None) -> None:
+def send_package_paid_notification_task(package_pk: int,
+                                        payer_pk: int | None) -> None:
     from django.contrib.auth import get_user_model
 
     from .models import ReimbursementPackage

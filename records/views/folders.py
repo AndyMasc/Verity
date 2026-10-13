@@ -28,12 +28,15 @@ def _unfiled_count(user) -> int:
 def _folder_list_context(user):
     """Build the shared context for rendering the folder list partial."""
     folders = Folder.objects.filter(user=user).with_record_counts()
-    return {"folders": folders, "unfiled_count": _unfiled_count(user), "page_obj": None}
+    return {
+        "folders": folders,
+        "unfiled_count": _unfiled_count(user),
+        "page_obj": None
+    }
 
 
 class FolderListView(LoginRequiredMixin, ListView):
     """Paginated list of the current user's folders with active-record counts.
-
     Supports search filtering by folder name and returns an HTMX partial
     when the request is an HTMX swap.
     """
@@ -62,7 +65,17 @@ class FolderListView(LoginRequiredMixin, ListView):
         return context
 
 
-class CreateFolder(LoginRequiredMixin, CreateView):
+class HtmxFormErrorsMixin:
+    """HTMX wants 422 to swap in validation errors instead of re-rendering."""
+
+    def form_invalid(self, form):
+        response = super().form_invalid(form)
+        if self.request.headers.get("HX-Request"):
+            response.status_code = 422
+        return response
+
+
+class CreateFolder(LoginRequiredMixin, HtmxFormErrorsMixin, CreateView):
     """Create a new folder and refresh the folder list inline via HTMX."""
 
     model = Folder
@@ -83,14 +96,8 @@ class CreateFolder(LoginRequiredMixin, CreateView):
             return response
         return super().form_valid(form)
 
-    def form_invalid(self, form):
-        response = super().form_invalid(form)
-        if self.request.headers.get("HX-Request"):
-            response.status_code = 422
-        return response
 
-
-class FolderUpdateView(LoginRequiredMixin, UpdateView):
+class FolderUpdateView(LoginRequiredMixin, HtmxFormErrorsMixin, UpdateView):
     """Inline-edit a folder's name. Returns the updated folder partial via HTMX."""
 
     model = Folder
@@ -99,7 +106,8 @@ class FolderUpdateView(LoginRequiredMixin, UpdateView):
     pk_url_kwarg = "folder_id"
 
     def get_queryset(self):
-        return Folder.objects.filter(user=self.request.user).with_record_counts()
+        return Folder.objects.filter(
+            user=self.request.user).with_record_counts()
 
     def form_valid(self, form):
         self.object = form.save()
@@ -110,12 +118,6 @@ class FolderUpdateView(LoginRequiredMixin, UpdateView):
                 {"folder": self.object},
             )
         return super().form_valid(form)
-
-    def form_invalid(self, form):
-        response = super().form_invalid(form)
-        if self.request.headers.get("HX-Request"):
-            response.status_code = 422
-        return response
 
 
 class FolderDeleteView(LoginRequiredMixin, DeleteView):

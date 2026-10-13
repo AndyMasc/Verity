@@ -11,7 +11,9 @@ from . import views
 app_name = "plaid"
 
 urlpatterns = [
-    path("exchange-token/", views.PublicTokenExchange.as_view(), name="exchange_token"),
+    path("exchange-token/",
+         views.PublicTokenExchange.as_view(),
+         name="exchange_token"),
     path("sync/", views.SyncTransactionsView.as_view(), name="sync"),
     path(
         "create-link-token/",

@@ -13,7 +13,8 @@ PLAID_ENV_MAP = {
 }
 
 configuration = plaid.Configuration(
-    host=PLAID_ENV_MAP.get(settings.PLAID_ENV.lower(), PLAID_ENV_MAP["sandbox"]),
+    host=PLAID_ENV_MAP.get(settings.PLAID_ENV.lower(),
+                           PLAID_ENV_MAP["sandbox"]),
     api_key={
         "clientId": settings.PLAID_CLIENT_ID,
         "secret": settings.PLAID_SECRET,

@@ -35,7 +35,8 @@ def ocr_data_to_form_initial(data: dict | None) -> dict:
 
     if isinstance(products_data, list):
         processed_products = [
-            json.dumps(p) if isinstance(p, (dict, list)) else str(p).strip() for p in products_data
+            json.dumps(p) if isinstance(p, (dict, list)) else str(p).strip()
+            for p in products_data
         ]
         products_value = "\n".join(processed_products).strip()
     else:
@@ -64,8 +65,7 @@ def _decode_image(image_bytes: bytes) -> np.ndarray | None:
         try:
             heif_file = read_heif(image_bytes)
             img_rgb = np.frombuffer(heif_file.data, dtype=np.uint8).reshape(
-                heif_file.size[1], heif_file.size[0], 3
-            )
+                heif_file.size[1], heif_file.size[0], 3)
             return cv2.cvtColor(img_rgb, cv2.COLOR_RGB2BGR)
         except Exception as e:
             logger.error("Failed to decode HEIC bytes: %s", e)
@@ -85,11 +85,8 @@ def _deskew_image(img: np.ndarray) -> np.ndarray:
 
     h, w = img.shape[:2]
     scale = SKEW_MAX_DIM / max(h, w)
-    small = (
-        cv2.resize(img, (int(w * scale), int(h * scale)), interpolation=cv2.INTER_AREA)
-        if scale < 1.0
-        else img
-    )
+    small = (cv2.resize(img, (int(w * scale), int(h * scale)),
+                        interpolation=cv2.INTER_AREA) if scale < 1.0 else img)
 
     angle = determine_skew(cv2.cvtColor(small, cv2.COLOR_BGR2GRAY))
 
@@ -113,7 +110,8 @@ def _resize_image(img: np.ndarray) -> np.ndarray:
     h, w = img.shape[:2]
     if max(h, w) > MAX_DIMENSION:
         scale = MAX_DIMENSION / max(h, w)
-        img = cv2.resize(img, (int(w * scale), int(h * scale)), interpolation=cv2.INTER_AREA)
+        img = cv2.resize(img, (int(w * scale), int(h * scale)),
+                         interpolation=cv2.INTER_AREA)
     return img
 
 
@@ -128,7 +126,8 @@ def _encode_webp(img: np.ndarray) -> bytes:
     return encoded_img.tobytes()
 
 
-def render_pdf_pages(pdf_bytes: bytes, dpi: int = PDF_RENDER_DPI) -> list[bytes] | None:
+def render_pdf_pages(pdf_bytes: bytes,
+                     dpi: int = PDF_RENDER_DPI) -> list[bytes] | None:
     """Render every page of a PDF to JPEG bytes for Gemini input. Returns None (so the caller falls
     back to the raw PDF) if rendering fails for any reason.
     """

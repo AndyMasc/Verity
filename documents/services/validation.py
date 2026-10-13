@@ -72,10 +72,14 @@ class DocumentUploadService:
         def reject(note: str, error: str, status_code: int) -> UploadResult:
             """Mark the document ERROR, record why, and return the failure."""
             self.document.status = DocumentStatus.ERROR
-            self.document.notes = ((self.document.notes or "") + f"\n{note}").strip()
+            self.document.notes = ((self.document.notes or "") +
+                                   f"\n{note}").strip()
             self.document.save(update_fields=["status", "notes"])
-            logger.warning("Upload rejected for doc %s: %s", self.document.id, note)
-            return UploadResult(valid=False, error=error, status_code=status_code)
+            logger.warning("Upload rejected for doc %s: %s", self.document.id,
+                           note)
+            return UploadResult(valid=False,
+                                error=error,
+                                status_code=status_code)
 
         if self.document.filepath != self.key:
             logger.warning(
@@ -86,13 +90,17 @@ class DocumentUploadService:
             )
             self.document.status = DocumentStatus.ERROR
             self.document.save(update_fields=["status"])
-            return UploadResult(valid=False, error="Key mismatch.", status_code=400)
+            return UploadResult(valid=False,
+                                error="Key mismatch.",
+                                status_code=400)
 
         head = get_r2_object_head(self.key)
         if head is None:
             self.document.status = DocumentStatus.ERROR
             self.document.save(update_fields=["status"])
-            return UploadResult(valid=False, error="File not found in storage.", status_code=404)
+            return UploadResult(valid=False,
+                                error="File not found in storage.",
+                                status_code=404)
 
         file_size = head.get("ContentLength")
         mime_type = (head.get("ContentType") or "").split(";")[0].strip()
@@ -116,7 +124,8 @@ class DocumentUploadService:
             self.document.status = DocumentStatus.UPLOADED
             self.document.file_size = file_size
             self.document.mime_type = mime_type or self.document.mime_type
-            self.document.save(update_fields=["status", "file_size", "mime_type"])
+            self.document.save(
+                update_fields=["status", "file_size", "mime_type"])
 
         return UploadResult(
             valid=True,
