@@ -3059,6 +3059,9 @@
   .underline {
     text-decoration-line: underline;
   }
+  .decoration-red-400 {
+    text-decoration-color: var(--color-red-400);
+  }
   .decoration-zinc-300 {
     text-decoration-color: var(--color-zinc-300);
   }
@@ -4450,6 +4453,11 @@
       --tw-scale-y: 100%;
       --tw-scale-z: 100%;
       scale: var(--tw-scale-x) var(--tw-scale-y);
+    }
+  }
+  .sm\:rotate-0 {
+    @media (width >= 40rem) {
+      rotate: 0deg;
     }
   }
   .sm\:grid-cols-2 {
@@ -6355,6 +6363,14 @@
   .dark\:text-zinc-950 {
     @media (prefers-color-scheme: dark) {
       color: var(--color-zinc-950);
+    }
+  }
+  .dark\:decoration-red-500\/70 {
+    @media (prefers-color-scheme: dark) {
+      text-decoration-color: color-mix(in srgb, oklch(63.7% 0.237 25.331) 70%, transparent);
+      @supports (color: color-mix(in lab, red, red)) {
+        text-decoration-color: color-mix(in oklab, var(--color-red-500) 70%, transparent);
+      }
     }
   }
   .dark\:decoration-zinc-500\/70 {

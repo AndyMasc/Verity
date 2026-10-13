@@ -147,7 +147,7 @@
                                 {% if h.history_type == '~' and h.prev_record %}
                                     <tr class="bg-zinc-50/70 dark:bg-zinc-900/60">
                                         <td colspan="4" class="px-4 py-4 sm:px-6">
-                                            <div class="shadow-2xs rounded-lg border border-zinc-300 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-950">
+                                            <div>
                                                 <div class="grid grid-cols-1 gap-4 text-xs sm:grid-cols-3">
                                                     {% if h.source_type == "document" %}
                                                         {% include "records/partials/history_diff.html" with fields=doc_tracked_fields prev_record=h.prev_record entry=h %}
