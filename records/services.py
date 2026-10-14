@@ -15,6 +15,7 @@ from django.utils.dateparse import parse_date, parse_datetime
 from billing.models import CustomUser as User
 from core.apps import posthog_client
 from core.currencies import CURRENCY_CHOICES, DEFAULT_CURRENCY
+from teams.orgs import personal_org
 
 from .constants import RETENTION_YEARS
 from .matching import try_match_document_record
@@ -195,6 +196,7 @@ def create_record_from_ocr(document_id: int) -> Record | None:
 
         record = Record.objects.create(
             user=document.user,
+            organization=personal_org(document.user),
             title=title,
             products=initial.get("products") or "",
             merchant=initial.get("merchant") or "",

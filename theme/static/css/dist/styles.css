@@ -6864,6 +6864,15 @@
       }
     }
   }
+  .dark\:hover\:bg-zinc-100 {
+    @media (prefers-color-scheme: dark) {
+      &:hover {
+        @media (hover: hover) {
+          background-color: var(--color-zinc-100);
+        }
+      }
+    }
+  }
   .dark\:hover\:bg-zinc-200 {
     @media (prefers-color-scheme: dark) {
       &:hover {

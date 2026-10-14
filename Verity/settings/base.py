@@ -88,10 +88,13 @@ INSTALLED_APPS = [
     "accounting.apps.AccountingConfig",
     "reimbursements.apps.ReimbursementsConfig",
     "plaid_integration.apps.PlaidIntegrationConfig",
+    "teams.apps.TeamsConfig",
     "billing.apps.BillingConfig",
     # Webpush
     "webpush",
     # Stripe
+    "django_extensions",
+    "organizations",
     "djstripe",
 ]
 

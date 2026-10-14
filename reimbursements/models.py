@@ -21,6 +21,7 @@ from core.currencies import (
     to_stripe_amount,
 )
 from records.models import Record
+from teams.orgs import personal_org
 
 from . import pricing
 from .fees import PlatformFeeCalculator
@@ -67,6 +68,7 @@ class ReimbursementPackageQuerySet(models.QuerySet):
         with transaction.atomic():
             package = self.create(
                 creator=draft.creator,
+                organization=personal_org(draft.creator),
                 recipient=draft.recipient,
                 recipient_email=draft.recipient_email or "",
                 title=draft.title,
@@ -178,6 +180,12 @@ class ReimbursementPackage(models.Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="reimbursement_packages",
+    )
+    organization = models.ForeignKey(
+        "organizations.Organization",
+        null=True,
+        on_delete=models.CASCADE,
+        related_name="packages",
     )
     recipient = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -309,6 +317,7 @@ class ReimbursementPackage(models.Model):
                     f"(package {self.uuid})")
                 payer_record = Record.objects.create(
                     user=payer,
+                    organization=locked.organization,
                     title=f"Reimbursement: {self.title}",
                     transaction_date=locked.paid_at.strftime("%Y-%m-%d"),
                     merchant=self.creator.email,

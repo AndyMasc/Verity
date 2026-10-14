@@ -264,6 +264,12 @@ class Record(models.Model):
         on_delete=models.CASCADE,
         related_name="records",
     )
+    organization = models.ForeignKey(
+        "organizations.Organization",
+        null=True,
+        on_delete=models.CASCADE,
+        related_name="records",
+    )
     date_added = models.DateField(auto_now_add=True, db_index=True)
     last_edited = models.DateTimeField(auto_now=True, db_index=True)
     is_active = models.BooleanField(default=True, db_index=True)
