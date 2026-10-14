@@ -1,0 +1,26 @@
+{% extends "organizations/organizations_base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Remove member" %} | {{ organization.name }}{% endblock %}
+{% block org_content %}
+    <div class="mx-auto max-w-md">
+        <div class="rounded-xl border border-red-200 bg-white p-6 dark:border-red-900/60 dark:bg-zinc-900">
+            <h1 class="text-lg font-semibold text-red-700 dark:text-red-400">
+                {% blocktranslate with email=org_user.user.email %}Remove {{ email }}?{% endblocktranslate %}
+            </h1>
+            <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
+                {% translate "They lose access to this organization immediately. Their records are kept." %}
+            </p>
+            <form method="post" class="mt-6 flex items-center gap-3">
+                {% csrf_token %}
+                <button type="submit"
+                        class="rounded-lg bg-red-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-red-700">
+                    {% translate "Remove member" %}
+                </button>
+                <a href="{% url 'organization_user_list' organization.pk %}"
+                   class="rounded-lg px-4 py-2.5 text-sm font-medium text-zinc-600 transition hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800">
+                    {% translate "Cancel" %}
+                </a>
+            </form>
+        </div>
+    </div>
+{% endblock %}

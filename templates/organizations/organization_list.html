@@ -1,0 +1,50 @@
+{% extends "organizations/organizations_base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Organizations" %} | Verity{% endblock %}
+{% block org_content %}
+    <div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+            <h1 class="text-2xl font-bold tracking-tight">{% translate "Organizations" %}</h1>
+            <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                {% translate "Groups of people who share records and expense workflows." %}
+            </p>
+        </div>
+        <a href="{% url 'organization_add' %}"
+           class="inline-flex items-center gap-2 self-start rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200">
+            {% translate "New organization" %}
+        </a>
+    </div>
+    {% if organizations %}
+        <div class="overflow-hidden rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+            {% for organization in organizations %}
+                <a href="{% url 'organization_detail' organization.pk %}"
+                   class="flex items-center justify-between gap-4 border-b border-zinc-100 px-5 py-4 transition last:border-b-0 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-950/60">
+                    <div class="min-w-0">
+                        <p class="truncate font-medium">{{ organization.name }}</p>
+                        <p class="truncate text-xs text-zinc-500 dark:text-zinc-400">
+                            {% blocktranslate with slug=organization.slug %}/{{ slug }}{% endblocktranslate %}
+                        </p>
+                    </div>
+                    {% if not organization.is_active %}
+                        <span class="shrink-0 rounded-full bg-zinc-100 px-2.5 py-1 text-xs text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
+                            {% translate "Inactive" %}
+                        </span>
+                    {% endif %}
+                </a>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="rounded-xl border border-dashed border-zinc-300 px-6 py-16 text-center dark:border-zinc-700">
+            <p class="text-sm font-medium text-zinc-600 dark:text-zinc-300">
+                {% translate "You're not in any organizations yet." %}
+            </p>
+            <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                {% translate "Create one to start sharing records and expenses." %}
+            </p>
+            <a href="{% url 'organization_add' %}"
+               class="mt-6 inline-flex rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 dark:bg-white dark:text-zinc-900">
+                {% translate "New organization" %}
+            </a>
+        </div>
+    {% endif %}
+{% endblock %}

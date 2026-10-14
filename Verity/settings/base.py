@@ -45,6 +45,14 @@ DATABASES["default"].setdefault(
 DATABASES["default"]["CONN_HEALTH_CHECKS"] = env.bool("DB_CONN_HEALTH_CHECKS",
                                                       default=True)
 
+# Tests must never touch the development database. Without this, pytest-django
+# and `manage.py test` run against NAME itself and truncate real local data on
+# every run. Set DJANGO_TEST_ON_PRIMARY_DB=1 only when the target database is
+# disposable on purpose.
+if not env.bool("DJANGO_TEST_ON_PRIMARY_DB", default=False):
+    database_config["TEST"] = {"NAME": f"test_{database_config['NAME']}"}
+    DATABASES["default"]["TEST"] = database_config["TEST"]
+
 # Apps
 INSTALLED_APPS = [
     # Dramatiq

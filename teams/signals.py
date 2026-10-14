@@ -1,8 +1,8 @@
-"""Give every new user a personal organisation with an owner membership.
+"""Give every new user a personal organisation with them as owner.
 
-teams.0002 backfilled the users who existed at migration time. This covers
-everyone created since — signup and tests alike — so personal_org() is safe
-to call from any creation path.
+teams.0002 backfilled users who existed at migration time; this covers
+everyone created since. Organization.is_active is the soft-delete flag, so an
+org is never actually destroyed and the records inside it survive.
 """
 
 from typing import Any
@@ -11,11 +11,7 @@ from django.conf import settings
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils.text import slugify
-from organizations.models import Organization
-
-from .models import Membership
-
-ROLE_OWNER = "owner"
+from organizations.models import Organization, OrganizationOwner, OrganizationUser
 
 
 def create_personal_org(user: Any) -> Organization:
@@ -30,7 +26,11 @@ def create_personal_org(user: Any) -> Organization:
     org = Organization.objects.create(name=name,
                                       slug=candidate,
                                       is_active=True)
-    Membership.objects.create(user=user, organization=org, role=ROLE_OWNER)
+    membership = OrganizationUser.objects.create(user=user,
+                                                 organization=org,
+                                                 is_admin=True)
+    OrganizationOwner.objects.create(organization=org,
+                                     organization_user=membership)
     return org
 
 
@@ -41,6 +41,6 @@ def ensure_personal_org(sender: Any, instance: Any, created: bool,
                         **kwargs: Any) -> None:  # noqa: ARG001
     if not created:
         return
-    if Membership.objects.filter(user=instance).exists():
+    if OrganizationUser.objects.filter(user=instance).exists():
         return
     create_personal_org(instance)

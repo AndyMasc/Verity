@@ -9,6 +9,7 @@ from django.conf import settings
 from django.contrib import admin
 from django.http import HttpResponseForbidden
 from django.urls import include, path
+from organizations.backends import invitation_backend
 from webpush.views import ServiceWorkerView
 
 from billing.views import subscription_confirm
@@ -40,6 +41,8 @@ urlpatterns = [
     path("records/", include("records.urls")),
     path("accounting/", include("accounting.urls")),
     path("reimbursements/", include("reimbursements.urls")),
+    path("organizations/", include("organizations.urls")),
+    path("invitations/", include(invitation_backend().get_urls())),
     path("billing/", include("billing.urls")),
     path("subscription-confirm/",
          subscription_confirm,

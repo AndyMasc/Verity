@@ -93,6 +93,20 @@
                                             <span>Manual merge</span>
                                         </a>
                                     </li>
+                                    <li>
+                                        <a href="{% url 'reimbursements:package-list' %}"
+                                           class="{% active_link 'reimbursements:package-list' base_css active_css %}">
+                                            <svg xmlns="http://www.w3.org/2000/svg"
+                                                 fill="none"
+                                                 viewBox="0 0 24 24"
+                                                 stroke-width="1.5"
+                                                 stroke="currentColor"
+                                                 class="size-4">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 7.5 7.5 3m0 0L12 7.5M7.5 3v13.5m13.5 0L16.5 21m0 0L12 16.5m4.5 4.5V7.5" />
+                                            </svg>
+                                            <span>Reimbursements</span>
+                                        </a>
+                                    </li>
                                 </ul>
                             </div>
                             <div x-data="{ workspaceOpen: $persist(true) }"
@@ -165,20 +179,6 @@
                                         </a>
                                     </li>
                                     <li>
-                                        <a href="{% url 'reimbursements:package-list' %}"
-                                           class="{% active_link 'reimbursements:package-list' base_css active_css %}">
-                                            <svg xmlns="http://www.w3.org/2000/svg"
-                                                 fill="none"
-                                                 viewBox="0 0 24 24"
-                                                 stroke-width="1.5"
-                                                 stroke="currentColor"
-                                                 class="size-4">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 7.5 7.5 3m0 0L12 7.5M7.5 3v13.5m13.5 0L16.5 21m0 0L12 16.5m4.5 4.5V7.5" />
-                                            </svg>
-                                            <span>Reimbursements</span>
-                                        </a>
-                                    </li>
-                                    <li>
                                         <a href="{% url 'plaid:connect' %}"
                                            class="{% active_link 'plaid:connect' base_css active_css %} w-full">
                                             <svg class="size-4 shrink-0 opacity-70 transition-opacity group-hover:opacity-100"
@@ -225,7 +225,7 @@
                             <div x-data="{ docsOpen: false }" class="">
                                 <button @click="docsOpen = !docsOpen"
                                         class="flex w-full cursor-pointer items-center justify-between space-y-1 px-2.5 py-1 text-[10px] font-bold tracking-widest text-zinc-500 uppercase transition-colors duration-200 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-300">
-                                    <span>Docs</span>
+                                    <span>Documentation</span>
                                     <svg class="size-3 transition-transform duration-200"
                                          :class="docsOpen ? 'rotate-90' : ''"
                                          fill="none"

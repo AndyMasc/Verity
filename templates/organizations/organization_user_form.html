@@ -1,0 +1,48 @@
+{% extends "organizations/organizations_base.html" %}
+{% load i18n widget_tweaks %}
+{% block title %}{% translate "Invite" %} | {{ organization.name }}{% endblock %}
+{% block org_content %}
+    <div class="mx-auto max-w-xl">
+        <nav class="mb-4 text-xs text-zinc-500 dark:text-zinc-400">
+            <a href="{% url 'organization_user_list' organization.pk %}"
+               class="transition hover:text-zinc-900 dark:hover:text-zinc-100">{% translate "Members" %}</a>
+            <span class="mx-1.5">/</span>
+            <span class="text-zinc-900 dark:text-zinc-100">{% translate "Invite" %}</span>
+        </nav>
+        <h1 class="text-2xl font-bold tracking-tight">{% translate "Invite someone" %}</h1>
+        <p class="mt-1 mb-8 text-sm text-zinc-500 dark:text-zinc-400">
+            {% blocktranslate %}We'll email them a link to join {{ organization.name }}.{% endblocktranslate %}
+        </p>
+        <form method="post" class="space-y-5">
+            {% csrf_token %}
+            <div>
+                <label for="{{ form.email.id_for_label }}"
+                       class="mb-1.5 block text-sm font-medium">{% translate "Email address" %}</label>
+                {{ form.email|add_class:"w-full rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 dark:border-zinc-700 dark:bg-zinc-950 dark:focus:border-white dark:focus:ring-white/10" }}
+                {% for error in form.email.errors %}
+                    <p class="mt-1.5 text-xs text-red-600 dark:text-red-400">{{ error }}</p>
+                {% endfor %}
+            </div>
+            {% if form.invite_as_admin %}
+                <label class="flex cursor-pointer items-center gap-2.5">
+                    {{ form.invite_as_admin|add_class:"size-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-900/20 dark:border-zinc-600 dark:bg-zinc-950" }}
+                    <span class="text-sm">{% translate "Invite as an admin" %}</span>
+                </label>
+            {% endif %}
+            {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+            {% if form.non_field_errors %}
+                <p class="text-xs text-red-600 dark:text-red-400">{{ form.non_field_errors|striptags }}</p>
+            {% endif %}
+            <div class="flex items-center gap-3 pt-2">
+                <button type="submit"
+                        class="rounded-lg bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200">
+                    {% translate "Send invitation" %}
+                </button>
+                <a href="{% url 'organization_user_list' organization.pk %}"
+                   class="rounded-lg px-4 py-2.5 text-sm font-medium text-zinc-600 transition hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800">
+                    {% translate "Cancel" %}
+                </a>
+            </div>
+        </form>
+    </div>
+{% endblock %}

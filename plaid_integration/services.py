@@ -16,12 +16,10 @@ from plaid.model.accounts_get_request import AccountsGetRequest
 from plaid.model.country_code import CountryCode
 from plaid.model.institutions_get_by_id_request import InstitutionsGetByIdRequest
 from plaid.model.institutions_get_by_id_request_options import (
-    InstitutionsGetByIdRequestOptions,
-)
+    InstitutionsGetByIdRequestOptions, )
 from plaid.model.item_get_request import ItemGetRequest
 from plaid.model.item_public_token_exchange_request import (
-    ItemPublicTokenExchangeRequest,
-)
+    ItemPublicTokenExchangeRequest, )
 from plaid.model.sandbox_item_fire_webhook_request import SandboxItemFireWebhookRequest
 from plaid.model.webhook_type import WebhookType
 

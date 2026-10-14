@@ -1,0 +1,62 @@
+{% extends "organizations/organizations_base.html" %}
+{% load i18n %}
+{% block title %}{{ org_user.user.email }} | {{ organization.name }}{% endblock %}
+{% block org_content %}
+    <nav class="mb-4 text-xs text-zinc-500 dark:text-zinc-400">
+        <a href="{% url 'organization_user_list' organization.pk %}"
+           class="transition hover:text-zinc-900 dark:hover:text-zinc-100">{% translate "Members" %}</a>
+        <span class="mx-1.5">/</span>
+        <span class="text-zinc-900 dark:text-zinc-100">{{ org_user.user.email }}</span>
+    </nav>
+    <div class="mx-auto max-w-xl">
+        <div class="rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
+            <div class="flex items-center gap-4">
+                <div class="flex size-11 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-sm font-semibold text-white dark:bg-white dark:text-zinc-900">
+                    {{ org_user.user.first_name|slice:":1"|upper }}{{ org_user.user.last_name|slice:":1"|upper|default:"" }}
+                </div>
+                <div class="min-w-0">
+                    <p class="truncate font-medium">{{ org_user.user.get_full_name|default:org_user.user.email }}</p>
+                    <p class="truncate text-xs text-zinc-500 dark:text-zinc-400">{{ org_user.user.email }}</p>
+                </div>
+            </div>
+            <dl class="mt-6 space-y-3 border-t border-zinc-100 pt-5 text-sm dark:border-zinc-800">
+                <div class="flex items-center justify-between gap-4">
+                    <dt class="text-zinc-500 dark:text-zinc-400">{% translate "Role" %}</dt>
+                    <dd>
+                        {% if org_user.is_admin %}
+                            <span class="rounded-full bg-zinc-900 px-2.5 py-1 text-xs font-medium text-white dark:bg-white dark:text-zinc-900">{% translate "Admin" %}</span>
+                        {% else %}
+                            <span class="rounded-full bg-zinc-100 px-2.5 py-1 text-xs text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">{% translate "Member" %}</span>
+                        {% endif %}
+                    </dd>
+                </div>
+                <div class="flex items-center justify-between gap-4">
+                    <dt class="text-zinc-500 dark:text-zinc-400">{% translate "Status" %}</dt>
+                    <dd class="text-zinc-900 dark:text-zinc-100">
+                        {% if org_user.user.is_active %}
+                            {% translate "Active" %}
+                        {% else %}
+                            {% translate "Invited" %}
+                        {% endif %}
+                    </dd>
+                </div>
+                <div class="flex items-center justify-between gap-4">
+                    <dt class="text-zinc-500 dark:text-zinc-400">{% translate "Joined" %}</dt>
+                    <dd class="text-zinc-900 tabular-nums dark:text-zinc-100">
+                        {{ org_user.created|date:"j M Y" }}
+                    </dd>
+                </div>
+            </dl>
+        </div>
+        <div class="mt-6 flex items-center gap-3">
+            <a href="{% url 'organization_user_edit' organization.pk org_user.pk %}"
+               class="rounded-lg border border-zinc-200 px-4 py-2 text-sm font-medium transition hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800">
+                {% translate "Edit role" %}
+            </a>
+            <a href="{% url 'organization_user_list' organization.pk %}"
+               class="rounded-lg px-4 py-2 text-sm font-medium text-zinc-600 transition hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800">
+                {% translate "Back" %}
+            </a>
+        </div>
+    </div>
+{% endblock %}

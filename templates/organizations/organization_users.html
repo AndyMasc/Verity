@@ -1,0 +1,46 @@
+{% extends "organizations/organizations_base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Members" %} | {{ organization.name }}{% endblock %}
+{% block org_content %}
+    <nav class="mb-4 text-xs text-zinc-500 dark:text-zinc-400">
+        <a href="{% url 'organization_list' %}"
+           class="transition hover:text-zinc-900 dark:hover:text-zinc-100">{% translate "Organizations" %}</a>
+        <span class="mx-1.5">/</span>
+        <a href="{% url 'organization_detail' organization.pk %}"
+           class="transition hover:text-zinc-900 dark:hover:text-zinc-100">{{ organization.name }}</a>
+        <span class="mx-1.5">/</span>
+        <span class="text-zinc-900 dark:text-zinc-100">{% translate "Members" %}</span>
+    </nav>
+    <div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+            <h1 class="text-2xl font-bold tracking-tight">{% translate "Members" %}</h1>
+            <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                {{ organization_users.count }} {% translate "member" %}{{ organization_users.count|pluralize }} in {{ organization.name }}
+            </p>
+        </div>
+        <a href="{% url 'organization_user_add' organization.pk %}"
+           class="inline-flex items-center gap-2 self-start rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200">
+            {% translate "Invite someone" %}
+        </a>
+    </div>
+    <div class="overflow-hidden rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+        {% for org_user in organization_users %}
+            <div class="flex items-center justify-between gap-4 border-b border-zinc-100 px-5 py-3.5 last:border-b-0 dark:border-zinc-800">
+                <div class="min-w-0">
+                    <a href="{% url 'organization_user_detail' organization.pk org_user.pk %}"
+                       class="block truncate text-sm font-medium transition hover:underline">
+                        {{ org_user.user.get_full_name|default:org_user.user.email }}
+                    </a>
+                    <p class="truncate text-xs text-zinc-500 dark:text-zinc-400">{{ org_user.user.email }}</p>
+                </div>
+                {% if org_user.is_admin %}
+                    <span class="shrink-0 rounded-full bg-zinc-900 px-2.5 py-1 text-xs font-medium text-white dark:bg-white dark:text-zinc-900">{% translate "Admin" %}</span>
+                {% else %}
+                    <span class="shrink-0 rounded-full bg-zinc-100 px-2.5 py-1 text-xs text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">{% translate "Member" %}</span>
+                {% endif %}
+            </div>
+        {% empty %}
+            <p class="px-5 py-10 text-center text-sm text-zinc-500 dark:text-zinc-400">{% translate "No members yet." %}</p>
+        {% endfor %}
+    </div>
+{% endblock %}

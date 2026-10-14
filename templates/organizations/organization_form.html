@@ -1,0 +1,42 @@
+{% extends "organizations/organizations_base.html" %}
+{% load i18n widget_tweaks %}
+{% block title %}{% if organization %}{{ organization.name }}{% else %}{% translate "New organization" %}{% endif %} | Verity{% endblock %}
+{% block org_content %}
+    <div class="mx-auto max-w-xl">
+        <h1 class="text-2xl font-bold tracking-tight">
+            {% if organization %}
+                {% translate "Edit organization" %}
+            {% else %}
+                {% translate "New organization" %}
+            {% endif %}
+        </h1>
+        <p class="mt-1 mb-8 text-sm text-zinc-500 dark:text-zinc-400">
+            {% translate "Other people join with an invitation from the members page." %}
+        </p>
+        <form method="post" class="space-y-5">
+            {% csrf_token %}
+            <div>
+                <label for="{{ form.name.id_for_label }}"
+                       class="mb-1.5 block text-sm font-medium">{% translate "Name" %}</label>
+                {{ form.name|add_class:"w-full rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 dark:border-zinc-700 dark:bg-zinc-950 dark:focus:border-white dark:focus:ring-white/10" }}
+                {% for error in form.name.errors %}
+                    <p class="mt-1.5 text-xs text-red-600 dark:text-red-400">{{ error }}</p>
+                {% endfor %}
+            </div>
+            {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+            {% if form.non_field_errors %}
+                <p class="text-xs text-red-600 dark:text-red-400">{{ form.non_field_errors|striptags }}</p>
+            {% endif %}
+            <div class="flex items-center gap-3 pt-2">
+                <button type="submit"
+                        class="rounded-lg bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200">
+                    {% translate "Save" %}
+                </button>
+                <a href="{% if organization %}{% url 'organization_detail' organization.pk %}{% else %}{% url 'organization_list' %}{% endif %}"
+                   class="rounded-lg px-4 py-2.5 text-sm font-medium text-zinc-600 transition hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800">
+                    {% translate "Cancel" %}
+                </a>
+            </div>
+        </form>
+    </div>
+{% endblock %}

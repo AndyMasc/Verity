@@ -30,8 +30,7 @@ INSTALLED_APPS.extend(["django_browser_reload", "debug_toolbar"])  # noqa: F405
 
 MIDDLEWARE.insert(  # noqa: F405
     -1, "django_browser_reload.middleware.BrowserReloadMiddleware")
-MIDDLEWARE.insert(
-    -1, "debug_toolbar.middleware.DebugToolbarMiddleware")
+MIDDLEWARE.insert(-1, "debug_toolbar.middleware.DebugToolbarMiddleware")
 
 CSRF_TRUSTED_ORIGINS = [
     env("NGROK_HTTPS_TUNNEL_URL", default="http://localhost:8000")

@@ -102,7 +102,6 @@ def payment_for_payment_intent(
 
 def payment_from_charge(charge_id: str) -> PackagePayment | None:
     """Resolve the payment behind a charge.
-
     Invoices put package_uuid on the invoice, not the PaymentIntent, so the
     intent id is the primary key and the invoice id is the fallback - that
     covers charges even when the intent id was never recorded.
