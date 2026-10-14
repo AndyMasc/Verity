@@ -28,8 +28,7 @@ class Migration(migrations.Migration):
                     "stripe_account_id",
                     models.CharField(blank=True, max_length=255, null=True),
                 ),
-                ("stripe_details_submitted",
-                 models.BooleanField(default=False)),
+                ("stripe_details_submitted", models.BooleanField(default=False)),
                 ("created_at", models.DateTimeField(auto_now_add=True)),
                 ("updated_at", models.DateTimeField(auto_now=True)),
                 (

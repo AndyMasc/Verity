@@ -19,7 +19,6 @@ User = get_user_model()
 
 
 class HtmxResponseTest(TestCase):
-
     def test_returns_none_for_non_htmx(self):
         request = HttpRequest()
         request.META["HTTP_HX_REQUEST"] = None
@@ -56,10 +55,8 @@ class HtmxResponseTest(TestCase):
 
 
 class CreateAuditLogTest(TestCase):
-
     def setUp(self):
-        self.user = User.objects.create_user(username="audituser",
-                                             password="pass")
+        self.user = User.objects.create_user(username="audituser", password="pass")
         self.record = Record.objects.create(
             user=self.user,
             title="Test",
@@ -111,7 +108,6 @@ class CreateAuditLogTest(TestCase):
 
 
 class ParseRecordIdsTest(TestCase):
-
     def test_valid_json_body(self):
         request = HttpRequest()
         request._body = json.dumps({"record_ids": [1, 2, 3]}).encode()

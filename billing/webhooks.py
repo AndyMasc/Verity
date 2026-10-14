@@ -34,9 +34,8 @@ def _event_object(event: Any) -> dict[str, Any]:
     return (getattr(event, "data", None) or {}).get("object") or {}
 
 
-def _subscriber_pk(customer_id: str | None,
-                   client_reference_id: str | None = None) -> str | None:
-    """Resolve the local user behind a Stripe event, or None when unlinked. """
+def _subscriber_pk(customer_id: str | None, client_reference_id: str | None = None) -> str | None:
+    """Resolve the local user behind a Stripe event, or None when unlinked."""
     if client_reference_id and str(client_reference_id).isdigit():
         from .models import CustomUser
 
@@ -46,21 +45,19 @@ def _subscriber_pk(customer_id: str | None,
     if not customer_id:
         return None
 
-    subscriber_id = (Customer.objects.filter(id=customer_id).values_list(
-        "subscriber_id", flat=True).first())
+    subscriber_id = (
+        Customer.objects.filter(id=customer_id).values_list("subscriber_id", flat=True).first()
+    )
     return str(subscriber_id) if subscriber_id else None
 
 
-def capture(event: str, distinct_id: str | None,
-            properties: dict[str, Any]) -> None:
+def capture(event: str, distinct_id: str | None, properties: dict[str, Any]) -> None:
     """Capture a PostHog event from a Stripe webhook."""
     if posthog_client is None:
         return
 
     if distinct_id:
-        posthog_client.capture(event,
-                               distinct_id=distinct_id,
-                               properties=properties)
+        posthog_client.capture(event, distinct_id=distinct_id, properties=properties)
     else:
         posthog_client.capture(event, properties=properties)
 
@@ -99,8 +96,8 @@ def _invalidate_subscription_caches_for_event(stripe_sub: dict) -> None:
     from .models import CustomUser
 
     user_ids = list(
-        CustomUser.objects.filter(customer__id=customer_id).values_list(
-            "id", flat=True))
+        CustomUser.objects.filter(customer__id=customer_id).values_list("id", flat=True)
+    )
     for user_id in user_ids:
         invalidate_plan_usage_caches(user_id)
 
@@ -149,14 +146,12 @@ def handle_subscription_deleted(**kwargs: Any) -> None:
     transaction.on_commit(lambda: clear_cancel_intent(sub_id))
 
 
-def capture_subscription_cancelled(sub_id: str,
-                                   stripe_sub: dict | None = None) -> None:
+def capture_subscription_cancelled(sub_id: str, stripe_sub: dict | None = None) -> None:
     """Record churn for a cancelled subscription, split by what it covered."""
     if posthog_client is None:
         return
 
-    sub = Subscription.objects.filter(
-        id=sub_id).select_related("customer__subscriber").first()
+    sub = Subscription.objects.filter(id=sub_id).select_related("customer__subscriber").first()
     if sub is None:
         return
 
@@ -166,8 +161,9 @@ def capture_subscription_cancelled(sub_id: str,
     if read_cancel_intent(sub_id) == "system":
         return
 
-    cancel_type = read_cancel_intent(sub_id) or ("period_end" if (
-        stripe_sub or {}).get("cancel_at_period_end") else "immediate")
+    cancel_type = read_cancel_intent(sub_id) or (
+        "period_end" if (stripe_sub or {}).get("cancel_at_period_end") else "immediate"
+    )
 
     months_active = None
     if sub.created:
@@ -194,8 +190,7 @@ def handle_checkout_settled(**kwargs: Any) -> None:
 
     capture(
         "subscription_checkout_completed",
-        _subscriber_pk(session.get("customer"),
-                       session.get("client_reference_id")),
+        _subscriber_pk(session.get("customer"), session.get("client_reference_id")),
         {
             "amount": (session.get("amount_total") or 0) / 100,
             "currency": session.get("currency"),
@@ -212,8 +207,7 @@ def handle_checkout_expired(**kwargs: Any) -> None:
 
     capture(
         "subscription_checkout_expired",
-        _subscriber_pk(session.get("customer"),
-                       session.get("client_reference_id")),
+        _subscriber_pk(session.get("customer"), session.get("client_reference_id")),
         {
             "amount": (session.get("amount_total") or 0) / 100,
             "currency": session.get("currency"),
@@ -254,8 +248,7 @@ def handle_checkout_payment_failed(**kwargs: Any) -> None:
         {
             "amount": (payment_intent.get("amount") or 0) / 100,
             "currency": payment_intent.get("currency"),
-            "failure_reason": failure_reason(
-                payment_intent.get("last_payment_error") or {}),
+            "failure_reason": failure_reason(payment_intent.get("last_payment_error") or {}),
         },
     )
 
@@ -276,7 +269,6 @@ def handle_payment_failed(**kwargs: Any) -> None:
         {
             "amount": amount_due / 100,
             "currency": invoice.get("currency", "usd"),
-            "failure_reason": failure_reason(
-                invoice.get("last_payment_error") or {}),
+            "failure_reason": failure_reason(invoice.get("last_payment_error") or {}),
         },
     )

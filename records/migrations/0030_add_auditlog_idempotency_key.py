@@ -15,11 +15,9 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="mergelog",
             name="idempotency_key",
-            field=models.CharField(blank=True,
-                                   db_index=True,
-                                   max_length=64,
-                                   null=True,
-                                   unique=True),
+            field=models.CharField(
+                blank=True, db_index=True, max_length=64, null=True, unique=True
+            ),
         ),
         migrations.CreateModel(
             name="AuditLog",
@@ -53,8 +51,7 @@ class Migration(migrations.Migration):
                     ),
                 ),
                 ("details", models.JSONField(blank=True, default=dict)),
-                ("created_at",
-                 models.DateTimeField(auto_now_add=True, db_index=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True, db_index=True)),
                 (
                     "merge_log",
                     models.ForeignKey(
@@ -86,10 +83,8 @@ class Migration(migrations.Migration):
             options={
                 "ordering": ["-created_at"],
                 "indexes": [
-                    models.Index(fields=["user", "action"],
-                                 name="idx_auditlog_user_action"),
-                    models.Index(fields=["record", "action"],
-                                 name="idx_auditlog_record_action"),
+                    models.Index(fields=["user", "action"], name="idx_auditlog_user_action"),
+                    models.Index(fields=["record", "action"], name="idx_auditlog_record_action"),
                 ],
             },
         ),

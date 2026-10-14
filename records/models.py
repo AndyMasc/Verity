@@ -100,8 +100,7 @@ class RecordQuerySet(models.QuerySet):
         return self.filter(
             Q(shares__user=user)
             & Q(shares__revoked_at__isnull=True)
-            & (Q(shares__expires_at__isnull=True)
-               | Q(shares__expires_at__gt=now)),
+            & (Q(shares__expires_at__isnull=True) | Q(shares__expires_at__gt=now)),
             is_active=True,
         ).distinct()
 
@@ -116,10 +115,12 @@ class RecordQuerySet(models.QuerySet):
         now = timezone.now()
         return self.filter(
             Q(user=user)
-            | (Q(shares__user=user)
-               & Q(shares__revoked_at__isnull=True)
-               & (Q(shares__expires_at__isnull=True)
-                  | Q(shares__expires_at__gt=now)))).distinct()
+            | (
+                Q(shares__user=user)
+                & Q(shares__revoked_at__isnull=True)
+                & (Q(shares__expires_at__isnull=True) | Q(shares__expires_at__gt=now))
+            )
+        ).distinct()
 
     def active(self) -> RecordQuerySet:
         """Return only records that have not been soft-deleted."""
@@ -158,14 +159,13 @@ class RecordQuerySet(models.QuerySet):
         lower = search_query.lower()
         conditions = reduce(
             or_,
-            (Q(**{f"{field}__icontains": search_query})
-             for field in _TEXT_SEARCH_FIELDS),
+            (Q(**{f"{field}__icontains": search_query}) for field in _TEXT_SEARCH_FIELDS),
         )
 
         matching_choices = [
-            k for k, v in Record.RecordTypes.choices
-            if search_query.lower() in k.lower()
-            or search_query.lower() in v.lower()
+            k
+            for k, v in Record.RecordTypes.choices
+            if search_query.lower() in k.lower() or search_query.lower() in v.lower()
         ]
         if matching_choices:
             conditions |= Q(record_type__in=matching_choices)
@@ -183,16 +183,14 @@ class RecordQuerySet(models.QuerySet):
 
         if lower in _RELATIVE_DAYS:
             delta = {"today": 0, "yesterday": -1, "tomorrow": 1}[lower]
-            start = end = timezone.now().date() + datetime.timedelta(
-                days=delta)
+            start = end = timezone.now().date() + datetime.timedelta(days=delta)
 
         elif _YEAR_RE.match(search_query):
             year = int(search_query)
             start, end = datetime.date(year, 1, 1), datetime.date(year, 12, 31)
 
         elif lower in _MONTH_MAP:
-            start, end = _month_range(timezone.now().date().year,
-                                      _MONTH_MAP[lower])
+            start, end = _month_range(timezone.now().date().year, _MONTH_MAP[lower])
 
         elif _ISO_DATE_RE.match(search_query):
             with contextlib.suppress(ValueError):
@@ -212,16 +210,17 @@ class FolderQuerySet(models.QuerySet):
 
     def with_record_counts(self) -> FolderQuerySet:
         """Annotate each folder with its active record count."""
-        return self.annotate(active_records_count=Count(
-            "records", filter=Q(records__is_active=True)))
+        return self.annotate(
+            active_records_count=Count("records", filter=Q(records__is_active=True))
+        )
 
 
 class Folder(models.Model):
     """User-owned folder for organising records into logical groups."""
 
-    user = models.ForeignKey(settings.AUTH_USER_MODEL,
-                             on_delete=models.CASCADE,
-                             related_name="folders")
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="folders"
+    )
     name = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -311,13 +310,9 @@ class Record(models.Model):
         blank=True,
     )
 
-    expiry_notification_sent = models.BooleanField(default=False,
-                                                   db_index=True)
+    expiry_notification_sent = models.BooleanField(default=False, db_index=True)
 
-    plaid_transaction_id = models.CharField(max_length=255,
-                                            unique=True,
-                                            null=True,
-                                            blank=True)
+    plaid_transaction_id = models.CharField(max_length=255, unique=True, null=True, blank=True)
     plaid_item = models.ForeignKey(
         "plaid_integration.PlaidItem",
         on_delete=models.SET_NULL,
@@ -332,12 +327,9 @@ class Record(models.Model):
     class Meta:
         ordering: ClassVar[list[str]] = ["-last_edited"]
         indexes: ClassVar[list[models.Index]] = [
-            models.Index(fields=["user", "is_active"],
-                         name="idx_record_user_active"),
-            models.Index(fields=["user", "-last_edited"],
-                         name="idx_record_user_edited"),
-            models.Index(fields=["user", "record_type"],
-                         name="idx_record_user_type"),
+            models.Index(fields=["user", "is_active"], name="idx_record_user_active"),
+            models.Index(fields=["user", "-last_edited"], name="idx_record_user_edited"),
+            models.Index(fields=["user", "record_type"], name="idx_record_user_type"),
             models.Index(
                 fields=["user", "is_active", "-last_edited"],
                 name="idx_record_list_cover",
@@ -346,8 +338,7 @@ class Record(models.Model):
                 fields=["user", "is_active", "record_type"],
                 name="idx_record_type_filter",
             ),
-            models.Index(fields=["expiry_date", "is_active"],
-                         name="idx_record_expiry_active"),
+            models.Index(fields=["expiry_date", "is_active"], name="idx_record_expiry_active"),
             models.Index(
                 fields=["expiry_date", "is_active", "user"],
                 name="idx_record_expiry_active_user",
@@ -356,10 +347,8 @@ class Record(models.Model):
                 fields=["expiry_date", "is_active", "user", "date_added"],
                 name="idx_record_archive_filter",
             ),
-            models.Index(fields=["transaction_date"],
-                         name="idx_record_trans_date"),
-            models.Index(fields=["user", "balance"],
-                         name="idx_record_user_balance"),
+            models.Index(fields=["transaction_date"], name="idx_record_trans_date"),
+            models.Index(fields=["user", "balance"], name="idx_record_user_balance"),
         ]
 
     def __str__(self):
@@ -369,9 +358,7 @@ class Record(models.Model):
         if self.pk and self.is_plaid_record:
             protected = {"plaid_transaction_id", "plaid_item"}
             if update_fields := kwargs.get("update_fields"):
-                kwargs["update_fields"] = [
-                    f for f in update_fields if f not in protected
-                ]
+                kwargs["update_fields"] = [f for f in update_fields if f not in protected]
         super().save(*args, **kwargs)
 
     def delete(self, using=None, keep_parents=False):  # noqa: ARG002
@@ -391,8 +378,7 @@ class Record(models.Model):
     @property
     def badge_classes(self) -> str:
         """Return Tailwind CSS classes for the record-type badge in the UI."""
-        return RECORD_TYPE_COLOR_MAP.get(self.record_type,
-                                         RECORD_TYPE_COLOR_MAP["other"])
+        return RECORD_TYPE_COLOR_MAP.get(self.record_type, RECORD_TYPE_COLOR_MAP["other"])
 
     @property
     def is_plaid_record(self) -> bool:
@@ -409,8 +395,7 @@ class Record(models.Model):
     def is_expiring_soon(self, days: int = 30) -> bool:
         """True when the expiry date falls within the next "days" days."""
         if self.expiry_date:
-            return self.expiry_date <= (timezone.now().date() +
-                                        datetime.timedelta(days=days))
+            return self.expiry_date <= (timezone.now().date() + datetime.timedelta(days=days))
         return False
 
     @property
@@ -423,8 +408,7 @@ class Record(models.Model):
         """
         if self.date_added is None:
             return False
-        cutoff = timezone.now().date() - datetime.timedelta(days=365 *
-                                                            RETENTION_YEARS)
+        cutoff = timezone.now().date() - datetime.timedelta(days=365 * RETENTION_YEARS)
         return self.date_added <= cutoff
 
     @staticmethod
@@ -441,8 +425,7 @@ class Record(models.Model):
         return Count(
             "shares",
             filter=Q(shares__revoked_at__isnull=True)
-            & (Q(shares__expires_at__isnull=True)
-               | Q(shares__expires_at__gt=now)),
+            & (Q(shares__expires_at__isnull=True) | Q(shares__expires_at__gt=now)),
         )
 
 
@@ -454,30 +437,26 @@ class MergeLog(models.Model):
     "idempotency_key" column prevents duplicate merges for the same pair.
     """
 
-    plaid_record = models.ForeignKey(Record,
-                                     on_delete=models.SET_NULL,
-                                     null=True,
-                                     related_name="merge_logs_as_plaid")
+    plaid_record = models.ForeignKey(
+        Record, on_delete=models.SET_NULL, null=True, related_name="merge_logs_as_plaid"
+    )
     document_record = models.ForeignKey(
         Record,
         on_delete=models.SET_NULL,
         null=True,
         related_name="merge_logs_as_document",
     )
-    document = models.ForeignKey("documents.DocumentData",
-                                 on_delete=models.SET_NULL,
-                                 null=True,
-                                 blank=True)
+    document = models.ForeignKey(
+        "documents.DocumentData", on_delete=models.SET_NULL, null=True, blank=True
+    )
     plaid_snapshot = models.JSONField()
     document_snapshot = models.JSONField()
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     undone_at = models.DateTimeField(null=True, blank=True, db_index=True)
     search_text = models.TextField(blank=True, db_index=False)
-    idempotency_key = models.CharField(max_length=64,
-                                       unique=True,
-                                       null=True,
-                                       blank=True,
-                                       db_index=True)
+    idempotency_key = models.CharField(
+        max_length=64, unique=True, null=True, blank=True, db_index=True
+    )
 
     class Meta:
         ordering: ClassVar[list[str]] = ["-created_at"]
@@ -489,8 +468,7 @@ class MergeLog(models.Model):
                 fields=["plaid_record", "document_record"],
                 name="unique_active_merge",
                 condition=models.Q(undone_at__isnull=True),
-                violation_error_message=
-                "An active merge already exists for this pair.",
+                violation_error_message="An active merge already exists for this pair.",
             ),
         ]
 
@@ -506,14 +484,9 @@ class MergeLog(models.Model):
     ):
         parts = []
         if self.plaid_record_id and self.plaid_record:
-            parts.extend([
-                self.plaid_record.title or "", self.plaid_record.merchant or ""
-            ])
+            parts.extend([self.plaid_record.title or "", self.plaid_record.merchant or ""])
         if self.document_record_id and self.document_record:
-            parts.extend([
-                self.document_record.title or "", self.document_record.merchant
-                or ""
-            ])
+            parts.extend([self.document_record.title or "", self.document_record.merchant or ""])
         self.search_text = " ".join(p for p in parts if p)
         super().save(
             force_insert=force_insert,
@@ -550,27 +523,19 @@ class AuditLog(models.Model):
         null=True,
         related_name="audit_logs",
     )
-    action = models.CharField(max_length=32,
-                              choices=Action.choices,
-                              db_index=True)
-    record = models.ForeignKey(Record,
-                               on_delete=models.SET_NULL,
-                               null=True,
-                               related_name="audit_logs")
-    merge_log = models.ForeignKey(MergeLog,
-                                  on_delete=models.SET_NULL,
-                                  null=True,
-                                  blank=True)
+    action = models.CharField(max_length=32, choices=Action.choices, db_index=True)
+    record = models.ForeignKey(
+        Record, on_delete=models.SET_NULL, null=True, related_name="audit_logs"
+    )
+    merge_log = models.ForeignKey(MergeLog, on_delete=models.SET_NULL, null=True, blank=True)
     details = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
 
     class Meta:
         ordering: ClassVar[list[str]] = ["-created_at"]
         indexes: ClassVar[list[models.Index]] = [
-            models.Index(fields=["user", "action"],
-                         name="idx_auditlog_user_action"),
-            models.Index(fields=["record", "action"],
-                         name="idx_auditlog_record_action"),
+            models.Index(fields=["user", "action"], name="idx_auditlog_user_action"),
+            models.Index(fields=["record", "action"], name="idx_auditlog_record_action"),
         ]
 
     def __str__(self) -> str:
@@ -638,8 +603,7 @@ class RecordShare(models.Model):
         null=True,
         blank=True,
         db_index=True,
-        help_text=
-        "Access was explicitly revoked at this time (audit keeps the row).",
+        help_text="Access was explicitly revoked at this time (audit keeps the row).",
     )
 
     class Meta:
@@ -648,8 +612,7 @@ class RecordShare(models.Model):
             models.UniqueConstraint(
                 fields=["record", "user"],
                 name="unique_record_share",
-                violation_error_message=
-                "This record is already shared with that user.",
+                violation_error_message="This record is already shared with that user.",
             )
         ]
         indexes: ClassVar[list[models.Index]] = [
@@ -668,28 +631,22 @@ class RecordShare(models.Model):
         return self.expires_at is None or self.expires_at > timezone.now()
 
     @classmethod
-    def active_for(
-            cls, user: AbstractUser
-    ) -> models.QuerySet:  # type: ignore[no-untyped-def]
+    def active_for(cls, user: AbstractUser) -> models.QuerySet:  # type: ignore[no-untyped-def]
         """Grants currently granting user access (not revoked, not expired)."""
         now = timezone.now()
         return cls.objects.filter(
             user=user,
             revoked_at__isnull=True,
-        ).filter(
-            models.Q(expires_at__isnull=True) | models.Q(expires_at__gt=now))
+        ).filter(models.Q(expires_at__isnull=True) | models.Q(expires_at__gt=now))
 
     @classmethod
-    def document_visible_records(
-            cls, user: AbstractUser
-    ) -> models.QuerySet:  # type: ignore[no-untyped-def]
+    def document_visible_records(cls, user: AbstractUser) -> models.QuerySet:  # type: ignore[no-untyped-def]
         """Records whose documents user may see via a share.
 
         'include_documents=True' grants document visibility; records owned
         by the user are always document-visible and handled by the caller.
         """
         return Record.objects.filter(
-            pk__in=cls.active_for(user).filter(
-                include_documents=True).values("record_id"),
+            pk__in=cls.active_for(user).filter(include_documents=True).values("record_id"),
             is_active=True,
         )

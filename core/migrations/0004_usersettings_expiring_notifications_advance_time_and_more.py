@@ -7,8 +7,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("core",
-         "0003_alter_usersettings_options_usersettings_created_at_and_more"),
+        ("core", "0003_alter_usersettings_options_usersettings_created_at_and_more"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 

@@ -26,8 +26,7 @@ class Migration(migrations.Migration):
                 condition=models.Q(("undone_at__isnull", True)),
                 fields=("plaid_record", "document_record"),
                 name="unique_active_merge",
-                violation_error_message=
-                "An active merge already exists for this pair.",
+                violation_error_message="An active merge already exists for this pair.",
             ),
         ),
     ]

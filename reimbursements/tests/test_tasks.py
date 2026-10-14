@@ -29,13 +29,10 @@ def _paid_invoice():
 
 
 class SyncPaymentStatusTest(TestCase):
-
     @patch("reimbursements.tasks.services.retrieve_invoice")
-    @patch("reimbursements.webhooks.transaction.on_commit",
-           side_effect=lambda fn: fn())
+    @patch("reimbursements.webhooks.transaction.on_commit", side_effect=lambda fn: fn())
     @patch("reimbursements.webhooks.notify_package_paid")
-    def test_sync_marks_paid_with_audit(self, mock_notify, mock_on_commit,
-                                        mock_retrieve):
+    def test_sync_marks_paid_with_audit(self, mock_notify, mock_on_commit, mock_retrieve):
         from reimbursements.tasks import sync_payment_status
 
         creator = _user("creator@test.com")
@@ -61,9 +58,7 @@ class SyncPaymentStatusTest(TestCase):
         pkg.refresh_from_db()
         self.assertTrue(payment.is_completed)
         self.assertEqual(pkg.status, ReimbursementPackage.Status.PAID)
-        self.assertEqual(
-            AuditLog.objects.filter(details__event="payment_synced").count(),
-            1)
+        self.assertEqual(AuditLog.objects.filter(details__event="payment_synced").count(), 1)
         mock_notify.assert_called_once_with(pkg.pk, payer.pk)
 
     @patch("reimbursements.tasks.services.retrieve_invoice")
@@ -93,9 +88,7 @@ class SyncPaymentStatusTest(TestCase):
         pkg.refresh_from_db()
         self.assertFalse(payment.is_completed)
         self.assertEqual(pkg.status, ReimbursementPackage.Status.OPEN)
-        self.assertEqual(
-            AuditLog.objects.filter(details__event="payment_synced").count(),
-            0)
+        self.assertEqual(AuditLog.objects.filter(details__event="payment_synced").count(), 0)
 
     @patch("reimbursements.tasks.services.retrieve_invoice")
     def test_sync_skips_unpaid_session(self, mock_retrieve):
@@ -124,13 +117,10 @@ class SyncPaymentStatusTest(TestCase):
 
 
 class ReconcilePendingPaymentsTaskTest(TestCase):
-
     @patch("reimbursements.tasks.services.retrieve_invoice")
-    @patch("reimbursements.webhooks.transaction.on_commit",
-           side_effect=lambda fn: fn())
+    @patch("reimbursements.webhooks.transaction.on_commit", side_effect=lambda fn: fn())
     @patch("reimbursements.webhooks.notify_package_paid")
-    def test_reconcile_marks_paid(self, mock_notify, mock_on_commit,
-                                  mock_retrieve):
+    def test_reconcile_marks_paid(self, mock_notify, mock_on_commit, mock_retrieve):
         from reimbursements.tasks import reconcile_pending_payments_task
 
         creator = _user("creator@test.com")
@@ -154,9 +144,7 @@ class ReconcilePendingPaymentsTaskTest(TestCase):
 
         pkg.refresh_from_db()
         self.assertEqual(pkg.status, ReimbursementPackage.Status.PAID)
-        self.assertEqual(
-            AuditLog.objects.filter(details__event="payment_synced").count(),
-            1)
+        self.assertEqual(AuditLog.objects.filter(details__event="payment_synced").count(), 1)
         mock_notify.assert_called_once_with(pkg.pk, payer.pk)
 
     @patch("reimbursements.tasks.services.retrieve_invoice")
@@ -205,8 +193,8 @@ class ReconcilePendingPaymentsTaskTest(TestCase):
             amount_paid=Decimal("50.00"),
         )
         mock_retrieve.side_effect = lambda invoice_id, **kw: (
-            _raise_stripe_error()
-            if invoice_id == "in_bad" else _paid_invoice())
+            _raise_stripe_error() if invoice_id == "in_bad" else _paid_invoice()
+        )
 
         reconcile_pending_payments_task.fn()
 

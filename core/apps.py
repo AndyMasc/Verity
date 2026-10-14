@@ -27,7 +27,8 @@ class CoreConfig(AppConfig):
                 raise ImproperlyConfigured(
                     f"{missing_variable} variable required by PostHog is missing or un-configured, "
                     f"this causes events to be silently missed. This error stops appearing once "
-                    f"{missing_variable} is configured")
+                    f"{missing_variable} is configured"
+                )
             return
 
         posthog_client = Posthog(

@@ -25,7 +25,6 @@ def backfill(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("records", "0038_alter_historicalrecord_currency_and_more"),
         ("teams", "0002_personal_orgs"),

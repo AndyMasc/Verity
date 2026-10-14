@@ -20,7 +20,6 @@ User = get_user_model()
 
 
 class _CaptureMixin:
-
     def _captured(self):
         """Collect (event, distinct_id, properties) for every capture in the app.
 
@@ -32,13 +31,11 @@ class _CaptureMixin:
         captured = []
 
         def _capture(event, *args, **kwargs):
-            captured.append(
-                (event, kwargs.get("distinct_id"), kwargs.get("properties")
-                 or {}))
+            captured.append((event, kwargs.get("distinct_id"), kwargs.get("properties") or {}))
 
         for target in (
-                "core.apps.posthog_client",
-                "reimbursements.views.packages.posthog_client",
+            "core.apps.posthog_client",
+            "reimbursements.views.packages.posthog_client",
         ):
             patcher = mock.patch(target)
             patcher.start().capture.side_effect = _capture
@@ -47,7 +44,6 @@ class _CaptureMixin:
 
 
 class ExternalPayerIdentityTests(TestCase):
-
     def test_hash_is_stable_and_hides_the_address(self):
         first = external_payer_distinct_id("Sam.Example@ACME.com ")
         second = external_payer_distinct_id("sam.example@acme.com")
@@ -57,7 +53,6 @@ class ExternalPayerIdentityTests(TestCase):
 
 
 class RecipientPaidCaptureTests(_CaptureMixin, TestCase):
-
     def setUp(self):
         self.creator = _user("funder@example.com")
         self.payer = _user("claimer@example.com")
@@ -74,8 +69,8 @@ class RecipientPaidCaptureTests(_CaptureMixin, TestCase):
         self.assertIn("sender_reimbursement_settled", names)
 
         event, distinct_id, props = next(
-            (n, d, p) for n, d, p in captured
-            if n == "recipient_paid_reimbursement")
+            (n, d, p) for n, d, p in captured if n == "recipient_paid_reimbursement"
+        )
         self.assertEqual(event, "recipient_paid_reimbursement")
         self.assertEqual(distinct_id, str(self.payer.pk))
         self.assertEqual(props["payer_type"], "registered")
@@ -87,8 +82,9 @@ class RecipientPaidCaptureTests(_CaptureMixin, TestCase):
         captured = self._captured()
         package.mark_as_paid(self.payer)
 
-        _, distinct_id, _ = next((n, d, p) for n, d, p in captured
-                                 if n == "sender_reimbursement_settled")
+        _, distinct_id, _ = next(
+            (n, d, p) for n, d, p in captured if n == "sender_reimbursement_settled"
+        )
         self.assertEqual(distinct_id, str(self.creator.pk))
 
     def test_external_payer_gets_a_stable_pseudonymous_person(self):
@@ -97,11 +93,11 @@ class RecipientPaidCaptureTests(_CaptureMixin, TestCase):
         captured = self._captured()
         package.mark_as_paid(None)
 
-        _, distinct_id, props = next((n, d, p) for n, d, p in captured
-                                     if n == "recipient_paid_reimbursement")
+        _, distinct_id, props = next(
+            (n, d, p) for n, d, p in captured if n == "recipient_paid_reimbursement"
+        )
         self.assertEqual(props["payer_type"], "external")
-        self.assertEqual(distinct_id,
-                         external_payer_distinct_id("outside@acme.com"))
+        self.assertEqual(distinct_id, external_payer_distinct_id("outside@acme.com"))
         self.assertNotIn("outside@acme.com", distinct_id)
 
     def test_both_events_share_the_money_properties(self):
@@ -128,8 +124,7 @@ class PackageDetailViewedTests(_CaptureMixin, TestCase):
         self.creator = _user("funder2@example.com")
         self.recipient = _user("outside@acme.com")
         self.package = _package(self.creator, recipient=self.recipient)
-        self.package.records.add(
-            _record(self.creator, balance=Decimal("75.00")))
+        self.package.records.add(_record(self.creator, balance=Decimal("75.00")))
 
     def _detail(self, user):
         self.client.force_login(user)

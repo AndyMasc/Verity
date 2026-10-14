@@ -14,18 +14,12 @@ User = get_user_model()
 
 
 @override_settings(
-    CACHES={
-        "default": {
-            "BACKEND": "django.core.cache.backends.dummy.DummyCache"
-        }
-    },
+    CACHES={"default": {"BACKEND": "django.core.cache.backends.dummy.DummyCache"}},
     SESSION_ENGINE="django.contrib.sessions.backends.db",
 )
 class RecordHistoryViewTest(TestCase):
-
     def setUp(self):
-        self.user = User.objects.create_user(username="historyuser",
-                                             password="pass")
+        self.user = User.objects.create_user(username="historyuser", password="pass")
         self.record = Record.objects.create(
             user=self.user,
             title="Test Record",
@@ -41,8 +35,7 @@ class RecordHistoryViewTest(TestCase):
         self.assertTemplateUsed(response, "records/record_history.html")
 
     def test_other_user_cannot_view(self):
-        other = User.objects.create_user(username="other_hist",
-                                         password="pass")
+        other = User.objects.create_user(username="other_hist", password="pass")
         self.client.force_login(other)
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 404)
@@ -80,10 +73,7 @@ class RecordHistoryViewTest(TestCase):
                 "balance": "42.00",
                 "payment_method": "Card",
             },
-            document_snapshot={
-                "title": "Other",
-                "balance": "7.00"
-            },
+            document_snapshot={"title": "Other", "balance": "7.00"},
         )
         self.client.force_login(self.user)
         response = self.client.get(self.url)
@@ -98,6 +88,5 @@ class RecordHistoryViewTest(TestCase):
 
     def test_nonexistent_record_returns_404(self):
         self.client.force_login(self.user)
-        response = self.client.get(
-            reverse("records:record_history", args=[99999]))
+        response = self.client.get(reverse("records:record_history", args=[99999]))
         self.assertEqual(response.status_code, 404)

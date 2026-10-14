@@ -23,20 +23,14 @@ from ._helpers import make_plaid_record, make_doc_record
 
 
 class MergeDocumentIntoPlaidTest(TestCase):
-
     def setUp(self):
-        self.user = User.objects.create_user(username="merge_doc",
-                                             password="pass")
+        self.user = User.objects.create_user(username="merge_doc", password="pass")
         self.plaid = make_plaid_record(self.user, "Walmart")
-        self.doc = make_doc_record(self.user,
-                                   "Walmart",
-                                   products="Milk|Eggs",
-                                   notes="Weekly groceries")
-        self.doc_folder = Folder.objects.create(user=self.user,
-                                                name="Groceries")
-        self.plaid_with_folder = make_plaid_record(self.user,
-                                                   "Costco",
-                                                   folder=self.doc_folder)
+        self.doc = make_doc_record(
+            self.user, "Walmart", products="Milk|Eggs", notes="Weekly groceries"
+        )
+        self.doc_folder = Folder.objects.create(user=self.user, name="Groceries")
+        self.plaid_with_folder = make_plaid_record(self.user, "Costco", folder=self.doc_folder)
         self.doc_with_docref = make_doc_record(
             self.user,
             "Receipt DocRef",
@@ -105,8 +99,8 @@ class MergeDocumentIntoPlaidTest(TestCase):
         self.assertEqual(doc_data1.associated_record, self.plaid)
         self.assertEqual(doc_data2.associated_record, self.plaid)
         self.assertFalse(
-            DocumentData.objects.filter(
-                associated_record=self.doc_with_docref).exists())
+            DocumentData.objects.filter(associated_record=self.doc_with_docref).exists()
+        )
 
     def test_merge_returns_none_when_a_record_vanished(self):
         """A record hard-deleted between matching and merging must not raise."""
@@ -127,10 +121,8 @@ class MergeDocumentIntoPlaidTest(TestCase):
             file_hash=hashlib.sha256(b"test3").hexdigest(),
         )
         merge_document_into_plaid(self.plaid, self.doc_with_docref, doc_data)
-        log = MergeLog.objects.filter(
-            document_record=self.doc_with_docref).first()
-        self.assertIn(doc_data.pk,
-                      log.document_snapshot.get("document_ids", []))
+        log = MergeLog.objects.filter(document_record=self.doc_with_docref).first()
+        self.assertIn(doc_data.pk, log.document_snapshot.get("document_ids", []))
 
     def test_record_snapshot_includes_currency(self):
         snap = _record_snapshot(self.plaid)
@@ -165,15 +157,12 @@ class MergeDocumentIntoPlaidTest(TestCase):
 
 
 class UndoMergeTest(TestCase):
-
     def setUp(self):
-        self.user = User.objects.create_user(username="undo_merge",
-                                             password="pass")
+        self.user = User.objects.create_user(username="undo_merge", password="pass")
         self.plaid = make_plaid_record(self.user, "Home Depot")
-        self.doc = make_doc_record(self.user,
-                                   "Home Depot",
-                                   products="Tools",
-                                   notes="Renovation supplies")
+        self.doc = make_doc_record(
+            self.user, "Home Depot", products="Tools", notes="Renovation supplies"
+        )
         self.merge_log = MergeLog.objects.create(
             plaid_record=self.plaid,
             document_record=self.doc,
@@ -222,10 +211,7 @@ class UndoMergeTest(TestCase):
         import hashlib
         from documents.models import DocumentData
 
-        doc1 = make_doc_record(self.user,
-                               "Doc With Files",
-                               products="Items",
-                               notes="Important")
+        doc1 = make_doc_record(self.user, "Doc With Files", products="Items", notes="Important")
         doc_data1 = DocumentData.objects.create(
             user=self.user,
             associated_record=doc1,
@@ -249,10 +235,8 @@ class UndoMergeTest(TestCase):
 
 
 class TryMatchTest(TestCase):
-
     def setUp(self):
-        self.user = User.objects.create_user(username="try_match",
-                                             password="pass")
+        self.user = User.objects.create_user(username="try_match", password="pass")
 
     def test_try_match_document_record_found(self):
         plaid = make_plaid_record(self.user, "Staples")

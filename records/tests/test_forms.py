@@ -12,7 +12,6 @@ from records.models import Record, Folder
 
 
 class FolderFormTest(TestCase):
-
     def test_valid_data(self):
         form = FolderForm(data={"name": "New Folder"})
         self.assertTrue(form.is_valid())
@@ -31,10 +30,8 @@ class FolderFormTest(TestCase):
 
 
 class BaseRecordFormTest(TestCase):
-
     def setUp(self):
-        self.user = User.objects.create_user(username="formuser",
-                                             password="pass")
+        self.user = User.objects.create_user(username="formuser", password="pass")
 
     def test_required_fields(self):
         form = AddRecordForm(user=self.user, data={})
@@ -228,10 +225,8 @@ class BaseRecordFormTest(TestCase):
 
 
 class AddRecordFormTest(TestCase):
-
     def setUp(self):
-        self.user = User.objects.create_user(username="formuser",
-                                             password="pass")
+        self.user = User.objects.create_user(username="formuser", password="pass")
 
     def test_form_fields(self):
         form = AddRecordForm(user=self.user)
@@ -253,10 +248,8 @@ class AddRecordFormTest(TestCase):
 
 
 class RecordUpdateFormTest(TestCase):
-
     def setUp(self):
-        self.user = User.objects.create_user(username="formuser",
-                                             password="pass")
+        self.user = User.objects.create_user(username="formuser", password="pass")
 
     def test_fields_match(self):
         update_fields = set(RecordUpdateForm().fields.keys())

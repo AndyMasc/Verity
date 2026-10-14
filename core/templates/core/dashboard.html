@@ -59,7 +59,7 @@
                                     {% for notification in notifications|slice:":3" %}
                                         <div class="flex items-center justify-between gap-2.5 rounded-xl border border-zinc-200/60 bg-zinc-50 px-3.5 py-2.5 transition-colors hover:border-zinc-300/80 dark:border-white/[0.035] dark:bg-zinc-900/60 dark:hover:border-white/[0.07]">
                                             <div class="flex min-w-0 items-center gap-2">
-                                                <span class="block size-1.5 shrink-0 rounded-full bg-[#5A67FF]"></span>
+                                                <span class="block size-1.5 shrink-0 rounded-full bg-[#533AFD]"></span>
                                                 <span class="truncate text-xs font-medium text-zinc-800 dark:text-zinc-200">
                                                     {{ notification.subject|default:"Notice" }}: <span class="font-normal text-zinc-600 dark:text-zinc-400">{{ notification.message|truncatechars:28 }}</span>
                                                 </span>

@@ -54,17 +54,20 @@ def run_daily_reconciliation() -> list[Drift]:
 
 def check_completed_payments() -> list[Drift]:
     drifts: list[Drift] = []
-    payments = (PackagePayment.objects.filter(
-        is_completed=True).exclude(stripe_payment_intent_id="").select_related(
-            "package", "payer").iterator(chunk_size=200))
+    payments = (
+        PackagePayment.objects.filter(is_completed=True)
+        .exclude(stripe_payment_intent_id="")
+        .select_related("package", "payer")
+        .iterator(chunk_size=200)
+    )
     for payment in payments:
-        expected_cents = (payment.expected_amount_cents
-                          if payment.expected_amount_cents
-                          is not None else to_stripe_amount(
-                              payment.amount_paid, payment.payer_currency))
+        expected_cents = (
+            payment.expected_amount_cents
+            if payment.expected_amount_cents is not None
+            else to_stripe_amount(payment.amount_paid, payment.payer_currency)
+        )
         try:
-            intent = services.retrieve_payment_intent(
-                payment.stripe_payment_intent_id)
+            intent = services.retrieve_payment_intent(payment.stripe_payment_intent_id)
         except stripe.error.InvalidRequestError:
             drifts.append(
                 Drift(
@@ -74,7 +77,8 @@ def check_completed_payments() -> list[Drift]:
                         "payment_intent": payment.stripe_payment_intent_id,
                         "expected_cents": expected_cents,
                     },
-                ))
+                )
+            )
             continue
 
         amount = intent.get("amount_received") or intent.get("amount") or 0
@@ -89,7 +93,8 @@ def check_completed_payments() -> list[Drift]:
                         "payment_intent": intent.get("id"),
                         "stripe_status": status,
                     },
-                ))
+                )
+            )
         if int(amount) != int(expected_cents):
             drifts.append(
                 Drift(
@@ -100,9 +105,9 @@ def check_completed_payments() -> list[Drift]:
                         "stripe_amount_cents": int(amount),
                         "expected_cents": int(expected_cents),
                     },
-                ))
-        if currency and payment.payer_currency and currency != payment.payer_currency.lower(
-        ):
+                )
+            )
+        if currency and payment.payer_currency and currency != payment.payer_currency.lower():
             drifts.append(
                 Drift(
                     kind="settled_currency_mismatch",
@@ -112,26 +117,29 @@ def check_completed_payments() -> list[Drift]:
                         "stripe_currency": currency,
                         "expected_currency": payment.payer_currency,
                     },
-                ))
+                )
+            )
     return drifts
 
 
 def check_paid_packages_have_completed_payment() -> list[Drift]:
     paid_without_payment = ReimbursementPackage.objects.filter(
-        status=ReimbursementPackage.Status.PAID,
-        deleted_at__isnull=True).exclude(payments__is_completed=True)
+        status=ReimbursementPackage.Status.PAID, deleted_at__isnull=True
+    ).exclude(payments__is_completed=True)
     return [
         Drift(
             kind="paid_package_without_completed_payment",
             package_uuid=str(package.uuid),
             detail={},
-        ) for package in paid_without_payment.only("uuid")
+        )
+        for package in paid_without_payment.only("uuid")
     ]
 
 
 def check_completed_payments_have_paid_package() -> list[Drift]:
     unsettled = PackagePayment.objects.filter(is_completed=True).exclude(
-        package__status=ReimbursementPackage.Status.PAID)
+        package__status=ReimbursementPackage.Status.PAID
+    )
     return [
         Drift(
             kind="completed_payment_on_unpaid_package",
@@ -140,15 +148,16 @@ def check_completed_payments_have_paid_package() -> list[Drift]:
                 "stripe_session_id": payment.stripe_checkout_session_id,
                 "package_status": payment.package.status,
             },
-        ) for payment in unsettled.select_related("package").only(
-            "pk", "stripe_checkout_session_id", "package__uuid")
+        )
+        for payment in unsettled.select_related("package").only(
+            "pk", "stripe_checkout_session_id", "package__uuid"
+        )
     ]
 
 
 def flag_drift(drift: Drift) -> None:
     details = drift.as_audit_details()
-    window_start = timezone.now() - timezone.timedelta(
-        hours=DEDUP_WINDOW_HOURS)
+    window_start = timezone.now() - timezone.timedelta(hours=DEDUP_WINDOW_HOURS)
     already_flagged = AuditLog.objects.filter(
         action=AuditLog.Action.UPDATE_RECORD,
         created_at__gte=window_start,
@@ -160,8 +169,7 @@ def flag_drift(drift: Drift) -> None:
         return
 
     logger.critical("Money-state drift detected: %s", details)
-    first_package = ReimbursementPackage.objects.filter(
-        uuid=drift.package_uuid).first()
+    first_package = ReimbursementPackage.objects.filter(uuid=drift.package_uuid).first()
     AuditLog.objects.create(
         user=getattr(first_package, "creator", None),
         action=AuditLog.Action.UPDATE_RECORD,

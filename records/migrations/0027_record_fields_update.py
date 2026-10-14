@@ -7,7 +7,8 @@ def set_defaults(apps, schema_editor):
     Record = apps.get_model("records", "Record")
     Record.objects.filter(balance__isnull=True).update(balance=Decimal("0.00"))
     Record.objects.filter(transaction_date__isnull=True).update(
-        transaction_date=models.F("date_added"))
+        transaction_date=models.F("date_added")
+    )
 
 
 class Migration(migrations.Migration):
@@ -30,10 +31,9 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="record",
             name="balance",
-            field=models.DecimalField(db_index=True,
-                                      decimal_places=2,
-                                      default=Decimal("0.00"),
-                                      max_digits=12),
+            field=models.DecimalField(
+                db_index=True, decimal_places=2, default=Decimal("0.00"), max_digits=12
+            ),
         ),
         migrations.AlterField(
             model_name="record",

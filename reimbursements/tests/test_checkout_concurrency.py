@@ -31,8 +31,7 @@ _FAKE_INVOICE = SimpleNamespace(
 )
 
 
-@unittest.skipUnless(connection.vendor == "postgresql",
-                     "requires PostgreSQL (select_for_update)")
+@unittest.skipUnless(connection.vendor == "postgresql", "requires PostgreSQL (select_for_update)")
 class InvoiceClaimConcurrencyTest(TransactionTestCase):
     """Two simultaneous invoices for one open package."""
 
@@ -62,29 +61,24 @@ class InvoiceClaimConcurrencyTest(TransactionTestCase):
                 connection.close()
 
         with (
-                patch(
-                    "reimbursements.services.create_invoice",
-                    side_effect=lambda *a, **k: _FAKE_INVOICE,
-                ) as mock_create,
-                patch(
-                    "reimbursements.services.get_rates",
-                    return_value={"USD": Decimal("1")},
-                ),
-                patch("reimbursements.services.send_invoice",
-                      return_value=_FAKE_INVOICE),
-                patch("reimbursements.services.create_invoice_item",
-                      return_value=_FAKE_INVOICE),
-                patch("reimbursements.services.find_or_create_customer",
-                      return_value="cus_x"),
-                patch(
-                    "reimbursements.services.services_hosted_url",
-                    return_value=_FAKE_INVOICE.hosted_invoice_url,
-                ),
+            patch(
+                "reimbursements.services.create_invoice",
+                side_effect=lambda *a, **k: _FAKE_INVOICE,
+            ) as mock_create,
+            patch(
+                "reimbursements.services.get_rates",
+                return_value={"USD": Decimal("1")},
+            ),
+            patch("reimbursements.services.send_invoice", return_value=_FAKE_INVOICE),
+            patch("reimbursements.services.create_invoice_item", return_value=_FAKE_INVOICE),
+            patch("reimbursements.services.find_or_create_customer", return_value="cus_x"),
+            patch(
+                "reimbursements.services.services_hosted_url",
+                return_value=_FAKE_INVOICE.hosted_invoice_url,
+            ),
         ):
             threads = [
-                threading.Thread(target=attempt,
-                                 args=(i, ),
-                                 name=f"invoice-{i}") for i in range(2)
+                threading.Thread(target=attempt, args=(i,), name=f"invoice-{i}") for i in range(2)
             ]
             for t in threads:
                 t.start()
@@ -92,8 +86,7 @@ class InvoiceClaimConcurrencyTest(TransactionTestCase):
                 t.join(timeout=20)
 
         for i, outcome in enumerate(outcomes):
-            self.assertNotIsInstance(outcome, Exception,
-                                     f"thread {i} crashed: {outcome!r}")
+            self.assertNotIsInstance(outcome, Exception, f"thread {i} crashed: {outcome!r}")
             self.assertIsNotNone(outcome, f"thread {i} produced no result")
         return outcomes, mock_create
 
@@ -134,34 +127,28 @@ class InvoiceRetryAfterStripeFailureTest(TestCase):
         self.pkg = _package(self.creator)
         self.pkg.records.add(_record(self.creator, balance=Decimal("25.00")))
 
-    @patch("reimbursements.services.create_invoice_item",
-           return_value=_FAKE_INVOICE)
-    @patch("reimbursements.services.services_hosted_url",
-           return_value="https://invoice/x")
+    @patch("reimbursements.services.create_invoice_item", return_value=_FAKE_INVOICE)
+    @patch("reimbursements.services.services_hosted_url", return_value="https://invoice/x")
     @patch("reimbursements.services.send_invoice", return_value=_FAKE_INVOICE)
-    @patch("reimbursements.services.find_or_create_customer",
-           return_value="cus_x")
-    @patch("reimbursements.services.get_rates",
-           return_value={"USD": Decimal("1")})
+    @patch("reimbursements.services.find_or_create_customer", return_value="cus_x")
+    @patch("reimbursements.services.get_rates", return_value={"USD": Decimal("1")})
     @patch("reimbursements.services.create_invoice")
-    def test_failed_attempt_does_not_block_retry(self, mock_create, _rates,
-                                                 _cust, _send, _url, _item):
+    def test_failed_attempt_does_not_block_retry(
+        self, mock_create, _rates, _cust, _send, _url, _item
+    ):
         import stripe
 
-        mock_create.side_effect = stripe.error.APIConnectionError(
-            "network down")
-        first = services.create_package_invoice(package=self.pkg,
-                                                payer=self.payer,
-                                                payer_email=self.payer.email,
-                                                currency="usd")
+        mock_create.side_effect = stripe.error.APIConnectionError("network down")
+        first = services.create_package_invoice(
+            package=self.pkg, payer=self.payer, payer_email=self.payer.email, currency="usd"
+        )
         self.assertIn("Unable to raise an invoice", first.error)
         self.assertEqual(PackagePayment.objects.count(), 0)
 
         mock_create.side_effect = None
         mock_create.return_value = _FAKE_INVOICE
-        second = services.create_package_invoice(package=self.pkg,
-                                                 payer=self.payer,
-                                                 payer_email=self.payer.email,
-                                                 currency="usd")
+        second = services.create_package_invoice(
+            package=self.pkg, payer=self.payer, payer_email=self.payer.email, currency="usd"
+        )
         self.assertEqual(second.redirect_url, "https://invoice/x")
         self.assertEqual(PackagePayment.objects.count(), 1)

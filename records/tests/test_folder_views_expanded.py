@@ -14,48 +14,34 @@ User = get_user_model()
 
 
 @override_settings(
-    CACHES={
-        "default": {
-            "BACKEND": "django.core.cache.backends.dummy.DummyCache"
-        }
-    },
+    CACHES={"default": {"BACKEND": "django.core.cache.backends.dummy.DummyCache"}},
     SESSION_ENGINE="django.contrib.sessions.backends.db",
 )
 class FolderCreateEdgeCasesTest(TestCase):
-
     def setUp(self):
-        self.user = User.objects.create_user(username="foldcreate",
-                                             password="pass")
+        self.user = User.objects.create_user(username="foldcreate", password="pass")
         self.url = reverse("records:create_folder")
 
     def test_empty_name_rejected(self):
         self.client.force_login(self.user)
-        response = self.client.post(self.url, {"name": ""},
-                                    headers={"hx-request": "true"})
+        response = self.client.post(self.url, {"name": ""}, headers={"hx-request": "true"})
         self.assertIn(response.status_code, [200, 422])
         self.assertEqual(Folder.objects.filter(user=self.user).count(), 0)
 
     def test_duplicate_name_allowed(self):
         self.client.force_login(self.user)
         Folder.objects.create(user=self.user, name="Taxes")
-        response = self.client.post(self.url, {"name": "Taxes"},
-                                    headers={"hx-request": "true"})
+        response = self.client.post(self.url, {"name": "Taxes"}, headers={"hx-request": "true"})
         self.assertIn(response.status_code, [200, 302])
 
 
 @override_settings(
-    CACHES={
-        "default": {
-            "BACKEND": "django.core.cache.backends.dummy.DummyCache"
-        }
-    },
+    CACHES={"default": {"BACKEND": "django.core.cache.backends.dummy.DummyCache"}},
     SESSION_ENGINE="django.contrib.sessions.backends.db",
 )
 class FolderDeleteEdgeCasesTest(TestCase):
-
     def setUp(self):
-        self.user = User.objects.create_user(username="folddelete",
-                                             password="pass")
+        self.user = User.objects.create_user(username="folddelete", password="pass")
 
     def test_delete_empty_folder(self):
         folder = Folder.objects.create(user=self.user, name="Empty")
@@ -90,35 +76,26 @@ class FolderDeleteEdgeCasesTest(TestCase):
 
 
 @override_settings(
-    CACHES={
-        "default": {
-            "BACKEND": "django.core.cache.backends.dummy.DummyCache"
-        }
-    },
+    CACHES={"default": {"BACKEND": "django.core.cache.backends.dummy.DummyCache"}},
     SESSION_ENGINE="django.contrib.sessions.backends.db",
 )
 class FolderUpdateEdgeCasesTest(TestCase):
-
     def setUp(self):
-        self.user = User.objects.create_user(username="foldupdate",
-                                             password="pass")
+        self.user = User.objects.create_user(username="foldupdate", password="pass")
         self.folder = Folder.objects.create(user=self.user, name="Original")
 
     def test_update_to_empty_name(self):
         self.client.force_login(self.user)
         url = reverse("records:edit_folder", args=[self.folder.id])
-        response = self.client.post(url, {"name": ""},
-                                    headers={"hx-request": "true"})
+        response = self.client.post(url, {"name": ""}, headers={"hx-request": "true"})
         self.folder.refresh_from_db()
         self.assertEqual(self.folder.name, "Original")
 
     def test_other_user_cannot_update(self):
-        other = User.objects.create_user(username="otherupdfold",
-                                         password="pass")
+        other = User.objects.create_user(username="otherupdfold", password="pass")
         self.client.force_login(other)
         url = reverse("records:edit_folder", args=[self.folder.id])
-        response = self.client.post(url, {"name": "Hacked"},
-                                    headers={"hx-request": "true"})
+        response = self.client.post(url, {"name": "Hacked"}, headers={"hx-request": "true"})
         self.assertEqual(response.status_code, 404)
         self.folder.refresh_from_db()
         self.assertEqual(self.folder.name, "Original")

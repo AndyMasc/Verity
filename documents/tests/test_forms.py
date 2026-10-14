@@ -24,42 +24,46 @@ def _make_doc_filter_request(user):
 
 
 class R2UploadFormTest(TestCase):
-
     def test_valid_form(self):
-        form = R2UploadForm(data={
-            "filename": "test.pdf",
-            "content_type": "application/pdf",
-        })
+        form = R2UploadForm(
+            data={
+                "filename": "test.pdf",
+                "content_type": "application/pdf",
+            }
+        )
         self.assertTrue(form.is_valid())
         self.assertEqual(form.cleaned_data["filename"], "test.pdf")
 
     def test_filename_cleaned_to_basename(self):
-        form = R2UploadForm(data={
-            "filename": "subdir/test.pdf",
-            "content_type": "application/pdf",
-        })
+        form = R2UploadForm(
+            data={
+                "filename": "subdir/test.pdf",
+                "content_type": "application/pdf",
+            }
+        )
         self.assertTrue(form.is_valid())
         self.assertEqual(form.cleaned_data["filename"], "test.pdf")
 
     def test_dot_filename_rejected(self):
-        form = R2UploadForm(data={
-            "filename": ".",
-            "content_type": "application/pdf",
-        })
+        form = R2UploadForm(
+            data={
+                "filename": ".",
+                "content_type": "application/pdf",
+            }
+        )
         self.assertFalse(form.is_valid())
 
     def test_dotdot_filename_rejected(self):
-        form = R2UploadForm(data={
-            "filename": "..",
-            "content_type": "application/pdf",
-        })
+        form = R2UploadForm(
+            data={
+                "filename": "..",
+                "content_type": "application/pdf",
+            }
+        )
         self.assertFalse(form.is_valid())
 
     def test_empty_filename(self):
-        form = R2UploadForm(data={
-            "filename": "",
-            "content_type": "application/pdf"
-        })
+        form = R2UploadForm(data={"filename": "", "content_type": "application/pdf"})
         self.assertFalse(form.is_valid())
 
     def test_missing_content_type(self):
@@ -68,25 +72,29 @@ class R2UploadFormTest(TestCase):
 
     def test_allowed_content_types(self):
         for ct in [
-                "application/pdf",
-                "image/jpeg",
-                "image/png",
-                "image/webp",
-                "image/heic",
-                "image/heif",
+            "application/pdf",
+            "image/jpeg",
+            "image/png",
+            "image/webp",
+            "image/heic",
+            "image/heif",
         ]:
             with self.subTest(ct=ct):
-                form = R2UploadForm(data={
-                    "filename": f"test.{ct.split('/')[1]}",
-                    "content_type": ct,
-                })
+                form = R2UploadForm(
+                    data={
+                        "filename": f"test.{ct.split('/')[1]}",
+                        "content_type": ct,
+                    }
+                )
                 self.assertTrue(form.is_valid(), msg=f"Failed for {ct}")
 
     def test_disallowed_content_type(self):
-        form = R2UploadForm(data={
-            "filename": "test.txt",
-            "content_type": "text/plain",
-        })
+        form = R2UploadForm(
+            data={
+                "filename": "test.txt",
+                "content_type": "text/plain",
+            }
+        )
         self.assertFalse(form.is_valid())
 
     def test_notes_field_optional(self):
@@ -95,17 +103,19 @@ class R2UploadFormTest(TestCase):
                 "filename": "test.pdf",
                 "content_type": "application/pdf",
                 "notes": "Some notes",
-            })
+            }
+        )
         self.assertTrue(form.is_valid())
 
 
 class DocumentUpdateFormTest(TestCase):
-
     def test_valid_data(self):
-        form = DocumentUpdateForm(data={
-            "title": "Updated Title",
-            "notes": "Some notes",
-        })
+        form = DocumentUpdateForm(
+            data={
+                "title": "Updated Title",
+                "notes": "Some notes",
+            }
+        )
         self.assertTrue(form.is_valid())
 
     def test_associated_record_not_required(self):
@@ -139,10 +149,8 @@ class DocumentUpdateFormTest(TestCase):
 
 
 class DocumentFilterTest(TestCase):
-
     def setUp(self):
-        self.user = User.objects.create_user(username="testuser",
-                                             password="pass")
+        self.user = User.objects.create_user(username="testuser", password="pass")
         self.record = Record.objects.create(
             user=self.user,
             title="Test Record",
@@ -203,18 +211,15 @@ class DocumentFilterTest(TestCase):
             file_hash=_make_hash(b"photo"),
             file_extension="jpg",
         )
-        qs = DocumentData.objects.filter(user=self.user,
-                                         file_extension__iexact="pdf")
+        qs = DocumentData.objects.filter(user=self.user, file_extension__iexact="pdf")
         self.assertEqual(qs.count(), 1)
 
     def test_no_filters(self):
-        DocumentData.objects.create(user=self.user,
-                                    filepath="users/1/a.pdf",
-                                    file_hash=_make_hash())
+        DocumentData.objects.create(
+            user=self.user, filepath="users/1/a.pdf", file_hash=_make_hash()
+        )
         qs = DocumentData.objects.filter(user=self.user)
-        f = DocumentFilter({},
-                           queryset=qs,
-                           request=_make_doc_filter_request(self.user))
+        f = DocumentFilter({}, queryset=qs, request=_make_doc_filter_request(self.user))
         self.assertEqual(f.qs.count(), 1)
 
     def test_file_type_choices_dedupe_case_insensitive(self):
@@ -234,9 +239,7 @@ class DocumentFilterTest(TestCase):
             file_extension="png",
         )
         qs = DocumentData.objects.filter(user=self.user)
-        f = DocumentFilter({},
-                           queryset=qs,
-                           request=_make_doc_filter_request(self.user))
+        f = DocumentFilter({}, queryset=qs, request=_make_doc_filter_request(self.user))
         choices = f.filters["file_type"].extra["choices"]
         labels = [label for value, label in choices]
         self.assertEqual(labels.count("PNG"), 1)

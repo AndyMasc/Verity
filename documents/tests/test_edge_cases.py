@@ -22,10 +22,8 @@ def _make_hash(content: bytes = b"test") -> str:
 
 
 class DocumentPermanentDeleteEdgeCasesTest(TestCase):
-
     def setUp(self):
-        self.user = User.objects.create_user(username="docedge",
-                                             password="pass")
+        self.user = User.objects.create_user(username="docedge", password="pass")
 
     def test_delete_permanently_removes_ocr_document(self):
         doc = DocumentData.objects.create(
@@ -62,10 +60,8 @@ class DocumentPermanentDeleteEdgeCasesTest(TestCase):
 
 
 class DocumentFileExtensionTest(TestCase):
-
     def setUp(self):
-        self.user = User.objects.create_user(username="exttest",
-                                             password="pass")
+        self.user = User.objects.create_user(username="exttest", password="pass")
 
     def test_auto_extract_pdf(self):
         doc = DocumentData.objects.create(
@@ -112,10 +108,8 @@ class DocumentFileExtensionTest(TestCase):
 
 
 class DocumentIsProcessingTest(TestCase):
-
     def setUp(self):
-        self.user = User.objects.create_user(username="proctest",
-                                             password="pass")
+        self.user = User.objects.create_user(username="proctest", password="pass")
 
     def test_pending_upload_is_processing(self):
         doc = DocumentData.objects.create(

@@ -23,8 +23,7 @@ from django.http import HttpRequest, HttpResponse
 from django.utils import timezone
 from posthog import set_context_session
 
-request_id_var: contextvars.ContextVar[str] = contextvars.ContextVar(
-    "request_id", default="")
+request_id_var: contextvars.ContextVar[str] = contextvars.ContextVar("request_id", default="")
 
 
 class RequestIDMiddleware:
@@ -35,8 +34,7 @@ class RequestIDMiddleware:
     for log correlation, and echoed in the response header.
     """
 
-    def __init__(self, get_response: Callable[[HttpRequest],
-                                              HttpResponse]) -> None:
+    def __init__(self, get_response: Callable[[HttpRequest], HttpResponse]) -> None:
         self.get_response = get_response
 
     def __call__(self, request: HttpRequest) -> HttpResponse:
@@ -73,8 +71,7 @@ class TimezoneMiddleware:
 
     COOKIE_NAME = "user_timezone"
 
-    def __init__(self, get_response: Callable[[HttpRequest],
-                                              HttpResponse]) -> None:
+    def __init__(self, get_response: Callable[[HttpRequest], HttpResponse]) -> None:
         self.get_response = get_response
 
     def __call__(self, request: HttpRequest) -> HttpResponse:
@@ -105,8 +102,7 @@ class PostHogSessionIdMiddleware:
     COOKIE_NAME = "posthog_session_cookie"
     SESSION_ID_PATTERN = re.compile(r"^[0-9A-Za-z_-]{1,64}$")
 
-    def __init__(self, get_response: Callable[[HttpRequest],
-                                              HttpResponse]) -> None:
+    def __init__(self, get_response: Callable[[HttpRequest], HttpResponse]) -> None:
         self.get_response = get_response
 
     def __call__(self, request: HttpRequest) -> HttpResponse:
@@ -128,8 +124,7 @@ class HtmxMessageMiddleware:
     the client-side can display them without a full page reload.
     """
 
-    def __init__(self, get_response: Callable[[HttpRequest],
-                                              HttpResponse]) -> None:
+    def __init__(self, get_response: Callable[[HttpRequest], HttpResponse]) -> None:
         self.get_response = get_response
 
     def __call__(self, request: HttpRequest) -> HttpResponse:
@@ -142,20 +137,18 @@ class HtmxMessageMiddleware:
         if "HX-Redirect" in response or "HX-Refresh" in response:
             return response
 
-        messages_list = [{
-            "message": str(message.message),
-            "level": message.level
-        } for message in get_messages(request)]
+        messages_list = [
+            {"message": str(message.message), "level": message.level}
+            for message in get_messages(request)
+        ]
         if not messages_list:
             return response
 
-        response["HX-Trigger"] = self._build_hx_trigger(
-            response.get("HX-Trigger"), messages_list)
+        response["HX-Trigger"] = self._build_hx_trigger(response.get("HX-Trigger"), messages_list)
         return response
 
     @staticmethod
-    def _build_hx_trigger(hx_trigger: str | None,
-                          messages_list: list[dict[str, Any]]) -> str:
+    def _build_hx_trigger(hx_trigger: str | None, messages_list: list[dict[str, Any]]) -> str:
         payload: dict[str, Any] = {"djangoMessages": messages_list}
 
         if not hx_trigger:
@@ -164,10 +157,7 @@ class HtmxMessageMiddleware:
         try:
             trigger_data = json.loads(hx_trigger)
         except ValueError:
-            return json.dumps({
-                hx_trigger: {},
-                "djangoMessages": messages_list
-            })
+            return json.dumps({hx_trigger: {}, "djangoMessages": messages_list})
 
         if isinstance(trigger_data, dict):
             trigger_data.update(payload)

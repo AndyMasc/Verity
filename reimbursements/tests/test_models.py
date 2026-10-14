@@ -17,7 +17,6 @@ from ._helpers import _package, _record, _stripe_account, _user
 
 
 class ReimbursementPackageModelTest(TestCase):
-
     def setUp(self):
         self.creator = _user("creator@test.com")
         self.recipient = _user("recipient@test.com")
@@ -82,19 +81,15 @@ class ReimbursementPackageModelTest(TestCase):
         self.assertEqual(pkg.status, ReimbursementPackage.Status.OPEN)
 
     def test_is_expired_false(self):
-        pkg = _package(self.creator,
-                       expires_at=timezone.now() + timedelta(days=7))
+        pkg = _package(self.creator, expires_at=timezone.now() + timedelta(days=7))
         self.assertFalse(pkg.is_expired)
 
     def test_is_expired_true(self):
-        pkg = _package(self.creator,
-                       expires_at=timezone.now() - timedelta(days=1))
+        pkg = _package(self.creator, expires_at=timezone.now() - timedelta(days=1))
         self.assertTrue(pkg.is_expired)
 
     def test_mark_as_paid_without_payer_skips_record(self):
-        pkg = _package(self.creator,
-                       recipient=None,
-                       recipient_email="ext@test.com")
+        pkg = _package(self.creator, recipient=None, recipient_email="ext@test.com")
         r = _record(self.creator, Decimal("25.00"))
         pkg.records.add(r)
         pkg.mark_as_paid(None)
@@ -106,7 +101,9 @@ class ReimbursementPackageModelTest(TestCase):
         self.assertTrue(pkg.records.get().reimbursed)
         self.assertFalse(
             Record.objects.filter(
-                title=f"Reimbursement: {pkg.title}", ).exists())
+                title=f"Reimbursement: {pkg.title}",
+            ).exists()
+        )
 
     def test_activate_queued_package(self):
         pkg = _package(self.creator, status="queued")
@@ -125,14 +122,11 @@ class ReimbursementPackageModelTest(TestCase):
         self.assertEqual(pkg.recipient_address, self.recipient.email)
 
     def test_recipient_address_falls_back_to_email(self):
-        pkg = _package(self.creator,
-                       recipient=None,
-                       recipient_email="ext@test.com")
+        pkg = _package(self.creator, recipient=None, recipient_email="ext@test.com")
         self.assertEqual(pkg.recipient_address, "ext@test.com")
 
 
 class StripeAccountModelTest(TestCase):
-
     def test_is_active(self):
         user = _user("stripe@test.com")
         acct = _stripe_account(user, active=True)
@@ -145,7 +139,6 @@ class StripeAccountModelTest(TestCase):
 
 
 class MarkAsPaidTransactionTest(TestCase):
-
     def setUp(self):
         self.creator = _user("creator@test.com")
         self.payer = _user("payer@test.com")
@@ -240,8 +233,7 @@ class PackageBusinessLogicTest(TestCase):
     def test_platform_net_margin_guaranteed_across_sizes(self):
         for total in (500, 2000, 5000, 25000, 100000):
             with self.subTest(total=total):
-                fee = self.pkg.platform_fee_cents(total, "usd",
-                                                  {"USD": Decimal("1")})
+                fee = self.pkg.platform_fee_cents(total, "usd", {"USD": Decimal("1")})
                 if fee == total:
                     continue  # degenerate micro-payment: Stripe costs exceed the charge
                 processing_estimate = math.ceil(total * Decimal("0.032")) + 30
@@ -264,9 +256,7 @@ class PackageBusinessLogicTest(TestCase):
     def test_create_for_attaches_records(self):
         r1 = _record(self.creator, Decimal("10.00"))
         r2 = _record(self.creator, Decimal("20.00"))
-        records = Record.objects.filter(id__in=[r1.id, r2.id],
-                                        user=self.creator,
-                                        is_active=True)
+        records = Record.objects.filter(id__in=[r1.id, r2.id], user=self.creator, is_active=True)
         pkg = ReimbursementPackage.objects.create_for(
             PackageDraft(
                 creator=self.creator,
@@ -274,7 +264,8 @@ class PackageBusinessLogicTest(TestCase):
                 title="From Manager",
                 records=records,
                 days_valid=14,
-            ))
+            )
+        )
         self.assertEqual(pkg.title, "From Manager")
         self.assertEqual(pkg.records.count(), 2)
         self.assertEqual(pkg.currency, "usd")
@@ -295,14 +286,13 @@ class PackageBusinessLogicTest(TestCase):
         r1 = _record(self.creator, Decimal("12.50"))
         self.pkg.records.add(r1)
         packages = list(
-            ReimbursementPackage.objects.filter(
-                pk=self.pkg.pk).with_prefetched_active_records())
+            ReimbursementPackage.objects.filter(pk=self.pkg.pk).with_prefetched_active_records()
+        )
         ReimbursementPackage.prefetch_converted_totals(packages, "usd")
         self.assertEqual(packages[0].display_total, Decimal("12.50"))
 
 
 class PackagePaymentModelTest(TestCase):
-
     def setUp(self):
         self.creator = _user("creator@test.com")
         self.payer = _user("payer@test.com")

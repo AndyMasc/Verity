@@ -16,10 +16,12 @@ from plaid.model.accounts_get_request import AccountsGetRequest
 from plaid.model.country_code import CountryCode
 from plaid.model.institutions_get_by_id_request import InstitutionsGetByIdRequest
 from plaid.model.institutions_get_by_id_request_options import (
-    InstitutionsGetByIdRequestOptions, )
+    InstitutionsGetByIdRequestOptions,
+)
 from plaid.model.item_get_request import ItemGetRequest
 from plaid.model.item_public_token_exchange_request import (
-    ItemPublicTokenExchangeRequest, )
+    ItemPublicTokenExchangeRequest,
+)
 from plaid.model.sandbox_item_fire_webhook_request import SandboxItemFireWebhookRequest
 from plaid.model.webhook_type import WebhookType
 
@@ -55,18 +57,15 @@ def public_token_exchange(public_token: str) -> tuple[str, str]:
 def fetch_institution_name(access_token: str, item_id: str) -> str:
     """Fetch the institution name from Plaid, returning a default on failure."""
     try:
-        item_resp = _plaid_dict(
-            plaid_client.item_get(ItemGetRequest(access_token=access_token)))
+        item_resp = _plaid_dict(plaid_client.item_get(ItemGetRequest(access_token=access_token)))
         inst_id = item_resp.get("item", {}).get("institution_id", "")
         if inst_id:
             inst_req = InstitutionsGetByIdRequest(
                 institution_id=inst_id,
                 country_codes=[CountryCode("US")],
-                options=InstitutionsGetByIdRequestOptions(
-                    include_optional_metadata=False),
+                options=InstitutionsGetByIdRequestOptions(include_optional_metadata=False),
             )
-            inst_dict = _plaid_dict(
-                plaid_client.institutions_get_by_id(inst_req))
+            inst_dict = _plaid_dict(plaid_client.institutions_get_by_id(inst_req))
             return inst_dict.get("institution", {}).get("name", "Bank Account")
     except Exception:
         logger.warning("Failed to fetch institution name for item %s", item_id)
@@ -77,15 +76,18 @@ def fetch_accounts(access_token: str, item_id: str) -> list[dict[str, str]]:
     """Fetch account metadata from Plaid, returning an empty list on failure."""
     try:
         acct_dict = _plaid_dict(
-            plaid_client.accounts_get(
-                AccountsGetRequest(access_token=access_token)))
-        return [{
-            "id": a["account_id"],
-            "name": a["name"],
-            "mask": a.get("mask", ""),
-            "type": a.get("type", ""),
-            "subtype": a.get("subtype", ""),
-        } for a in acct_dict.get("accounts", [])]
+            plaid_client.accounts_get(AccountsGetRequest(access_token=access_token))
+        )
+        return [
+            {
+                "id": a["account_id"],
+                "name": a["name"],
+                "mask": a.get("mask", ""),
+                "type": a.get("type", ""),
+                "subtype": a.get("subtype", ""),
+            }
+            for a in acct_dict.get("accounts", [])
+        ]
     except Exception:
         logger.warning("Failed to fetch accounts for item %s", item_id)
     return []
@@ -100,11 +102,10 @@ def trigger_initial_sync(plaid_item: PlaidItem) -> None:
                     access_token=plaid_item.access_token,
                     webhook_code="SYNC_UPDATES_AVAILABLE",
                     webhook_type=WebhookType("TRANSACTIONS"),
-                ))
+                )
+            )
         except plaid.ApiException:
-            logger.warning(
-                "Failed to fire initial sandbox webhook for item %s",
-                plaid_item.item_id)
+            logger.warning("Failed to fire initial sandbox webhook for item %s", plaid_item.item_id)
     else:
         from .tasks import sync_and_convert_for_item_task
 
@@ -118,12 +119,13 @@ def dispatch_sync(plaid_item: PlaidItem) -> bool:
     skipped because the last sync fell within the cooldown window.
     """
     now = tz.now()
-    cooldown_threshold = now - datetime.timedelta(
-        seconds=settings.PLAID_SYNC_COOLDOWN_SECONDS)
+    cooldown_threshold = now - datetime.timedelta(seconds=settings.PLAID_SYNC_COOLDOWN_SECONDS)
 
-    updated_count = (PlaidItem.objects.filter(id=plaid_item.id).filter(
-        Q(last_synced_at__isnull=True)
-        | Q(last_synced_at__lt=cooldown_threshold)).update(last_synced_at=now))
+    updated_count = (
+        PlaidItem.objects.filter(id=plaid_item.id)
+        .filter(Q(last_synced_at__isnull=True) | Q(last_synced_at__lt=cooldown_threshold))
+        .update(last_synced_at=now)
+    )
 
     if updated_count == 0:
         logger.info(
@@ -138,16 +140,15 @@ def dispatch_sync(plaid_item: PlaidItem) -> bool:
     return True
 
 
-def route_webhook(webhook_code: str, plaid_item: PlaidItem,
-                  payload: dict[str, Any]) -> None:
+def route_webhook(webhook_code: str, plaid_item: PlaidItem, payload: dict[str, Any]) -> None:
     """Dispatch a webhook to the appropriate handler based on the code."""
     if webhook_code in ("SYNC_UPDATES_AVAILABLE", "HISTORICAL_UPDATE"):
         dispatch_sync(plaid_item)
 
     elif webhook_code in (
-            "ITEM_LOGIN_REQUIRED",
-            "ITEM_REQUIRES_UPDATE",
-            "PENDING_EXPIRATION",
+        "ITEM_LOGIN_REQUIRED",
+        "ITEM_REQUIRES_UPDATE",
+        "PENDING_EXPIRATION",
     ):
         logger.warning(
             "Item %s requires manual user intervention: %s",
@@ -157,8 +158,7 @@ def route_webhook(webhook_code: str, plaid_item: PlaidItem,
         _record_item_error(
             plaid_item,
             webhook_code,
-            payload.get("error", {}).get("error_message",
-                                         "User action required"),
+            payload.get("error", {}).get("error_message", "User action required"),
         )
 
     elif webhook_code == "ERROR":
@@ -177,4 +177,5 @@ def route_webhook(webhook_code: str, plaid_item: PlaidItem,
     elif webhook_code == "TRANSACTIONS_REMOVED":
         txns: list[str] = payload.get("removed_transactions", [])
         Record.objects.filter(plaid_transaction_id__in=txns).update(
-            is_active=False, last_edited=tz.now())
+            is_active=False, last_edited=tz.now()
+        )

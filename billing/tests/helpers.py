@@ -26,7 +26,6 @@ from .. import features, metadata
 
 
 class FakeSession:
-
     def __init__(
         self,
         *,
@@ -53,15 +52,14 @@ class FakeSession:
 
 
 def give_pro_subscription(user) -> Subscription:
-    """Attach an active Verity Pro subscription to "user".
+    """Attach an active Plus subscription to "user".
 
     The customer is linked both via "subscriber" and the user's "customer"
     FK so "metadata.active_subscriptions" and the feature gates see it.
     """
     # Reuse whatever customer is already linked. Creating a second one with
     # subscriber=user makes Customer.get_or_create(subscriber=...) ambiguous.
-    customer = user.customer or Customer.objects.filter(
-        subscriber=user).first()
+    customer = user.customer or Customer.objects.filter(subscriber=user).first()
     if customer is None:
         customer = Customer.objects.create(
             id=f"cus_pro_{user.pk}",
@@ -84,47 +82,33 @@ def give_pro_subscription(user) -> Subscription:
         stripe_data={"status": "active"},
     )
     product, _ = Product.objects.get_or_create(
-        id=metadata.VERITY_PRO.stripe_id,
+        id=metadata.PLUS.stripe_id,
         livemode=False,
         defaults={
             "active": True,
-            "name": "Verity Pro",
-            "metadata": {
-                "category": "base_plan"
-            },
+            "name": "Plus",
+            "metadata": {"category": "base_plan"},
         },
     )
     for lookup_key in (
-            "record-sharing",
-            "transaction-sync",
-            "reimbursement-creation",
+        "record-sharing",
+        "transaction-sync",
+        "reimbursement-creation",
     ):
         feature, _ = Feature.objects.get_or_create(
             id=f"feat_{lookup_key}",
             livemode=False,
-            defaults={
-                "stripe_data": {
-                    "lookup_key": lookup_key,
-                    "name": lookup_key
-                }
-            },
+            defaults={"stripe_data": {"lookup_key": lookup_key, "name": lookup_key}},
         )
         ProductFeature.objects.get_or_create(
-            id=f"pf_{metadata.VERITY_PRO.stripe_id}_{lookup_key}",
+            id=f"pf_{metadata.PLUS.stripe_id}_{lookup_key}",
             livemode=False,
-            defaults={
-                "product": product,
-                "entitlement_feature": feature
-            },
+            defaults={"product": product, "entitlement_feature": feature},
         )
     price, _ = Price.objects.get_or_create(
         id=f"price_pro_{user.pk}",
         livemode=False,
-        defaults={
-            "active": True,
-            "product": product,
-            "currency": "usd"
-        },
+        defaults={"active": True, "product": product, "currency": "usd"},
     )
     SubscriptionItem.objects.create(
         id=f"si_pro_{user.pk}",
@@ -153,23 +137,13 @@ def add_subscription(user, customer, status="active", product_id=None):
         product, _ = Product.objects.get_or_create(
             id=product_id,
             livemode=False,
-            defaults={
-                "active": True,
-                "name": "Test",
-                "metadata": {
-                    "category": "base_plan"
-                }
-            },
+            defaults={"active": True, "name": "Test", "metadata": {"category": "base_plan"}},
         )
         price, _ = Price.objects.get_or_create(
             id=f"price_{product_id}",
             livemode=False,
             active=True,
-            defaults={
-                "active": True,
-                "product": product,
-                "currency": "usd"
-            },
+            defaults={"active": True, "product": product, "currency": "usd"},
         )
         SubscriptionItem.objects.create(
             id=f"si_{product_id}",

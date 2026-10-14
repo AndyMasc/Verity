@@ -29,17 +29,13 @@ class RecordFilter(django_filters.FilterSet):
     expiring_soon = django_filters.BooleanFilter(
         method="filter_expiring_soon",
         label="Expiring within 30 days",
-        widget=forms.Select(choices=[(False, "Current"), (True,
-                                                          "Expiring Soon")]),
+        widget=forms.Select(choices=[(False, "Current"), (True, "Expiring Soon")]),
     )
 
     is_active = django_filters.BooleanFilter(
         field_name="is_active",
         lookup_expr="exact",
-        widget=forms.Select(choices=[(None,
-                                      "All"), (True,
-                                               "Active"), (False,
-                                                           "Archived")]),
+        widget=forms.Select(choices=[(None, "All"), (True, "Active"), (False, "Archived")]),
     )
 
     record_type = django_filters.ChoiceFilter(
@@ -56,23 +52,19 @@ class RecordFilter(django_filters.FilterSet):
     this_month = django_filters.BooleanFilter(
         method="filter_this_month",
         label="Records from this month",
-        widget=forms.Select(choices=[(False, "All Time"), (True,
-                                                           "This Month")]),
+        widget=forms.Select(choices=[(False, "All Time"), (True, "This Month")]),
     )
 
     merged = django_filters.BooleanFilter(
         method="filter_merged",
         label="Merged",
-        widget=forms.Select(choices=[(False, "All Records"), (True,
-                                                              "Merged")]),
+        widget=forms.Select(choices=[(False, "All Records"), (True, "Merged")]),
     )
 
     shared = django_filters.BooleanFilter(
         method="filter_shared",
         label="Shared with me",
-        widget=forms.Select(choices=[(False,
-                                      "All Records"), (True,
-                                                       "Shared with me")]),
+        widget=forms.Select(choices=[(False, "All Records"), (True, "Shared with me")]),
     )
 
     class Meta:
@@ -89,10 +81,9 @@ class RecordFilter(django_filters.FilterSet):
                 user_folders = cache.get(cache_key)
                 if user_folders is None:
                     user_folders = list(
-                        Folder.objects.filter(
-                            user=self.request.user).values_list("id", "name"))
-                    cache.set(cache_key, user_folders,
-                              FILTER_CHOICES_CACHE_TTL)
+                        Folder.objects.filter(user=self.request.user).values_list("id", "name")
+                    )
+                    cache.set(cache_key, user_folders, FILTER_CHOICES_CACHE_TTL)
                 folder_filter.extra["choices"] = [
                     ("none", "All folders"),
                     *user_folders,
@@ -102,17 +93,17 @@ class RecordFilter(django_filters.FilterSet):
             user_record_types = cache.get(cache_key)
             if user_record_types is None:
                 user_record_types = set(
-                    Record.objects.filter(user=self.request.user,
-                                          is_active=True).values_list(
-                                              "record_type",
-                                              flat=True).distinct())
-                cache.set(cache_key, user_record_types,
-                          FILTER_CHOICES_CACHE_TTL)
+                    Record.objects.filter(user=self.request.user, is_active=True)
+                    .values_list("record_type", flat=True)
+                    .distinct()
+                )
+                cache.set(cache_key, user_record_types, FILTER_CHOICES_CACHE_TTL)
 
             all_choices = Record.RecordTypes.choices
             if user_record_types:
-                filtered = [(value, label) for value, label in all_choices
-                            if value in user_record_types]
+                filtered = [
+                    (value, label) for value, label in all_choices if value in user_record_types
+                ]
             else:
                 filtered = list(all_choices)
 
@@ -148,14 +139,9 @@ class RecordFilter(django_filters.FilterSet):
         """
         if value:
             now = timezone.now()
-            month_start = now.replace(day=1,
-                                      hour=0,
-                                      minute=0,
-                                      second=0,
-                                      microsecond=0)
+            month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
             if month_start.month == 12:
-                month_end = month_start.replace(year=month_start.year + 1,
-                                                month=1)
+                month_end = month_start.replace(year=month_start.year + 1, month=1)
             else:
                 month_end = month_start.replace(month=month_start.month + 1)
             return queryset.filter(
@@ -190,6 +176,5 @@ class RecordFilter(django_filters.FilterSet):
         """
         if value:
             user = self.request.user
-            return queryset.filter(
-                Q(shares__user=user) | Q(shares__shared_by=user)).distinct()
+            return queryset.filter(Q(shares__user=user) | Q(shares__shared_by=user)).distinct()
         return queryset

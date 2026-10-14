@@ -14,9 +14,7 @@ class Migration(migrations.Migration):
             fields=[
                 (
                     "event_id",
-                    models.CharField(max_length=255,
-                                     primary_key=True,
-                                     serialize=False),
+                    models.CharField(max_length=255, primary_key=True, serialize=False),
                 ),
                 ("created_at", models.DateTimeField(auto_now_add=True)),
             ],

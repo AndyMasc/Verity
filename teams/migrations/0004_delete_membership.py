@@ -8,7 +8,6 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("teams", "0003_membership_to_orguser"),
         ("records", "0041_alter_record_organization"),

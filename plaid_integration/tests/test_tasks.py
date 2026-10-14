@@ -23,8 +23,7 @@ User = get_user_model()
 
 def _b64(n: int) -> str:
     """base64url-encode a 32-byte EC coordinate, as a Plaid-style JWK requires."""
-    return base64.urlsafe_b64encode(n.to_bytes(32,
-                                               "big")).rstrip(b"=").decode()
+    return base64.urlsafe_b64encode(n.to_bytes(32, "big")).rstrip(b"=").decode()
 
 
 def plaid_jwk(private_key, kid: str = "test-kid") -> dict:
@@ -63,14 +62,14 @@ class PublicTokenExchangeTest(TestCase):
         import plaid
 
         mock_client.item_public_token_exchange.side_effect = plaid.ApiException(
-            status=400, reason="Bad Request")
+            status=400, reason="Bad Request"
+        )
         with self.assertRaises(plaid.ApiException):
             public_token_exchange("bad-token")
 
     @patch("plaid_integration.services.plaid_client")
     def test_unexpected_error_raises(self, mock_client):
-        mock_client.item_public_token_exchange.side_effect = RuntimeError(
-            "Unexpected")
+        mock_client.item_public_token_exchange.side_effect = RuntimeError("Unexpected")
         with self.assertRaises(RuntimeError):
             public_token_exchange("token")
 
@@ -83,11 +82,7 @@ class WebhookVerificationTest(TestCase):
         self.jwk = plaid_jwk(self.private_key)
         cache.clear()
 
-    def _token(self,
-               body: bytes,
-               kid: str = "test-kid",
-               key=None,
-               **claims) -> str:
+    def _token(self, body: bytes, kid: str = "test-kid", key=None, **claims) -> str:
         payload = {
             "request_body_sha256": hashlib.sha256(body).hexdigest(),
             "iat": datetime.now(UTC).timestamp(),
@@ -117,16 +112,13 @@ class WebhookVerificationTest(TestCase):
         self.assertTrue(verify_plaid_webhook(b"body", self._token(b"body")))
 
     @patch("plaid_integration.views.webhook.requests.post")
-    def test_key_is_fetched_from_the_documented_authenticated_endpoint(
-            self, post):
+    def test_key_is_fetched_from_the_documented_authenticated_endpoint(self, post):
         post.return_value.json.return_value = {"key": self.jwk}
         verify_plaid_webhook(b"body", self._token(b"body"))
 
-        (url, ) = post.call_args.args
-        self.assertEqual(
-            url, "https://sandbox.plaid.com/webhook_verification_key/get")
-        self.assertEqual(set(post.call_args.kwargs["json"]),
-                         {"client_id", "secret", "key_id"})
+        (url,) = post.call_args.args
+        self.assertEqual(url, "https://sandbox.plaid.com/webhook_verification_key/get")
+        self.assertEqual(set(post.call_args.kwargs["json"]), {"client_id", "secret", "key_id"})
 
     @patch("plaid_integration.views.webhook.requests.post")
     def test_the_tokens_kid_is_sent_as_key_id(self, post):
@@ -140,8 +132,7 @@ class WebhookVerificationTest(TestCase):
     def test_key_is_cached_across_webhooks(self, post):
         post.return_value.json.return_value = {"key": self.jwk}
         for _ in range(3):
-            self.assertTrue(verify_plaid_webhook(b"body",
-                                                 self._token(b"body")))
+            self.assertTrue(verify_plaid_webhook(b"body", self._token(b"body")))
         self.assertEqual(post.call_count, 1)
 
     @patch("plaid_integration.views.webhook.requests.post")
@@ -150,22 +141,19 @@ class WebhookVerificationTest(TestCase):
         verify_plaid_webhook(b"body", self._token(b"body"))
 
         rotated = ec.generate_private_key(ec.SECP256R1())
-        post.return_value.json.return_value = {
-            "key": plaid_jwk(rotated, "kid-2")
-        }
+        post.return_value.json.return_value = {"key": plaid_jwk(rotated, "kid-2")}
         self.assertTrue(
-            verify_plaid_webhook(
-                b"body", self._token(b"body", kid="kid-2", key=rotated)))
+            verify_plaid_webhook(b"body", self._token(b"body", kid="kid-2", key=rotated))
+        )
         self.assertEqual(post.call_count, 2)
 
         # Both keys stay cached, so a webhook from either side of the rotation
         # verifies without another round trip.
         with patch("plaid_integration.views.webhook.requests.post") as refetch:
-            self.assertTrue(verify_plaid_webhook(b"body",
-                                                 self._token(b"body")))
+            self.assertTrue(verify_plaid_webhook(b"body", self._token(b"body")))
             self.assertTrue(
-                verify_plaid_webhook(
-                    b"body", self._token(b"body", kid="kid-2", key=rotated)))
+                verify_plaid_webhook(b"body", self._token(b"body", kid="kid-2", key=rotated))
+            )
         self.assertEqual(refetch.call_count, 0)
 
     @patch("plaid_integration.views.webhook.requests.post")
@@ -189,8 +177,7 @@ class WebhookVerificationTest(TestCase):
     @patch("plaid_integration.views.webhook.requests.post")
     def test_expired_token_returns_false(self, post):
         post.return_value.json.return_value = {"key": self.jwk}
-        expired = self._token(b"body",
-                              exp=datetime.min.replace(tzinfo=UTC).timestamp())
+        expired = self._token(b"body", exp=datetime.min.replace(tzinfo=UTC).timestamp())
         self.assertFalse(verify_plaid_webhook(b"body", expired))
 
     @patch(
@@ -204,9 +191,7 @@ class WebhookVerificationTest(TestCase):
 
     def test_alg_none_is_rejected(self):
         """The token must never be able to pick its own algorithm."""
-        unsigned = pyjwt.encode({"request_body_sha256": "x"},
-                                key="",
-                                algorithm="none")
+        unsigned = pyjwt.encode({"request_body_sha256": "x"}, key="", algorithm="none")
         self.assertFalse(verify_plaid_webhook(b"body", unsigned))
 
 
@@ -219,8 +204,7 @@ class SyncAndConvertTaskTest(TestCase):
     """
 
     def setUp(self):
-        self.user = User.objects.create_user(username="testuser",
-                                             password="pass")
+        self.user = User.objects.create_user(username="testuser", password="pass")
         self.plaid_item = PlaidItem.objects.create(
             user=self.user,
             item_id="item-1",
@@ -231,14 +215,16 @@ class SyncAndConvertTaskTest(TestCase):
     @patch("plaid_integration.tasks.client")
     def test_sync_creates_records(self, mock_client, mock_match):
         mock_response = {
-            "added": [{
-                "transaction_id": "txn-001",
-                "name": "Coffee Shop",
-                "amount": 5.50,
-                "date": "2024-06-15",
-                "account_id": "acc1",
-                "category": ["Food and Drink"],
-            }],
+            "added": [
+                {
+                    "transaction_id": "txn-001",
+                    "name": "Coffee Shop",
+                    "amount": 5.50,
+                    "date": "2024-06-15",
+                    "account_id": "acc1",
+                    "category": ["Food and Drink"],
+                }
+            ],
             "modified": [],
             "removed": [],
             "next_cursor": "cursor-abc",
@@ -250,8 +236,7 @@ class SyncAndConvertTaskTest(TestCase):
         self.assertEqual(result["added"], 1)
         self.assertEqual(result["modified"], 0)
         self.assertEqual(result["removed"], 0)
-        self.assertTrue(
-            Record.objects.filter(plaid_transaction_id="txn-001").exists())
+        self.assertTrue(Record.objects.filter(plaid_transaction_id="txn-001").exists())
 
     @patch("plaid_integration.tasks.try_match_plaid_record")
     @patch("plaid_integration.tasks.client")
@@ -266,9 +251,7 @@ class SyncAndConvertTaskTest(TestCase):
         mock_response = {
             "added": [],
             "modified": [],
-            "removed": [{
-                "transaction_id": "txn-old"
-            }],
+            "removed": [{"transaction_id": "txn-old"}],
             "next_cursor": "cursor-xyz",
             "has_more": False,
         }
@@ -297,10 +280,12 @@ class SyncAndConvertTaskTest(TestCase):
                 {
                     "status": 400,
                     "reason": "Bad Request",
-                    "data": json.dumps({
-                        "error_code": "ITEM_LOGIN_REQUIRED",
-                        "error_message": "A user login is required.",
-                    }),
+                    "data": json.dumps(
+                        {
+                            "error_code": "ITEM_LOGIN_REQUIRED",
+                            "error_message": "A user login is required.",
+                        }
+                    ),
                     "getheaders": lambda _self: {},
                 },
             )(),
@@ -311,10 +296,8 @@ class SyncAndConvertTaskTest(TestCase):
 
         self.assertEqual(result, {"error": "ITEM_LOGIN_REQUIRED"})
         self.plaid_item.refresh_from_db()
-        self.assertEqual(self.plaid_item.last_error_code,
-                         "ITEM_LOGIN_REQUIRED")
-        self.assertEqual(self.plaid_item.last_error_message,
-                         "A user login is required.")
+        self.assertEqual(self.plaid_item.last_error_code, "ITEM_LOGIN_REQUIRED")
+        self.assertEqual(self.plaid_item.last_error_message, "A user login is required.")
 
     @patch("plaid_integration.tasks.try_match_plaid_record")
     @patch("plaid_integration.tasks.client")
@@ -336,26 +319,30 @@ class SyncAndConvertTaskTest(TestCase):
     @patch("plaid_integration.tasks.client")
     def test_sync_handles_pagination(self, mock_client, mock_match):
         page1 = {
-            "added": [{
-                "transaction_id": "txn-1",
-                "name": "T1",
-                "amount": 10,
-                "date": "2024-06-15",
-                "account_id": "a1",
-            }],
+            "added": [
+                {
+                    "transaction_id": "txn-1",
+                    "name": "T1",
+                    "amount": 10,
+                    "date": "2024-06-15",
+                    "account_id": "a1",
+                }
+            ],
             "modified": [],
             "removed": [],
             "next_cursor": "cursor-2",
             "has_more": True,
         }
         page2 = {
-            "added": [{
-                "transaction_id": "txn-2",
-                "name": "T2",
-                "amount": 20,
-                "date": "2024-06-16",
-                "account_id": "a1",
-            }],
+            "added": [
+                {
+                    "transaction_id": "txn-2",
+                    "name": "T2",
+                    "amount": 20,
+                    "date": "2024-06-16",
+                    "account_id": "a1",
+                }
+            ],
             "modified": [],
             "removed": [],
             "next_cursor": "cursor-done",
@@ -368,7 +355,6 @@ class SyncAndConvertTaskTest(TestCase):
 
     @patch("plaid_integration.tasks.try_match_plaid_record")
     @patch("plaid_integration.tasks.client")
-    def test_nonexistent_plaid_item_returns_error(self, mock_client,
-                                                  mock_match):
+    def test_nonexistent_plaid_item_returns_error(self, mock_client, mock_match):
         result = sync_and_convert_for_item_task.fn(99999)
         self.assertIn("error", result)

@@ -5,8 +5,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("documents",
-         "0027_documentdata_file_size_documentdata_mime_type_and_more"),
+        ("documents", "0027_documentdata_file_size_documentdata_mime_type_and_more"),
     ]
 
     operations = [

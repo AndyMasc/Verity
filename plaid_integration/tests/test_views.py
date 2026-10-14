@@ -25,8 +25,7 @@ class PlaidViewsTest(TestCase):
     """Tests for Plaid integration API views."""
 
     def setUp(self):
-        self.user = User.objects.create_user(username="testuser",
-                                             password="pass")
+        self.user = User.objects.create_user(username="testuser", password="pass")
         give_pro_subscription(self.user)
         self.client.login(username="testuser", password="pass")
         self.plaid_item = PlaidItem.objects.create(
@@ -48,22 +47,19 @@ class PlaidViewsTest(TestCase):
         import plaid
 
         mock_client.link_token_create.side_effect = plaid.ApiException(
-            status=400, reason="Bad Request")
+            status=400, reason="Bad Request"
+        )
         response = self.client.post(reverse("plaid:create_link_token"))
         self.assertEqual(response.status_code, 400)
 
     @patch("plaid_integration.views.link.client")
     def test_create_update_link_token(self, mock_client):
-        mock_client.link_token_create.return_value = {
-            "link_token": "link-update"
-        }
-        response = self.client.post(
-            reverse("plaid:create_update_link_token", args=["item-123"]))
+        mock_client.link_token_create.return_value = {"link_token": "link-update"}
+        response = self.client.post(reverse("plaid:create_update_link_token", args=["item-123"]))
         self.assertEqual(response.status_code, 200)
 
     def test_create_update_link_token_not_found(self):
-        response = self.client.post(
-            reverse("plaid:create_update_link_token", args=["nonexistent"]))
+        response = self.client.post(reverse("plaid:create_update_link_token", args=["nonexistent"]))
         self.assertEqual(response.status_code, 404)
 
     def test_plaid_status_connected(self):
@@ -89,8 +85,7 @@ class PlaidViewsTest(TestCase):
 
     @patch("plaid_integration.views.status.client")
     def test_disconnect_bank(self, mock_client):
-        response = self.client.post(
-            reverse("plaid:disconnect", args=["item-123"]))
+        response = self.client.post(reverse("plaid:disconnect", args=["item-123"]))
         self.assertEqual(response.status_code, 200)
         mock_client.item_remove.assert_called_once()
         self.assertFalse(PlaidItem.objects.filter(item_id="item-123").exists())
@@ -99,17 +94,14 @@ class PlaidViewsTest(TestCase):
     def test_disconnect_bank_plaid_failure_keeps_item(self, mock_client):
         import plaid
 
-        mock_client.item_remove.side_effect = plaid.ApiException(
-            status=502, reason="Bad Gateway")
-        response = self.client.post(
-            reverse("plaid:disconnect", args=["item-123"]))
+        mock_client.item_remove.side_effect = plaid.ApiException(status=502, reason="Bad Gateway")
+        response = self.client.post(reverse("plaid:disconnect", args=["item-123"]))
         self.assertEqual(response.status_code, 502)
         self.assertIn("error", response.json())
         self.assertTrue(PlaidItem.objects.filter(item_id="item-123").exists())
 
     def test_disconnect_bank_not_found(self):
-        response = self.client.post(
-            reverse("plaid:disconnect", args=["nonexistent"]))
+        response = self.client.post(reverse("plaid:disconnect", args=["nonexistent"]))
         self.assertEqual(response.status_code, 404)
 
     @patch("plaid_integration.views.status.client")
@@ -138,8 +130,7 @@ class PlaidWebhookViewTest(TestCase):
 
     def setUp(self):
         self.factory = RequestFactory()
-        self.user = User.objects.create_user(username="testuser",
-                                             password="pass")
+        self.user = User.objects.create_user(username="testuser", password="pass")
         self.plaid_item = PlaidItem.objects.create(
             user=self.user,
             item_id="item-webhook-1",
@@ -163,9 +154,7 @@ class PlaidWebhookViewTest(TestCase):
         self.assertEqual(response.status_code, 200)
         mock_task.send.assert_called_once_with(self.plaid_item.id)
 
-    @override_settings(DEBUG=True,
-                       PLAID_ENV="sandbox",
-                       PLAID_SYNC_COOLDOWN_SECONDS=60)
+    @override_settings(DEBUG=True, PLAID_ENV="sandbox", PLAID_SYNC_COOLDOWN_SECONDS=60)
     @patch("plaid_integration.tasks.sync_and_convert_for_item_task")
     def test_sync_webhook_debounced_within_cooldown(self, mock_task):
         from datetime import timedelta
@@ -189,13 +178,12 @@ class PlaidWebhookViewTest(TestCase):
         mock_task.send.assert_called_once_with(self.plaid_item.id)
 
         PlaidItem.objects.filter(id=self.plaid_item.id).update(
-            last_synced_at=dj_tz.now() - timedelta(seconds=120))
+            last_synced_at=dj_tz.now() - timedelta(seconds=120)
+        )
         plaid_webhook(request)
         self.assertEqual(mock_task.send.call_count, 2)
 
-    @override_settings(DEBUG=True,
-                       PLAID_ENV="sandbox",
-                       PLAID_SYNC_COOLDOWN_SECONDS=60)
+    @override_settings(DEBUG=True, PLAID_ENV="sandbox", PLAID_SYNC_COOLDOWN_SECONDS=60)
     @patch("plaid_integration.tasks.sync_and_convert_for_item_task")
     def test_sync_webhook_sets_last_synced_at(self, mock_task):
         payload = {
@@ -228,8 +216,7 @@ class PlaidWebhookViewTest(TestCase):
         response = plaid_webhook(request)
         self.assertEqual(response.status_code, 200)
         self.plaid_item.refresh_from_db()
-        self.assertEqual(self.plaid_item.last_error_code,
-                         "ITEM_LOGIN_REQUIRED")
+        self.assertEqual(self.plaid_item.last_error_code, "ITEM_LOGIN_REQUIRED")
 
     @override_settings(DEBUG=True, PLAID_ENV="sandbox")
     def test_transactions_removed_webhook(self):

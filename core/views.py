@@ -41,8 +41,7 @@ def index(request: HttpRequest) -> HttpResponse:
     if request.user.is_authenticated:
         return redirect("core:dashboard")
 
-    return render(request, "core/landing_page.html",
-                  pricing_context(request.user))
+    return render(request, "core/landing_page.html", pricing_context(request.user))
 
 
 def privacy_policy(_request: HttpRequest) -> HttpResponse:
@@ -127,8 +126,7 @@ def safe_webpush_save_info(request: HttpRequest) -> HttpResponse:
             if existing_subs.exists():
                 existing_subs.delete()
     except (json.JSONDecodeError, KeyError, ValueError):
-        logger.warning("Failed to process webpush subscription info",
-                       exc_info=True)
+        logger.warning("Failed to process webpush subscription info", exc_info=True)
 
     return save_info(request)
 
@@ -139,25 +137,25 @@ class DashboardView(LoginRequiredMixin, TemplateView):
     template_name = "core/dashboard.html"
 
     async def dispatch(  # type: ignore[override]
-            self, request: HttpRequest, *args: Any,
-            **kwargs: Any) -> HttpResponse:
+        self, request: HttpRequest, *args: Any, **kwargs: Any
+    ) -> HttpResponse:
         request.user = await request.auser()
         response = super().dispatch(request, *args, **kwargs)
         return await response if iscoroutine(response) else response
 
     async def get(  # type: ignore[override]
-            self,
-            request: HttpRequest,
-            *args: Any,  # noqa: ARG002
-            **kwargs: Any,  # noqa: ARG002
+        self,
+        request: HttpRequest,
+        *args: Any,  # noqa: ARG002
+        **kwargs: Any,  # noqa: ARG002
     ) -> HttpResponse:
         from django.contrib.auth import get_user_model
 
-        user = await get_user_model().objects.select_related("settings").aget(
-            pk=request.user.pk)
+        user = await get_user_model().objects.select_related("settings").aget(pk=request.user.pk)
         context = await get_dashboard_context(user)
         if context.get("webpush_warning") and not await request.session.aget(
-                "_webpush_warning_shown"):
+            "_webpush_warning_shown"
+        ):
             messages.warning(request, context["webpush_warning"])
             await request.session.aset("_webpush_warning_shown", True)
         return self.render_to_response(context)
@@ -177,8 +175,7 @@ class ProfilePageView(LoginRequiredMixin, UpdateView):
     success_url = reverse_lazy("core:profile_page")
 
     def get_object(self, queryset=None) -> UserSettings:  # noqa: ARG002
-        user_settings, _ = UserSettings.objects.get_or_create(
-            user=self.request.user)
+        user_settings, _ = UserSettings.objects.get_or_create(user=self.request.user)
         return user_settings
 
     def form_valid(self, form) -> HttpResponse:
@@ -187,19 +184,15 @@ class ProfilePageView(LoginRequiredMixin, UpdateView):
         user_settings.save()
 
         if posthog_client is not None:
-            posthog_client.capture("profile_updated",
-                                   distinct_id=str(self.request.user.pk))
+            posthog_client.capture("profile_updated", distinct_id=str(self.request.user.pk))
 
         messages.success(self.request, "Settings saved successfully.")
 
         if self.request.headers.get("HX-Request") == "true":
             response = HttpResponse(status=204)
-            response["HX-Trigger"] = json.dumps({
-                "djangoMessages": [{
-                    "message": "Settings saved successfully.",
-                    "level": 25
-                }]
-            })
+            response["HX-Trigger"] = json.dumps(
+                {"djangoMessages": [{"message": "Settings saved successfully.", "level": 25}]}
+            )
             return response
         return super().form_valid(form)
 
@@ -207,16 +200,13 @@ class ProfilePageView(LoginRequiredMixin, UpdateView):
         messages.error(self.request, "An unresolved error exists.")
 
         if self.request.headers.get("HX-Request") == "true":
-            response = render(self.request,
-                              "core/partials/user_settings_partial.html",
-                              {"form": form})
+            response = render(
+                self.request, "core/partials/user_settings_partial.html", {"form": form}
+            )
             response.status_code = 422
-            response["HX-Trigger"] = json.dumps({
-                "djangoMessages": [{
-                    "message": "An unresolved error exists.",
-                    "level": 40
-                }]
-            })
+            response["HX-Trigger"] = json.dumps(
+                {"djangoMessages": [{"message": "An unresolved error exists.", "level": 40}]}
+            )
             return response
         return super().form_invalid(form)
 
@@ -245,24 +235,21 @@ class NotificationListView(LoginRequiredMixin, ListView):
     paginate_by = 20
 
     def get_queryset(self):
-        return Notification.objects.filter(
-            recipient=self.request.user).order_by("-sent_at")
+        return Notification.objects.filter(recipient=self.request.user).order_by("-sent_at")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["unread_count"] = Notification.objects.filter(
-            recipient=self.request.user, is_read=False).count()
+            recipient=self.request.user, is_read=False
+        ).count()
         return context
 
 
 @require_POST
 @login_required
-def notification_delete(request: HttpRequest,
-                        notification_id: int) -> HttpResponse:
+def notification_delete(request: HttpRequest, notification_id: int) -> HttpResponse:
     """Delete a single notification. Only the recipient may delete."""
-    notification = get_object_or_404(Notification,
-                                     pk=notification_id,
-                                     recipient=request.user)
+    notification = get_object_or_404(Notification, pk=notification_id, recipient=request.user)
     notification.delete()
     if request.headers.get("HX-Request"):
         return HttpResponse(status=200)
@@ -271,12 +258,9 @@ def notification_delete(request: HttpRequest,
 
 @require_POST
 @login_required
-def notification_mark_read(request: HttpRequest,
-                           notification_id: int) -> HttpResponse:
+def notification_mark_read(request: HttpRequest, notification_id: int) -> HttpResponse:
     """Toggle read/unread on a single notification."""
-    notification = get_object_or_404(Notification,
-                                     pk=notification_id,
-                                     recipient=request.user)
+    notification = get_object_or_404(Notification, pk=notification_id, recipient=request.user)
     notification.is_read = not notification.is_read
     notification.save(update_fields=["is_read"])
     if request.headers.get("HX-Request"):
@@ -292,9 +276,6 @@ def notification_mark_read(request: HttpRequest,
 @login_required
 def notification_mark_all_read(request: HttpRequest) -> HttpResponse:
     """Mark all unread notifications as read."""
-    count = Notification.objects.filter(recipient=request.user,
-                                        is_read=False).update(is_read=True)
-    messages.success(
-        request,
-        f"Marked {count} notification{'s' if count != 1 else ''} as read.")
+    count = Notification.objects.filter(recipient=request.user, is_read=False).update(is_read=True)
+    messages.success(request, f"Marked {count} notification{'s' if count != 1 else ''} as read.")
     return redirect("core:notifications")

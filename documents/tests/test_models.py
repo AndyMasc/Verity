@@ -15,10 +15,8 @@ def _make_hash(content: bytes = b"test content") -> str:
 
 
 class DocumentDataModelTest(TestCase):
-
     def setUp(self):
-        self.user = User.objects.create_user(username="testuser",
-                                             password="pass")
+        self.user = User.objects.create_user(username="testuser", password="pass")
         self.record = Record.objects.create(
             user=self.user,
             title="Test Record",
@@ -116,12 +114,12 @@ class DocumentDataModelTest(TestCase):
 
     def test_queryset_for_user(self):
         user2 = User.objects.create_user(username="user2", password="pass")
-        DocumentData.objects.create(user=self.user,
-                                    filepath="users/1/mine.pdf",
-                                    file_hash=_make_hash())
-        DocumentData.objects.create(user=user2,
-                                    filepath="users/2/theirs.pdf",
-                                    file_hash=_make_hash(b"other"))
+        DocumentData.objects.create(
+            user=self.user, filepath="users/1/mine.pdf", file_hash=_make_hash()
+        )
+        DocumentData.objects.create(
+            user=user2, filepath="users/2/theirs.pdf", file_hash=_make_hash(b"other")
+        )
         self.assertEqual(DocumentData.objects.for_user(self.user).count(), 1)
         self.assertEqual(DocumentData.objects.for_user(user2).count(), 1)
 
@@ -169,8 +167,7 @@ class DocumentDataModelTest(TestCase):
             file_hash=_make_hash(b"err"),
             status=DocumentStatus.ERROR,
         )
-        self.assertEqual(
-            DocumentData.objects.by_status("completed").count(), 1)
+        self.assertEqual(DocumentData.objects.by_status("completed").count(), 1)
         self.assertEqual(DocumentData.objects.by_status("error").count(), 1)
 
     def test_queryset_pending(self):
@@ -188,7 +185,8 @@ class DocumentDataModelTest(TestCase):
             file_hash=_make_hash(),
         )
         DocumentData.objects.filter(pk=doc.pk).update(
-            date_added=timezone.now() - timezone.timedelta(hours=2))
+            date_added=timezone.now() - timezone.timedelta(hours=2)
+        )
         self.assertTrue(DocumentData.objects.stale_pending().exists())
 
     def test_queryset_stale_error(self):
@@ -199,7 +197,8 @@ class DocumentDataModelTest(TestCase):
             status=DocumentStatus.ERROR,
         )
         DocumentData.objects.filter(pk=doc.pk).update(
-            date_added=timezone.now() - timezone.timedelta(days=3))
+            date_added=timezone.now() - timezone.timedelta(days=3)
+        )
         self.assertTrue(DocumentData.objects.stale_error().exists())
 
     def test_queryset_search(self):
@@ -239,20 +238,14 @@ class DocumentDataModelTest(TestCase):
     def test_unique_constraint_different_user(self):
         user2 = User.objects.create_user(username="user2", password="pass")
         h = _make_hash()
-        DocumentData.objects.create(user=self.user,
-                                    filepath="users/1/a.pdf",
-                                    file_hash=h)
-        doc = DocumentData.objects.create(user=user2,
-                                          filepath="users/2/a.pdf",
-                                          file_hash=h)
+        DocumentData.objects.create(user=self.user, filepath="users/1/a.pdf", file_hash=h)
+        doc = DocumentData.objects.create(user=user2, filepath="users/2/a.pdf", file_hash=h)
         self.assertIsNotNone(doc.pk)
 
 
 class DocumentDataManagerTest(TestCase):
-
     def setUp(self):
-        self.user = User.objects.create_user(username="testuser",
-                                             password="pass")
+        self.user = User.objects.create_user(username="testuser", password="pass")
         self.record = Record.objects.create(
             user=self.user,
             title="Test Record",

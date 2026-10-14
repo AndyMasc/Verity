@@ -11,7 +11,6 @@ from core.models import Notification
 
 
 class WebpushContextProcessorTest(TestCase):
-
     def test_unauthenticated(self):
 
         class MockUser:
@@ -25,10 +24,8 @@ class WebpushContextProcessorTest(TestCase):
 
 
 class NotificationsServiceTest(TestCase):
-
     def setUp(self):
-        self.user = User.objects.create_user(username="testuser",
-                                             password="pass")
+        self.user = User.objects.create_user(username="testuser", password="pass")
 
     def test_build_site_context(self):
         from core.services.notifications import build_site_context
@@ -65,8 +62,7 @@ class NotificationsServiceTest(TestCase):
     def test_user_can_receive_email_default_true(self):
         from core.services.notifications import _user_can_receive_email
 
-        user_no_settings = User.objects.create_user(username="nosettings",
-                                                    password="pass")
+        user_no_settings = User.objects.create_user(username="nosettings", password="pass")
         result = _user_can_receive_email(user_no_settings)
         self.assertTrue(result)
 
@@ -89,8 +85,7 @@ class NotificationsServiceTest(TestCase):
     def test_user_can_receive_push_no_settings(self):
         from core.services.notifications import _user_can_receive_push
 
-        user_no_settings = User.objects.create_user(username="nosettings2",
-                                                    password="pass")
+        user_no_settings = User.objects.create_user(username="nosettings2", password="pass")
         result = _user_can_receive_push(user_no_settings)
         self.assertFalse(result)
 
@@ -120,10 +115,8 @@ class NotificationsServiceTest(TestCase):
 
     @patch("core.services.notifications.fire_single_webpush")
     @patch("core.services.notifications.send_email_notification")
-    @patch("core.services.notifications._user_can_receive_push",
-           return_value=True)
-    def test_send_multi_channel_both(self, mock_can_push, mock_email,
-                                     mock_push):
+    @patch("core.services.notifications._user_can_receive_push", return_value=True)
+    def test_send_multi_channel_both(self, mock_can_push, mock_email, mock_push):
         from core.services.notifications import send_multi_channel_notification
 
         self.user.settings.enable_push_notifications = True
@@ -156,5 +149,4 @@ class NotificationsServiceTest(TestCase):
             db_message="DB Test",
         )
         mock_email.assert_not_called()
-        self.assertTrue(
-            Notification.objects.filter(message="DB Test").exists())
+        self.assertTrue(Notification.objects.filter(message="DB Test").exists())

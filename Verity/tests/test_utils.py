@@ -17,10 +17,8 @@ User = get_user_model()
 
 
 class CachedPaginatorTest(TestCase):
-
     def setUp(self):
-        self.user = User.objects.create_user(username="paginator_user",
-                                             password="pass")
+        self.user = User.objects.create_user(username="paginator_user", password="pass")
 
     def test_count_caches_result(self):
         from records.models import Record
@@ -28,9 +26,8 @@ class CachedPaginatorTest(TestCase):
         qs = Record.objects.filter(user=self.user)
         paginator = CachedPaginator(qs, 10)
         with (
-                patch("django.core.cache.cache.get", return_value=None) as
-                mock_get,
-                patch("django.core.cache.cache.set") as mock_set,
+            patch("django.core.cache.cache.get", return_value=None) as mock_get,
+            patch("django.core.cache.cache.set") as mock_set,
         ):
             count = paginator.count
             mock_set.assert_called_once()

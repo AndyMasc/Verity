@@ -27,11 +27,10 @@ def _fake_event(event_type, object_id):
 
 
 class HandleSubscriptionDeletedTests(TestCase):
-
     def setUp(self):
-        self.customer = Customer.objects.create(id="cus_deleted",
-                                                livemode=False,
-                                                created=timezone.now())
+        self.customer = Customer.objects.create(
+            id="cus_deleted", livemode=False, created=timezone.now()
+        )
         self.subscription = Subscription.objects.create(
             id="sub_deleted",
             livemode=False,
@@ -54,29 +53,29 @@ class HandleSubscriptionDeletedTests(TestCase):
 
     def test_noop_when_subscription_unknown(self):
         with self.captureOnCommitCallbacks(execute=True):
-            handle_subscription_deleted(event=_fake_event(
-                "customer.subscription.deleted", "sub_does_not_exist"))
+            handle_subscription_deleted(
+                event=_fake_event("customer.subscription.deleted", "sub_does_not_exist")
+            )
         self.assertTrue(Subscription.objects.filter(id="sub_deleted").exists())
 
 
 class HandleSubscriptionCancellationTrackingTests(TestCase):
-
     def setUp(self):
         self.user = get_user_model().objects.create_user(
             username="cancel_user",
             email="cancel@example.com",
             password="password",
         )
-        self.customer = Customer.objects.create(id="cus_cancel_track",
-                                                livemode=False,
-                                                created=timezone.now())
+        self.customer = Customer.objects.create(
+            id="cus_cancel_track", livemode=False, created=timezone.now()
+        )
         self.customer.subscriber = self.user
         self.customer.save()
         product = Product.objects.create(
-            id=metadata.VERITY_PRO.stripe_id,
+            id=metadata.PLUS.stripe_id,
             livemode=False,
             active=True,
-            name="Verity Pro",
+            name="Plus",
         )
         price = Price.objects.create(
             id="price_cancel_track",
@@ -115,34 +114,27 @@ class HandleSubscriptionCancellationTrackingTests(TestCase):
                     "id": self.subscription.id,
                     "customer": self.customer.id,
                     "cancel_at_period_end": cancel_at_period_end,
-                    "items": {
-                        "data": [{
-                            "price": {
-                                "product": metadata.VERITY_PRO.stripe_id
-                            }
-                        }]
-                    },
+                    "items": {"data": [{"price": {"product": metadata.PLUS.stripe_id}}]},
                 }
-            })
+            }
+        )
 
     def _handle_deleted(self, cancel_at_period_end):
         with self.captureOnCommitCallbacks(execute=True):
-            webhooks.handle_subscription_deleted(
-                event=self._deleted_event(cancel_at_period_end))
+            webhooks.handle_subscription_deleted(event=self._deleted_event(cancel_at_period_end))
 
     def test_immediate_cancel_tracked_once(self):
         self._handle_deleted(cancel_at_period_end=False)
         self.assertEqual(len(self.captured), 1)
         name, kwargs = self.captured[0]
-        self.assertEqual(name, ("subscription_cancelled", ))
+        self.assertEqual(name, ("subscription_cancelled",))
         self.assertEqual(kwargs["distinct_id"], str(self.user.pk))
         self.assertEqual(kwargs["properties"]["cancel_type"], "immediate")
 
     def test_period_end_cancel_tracked_once(self):
         self._handle_deleted(cancel_at_period_end=True)
         self.assertEqual(len(self.captured), 1)
-        self.assertEqual(self.captured[0][1]["properties"]["cancel_type"],
-                         "period_end")
+        self.assertEqual(self.captured[0][1]["properties"]["cancel_type"], "period_end")
 
     def test_personless_when_customer_unlinked(self):
         self.customer.subscriber = None
@@ -152,68 +144,59 @@ class HandleSubscriptionCancellationTrackingTests(TestCase):
         self.assertNotIn("distinct_id", self.captured[0][1])
 
     def test_changed_event_does_not_track_cancellation(self):
-        webhooks.handle_subscription_changed(event=mock.Mock(
-            data={
-                "object": {
-                    "id": self.subscription.id,
-                    "status": "canceled",
-                    "cancel_at_period_end": False,
-                    "items": {
-                        "data": [{
-                            "price": {
-                                "product": metadata.VERITY_PRO.stripe_id
-                            }
-                        }]
-                    },
+        webhooks.handle_subscription_changed(
+            event=mock.Mock(
+                data={
+                    "object": {
+                        "id": self.subscription.id,
+                        "status": "canceled",
+                        "cancel_at_period_end": False,
+                        "items": {"data": [{"price": {"product": metadata.PLUS.stripe_id}}]},
+                    }
                 }
-            }))
+            )
+        )
         # subscription_updated is expected here; a *cancellation* is not, since
         # customer.subscription.deleted owns that event.
-        self.assertNotIn("base_subscription_cancelled",
-                         [name[0] for name, _ in self.captured])
+        self.assertNotIn("base_subscription_cancelled", [name[0] for name, _ in self.captured])
 
     def test_scheduled_cancel_tracked_when_scheduled(self):
         """A period-end cancel is recorded on .updated, the only event that says so."""
-        webhooks.handle_subscription_changed(event=mock.Mock(
-            data={
-                "object": {
-                    "id": self.subscription.id,
-                    "status": "active",
-                    "customer": self.customer.id,
-                    "cancel_at_period_end": True,
-                    "items": {
-                        "data": [{
-                            "price": {
-                                "product": metadata.VERITY_PRO.stripe_id
-                            }
-                        }]
-                    },
+        webhooks.handle_subscription_changed(
+            event=mock.Mock(
+                data={
+                    "object": {
+                        "id": self.subscription.id,
+                        "status": "active",
+                        "customer": self.customer.id,
+                        "cancel_at_period_end": True,
+                        "items": {"data": [{"price": {"product": metadata.PLUS.stripe_id}}]},
+                    }
                 }
-            }))
-        cancels = [(name, kwargs) for name, kwargs in self.captured
-                   if name[0] == "subscription_cancelled"]
+            )
+        )
+        cancels = [
+            (name, kwargs) for name, kwargs in self.captured if name[0] == "subscription_cancelled"
+        ]
         self.assertEqual(len(cancels), 1)
-        self.assertEqual(cancels[0][1]["properties"]["cancel_type"],
-                         "period_end")
+        self.assertEqual(cancels[0][1]["properties"]["cancel_type"], "period_end")
 
 
 class EnqueueReimbursementProcessingTests(TestCase):
-
     def test_enqueues_handled_event(self):
-        with mock.patch(
-                "reimbursements.tasks.process_stripe_event_task.send") as send:
+        with mock.patch("reimbursements.tasks.process_stripe_event_task.send") as send:
             with self.captureOnCommitCallbacks(execute=True):
-                enqueue_reimbursement_processing(instance=mock.Mock(
-                    event=_fake_event("charge.refunded", "ch_refunded")))
+                enqueue_reimbursement_processing(
+                    instance=mock.Mock(event=_fake_event("charge.refunded", "ch_refunded"))
+                )
         send.assert_called_once()
 
     def test_skips_unhandled_event(self):
-        with mock.patch(
-                "reimbursements.tasks.process_stripe_event_task.send") as send:
+        with mock.patch("reimbursements.tasks.process_stripe_event_task.send") as send:
             with self.captureOnCommitCallbacks(execute=True):
                 enqueue_reimbursement_processing(
-                    instance=mock.Mock(event=_fake_event(
-                        "customer.subscription.updated", "sub_x")))
+                    instance=mock.Mock(event=_fake_event("customer.subscription.updated", "sub_x"))
+                )
         send.assert_not_called()
 
     def test_noop_when_no_instance(self):
@@ -221,7 +204,6 @@ class EnqueueReimbursementProcessingTests(TestCase):
 
 
 class ReportWebhookProcessingErrorTests(TestCase):
-
     def test_logs_without_raising(self):
         report_webhook_processing_error(
             instance=mock.Mock(),
@@ -244,22 +226,17 @@ class CheckoutCompletedTests(TestCase):
     def setUp(self):
         from billing import metadata as billing_metadata
 
-        product_id = billing_metadata.VERITY_PRO.stripe_id
-        self.product = Product.objects.create(id=product_id,
-                                              stripe_data={
-                                                  "id": product_id,
-                                                  "object": "product"
-                                              })
+        product_id = billing_metadata.PLUS.stripe_id
+        self.product = Product.objects.create(
+            id=product_id, stripe_data={"id": product_id, "object": "product"}
+        )
         self.price = Price.objects.create(
             id="price_plan",
             product=self.product,
             livemode=False,
             active=True,
             currency="usd",
-            stripe_data={
-                "id": "price_plan",
-                "object": "price"
-            },
+            stripe_data={"id": "price_plan", "object": "price"},
         )
 
     def _settle(self, subscription_id):
@@ -267,22 +244,21 @@ class CheckoutCompletedTests(TestCase):
 
         captured = []
         with (
-                mock.patch.object(webhooks, "capture",
-                                  lambda *a, **k: captured.append((a, k))),
-                mock.patch.object(
-                    webhooks,
-                    "_event_object",
-                    return_value={
-                        "id": "cs_1",
-                        "mode": "subscription",
-                        "payment_status": "paid",
-                        "customer": "cus_1",
-                        "client_reference_id": "1",
-                        "amount_total": 1000,
-                        "currency": "usd",
-                        "subscription": subscription_id,
-                    },
-                ),
+            mock.patch.object(webhooks, "capture", lambda *a, **k: captured.append((a, k))),
+            mock.patch.object(
+                webhooks,
+                "_event_object",
+                return_value={
+                    "id": "cs_1",
+                    "mode": "subscription",
+                    "payment_status": "paid",
+                    "customer": "cus_1",
+                    "client_reference_id": "1",
+                    "amount_total": 1000,
+                    "currency": "usd",
+                    "subscription": subscription_id,
+                },
+            ),
         ):
             webhooks.handle_checkout_settled(event=mock.Mock())
         return captured
@@ -292,22 +268,15 @@ class CheckoutCompletedTests(TestCase):
             id="cus_1",
             livemode=False,
             created=timezone.now(),
-            stripe_data={
-                "id": "cus_1",
-                "object": "customer"
-            },
+            stripe_data={"id": "cus_1", "object": "customer"},
         )
         Subscription.objects.create(
             id="sub_1",
             customer=customer,
             livemode=False,
-            stripe_data={
-                "id": "sub_1",
-                "object": "subscription"
-            },
+            stripe_data={"id": "sub_1", "object": "subscription"},
         )
-        Subscription.objects.get(id="sub_1").items.create(id="si_1",
-                                                          price=self.price)
+        Subscription.objects.get(id="sub_1").items.create(id="si_1", price=self.price)
         captured = self._settle("sub_1")
         self.assertEqual(len(captured), 1)
         self.assertEqual(captured[0][0][0], "subscription_checkout_completed")

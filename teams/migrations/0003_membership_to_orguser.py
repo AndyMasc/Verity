@@ -23,7 +23,8 @@ def forwards(apps, schema_editor):
         )
         if m.role == "owner":
             OrganizationOwner.objects.get_or_create(
-                organization_id=m.organization_id, organization_user=org_user)
+                organization_id=m.organization_id, organization_user=org_user
+            )
 
 
 def backwards(apps, schema_editor):
@@ -33,18 +34,16 @@ def backwards(apps, schema_editor):
 
     for org_user in OrganizationUser.objects.all().iterator():
         owned = OrganizationOwner.objects.filter(
-            organization_id=org_user.organization_id,
-            organization_user=org_user).exists()
+            organization_id=org_user.organization_id, organization_user=org_user
+        ).exists()
         Membership.objects.create(
             user_id=org_user.user_id,
             organization_id=org_user.organization_id,
-            role="owner" if owned else
-            ("admin" if org_user.is_admin else "employee"),
+            role="owner" if owned else ("admin" if org_user.is_admin else "employee"),
         )
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("teams", "0002_personal_orgs"),
         ("organizations", "0006_alter_organization_slug"),

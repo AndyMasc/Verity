@@ -28,7 +28,6 @@ def _rejection_response(status_code: int) -> requests.Response:
 
 
 class CoreTasksTest(TestCase):
-
     @patch("core.tasks.EmailMultiAlternatives")
     def test_send_background_email(self, mock_email_cls):
         send_background_email(_payload(html_message="<p>HTML</p>"))
@@ -36,8 +35,7 @@ class CoreTasksTest(TestCase):
         mock_email_cls.return_value.send.assert_called_once()
 
     @patch("core.tasks.EmailMultiAlternatives")
-    def test_send_background_email_permanent_rejection_no_retry(
-            self, mock_email_cls):
+    def test_send_background_email_permanent_rejection_no_retry(self, mock_email_cls):
         from anymail.exceptions import AnymailRequestsAPIError
 
         mock_email_cls.return_value.send.side_effect = AnymailRequestsAPIError(
@@ -50,8 +48,7 @@ class CoreTasksTest(TestCase):
         send_background_email(_payload())
 
     @patch("core.tasks.EmailMultiAlternatives")
-    def test_send_background_email_transient_raises_for_retry(
-            self, mock_email_cls):
+    def test_send_background_email_transient_raises_for_retry(self, mock_email_cls):
         from anymail.exceptions import AnymailRequestsAPIError
 
         mock_email_cls.return_value.send.side_effect = AnymailRequestsAPIError(
@@ -69,9 +66,7 @@ class CoreTasksTest(TestCase):
         from core.tasks import fire_single_webpush
 
         user = User.objects.create_user(username="pushuser", password="pass")
-        fire_single_webpush(user_id=user.id,
-                            payload={"head": "Test"},
-                            ttl=1000)
+        fire_single_webpush(user_id=user.id, payload={"head": "Test"}, ttl=1000)
         mock_send.assert_called_once()
 
     @patch("core.tasks.send_user_notification")

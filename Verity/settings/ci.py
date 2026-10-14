@@ -17,11 +17,12 @@ SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_SECURE = False
 
 ALLOWED_HOSTS = env.list(  # noqa: F405
-    "ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
+    "ALLOWED_HOSTS", default=["localhost", "127.0.0.1"]
+)
 
 CSRF_TRUSTED_ORIGINS = env.list(  # noqa: F405
-    "CSRF_TRUSTED_ORIGINS",
-    default=["http://localhost:8000", "http://127.0.0.1:8000"])
+    "CSRF_TRUSTED_ORIGINS", default=["http://localhost:8000", "http://127.0.0.1:8000"]
+)
 
 # Use SQLite for CI if no DATABASE_URL is set (already the base default).
 # Use faster password hasher for tests.

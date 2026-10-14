@@ -16,8 +16,7 @@ logger = logging.getLogger(__name__)
 XLSX_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 
-def _capture_export(request: HttpRequest, event: str, count: int,
-                    export_type: str) -> None:
+def _capture_export(request: HttpRequest, event: str, count: int, export_type: str) -> None:
     """Record that a user pulled their records out as a spreadsheet."""
     if posthog_client is None:
         return
@@ -33,8 +32,7 @@ def _capture_export(request: HttpRequest, event: str, count: int,
 
 def _xlsx_response(excel_data: bytes) -> HttpResponse:
     response = HttpResponse(excel_data, content_type=XLSX_CONTENT_TYPE)
-    response[
-        "Content-Disposition"] = 'attachment; filename="Record_export.xlsx"'
+    response["Content-Disposition"] = 'attachment; filename="Record_export.xlsx"'
     return response
 
 
@@ -45,10 +43,8 @@ def ExportExcelAll(request: HttpRequest) -> HttpResponse:
         queryset = Record.objects.filter(user=request.user)
         excel_data = export_records_to_excel(queryset=queryset)
     except Exception:
-        logger.exception("Failed to export records for user %s",
-                         request.user.pk)
-        return HttpResponse("Export failed. Please try again later.",
-                            status=500)
+        logger.exception("Failed to export records for user %s", request.user.pk)
+        return HttpResponse("Export failed. Please try again later.", status=500)
 
     _capture_export(request, "records_exported", queryset.count(), "all")
     return _xlsx_response(excel_data)
@@ -71,14 +67,12 @@ def ExportSelectedExcel(request: HttpRequest) -> HttpResponse:
         queryset = Record.objects.filter(id__in=record_ids, user=request.user)
         if record_ids and not queryset.exists():
             return JsonResponse(
-                {"error": "None of the selected records can be exported."},
-                status=400)
+                {"error": "None of the selected records can be exported."}, status=400
+            )
         excel_data = export_records_to_excel(queryset=queryset)
     except Exception:
-        logger.exception("Failed to export selected records for user %s",
-                         request.user.pk)
-        return HttpResponse("Export failed. Please try again later.",
-                            status=500)
+        logger.exception("Failed to export selected records for user %s", request.user.pk)
+        return HttpResponse("Export failed. Please try again later.", status=500)
 
     exported = queryset.count()
     _capture_export(request, "records_exported", exported, "select")

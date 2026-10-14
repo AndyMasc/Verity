@@ -43,11 +43,9 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="record",
             name="balance",
-            field=models.DecimalField(blank=True,
-                                      db_index=True,
-                                      decimal_places=2,
-                                      max_digits=12,
-                                      null=True),
+            field=models.DecimalField(
+                blank=True, db_index=True, decimal_places=2, max_digits=12, null=True
+            ),
         ),
         migrations.AlterField(
             model_name="record",
@@ -131,12 +129,12 @@ class Migration(migrations.Migration):
         ),
         migrations.AddIndex(
             model_name="record",
-            index=models.Index(fields=["expiry_date", "is_active"],
-                               name="idx_record_expiry_active"),
+            index=models.Index(
+                fields=["expiry_date", "is_active"], name="idx_record_expiry_active"
+            ),
         ),
         migrations.AddIndex(
             model_name="record",
-            index=models.Index(fields=["user", "balance"],
-                               name="idx_record_user_balance"),
+            index=models.Index(fields=["user", "balance"], name="idx_record_user_balance"),
         ),
     ]

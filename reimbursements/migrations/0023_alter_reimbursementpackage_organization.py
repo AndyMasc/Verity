@@ -5,7 +5,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("organizations", "0006_alter_organization_slug"),
         ("reimbursements", "0022_package_organization"),

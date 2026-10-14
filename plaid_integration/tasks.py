@@ -39,16 +39,14 @@ def _plaid_error(error: plaid.ApiException) -> tuple[str, str]:
         body = body.decode("utf-8", errors="replace")
     try:
         payload = json.loads(body)
-        return payload.get("error_code",
-                           ""), payload.get("error_message", str(error))
+        return payload.get("error_code", ""), payload.get("error_message", str(error))
     except (json.JSONDecodeError, TypeError, AttributeError):
         return "", str(error)
 
 
 def choose_folder(
-        user: User,
-        category: str | None,
-        folder_cache: dict[str, Folder] | None = None) -> Folder | None:
+    user: User, category: str | None, folder_cache: dict[str, Folder] | None = None
+) -> Folder | None:
     """Find or create a Folder matching a Plaid category name.
 
     folder_cache memoises lookups across a single sync batch.
@@ -100,10 +98,8 @@ def _txn_to_record(
     user = plaid_item.user
     category = (txn.get("category") or [""])[0]
 
-    auto_create = getattr(user.settings, "auto_create_and_organize_folders",
-                          True)
-    folder = choose_folder(user, category,
-                           folder_cache) if auto_create else None
+    auto_create = getattr(user.settings, "auto_create_and_organize_folders", True)
+    folder = choose_folder(user, category, folder_cache) if auto_create else None
 
     # Plaid sends ISO strings, but guard against an already-parsed date.
     raw_date = txn.get("authorized_date") or txn["date"]
@@ -114,16 +110,18 @@ def _txn_to_record(
         "title": txn["name"],
         "merchant": txn.get("merchant_name") or txn["name"],
         "balance": abs(txn["amount"]),
-        "currency": (txn.get("iso_currency_code")
-                     or txn.get("unofficial_currency_code") or getattr(
-                         user.settings, "default_currency", "usd")).lower(),
-        "transaction_date": (date.fromisoformat(raw_date) if isinstance(
-            raw_date, str) else raw_date),
+        "currency": (
+            txn.get("iso_currency_code")
+            or txn.get("unofficial_currency_code")
+            or getattr(user.settings, "default_currency", "usd")
+        ).lower(),
+        "transaction_date": (
+            date.fromisoformat(raw_date) if isinstance(raw_date, str) else raw_date
+        ),
         "record_type": Record.RecordTypes.FINANCIAL_DOCUMENT,
         "notes": category,
         "folder": folder,
-        "payment_method": _get_payment_method(plaid_item,
-                                              txn.get("account_id", "")),
+        "payment_method": _get_payment_method(plaid_item, txn.get("account_id", "")),
     }
 
 
@@ -144,8 +142,7 @@ def _save_records(
             last_edited=now,
             **_txn_to_record(txn, plaid_item, folder_cache),
         )
-        (to_update if txn["transaction_id"] in existing_ids else
-         to_create).append(record)
+        (to_update if txn["transaction_id"] in existing_ids else to_create).append(record)
 
     if to_create:
         Record.objects.bulk_create(to_create)
@@ -174,17 +171,14 @@ def _save_records(
 def _match_records_to_documents(plaid_item: PlaidItem) -> None:
     """Match synced records to existing uploaded documents."""
     try:
-        records = Record.objects.filter(plaid_item=plaid_item,
-                                        is_active=True).only("pk", "user_id")
+        records = Record.objects.filter(plaid_item=plaid_item, is_active=True).only("pk", "user_id")
         for record in records.iterator(chunk_size=500):
             try_match_plaid_record(record)
     except Exception:
-        logger.exception("Error matching records to documents for item %s",
-                         plaid_item.id)
+        logger.exception("Error matching records to documents for item %s", plaid_item.id)
 
 
-def _fetch_sync_page(plaid_item: PlaidItem,
-                     cursor: str) -> dict[str, Any] | None:
+def _fetch_sync_page(plaid_item: PlaidItem, cursor: str) -> dict[str, Any] | None:
     """Fetch one Transactions Sync page; return None when re-authentication is needed.
 
     An "ITEM_LOGIN_REQUIRED" error is recorded on the item and surfaced as
@@ -193,8 +187,8 @@ def _fetch_sync_page(plaid_item: PlaidItem,
     """
     try:
         response = client.transactions_sync(
-            TransactionsSyncRequest(access_token=plaid_item.access_token,
-                                    cursor=cursor))
+            TransactionsSyncRequest(access_token=plaid_item.access_token, cursor=cursor)
+        )
     except plaid.ApiException as exc:
         error_code, error_message = _plaid_error(exc)
         if error_code != "ITEM_LOGIN_REQUIRED":
@@ -218,15 +212,16 @@ def _process_sync_page(
     with db_transaction.atomic():
         for txn in data.get("removed", []):
             stats["removed"] += Record.objects.filter(
-                plaid_transaction_id=txn["transaction_id"]).update(
-                    is_active=False, last_edited=timezone.now())
+                plaid_transaction_id=txn["transaction_id"]
+            ).update(is_active=False, last_edited=timezone.now())
 
         batch = data.get("added", []) + data.get("modified", [])
         if batch:
             existing_ids = set(
-                Record.objects.filter(plaid_transaction_id__in=[
-                    t["transaction_id"] for t in batch
-                ]).values_list("plaid_transaction_id", flat=True))
+                Record.objects.filter(
+                    plaid_transaction_id__in=[t["transaction_id"] for t in batch]
+                ).values_list("plaid_transaction_id", flat=True)
+            )
             _save_records(batch, existing_ids, plaid_item, folder_cache)
             stats["added"] += len(data.get("added", []))
             stats["modified"] += len(data.get("modified", []))
@@ -247,8 +242,7 @@ def sync_and_convert_for_item_task(plaid_item_id: int | str):
     existing uploaded documents.
     """
     try:
-        plaid_item: PlaidItem = PlaidItem.objects.select_related("user").get(
-            id=plaid_item_id)
+        plaid_item: PlaidItem = PlaidItem.objects.select_related("user").get(id=plaid_item_id)
     except PlaidItem.DoesNotExist:
         return {"error": f"PlaidItem {plaid_item_id} not found"}
 
@@ -261,8 +255,7 @@ def sync_and_convert_for_item_task(plaid_item_id: int | str):
         data = _fetch_sync_page(plaid_item, cursor)
         if data is None:
             return {"error": "ITEM_LOGIN_REQUIRED"}
-        cursor, has_more = _process_sync_page(data, plaid_item, folder_cache,
-                                              stats)
+        cursor, has_more = _process_sync_page(data, plaid_item, folder_cache, stats)
 
     _match_records_to_documents(plaid_item)
 

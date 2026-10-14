@@ -13,7 +13,6 @@ from records.models import Record
 
 
 class LandingPageTest(TestCase):
-
     def test_status(self):
         response = self.client.get(reverse("core:landing_page"))
         self.assertEqual(response.status_code, 200)
@@ -24,7 +23,6 @@ class LandingPageTest(TestCase):
 
 
 class PrivacyPolicyTest(TestCase):
-
     def test_status(self):
         response = self.client.get(reverse("core:privacy_policy"))
         self.assertEqual(response.status_code, 301)
@@ -36,7 +34,6 @@ class PrivacyPolicyTest(TestCase):
 
 
 class TermsOfServiceTest(TestCase):
-
     def test_status(self):
         response = self.client.get(reverse("docs:terms_of_service"))
         self.assertEqual(response.status_code, 200)
@@ -47,7 +44,6 @@ class TermsOfServiceTest(TestCase):
 
 
 class HealthCheckTest(TestCase):
-
     def test_health_check_returns_200(self):
         response = self.client.get(reverse("core:health_check"))
         self.assertEqual(response.status_code, 200)
@@ -57,10 +53,8 @@ class HealthCheckTest(TestCase):
 
 
 class DashboardViewTest(TestCase):
-
     def setUp(self):
-        self.user = User.objects.create_user(username="testuser",
-                                             password="pass")
+        self.user = User.objects.create_user(username="testuser", password="pass")
 
     def test_authenticated_access(self):
         self.client.force_login(self.user)
@@ -77,11 +71,9 @@ class DashboardViewTest(TestCase):
 
 
 class DashboardViewAsyncTest(TestCase):
-
     def setUp(self):
         cache.clear()
-        self.user = User.objects.create_user(username="testuser",
-                                             password="pass")
+        self.user = User.objects.create_user(username="testuser", password="pass")
 
     def test_view_is_async(self):
         from core.views import DashboardView
@@ -102,10 +94,8 @@ class DashboardViewAsyncTest(TestCase):
 
 
 class ProfilePageViewTest(TestCase):
-
     def setUp(self):
-        self.user = User.objects.create_user(username="testuser",
-                                             password="pass")
+        self.user = User.objects.create_user(username="testuser", password="pass")
 
     def test_authenticated_access(self):
         self.client.force_login(self.user)
@@ -137,18 +127,14 @@ class ProfilePageViewTest(TestCase):
         self.user.settings.refresh_from_db()
         self.assertFalse(self.user.settings.auto_archive_expired_records)
         self.assertFalse(self.user.settings.enable_email_notifications)
-        self.assertEqual(
-            self.user.settings.expiring_notifications_advance_time, "7")
+        self.assertEqual(self.user.settings.expiring_notifications_advance_time, "7")
         self.assertEqual(self.user.settings.default_currency, "eur")
 
 
 class ExpenseChartDataTest(TestCase):
-
     def setUp(self):
-        self.user = User.objects.create_user(username="testuser",
-                                             password="pass")
-        UserSettings.objects.update_or_create(
-            user=self.user, defaults={"default_currency": "usd"})
+        self.user = User.objects.create_user(username="testuser", password="pass")
+        UserSettings.objects.update_or_create(user=self.user, defaults={"default_currency": "usd"})
 
     def test_excludes_soft_deleted_records_from_totals(self):
         self.client.force_login(self.user)
@@ -171,8 +157,7 @@ class ExpenseChartDataTest(TestCase):
         )
         merged_away.delete()
 
-        response = self.client.get(reverse("core:expense_chart_data"),
-                                   {"period": "all"})
+        response = self.client.get(reverse("core:expense_chart_data"), {"period": "all"})
         self.assertEqual(response.status_code, 200)
         total = sum(month["total"] for month in response.json()["months"])
         self.assertEqual(total, 100.00)
@@ -188,20 +173,16 @@ class ExpenseChartDataTest(TestCase):
             balance=Decimal("25.50"),
             currency="usd",
         )
-        response = self.client.get(reverse("core:expense_chart_data"),
-                                   {"period": "all"})
+        response = self.client.get(reverse("core:expense_chart_data"), {"period": "all"})
         total = sum(month["total"] for month in response.json()["months"])
         self.assertEqual(total, 25.50)
 
 
 class DashboardMonthlyExpensesTest(TestCase):
-
     def setUp(self):
         cache.clear()
-        self.user = User.objects.create_user(username="testuser",
-                                             password="pass")
-        UserSettings.objects.update_or_create(
-            user=self.user, defaults={"default_currency": "usd"})
+        self.user = User.objects.create_user(username="testuser", password="pass")
+        UserSettings.objects.update_or_create(user=self.user, defaults={"default_currency": "usd"})
 
     def test_monthly_expenses_exclude_soft_deleted_records(self):
         self.client.force_login(self.user)
@@ -226,38 +207,33 @@ class DashboardMonthlyExpensesTest(TestCase):
 
         response = self.client.get(reverse("core:dashboard"))
         self.assertEqual(response.status_code, 200)
-        monthly_expenses = next(m["value"] for m in response.context["metrics"]
-                                if m["label"].endswith("Expenses"))
+        monthly_expenses = next(
+            m["value"] for m in response.context["metrics"] if m["label"].endswith("Expenses")
+        )
         self.assertEqual(float(monthly_expenses), 50.00)
 
 
 class NotificationViewsTest(TestCase):
-
     def setUp(self):
-        self.user = User.objects.create_user(username="testuser",
-                                             password="pass")
+        self.user = User.objects.create_user(username="testuser", password="pass")
         self.client.force_login(self.user)
 
     def _notification(self):
-        return Notification.objects.create(recipient=self.user,
-                                           subject="Subject",
-                                           message="Message")
+        return Notification.objects.create(
+            recipient=self.user, subject="Subject", message="Message"
+        )
 
     def test_delete_accepts_post(self):
         notification = self._notification()
-        response = self.client.post(
-            reverse("core:notification-delete", args=[notification.id]))
+        response = self.client.post(reverse("core:notification-delete", args=[notification.id]))
         self.assertEqual(response.status_code, 302)
-        self.assertFalse(
-            Notification.objects.filter(pk=notification.pk).exists())
+        self.assertFalse(Notification.objects.filter(pk=notification.pk).exists())
 
     def test_delete_requires_post(self):
         notification = self._notification()
-        response = self.client.get(
-            reverse("core:notification-delete", args=[notification.id]))
+        response = self.client.get(reverse("core:notification-delete", args=[notification.id]))
         self.assertEqual(response.status_code, 405)
-        self.assertTrue(
-            Notification.objects.filter(pk=notification.pk).exists())
+        self.assertTrue(Notification.objects.filter(pk=notification.pk).exists())
 
     def test_mark_all_read(self):
         first = self._notification()
@@ -265,5 +241,5 @@ class NotificationViewsTest(TestCase):
         response = self.client.post(reverse("core:notification-mark-all-read"))
         self.assertRedirects(response, reverse("core:notifications"))
         self.assertFalse(
-            Notification.objects.filter(pk__in=[first.pk, second.pk],
-                                        is_read=False).exists())
+            Notification.objects.filter(pk__in=[first.pk, second.pk], is_read=False).exists()
+        )

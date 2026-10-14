@@ -19,24 +19,23 @@ class WebhookProbeSafetyTest(TestCase):
 
     def setUp(self):
         self.user = U.objects.create_user(username="probe", password="p")
-        self.pkg = ReimbursementPackage.objects.create(creator=self.user,
-                                                       title="p",
-                                                       currency="usd",
-                                                       status="open")
+        self.pkg = ReimbursementPackage.objects.create(
+            creator=self.user, title="p", currency="usd", status="open"
+        )
 
     def test_unsigned_plaid_probe_is_rejected_and_mutates_nothing(self):
-        PlaidItem.objects.create(user=self.user,
-                                 item_id="item-1",
-                                 access_token="t")
+        PlaidItem.objects.create(user=self.user, item_id="item-1", access_token="t")
         before = PlaidItem.objects.count()
 
         response = self.client.post(
             "/plaid/webhook/",
-            data=json.dumps({
-                "webhook_type": "TRANSACTIONS",
-                "webhook_code": "SYNC_UPDATES_AVAILABLE",
-                "item_id": "item-1",
-            }),
+            data=json.dumps(
+                {
+                    "webhook_type": "TRANSACTIONS",
+                    "webhook_code": "SYNC_UPDATES_AVAILABLE",
+                    "item_id": "item-1",
+                }
+            ),
             content_type="application/json",
         )
 
@@ -61,28 +60,25 @@ class WebhookProbeSafetyTest(TestCase):
 
         response = self.client.post(
             f"/stripe/webhook/{endpoint.djstripe_uuid}/",
-            data=json.dumps({
-                "id": "evt_probe",
-                "type": "customer.subscription.deleted",
-                "data": {
-                    "object": {}
-                },
-            }),
+            data=json.dumps(
+                {
+                    "id": "evt_probe",
+                    "type": "customer.subscription.deleted",
+                    "data": {"object": {}},
+                }
+            ),
             content_type="application/json",
         )
 
         self.assertEqual(response.status_code, 400)  # missing stripe-signature
-        self.assertFalse(
-            ProcessedStripeEvent.objects.filter(event_id="evt_probe").exists())
+        self.assertFalse(ProcessedStripeEvent.objects.filter(event_id="evt_probe").exists())
         self.package_untouched()
 
     def test_get_probe_on_stripe_returns_405_but_proves_app_is_alive(self):
         """A GET-only monitor still works: any HTTP response means 'up'."""
-        response = self.client.get(
-            "/stripe/webhook/00000000-0000-0000-0000-000000000000/")
+        response = self.client.get("/stripe/webhook/00000000-0000-0000-0000-000000000000/")
         self.assertIn(response.status_code, (400, 404, 405, 500))
-        self.assertIsNotNone(
-            response.status_code)  # Django answered = app alive
+        self.assertIsNotNone(response.status_code)  # Django answered = app alive
 
     def package_untouched(self):
         self.pkg.refresh_from_db()

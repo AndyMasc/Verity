@@ -12,10 +12,8 @@ from records.models import Record, AuditLog
 
 
 class ArchiveRecordViewTest(TestCase):
-
     def setUp(self):
-        self.user = User.objects.create_user(username="archuser",
-                                             password="pass")
+        self.user = User.objects.create_user(username="archuser", password="pass")
         self.record = Record.objects.create(
             user=self.user,
             title="To Archive",
@@ -44,10 +42,8 @@ class ArchiveRecordViewTest(TestCase):
 
 
 class UnarchiveRecordViewTest(TestCase):
-
     def setUp(self):
-        self.user = User.objects.create_user(username="unarchuser",
-                                             password="pass")
+        self.user = User.objects.create_user(username="unarchuser", password="pass")
         self.record = Record.objects.create(
             user=self.user,
             title="To Unarchive",
@@ -65,8 +61,7 @@ class UnarchiveRecordViewTest(TestCase):
         self.assertTrue(self.record.is_active)
 
     def test_other_user_cannot_unarchive(self):
-        user2 = User.objects.create_user(username="otherunarch",
-                                         password="pass")
+        user2 = User.objects.create_user(username="otherunarch", password="pass")
         self.client.force_login(user2)
         response = self.client.post(self.url)
         self.assertEqual(response.status_code, 404)
@@ -80,10 +75,8 @@ class UnarchiveRecordViewTest(TestCase):
 
 
 class DeleteRecordViewTest(TestCase):
-
     def setUp(self):
-        self.user = User.objects.create_user(username="deluser",
-                                             password="pass")
+        self.user = User.objects.create_user(username="deluser", password="pass")
         self.record = Record.objects.create(
             user=self.user,
             title="To Delete",
@@ -108,10 +101,8 @@ class DeleteRecordViewTest(TestCase):
 
 
 class HardDeleteViewHTTPTest(TestCase):
-
     def setUp(self):
-        self.user = User.objects.create_user(username="harddel_http",
-                                             password="pass")
+        self.user = User.objects.create_user(username="harddel_http", password="pass")
         self.url_name = "records:hard_delete_record"
 
     def _make_old_record(self):
@@ -184,10 +175,8 @@ class HardDeleteViewHTTPTest(TestCase):
 
 
 class ArchiveViewHTTPTest(TestCase):
-
     def setUp(self):
-        self.user = User.objects.create_user(username="archive_http",
-                                             password="pass")
+        self.user = User.objects.create_user(username="archive_http", password="pass")
 
     def test_archive_deactivates_record(self):
         record = Record.objects.create(
@@ -256,10 +245,8 @@ class ArchiveViewHTTPTest(TestCase):
 
 
 class BulkArchiveViewTest(TestCase):
-
     def setUp(self):
-        self.user = User.objects.create_user(username="bulkarch",
-                                             password="pass")
+        self.user = User.objects.create_user(username="bulkarch", password="pass")
         self.url = reverse("records:bulk_archive")
         self.records = [
             Record.objects.create(
@@ -267,14 +254,13 @@ class BulkArchiveViewTest(TestCase):
                 title=f"Bulk {i}",
                 record_type="expense_receipt",
                 transaction_date=date(2024, 6, 15),
-            ) for i in range(3)
+            )
+            for i in range(3)
         ]
 
     def test_post_not_allowed_without_json(self):
         self.client.force_login(self.user)
-        response = self.client.post(self.url,
-                                    data="not json",
-                                    content_type="text/plain")
+        response = self.client.post(self.url, data="not json", content_type="text/plain")
         self.assertEqual(response.status_code, 400)
 
     def test_bulk_archive_archives_records(self):
@@ -289,9 +275,7 @@ class BulkArchiveViewTest(TestCase):
         self.assertEqual(response.status_code, 200)
         for r in Record.objects.filter(pk__in=ids):
             self.assertFalse(r.is_active)
-        self.assertTrue(
-            Record.objects.filter(pk=self.records[2].pk,
-                                  is_active=True).exists())
+        self.assertTrue(Record.objects.filter(pk=self.records[2].pk, is_active=True).exists())
 
     def test_bulk_archive_creates_audit_logs(self):
         self.client.force_login(self.user)
@@ -395,7 +379,8 @@ def _make_record(user, title):
 def _age_record(record, days):
     """Back-date date_added, which is auto_now_add and ignores kwargs."""
     Record.objects.filter(pk=record.pk).update(
-        date_added=timezone.now().date() - timedelta(days=days))
+        date_added=timezone.now().date() - timedelta(days=days)
+    )
     record.refresh_from_db()
     return record
 
@@ -404,22 +389,15 @@ class BulkHardDeleteTests(TestCase):
     """Bulk permanent delete only touches records past the retention window."""
 
     def setUp(self):
-        self.user = User.objects.create_user(username="bulkdel",
-                                             password="pass")
-        self.other = User.objects.create_user(username="bulkother",
-                                              password="pass")
+        self.user = User.objects.create_user(username="bulkdel", password="pass")
+        self.other = User.objects.create_user(username="bulkother", password="pass")
         self.client.force_login(self.user)
 
-        self.old = _age_record(_make_record(self.user, "Ancient"),
-                               365 * 7 + 30)
+        self.old = _age_record(_make_record(self.user, "Ancient"), 365 * 7 + 30)
         self.recent = _make_record(self.user, "Recent")
 
     def _post(self, ids, htmx=True):
-        headers = {
-            "HX-Request": "true"
-        } if htmx else {
-            "x-requested-with": "XMLHttpRequest"
-        }
+        headers = {"HX-Request": "true"} if htmx else {"x-requested-with": "XMLHttpRequest"}
         return self.client.post(
             reverse("records:bulk_hard_delete"),
             data=json.dumps({"record_ids": ids}),
@@ -477,6 +455,4 @@ class CanHardDeletePropertyTests(TestCase):
 
     def test_seven_year_old_record_can_be_hard_deleted(self):
         user = User.objects.create_user(username="propold", password="pass")
-        self.assertTrue(
-            _age_record(_make_record(user, "Old"),
-                        365 * 7 + 1).can_hard_delete)
+        self.assertTrue(_age_record(_make_record(user, "Old"), 365 * 7 + 1).can_hard_delete)

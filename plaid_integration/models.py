@@ -21,8 +21,7 @@ class EncryptedJSONField(EncryptedTextField):
             return value
         return json.dumps(value)
 
-    def from_db_value(self, value: Any, expression: Any,
-                      connection: Any) -> Any:
+    def from_db_value(self, value: Any, expression: Any, connection: Any) -> Any:
         """Deserialize decrypted text string back into Python dict/list."""
         value = super().from_db_value(value, expression, connection)
         if value is not None and isinstance(value, str):
@@ -45,9 +44,9 @@ class EncryptedJSONField(EncryptedTextField):
 class PlaidItem(models.Model):
     """Represents a connected Plaid bank item (e.g. one bank account)."""
 
-    user = models.ForeignKey(settings.AUTH_USER_MODEL,
-                             on_delete=models.CASCADE,
-                             related_name="plaid_items")
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="plaid_items"
+    )
     item_id = models.CharField(max_length=255, unique=True)
     access_token = EncryptedCharField(max_length=512)
     next_cursor = models.CharField(

@@ -16,18 +16,12 @@ User = get_user_model()
 
 
 @override_settings(
-    CACHES={
-        "default": {
-            "BACKEND": "django.core.cache.backends.dummy.DummyCache"
-        }
-    },
+    CACHES={"default": {"BACKEND": "django.core.cache.backends.dummy.DummyCache"}},
     SESSION_ENGINE="django.contrib.sessions.backends.db",
 )
 class BulkUnarchiveViewTest(TestCase):
-
     def setUp(self):
-        self.user = User.objects.create_user(username="bulkunarch",
-                                             password="pass")
+        self.user = User.objects.create_user(username="bulkunarch", password="pass")
         self.url = reverse("records:bulk_unarchive")
         self.records = [
             Record.objects.create(
@@ -36,7 +30,8 @@ class BulkUnarchiveViewTest(TestCase):
                 record_type="expense_receipt",
                 is_active=False,
                 transaction_date=date(2024, 6, 15),
-            ) for i in range(3)
+            )
+            for i in range(3)
         ]
 
     def test_bulk_unarchive_restores(self):
@@ -68,18 +63,12 @@ class BulkUnarchiveViewTest(TestCase):
 
 
 @override_settings(
-    CACHES={
-        "default": {
-            "BACKEND": "django.core.cache.backends.dummy.DummyCache"
-        }
-    },
+    CACHES={"default": {"BACKEND": "django.core.cache.backends.dummy.DummyCache"}},
     SESSION_ENGINE="django.contrib.sessions.backends.db",
 )
 class DeleteRecordViewHTTPTest(TestCase):
-
     def setUp(self):
-        self.user = User.objects.create_user(username="delrec",
-                                             password="pass")
+        self.user = User.objects.create_user(username="delrec", password="pass")
         self.record = Record.objects.create(
             user=self.user,
             title="To Delete",
@@ -106,8 +95,7 @@ class DeleteRecordViewHTTPTest(TestCase):
         self.assertEqual(audit.record_id, self.record.pk)
 
     def test_other_user_cannot_delete(self):
-        other = User.objects.create_user(username="otherdelrec",
-                                         password="pass")
+        other = User.objects.create_user(username="otherdelrec", password="pass")
         self.client.force_login(other)
         response = self.client.post(self.url)
         self.assertEqual(response.status_code, 404)

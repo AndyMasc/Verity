@@ -15,7 +15,6 @@ STALE_AFTER = timedelta(minutes=5)
 
 
 class StripeAccountRequiredMixin(UserPassesTestMixin):
-
     def test_func(self) -> bool:
         stripe_account = getattr(self.request.user, "stripe_account", None)
         if stripe_account is None:
@@ -47,9 +46,7 @@ class StripeAccountRequiredMixin(UserPassesTestMixin):
         return redirect(onboard_url)
 
 
-class ReimbursementRequestRequiredMixin(StripeAccountRequiredMixin,
-                                        FeatureRequiredMixin):
-
+class ReimbursementRequestRequiredMixin(StripeAccountRequiredMixin, FeatureRequiredMixin):
     def test_func(self) -> bool:
         if not super().test_func():
             return False

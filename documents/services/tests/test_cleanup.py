@@ -29,7 +29,6 @@ def _make_hash(content: bytes = b"test") -> str:
 
 @pytest.mark.django_db
 class TestNormalizeS3Key:
-
     def test_strips_leading_slash(self):
         assert normalize_s3_key("/users/1/file.pdf") == "users/1/file.pdf"
 
@@ -51,7 +50,6 @@ class TestNormalizeS3Key:
 
 @pytest.mark.django_db
 class TestBulkDeleteDocuments:
-
     def test_deletes_db_records(self, user):
         docs = [
             DocumentData.objects.create(
@@ -60,7 +58,8 @@ class TestBulkDeleteDocuments:
                 file_hash=_make_hash(f"doc{i}".encode()),
                 status=DocumentStatus.COMPLETED,
                 did_ocr=True,
-            ) for i in range(3)
+            )
+            for i in range(3)
         ]
         file_data = [(d.id, d.filepath) for d in docs]
         bulk_delete_documents(file_data)
@@ -74,7 +73,8 @@ class TestBulkDeleteDocuments:
                 user=user,
                 filepath=f"users/{user.id}/doc{i}.pdf",
                 file_hash=_make_hash(f"doc{i}".encode()),
-            ) for i in range(2)
+            )
+            for i in range(2)
         ]
         mock_s3 = MagicMock()
         mock_get_s3.return_value = mock_s3
@@ -119,7 +119,8 @@ class TestBulkDeleteDocuments:
                 user=user,
                 filepath=f"users/{user.id}/chunk{i}.pdf",
                 file_hash=_make_hash(f"chunk{i}".encode()),
-            ) for i in range(5)
+            )
+            for i in range(5)
         ]
         mock_s3 = MagicMock()
         mock_get_s3.return_value = mock_s3
@@ -131,7 +132,6 @@ class TestBulkDeleteDocuments:
 
 @pytest.mark.django_db
 class TestDeleteOrphanedDocuments:
-
     def test_deletes_non_ocr_orphans_after_1_day(self, user):
         doc = DocumentData.objects.create(
             user=user,
@@ -139,10 +139,8 @@ class TestDeleteOrphanedDocuments:
             file_hash=_make_hash(b"old"),
             did_ocr=False,
         )
-        DocumentData.objects.filter(id=doc.id).update(
-            date_added=timezone.now() - timedelta(days=2))
-        with patch("documents.services.cleanup.bulk_delete_documents"
-                   ) as mock_bulk:
+        DocumentData.objects.filter(id=doc.id).update(date_added=timezone.now() - timedelta(days=2))
+        with patch("documents.services.cleanup.bulk_delete_documents") as mock_bulk:
             delete_orphaned_documents()
             mock_bulk.assert_called_once()
 
@@ -153,8 +151,7 @@ class TestDeleteOrphanedDocuments:
             file_hash=_make_hash(b"new"),
             did_ocr=False,
         )
-        with patch("documents.services.cleanup.bulk_delete_documents"
-                   ) as mock_bulk:
+        with patch("documents.services.cleanup.bulk_delete_documents") as mock_bulk:
             delete_orphaned_documents()
             mock_bulk.assert_not_called()
 
@@ -166,10 +163,8 @@ class TestDeleteOrphanedDocuments:
             did_ocr=True,
             status=DocumentStatus.UPLOADED,
         )
-        DocumentData.objects.filter(id=doc.id).update(
-            date_added=timezone.now() - timedelta(days=8))
-        with patch("documents.services.cleanup.bulk_delete_documents"
-                   ) as mock_bulk:
+        DocumentData.objects.filter(id=doc.id).update(date_added=timezone.now() - timedelta(days=8))
+        with patch("documents.services.cleanup.bulk_delete_documents") as mock_bulk:
             delete_orphaned_documents()
             mock_bulk.assert_called_once()
 
@@ -189,9 +184,9 @@ class TestDeleteOrphanedDocuments:
             associated_record=record,
         )
         DocumentData.objects.filter(id=doc.id).update(
-            date_added=timezone.now() - timedelta(days=10))
-        with patch("documents.services.cleanup.bulk_delete_documents"
-                   ) as mock_bulk:
+            date_added=timezone.now() - timedelta(days=10)
+        )
+        with patch("documents.services.cleanup.bulk_delete_documents") as mock_bulk:
             delete_orphaned_documents()
             mock_bulk.assert_not_called()
 
@@ -203,17 +198,14 @@ class TestDeleteOrphanedDocuments:
             did_ocr=False,
             status=DocumentStatus.DELETING,
         )
-        DocumentData.objects.filter(id=doc.id).update(
-            date_added=timezone.now() - timedelta(days=2))
-        with patch("documents.services.cleanup.bulk_delete_documents"
-                   ) as mock_bulk:
+        DocumentData.objects.filter(id=doc.id).update(date_added=timezone.now() - timedelta(days=2))
+        with patch("documents.services.cleanup.bulk_delete_documents") as mock_bulk:
             delete_orphaned_documents()
             mock_bulk.assert_not_called()
 
 
 @pytest.mark.django_db
 class TestReconcileDocuments:
-
     @patch("documents.services.cleanup.get_s3_client")
     def test_deletes_stale_pending_uploads(self, mock_get_s3, user):
         mock_s3 = MagicMock()
@@ -225,7 +217,8 @@ class TestReconcileDocuments:
             status=DocumentStatus.PENDING_UPLOAD,
         )
         DocumentData.objects.filter(id=doc.id).update(
-            date_added=timezone.now() - timedelta(minutes=45))
+            date_added=timezone.now() - timedelta(minutes=45)
+        )
         reconcile_documents()
         assert not DocumentData.objects.filter(id=doc.id).exists()
 
@@ -253,8 +246,7 @@ class TestReconcileDocuments:
             file_hash=_make_hash(b"dangling"),
             status=DocumentStatus.ERROR,
         )
-        DocumentData.objects.filter(id=doc.id).update(
-            date_added=timezone.now() - timedelta(days=3))
+        DocumentData.objects.filter(id=doc.id).update(date_added=timezone.now() - timedelta(days=3))
         reconcile_documents()
         assert not DocumentData.objects.filter(id=doc.id).exists()
         mock_r2.assert_called_once()

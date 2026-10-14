@@ -9,6 +9,9 @@ from django.http import HttpRequest, HttpResponseBadRequest
 from djstripe.models import Customer, Price, Product
 from djstripe.settings import djstripe_settings
 
+from billing.seats import SEAT_PLAN, seat_count
+from teams.orgs import personal_org
+
 from . import metadata
 
 logger = logging.getLogger(__name__)
@@ -19,14 +22,13 @@ def _configure() -> None:
 
 
 def resolve_customer(user):
-    linked = list(
-        Customer.objects.filter(subscriber=user).annotate(
-            subs=Count("subscriptions")))
+    linked = list(Customer.objects.filter(subscriber=user).annotate(subs=Count("subscriptions")))
     if not linked:
         return None
 
     keep = next((c for c in linked if c.pk == user.customer_id), None) or max(
-        linked, key=lambda c: (c.subs, c.pk))
+        linked, key=lambda c: (c.subs, c.pk)
+    )
     for cust in linked:
         if cust.pk != keep.pk:
             cust.subscriber = None
@@ -34,8 +36,13 @@ def resolve_customer(user):
     return keep
 
 
-def fetch_line_items(request: HttpRequest,
-                     quantity: int = 1) -> list[dict] | HttpResponseBadRequest:
+def _is_seat(price) -> bool:
+    return bool(price and (price.product.metadata or {}).get("lookup_key") == SEAT_PLAN)
+
+
+def fetch_line_items(
+    request: HttpRequest, quantity: int | None = 1
+) -> list[dict] | HttpResponseBadRequest:
     """Fetch Price objects for the selected price IDs in the request."""
     price_ids = request.POST.getlist("price_ids")
     products = Price.objects.filter(
@@ -44,10 +51,7 @@ def fetch_line_items(request: HttpRequest,
         livemode=getattr(djstripe_settings, "STRIPE_LIVE_MODE", False),
     ).select_related("product")
 
-    categories = {
-        metadata.product_category(price.product)
-        for price in products
-    }
+    categories = {metadata.product_category(price.product) for price in products}
     if not categories or len(categories) != len(products):
         return HttpResponseBadRequest(
             "Select a valid plan, or, deselect duplicate products from the same category."
@@ -63,11 +67,16 @@ def fetch_line_items(request: HttpRequest,
         if price_id in metas:
             (metered if metas[price_id].metered else licensed).append(price_id)
 
-    # A licensed line item must carry a quantity; a metered one must not.
-    line_items = [{
-        "price": price_id,
-        "quantity": quantity
-    } for price_id in licensed]
+    # Seats are billed per member; every other licensed price is flat.
+    prices = {price.id: price for price in products}
+    seats = seat_count(personal_org(request.user)) if request.user.is_authenticated else 0
+    line_items = [
+        {
+            "price": price_id,
+            "quantity": max(seats, 1) if _is_seat(prices.get(price_id)) else quantity,
+        }
+        for price_id in licensed
+    ]
     line_items += [{"price": price_id} for price_id in metered]
 
     if not line_items:
@@ -93,8 +102,7 @@ def sanitize_line_items(subscription, line_items: list[dict]) -> list[dict]:
     incoming_price_ids = {item["price"] for item in line_items}
     incoming_price_categories = {
         price.id: metadata.product_category(price.product)
-        for price in Price.objects.filter(
-            id__in=incoming_price_ids).select_related("product")
+        for price in Price.objects.filter(id__in=incoming_price_ids).select_related("product")
     }
 
     sanitized_line_items = []
@@ -106,10 +114,7 @@ def sanitize_line_items(subscription, line_items: list[dict]) -> list[dict]:
             if held_item.price.id == price:
                 sanitized_line_items.append({"id": held_item.id})
             else:
-                sanitized_line_items.append({
-                    "id": held_item.id,
-                    "deleted": True
-                })
+                sanitized_line_items.append({"id": held_item.id, "deleted": True})
 
         if price not in held_price_ids:
             sanitized_line_items.append({"price": price})
@@ -122,14 +127,13 @@ def pricing_context(user) -> dict:
     live = djstripe_settings.STRIPE_LIVE_MODE
     catalog = list(Product.objects.filter(active=True, livemode=live))
 
-    prices = Price.objects.filter(
-        product__in=catalog, active=True, livemode=live).order_by(
-            F("djstripe_created").desc(nulls_last=True), "-djstripe_id")
+    prices = Price.objects.filter(product__in=catalog, active=True, livemode=live).order_by(
+        F("djstripe_created").desc(nulls_last=True), "-djstripe_id"
+    )
 
     checkout_price: dict[str, Price] = {}
     for price in prices:
-        if (price.stripe_data or {}).get("recurring",
-                                         {}).get("interval") == "month":
+        if (price.stripe_data or {}).get("recurring", {}).get("interval") == "month":
             checkout_price.setdefault(price.product_id, price)
 
     free = copy(metadata.VERITY_FREE)
@@ -146,6 +150,5 @@ def pricing_context(user) -> dict:
 
     return {
         "products": products,
-        "has_active_subscription": bool(
-            getattr(user, "has_active_subscription", False)),
+        "has_active_subscription": bool(getattr(user, "has_active_subscription", False)),
     }

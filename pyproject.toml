@@ -114,7 +114,9 @@ module = [
     "plaid_integration.*",
     "accounting.*",
     "billing.*",
-    "reimbursements.*"
+    "reimbursements.*",
+    "organizations.*",
+    "teams.*"
 ]
 ignore_missing_imports = true
 disable_error_code = [

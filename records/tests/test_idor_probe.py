@@ -15,11 +15,9 @@ U = get_user_model()
 
 
 class IDORProbe(TestCase):
-
     def setUp(self):
         self.victim = U.objects.create_user(username="victim", password="p")
-        self.attacker = U.objects.create_user(username="attacker",
-                                              password="p")
+        self.attacker = U.objects.create_user(username="attacker", password="p")
         self.rec = Record.objects.create(
             user=self.victim,
             title="Victim receipt",
@@ -27,10 +25,9 @@ class IDORProbe(TestCase):
             transaction_date=datetime.date(2024, 6, 15),
             balance="500.00",
         )
-        self.pkg = ReimbursementPackage.objects.create(creator=self.victim,
-                                                       title="Victim package",
-                                                       currency="usd",
-                                                       status="open")
+        self.pkg = ReimbursementPackage.objects.create(
+            creator=self.victim, title="Victim package", currency="usd", status="open"
+        )
         self.pkg.records.add(self.rec)
         StripeAccount.objects.filter(user=self.victim).update(
             stripe_account_id="acct_victim",
@@ -41,9 +38,9 @@ class IDORProbe(TestCase):
         self.client.force_login(self.attacker)
 
     def test_cannot_hard_delete_another_users_old_record(self):
-        Record.objects.filter(
-            pk=self.rec.pk).update(date_added=timezone.now().date() -
-                                   datetime.timedelta(days=365 * 8))
+        Record.objects.filter(pk=self.rec.pk).update(
+            date_added=timezone.now().date() - datetime.timedelta(days=365 * 8)
+        )
         self.client.post(
             reverse("records:bulk_hard_delete"),
             data=json.dumps({"record_ids": [self.rec.pk]}),
@@ -56,19 +53,14 @@ class IDORProbe(TestCase):
 
     def test_cannot_view_another_users_record_detail(self):
         self.assertEqual(
-            self.client.get(
-                reverse("records:record_detail",
-                        args=[self.rec.pk])).status_code,
+            self.client.get(reverse("records:record_detail", args=[self.rec.pk])).status_code,
             404,
         )
 
     def test_cannot_bulk_share_another_users_records(self):
         self.client.post(
             reverse("records:bulk_share"),
-            data=json.dumps({
-                "record_ids": [self.rec.pk],
-                "emails": self.attacker.email
-            }),
+            data=json.dumps({"record_ids": [self.rec.pk], "emails": self.attacker.email}),
             content_type="application/json",
         )
         self.assertFalse(
@@ -83,17 +75,13 @@ class IDORProbe(TestCase):
             content_type="application/json",
         )
         self.rec.refresh_from_db()
-        self.assertTrue(self.rec.is_active,
-                        "IDOR: archived another user's record")
+        self.assertTrue(self.rec.is_active, "IDOR: archived another user's record")
 
     def test_cannot_revoke_another_users_share(self):
         share = RecordShare.objects.create(record=self.rec, user=self.attacker)
-        self.client.post(
-            reverse("records:record_share_revoke",
-                    args=[self.rec.pk, share.pk]))
+        self.client.post(reverse("records:record_share_revoke", args=[self.rec.pk, share.pk]))
         share.refresh_from_db()
-        self.assertIsNone(share.revoked_at,
-                          "IDOR: revoked another user's share")
+        self.assertIsNone(share.revoked_at, "IDOR: revoked another user's share")
 
     def test_money_endpoints_require_login(self):
         self.client.logout()
@@ -103,8 +91,7 @@ class IDORProbe(TestCase):
             ("records:bulk_share", ()),
             ("records:bulk_unarchive", ()),
         ]:
-            r = self.client.post(reverse(name, args=args),
-                                 data="{}",
-                                 content_type="application/json")
-            self.assertIn(r.status_code, (302, 401, 403),
-                          f"{name} reachable anonymously")
+            r = self.client.post(
+                reverse(name, args=args), data="{}", content_type="application/json"
+            )
+            self.assertIn(r.status_code, (302, 401, 403), f"{name} reachable anonymously")

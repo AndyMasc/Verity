@@ -4,7 +4,6 @@ from records.models import Record
 
 
 class RecordResource(resources.ModelResource):
-
     class Meta:
         model = Record
         exclude = (

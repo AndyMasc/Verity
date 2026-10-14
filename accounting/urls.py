@@ -10,8 +10,7 @@ from . import views
 
 app_name = "accounting"
 urlpatterns = [
-    path("export_all_excel/", views.ExportExcelAll,
-         name="export_all_to_excel"),
+    path("export_all_excel/", views.ExportExcelAll, name="export_all_to_excel"),
     path(
         "export_selected_excel/",
         views.ExportSelectedExcel,

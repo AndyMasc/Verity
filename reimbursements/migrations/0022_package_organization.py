@@ -23,10 +23,8 @@ def backfill(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ("reimbursements",
-         "0021_alter_packagepayment_stripe_checkout_session_id"),
+        ("reimbursements", "0021_alter_packagepayment_stripe_checkout_session_id"),
         ("teams", "0002_personal_orgs"),
     ]
 

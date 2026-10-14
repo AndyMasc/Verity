@@ -35,8 +35,7 @@ def pricing_page(request: HttpRequest) -> HttpResponse:
             request,
             "Checkout canceled. You were not charged. Select a plan to try again.",
         )
-    return render(request, "billing/pricing_page.html",
-                  services.pricing_context(request.user))
+    return render(request, "billing/pricing_page.html", services.pricing_context(request.user))
 
 
 @login_required
@@ -52,15 +51,12 @@ def subscription_confirm(request: HttpRequest) -> HttpResponse:
         if session.status != "complete":
             return HttpResponseBadRequest("Checkout did not complete.")
         if not session.subscription:
-            return HttpResponseBadRequest(
-                "Session is not a subscription checkout.")
+            return HttpResponseBadRequest("Session is not a subscription checkout.")
         if session.get("client_reference_id") != str(request.user.pk):
-            return HttpResponseBadRequest(
-                "Session does not belong to this user.")
+            return HttpResponseBadRequest("Session does not belong to this user.")
 
     except stripe.error.StripeError as e:
-        logger.error("Stripe API error during subscription confirmation: %s",
-                     e)
+        logger.error("Stripe API error during subscription confirmation: %s", e)
         messages.error(
             request,
             "We encountered an error confirming your subscription. Please contact support.",
@@ -83,8 +79,7 @@ def subscription_confirm(request: HttpRequest) -> HttpResponse:
 def create_portal_session(request: HttpRequest) -> HttpResponse:
     customer = Customer.get_or_create(request.user)[0]
     if customer is None:
-        return HttpResponseBadRequest(
-            "No Stripe customer associated with this account.")
+        return HttpResponseBadRequest("No Stripe customer associated with this account.")
 
     services._configure()
     portal_session = stripe.billing_portal.Session.create(
@@ -103,27 +98,26 @@ def purchase_subscription(request: HttpRequest) -> HttpResponse:
     if isinstance(line_items, HttpResponseBadRequest):
         return line_items
 
-    customer = services.resolve_customer(user) or Customer.get_or_create(
-        subscriber=user)[0]
+    customer = services.resolve_customer(user) or Customer.get_or_create(subscriber=user)[0]
     lock = f"billing:lock:{user.pk}"
     if not cache.add(lock, 1, timeout=30):
         messages.info(request, "A plan change is already in progress.")
         return redirect("billing:pricing_page")
 
     try:
-        subscription = customer.subscriptions.active().order_by(
-            "-created").first()
+        subscription = customer.subscriptions.active().order_by("-created").first()
 
         if subscription is None:
             key = hashlib.sha256(  # Hourly-unique per user and line items, so a retry for the same user and line items cannot double-charge.
-                f"{user.pk}:{','.join(sorted(item['price'] for item in line_items))}:{int(time.time() // 3600)}"
-                .encode()).hexdigest()
+                f"{user.pk}:{','.join(sorted(item['price'] for item in line_items))}:{int(time.time() // 3600)}".encode()
+            ).hexdigest()
             success_url = (
-                request.build_absolute_uri(reverse("subscription_confirm")) +
-                "?session_id={CHECKOUT_SESSION_ID}")
+                request.build_absolute_uri(reverse("subscription_confirm"))
+                + "?session_id={CHECKOUT_SESSION_ID}"
+            )
             cancel_url = (
-                request.build_absolute_uri(reverse("billing:pricing_page")) +
-                "?checkout=canceled")
+                request.build_absolute_uri(reverse("billing:pricing_page")) + "?checkout=canceled"
+            )
             try:
                 services._configure()
                 session = stripe.checkout.Session.create(
@@ -137,8 +131,7 @@ def purchase_subscription(request: HttpRequest) -> HttpResponse:
                 )
                 invalidate_plan_usage_caches(user.pk)
             except stripe.error.StripeError as e:
-                logger.error(
-                    "Stripe API error during checkout session creation: %s", e)
+                logger.error("Stripe API error during checkout session creation: %s", e)
                 messages.error(
                     request,
                     "We encountered an error creating your checkout session. Please try again.",

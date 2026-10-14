@@ -43,10 +43,7 @@ def get_s3_client():
             connect_timeout=TIMEOUT_SECONDS,
             read_timeout=TIMEOUT_SECONDS,
             max_pool_connections=50,
-            retries={
-                "max_attempts": 3,
-                "mode": "standard"
-            },
+            retries={"max_attempts": 3, "mode": "standard"},
         ),
     )
 
@@ -162,10 +159,10 @@ def _validate_header(header_bytes: bytes, content_length: int) -> str | None:
         return str(e)
 
     if header_bytes[:4] in (
-            b"\xff\xd8\xff",
-            b"\x89\x50\x4e\x47\x0d\x0a\x1a\x0a",
-            b"\x52\x49\x46\x46",
-            b"\x42\x4d",
+        b"\xff\xd8\xff",
+        b"\x89\x50\x4e\x47\x0d\x0a\x1a\x0a",
+        b"\x52\x49\x46\x46",
+        b"\x42\x4d",
     ) or header_bytes.startswith(b"%PDF"):
         try:
             img = Image.open(BytesIO(header_bytes))
@@ -174,8 +171,10 @@ def _validate_header(header_bytes: bytes, content_length: int) -> str | None:
             width, height = img.size
             total_pixels = width * height
             if total_pixels > MAX_IMAGE_PIXELS:
-                return (f"Image dimensions too large ({width}x{height}). "
-                        f"Maximum {MAX_IMAGE_PIXELS:,} pixels.")
+                return (
+                    f"Image dimensions too large ({width}x{height}). "
+                    f"Maximum {MAX_IMAGE_PIXELS:,} pixels."
+                )
         except Exception as e:
             logger.warning("Image dimension check failed: %s", e)
     return None
@@ -188,13 +187,11 @@ def delete_r2_objects_batch(keys: list[str]) -> None:
     s3 = get_s3_client()
     CHUNK = 1000
     for i in range(0, len(keys), CHUNK):
-        chunk = keys[i:i + CHUNK]
+        chunk = keys[i : i + CHUNK]
         try:
             s3.delete_objects(
                 Bucket=BUCKET,
-                Delete={"Objects": [{
-                    "Key": k
-                } for k in chunk]},
+                Delete={"Objects": [{"Key": k} for k in chunk]},
             )
         except ClientError as e:
             logger.error("Batch R2 deletion failed for chunk: %s", e)

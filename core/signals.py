@@ -8,7 +8,8 @@ underlying data changes.
 
 import posthog
 from allauth.account.signals import (
-    user_logged_in as allauth_user_logged_in, )
+    user_logged_in as allauth_user_logged_in,
+)
 from allauth.account.signals import user_signed_up
 from django.conf import settings
 from django.contrib.auth.signals import user_logged_in, user_logged_out
@@ -41,8 +42,11 @@ def track_user_signed_up(request, user, **kwargs):  # noqa: ARG001
         properties={
             "email": user.email,
             "username": user.username,
-            "signup_method": (user.socialaccount_set.first().provider
-                              if user.socialaccount_set.exists() else "email"),
+            "signup_method": (
+                user.socialaccount_set.first().provider
+                if user.socialaccount_set.exists()
+                else "email"
+            ),
         },
     )
 
@@ -56,16 +60,14 @@ def identify_posthog_user(sender, request, user, **kwargs):  # noqa: ARG001
 
     distinct_id = str(user.pk)
     identify_context(distinct_id)
-    apps.posthog_client.set(distinct_id=distinct_id,
-                            properties={"email": user.email})
+    apps.posthog_client.set(distinct_id=distinct_id, properties={"email": user.email})
 
     sociallogin = kwargs.get("sociallogin")
     apps.posthog_client.capture(
         "user_logged_in",
         distinct_id=distinct_id,
         properties={
-            "login_method": sociallogin.account.provider
-            if sociallogin else "email",
+            "login_method": sociallogin.account.provider if sociallogin else "email",
         },
     )
 
@@ -139,8 +141,7 @@ def _on_merge_log_change(sender, instance, **kwargs):  # noqa: ARG001
 
 @receiver(post_save, sender="reimbursements.ReimbursementPackage")
 @receiver(post_delete, sender="reimbursements.ReimbursementPackage")
-def _on_reimbursement_package_change(sender, instance,
-                                     **kwargs):  # noqa: ARG001
+def _on_reimbursement_package_change(sender, instance, **kwargs):  # noqa: ARG001
     _invalidate_dashboard_for((instance.creator_id, instance.recipient_id))
 
 

@@ -8,10 +8,8 @@ from records.models import Record, Folder
 
 
 class FolderListViewTest(TestCase):
-
     def setUp(self):
-        self.user = User.objects.create_user(username="folderlist",
-                                             password="pass")
+        self.user = User.objects.create_user(username="folderlist", password="pass")
         self.url = reverse("records:view_folders")
 
     def test_authenticated_access(self):
@@ -35,30 +33,26 @@ class FolderListViewTest(TestCase):
 
 
 class CreateFolderViewTest(TestCase):
-
     def setUp(self):
-        self.user = User.objects.create_user(username="createf",
-                                             password="pass")
+        self.user = User.objects.create_user(username="createf", password="pass")
         self.url = reverse("records:create_folder")
 
     def test_get_form(self):
         self.client.force_login(self.user)
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(
-            response, "records/partials/folders/create_folder_modal.html")
+        self.assertTemplateUsed(response, "records/partials/folders/create_folder_modal.html")
 
     def test_post_valid(self):
         self.client.force_login(self.user)
-        response = self.client.post(self.url, {"name": "New Folder"},
-                                    headers={"hx-request": "true"})
+        response = self.client.post(
+            self.url, {"name": "New Folder"}, headers={"hx-request": "true"}
+        )
         self.assertIn(response.status_code, [200, 302])
-        self.assertTrue(
-            Folder.objects.filter(name="New Folder", user=self.user).exists())
+        self.assertTrue(Folder.objects.filter(name="New Folder", user=self.user).exists())
 
 
 class FolderUpdateViewTest(TestCase):
-
     def setUp(self):
         self.user = User.objects.create_user(username="updf", password="pass")
         self.folder = Folder.objects.create(user=self.user, name="Old Name")
@@ -66,8 +60,7 @@ class FolderUpdateViewTest(TestCase):
 
     def test_owner_can_update(self):
         self.client.force_login(self.user)
-        response = self.client.post(self.url, {"name": "New Name"},
-                                    headers={"hx-request": "true"})
+        response = self.client.post(self.url, {"name": "New Name"}, headers={"hx-request": "true"})
         self.assertIn(response.status_code, [200, 302])
         self.folder.refresh_from_db()
         self.assertEqual(self.folder.name, "New Name")
@@ -87,7 +80,6 @@ class FolderUpdateViewTest(TestCase):
 
 
 class FolderDeleteViewTest(TestCase):
-
     def setUp(self):
         self.user = User.objects.create_user(username="delf", password="pass")
         self.folder = Folder.objects.create(user=self.user, name="To Delete")

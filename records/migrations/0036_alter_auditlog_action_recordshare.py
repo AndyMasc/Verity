@@ -78,16 +78,14 @@ class Migration(migrations.Migration):
             options={
                 "ordering": ["created_at"],
                 "indexes": [
-                    models.Index(fields=["record"],
-                                 name="idx_recordshare_record"),
+                    models.Index(fields=["record"], name="idx_recordshare_record"),
                     models.Index(fields=["user"], name="idx_recordshare_user"),
                 ],
                 "constraints": [
                     models.UniqueConstraint(
                         fields=("record", "user"),
                         name="unique_record_share",
-                        violation_error_message=
-                        "This record is already shared with that user.",
+                        violation_error_message="This record is already shared with that user.",
                     )
                 ],
             },

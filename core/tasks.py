@@ -52,8 +52,11 @@ def send_background_email(payload: EmailTaskPayload | dict):
     # settings.EMAIL_BACKEND is DramatiqEmailBackend in production and this
     # function is already a Dramatiq task, so using it here would re-queue the
     # message forever. DEBUG gets the console backend so local runs need no key.
-    backend = ("django.core.mail.backends.console.EmailBackend"
-               if settings.DEBUG else "anymail.backends.resend.EmailBackend")
+    backend = (
+        "django.core.mail.backends.console.EmailBackend"
+        if settings.DEBUG
+        else "anymail.backends.resend.EmailBackend"
+    )
     email = _build_email_message(payload, get_connection(backend=backend))
 
     try:

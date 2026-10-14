@@ -25,8 +25,7 @@ PROTECTED_VIEWS = [
     ("get", "records:record_detail", "record"),
     ("get", "documents:view_document", "document"),
     ("get", "records:check_ocr_status", "document"),
-    ("post", "documents:confirm_upload",
-     None),  # document id travels in the body
+    ("post", "documents:confirm_upload", None),  # document id travels in the body
     ("post", "documents:delete_document", "document"),
     ("post", "records:delete_record", "record"),
     ("post", "records:archive_record", "record"),
@@ -34,8 +33,7 @@ PROTECTED_VIEWS = [
 
 
 @pytest.mark.parametrize("verb,url_name,needs", PROTECTED_VIEWS)
-def test_anonymous_is_redirected_to_login(db, verb, url_name,
-                                          needs):  # noqa: ARG001
+def test_anonymous_is_redirected_to_login(db, verb, url_name, needs):  # noqa: ARG001
     """An anonymous visitor must be redirected to login, never served the view."""
     user = UserFactory()
     args = []
@@ -43,12 +41,13 @@ def test_anonymous_is_redirected_to_login(db, verb, url_name,
         args = [RecordFactory(user=user).pk]
     elif needs == "document":
         args = [
-            DocumentData.objects.create(user=user,
-                                        title="Receipt",
-                                        filepath="users/1/receipt.pdf").pk
+            DocumentData.objects.create(
+                user=user, title="Receipt", filepath="users/1/receipt.pdf"
+            ).pk
         ]
 
     response = getattr(Client(), verb)(reverse(url_name, args=args))
     assert response.status_code == 302, (
         f"{url_name} served an anonymous {verb.upper()} "
-        f"({response.status_code} instead of a login redirect)")
+        f"({response.status_code} instead of a login redirect)"
+    )

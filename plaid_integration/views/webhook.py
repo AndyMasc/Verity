@@ -47,8 +47,7 @@ def _fetch_signing_key(kid: str) -> dict | None:
         response.raise_for_status()
         return response.json().get("key")
     except (requests.RequestException, OSError, ValueError, KeyError) as exc:
-        logger.error("Could not fetch Plaid signing key for kid=%s: %s", kid,
-                     exc)
+        logger.error("Could not fetch Plaid signing key for kid=%s: %s", kid, exc)
         return None
 
 
@@ -93,10 +92,7 @@ def verify_plaid_webhook(body: bytes, plaid_verification: str | None) -> bool:
             plaid_verification,
             key.key,
             algorithms=[key.algorithm_name],
-            options={
-                "verify_iat": True,
-                "verify_exp": True
-            },
+            options={"verify_iat": True, "verify_exp": True},
         )
     except (jwt.PyJWTError, ValueError, TypeError, KeyError) as exc:
         logger.warning("Plaid webhook JWT verification failed: %s", exc)
@@ -113,8 +109,7 @@ def verify_plaid_webhook(body: bytes, plaid_verification: str | None) -> bool:
 def plaid_webhook(request: HttpRequest) -> HttpResponse:
     """Handle incoming Plaid webhooks for transaction and credential events."""
     if len(request.body) > WEBHOOK_MAX_BODY_SIZE:
-        logger.warning("Plaid webhook body too large: %d bytes",
-                       len(request.body))
+        logger.warning("Plaid webhook body too large: %d bytes", len(request.body))
         return HttpResponseBadRequest("Payload too large")
 
     try:
@@ -123,12 +118,11 @@ def plaid_webhook(request: HttpRequest) -> HttpResponse:
         return HttpResponseBadRequest("Invalid JSON")
 
     # Signature verification is mandatory everywhere except a local sandbox
-    verification_required = not (settings.DEBUG
-                                 and settings.PLAID_ENV == "sandbox")
+    verification_required = not (settings.DEBUG and settings.PLAID_ENV == "sandbox")
     if verification_required and not verify_plaid_webhook(
-            request.body, request.headers.get("Plaid-Verification")):
-        logger.warning("Plaid webhook verification failed for %s",
-                       payload.get("item_id"))
+        request.body, request.headers.get("Plaid-Verification")
+    ):
+        logger.warning("Plaid webhook verification failed for %s", payload.get("item_id"))
         return HttpResponseForbidden("Invalid webhook signature")
 
     webhook_type: str = payload.get("webhook_type", "")

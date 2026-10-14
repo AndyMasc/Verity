@@ -39,8 +39,7 @@ def trigger_event_type(trigger: Any) -> str:
 @receiver(djstripe_signals.webhook_post_process)
 def enqueue_reimbursement_processing(**kwargs: Any) -> None:
     trigger = kwargs.get("instance")
-    if trigger is None or trigger_event_type(
-            trigger) not in HANDLED_EVENT_TYPES:
+    if trigger is None or trigger_event_type(trigger) not in HANDLED_EVENT_TYPES:
         return
 
     from .tasks import process_stripe_event_task
@@ -51,8 +50,7 @@ def enqueue_reimbursement_processing(**kwargs: Any) -> None:
 @receiver(djstripe_signals.webhook_processing_error)
 def enqueue_reimbursement_processing_on_error(**kwargs: Any) -> None:
     trigger = kwargs.get("instance")
-    if trigger is None or trigger_event_type(
-            trigger) not in HANDLED_EVENT_TYPES:
+    if trigger is None or trigger_event_type(trigger) not in HANDLED_EVENT_TYPES:
         return
 
     from .tasks import process_stripe_event_task
@@ -74,11 +72,7 @@ def audit(package, event: str, **extra) -> None:
     AuditLog.objects.create(
         user=package.creator,
         action=AuditLog.Action.UPDATE_RECORD,
-        details={
-            "event": event,
-            "package_uuid": str(package.uuid),
-            **extra
-        },
+        details={"event": event, "package_uuid": str(package.uuid), **extra},
     )
 
 
@@ -93,11 +87,12 @@ def restore_paid_payment(payment, *, event: str, **extra) -> None:
         audit(package, event, **extra)
 
 
-def payment_for_payment_intent(
-        payment_intent_id: str) -> PackagePayment | None:
-    return (PackagePayment.objects.select_related(
-        "package",
-        "payer").filter(stripe_payment_intent_id=payment_intent_id).first())
+def payment_for_payment_intent(payment_intent_id: str) -> PackagePayment | None:
+    return (
+        PackagePayment.objects.select_related("package", "payer")
+        .filter(stripe_payment_intent_id=payment_intent_id)
+        .first()
+    )
 
 
 def payment_from_charge(charge_id: str) -> PackagePayment | None:
@@ -106,13 +101,11 @@ def payment_from_charge(charge_id: str) -> PackagePayment | None:
     intent id is the primary key and the invoice id is the fallback - that
     covers charges even when the intent id was never recorded.
     """
-    row = Charge.objects.filter(id=charge_id).only("payment_intent",
-                                                   "invoice").first()
+    row = Charge.objects.filter(id=charge_id).only("payment_intent", "invoice").first()
     if row is not None:
         intent_id, invoice_id = row.payment_intent_id, row.invoice_id
     else:
-        charge = retrieve_stripe_object(services.retrieve_charge, charge_id,
-                                        "Charge") or {}
+        charge = retrieve_stripe_object(services.retrieve_charge, charge_id, "Charge") or {}
         intent_id = charge.get("payment_intent")
         invoice_id = charge.get("invoice")
 
@@ -125,11 +118,7 @@ def payment_from_charge(charge_id: str) -> PackagePayment | None:
     return None
 
 
-def revert_package_payment(payment,
-                           *,
-                           event: str,
-                           refund: bool = True,
-                           **extra) -> None:
+def revert_package_payment(payment, *, event: str, refund: bool = True, **extra) -> None:
     refunded = False
     if refund:
         refunded = refund_captured_payment(payment, event=event)
@@ -170,8 +159,7 @@ def refund_captured_payment(payment, *, event: str) -> bool:
         services.create_refund(payment_intent_id, reason=event)
     except stripe.error.InvalidRequestError as e:
         # Typically "already refunded" / "charge not capturable" — nothing more to do.
-        logger.warning("Refund skipped for payment intent %s (%s): %s",
-                       payment_intent_id, event, e)
+        logger.warning("Refund skipped for payment intent %s (%s): %s", payment_intent_id, event, e)
         return False
     except stripe.error.StripeError:
         logger.exception(
@@ -209,16 +197,12 @@ def handle_account_updated(event):
     )
     if posthog_client is None:
         return
-    row = StripeAccount.objects.filter(
-        stripe_account_id=account_id).select_related("user").first()
+    row = StripeAccount.objects.filter(stripe_account_id=account_id).select_related("user").first()
     if row is not None and row.is_active:
         posthog_client.capture(
             "stripe_onboarding_completed",
             distinct_id=str(row.user_id),
-            properties={
-                "duration_seconds": int(
-                    (timezone.now() - row.created_at).total_seconds())
-            },
+            properties={"duration_seconds": int((timezone.now() - row.created_at).total_seconds())},
         )
 
 
@@ -268,8 +252,7 @@ def handle_payment_failure(event):
                 properties=properties,
             )
         else:
-            posthog_client.capture("reimbursement_payment_failed",
-                                   properties=properties)
+            posthog_client.capture("reimbursement_payment_failed", properties=properties)
 
     revert_package_payment(
         payment,
@@ -289,8 +272,7 @@ def handle_charge_refunded(event):
     amount_refunded_cents = charge.get("amount_refunded") or 0
     amount_captured_cents = charge.get("amount_captured") or 0
 
-    refunded_display = from_stripe_amount(amount_refunded_cents,
-                                          charge_currency)
+    refunded_display = from_stripe_amount(amount_refunded_cents, charge_currency)
 
     logger.warning(
         "Charge refunded — payment_intent: %s, amount: %s %s",
@@ -301,9 +283,7 @@ def handle_charge_refunded(event):
 
     payment = payment_for_payment_intent(payment_intent_id)
     if payment is None:
-        logger.warning(
-            "No PackagePayment found for refunded payment_intent %s",
-            payment_intent_id)
+        logger.warning("No PackagePayment found for refunded payment_intent %s", payment_intent_id)
         return
 
     is_full_refund = amount_refunded_cents >= amount_captured_cents
@@ -350,8 +330,7 @@ def handle_dispute(event):
 
     payment = payment_from_charge(charge_id)
     if payment is None:
-        logger.warning("No PackagePayment found for disputed charge %s",
-                       charge_id)
+        logger.warning("No PackagePayment found for disputed charge %s", charge_id)
         return
 
     if status == "won":
@@ -375,10 +354,7 @@ def handle_dispute(event):
         return
 
     # Non-terminal dispute (created / under_review / evidence submitted):
-    audit(payment.package,
-          "charge_dispute_open",
-          dispute_id=dispute_id,
-          status=status)
+    audit(payment.package, "charge_dispute_open", dispute_id=dispute_id, status=status)
     logger.critical(
         "Dispute %s open (status=%s) on package %s — package frozen pending resolution",
         dispute_id,
@@ -388,8 +364,11 @@ def handle_dispute(event):
 
 
 def invoice_payment_for(invoice_id: str):
-    return (PackagePayment.objects.select_related(
-        "package", "payer").filter(stripe_invoice_id=invoice_id).first())
+    return (
+        PackagePayment.objects.select_related("package", "payer")
+        .filter(stripe_invoice_id=invoice_id)
+        .first()
+    )
 
 
 def apply_paid_invoice(payment, invoice_data, *, source: str) -> bool:
@@ -405,12 +384,9 @@ def apply_paid_invoice(payment, invoice_data, *, source: str) -> bool:
             package.uuid,
             invoice_data.get("id"),
         )
-        refund_captured_payment(payment,
-                                event="package_deleted_before_settlement")
+        refund_captured_payment(payment, event="package_deleted_before_settlement")
         payment.mark_failed()
-        audit(package,
-              "invoice_after_delete_refunded",
-              invoice_id=invoice_data.get("id"))
+        audit(package, "invoice_after_delete_refunded", invoice_id=invoice_data.get("id"))
         return False
 
     if package.status == ReimbursementPackage.Status.PAID and not payment.is_completed:
@@ -433,8 +409,7 @@ def apply_paid_invoice(payment, invoice_data, *, source: str) -> bool:
     if intent_id:
         payment.stripe_payment_intent_id = intent_id
     payment.complete_from_session(invoice_data)
-    package.mark_as_paid(payer=payment.payer,
-                         payer_currency=payment.payer_currency or "usd")
+    package.mark_as_paid(payer=payment.payer, payer_currency=payment.payer_currency or "usd")
 
     if not already_completed:
         audit(
@@ -444,8 +419,9 @@ def apply_paid_invoice(payment, invoice_data, *, source: str) -> bool:
             payer_email=payment.payer_email,
             amount=str(payment.amount_paid),
         )
-        transaction.on_commit(lambda: notify_package_paid(
-            package.pk, payment.payer.pk if payment.payer else None))
+        transaction.on_commit(
+            lambda: notify_package_paid(package.pk, payment.payer.pk if payment.payer else None)
+        )
     return True
 
 
@@ -476,9 +452,7 @@ def handle_invoice_payment_failed(event):
         invoice.get("id"),
         payment.package.uuid,
     )
-    audit(payment.package,
-          "invoice_payment_failed",
-          invoice_id=invoice.get("id"))
+    audit(payment.package, "invoice_payment_failed", invoice_id=invoice.get("id"))
 
 
 def handle_invoice_voided(event):
@@ -487,9 +461,7 @@ def handle_invoice_voided(event):
     payment = invoice_payment_for(invoice.get("id") or "")
     if payment is None:
         return
-    revert_package_payment(payment,
-                           event="invoice_voided",
-                           invoice_id=invoice.get("id"))
+    revert_package_payment(payment, event="invoice_voided", invoice_id=invoice.get("id"))
 
 
 _EVENT_HANDLERS = {
@@ -517,8 +489,7 @@ def process_stripe_event(event):
         try:
             ProcessedStripeEvent.objects.create(event_id=event_id)
         except IntegrityError:
-            logger.info("Stripe event %s already processed — skipping",
-                        event_id)
+            logger.info("Stripe event %s already processed — skipping", event_id)
             return
 
     handler = _EVENT_HANDLERS.get(event_data.get("type"))

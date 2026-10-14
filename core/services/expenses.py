@@ -41,18 +41,25 @@ def get_monthly_expense_series(user, period: str = "3m") -> dict:
     if months_back is not None:
         start = (now - timedelta(days=months_back * 30)).date()
     else:
-        earliest = (Record.objects.active().filter(
-            user=user,
-            balance__isnull=False).order_by("transaction_date").values_list(
-                "transaction_date", flat=True).first())
+        earliest = (
+            Record.objects.active()
+            .filter(user=user, balance__isnull=False)
+            .order_by("transaction_date")
+            .values_list("transaction_date", flat=True)
+            .first()
+        )
         start = earliest or (now - timedelta(days=365)).date()
 
-    rows = list(Record.objects.active().filter(
-        user=user,
-        transaction_date__gte=start,
-        transaction_date__lte=now_date,
-        balance__isnull=False,
-    ).values_list("balance", "currency", "transaction_date"))
+    rows = list(
+        Record.objects.active()
+        .filter(
+            user=user,
+            transaction_date__gte=start,
+            transaction_date__lte=now_date,
+            balance__isnull=False,
+        )
+        .values_list("balance", "currency", "transaction_date")
+    )
 
     rates = get_rates("USD")
 
@@ -79,12 +86,14 @@ def get_monthly_expense_series(user, period: str = "3m") -> dict:
         if is_current:
             # Month-to-date extrapolation for the still-open month.
             projected = round(total * days_in_current / days_elapsed, 2)
-        months.append({
-            "label": f"{month_name[cursor.month][:3]} {cursor.strftime('%y')}",
-            "total": total,
-            "is_current": is_current,
-            "projected_total": projected,
-        })
+        months.append(
+            {
+                "label": f"{month_name[cursor.month][:3]} {cursor.strftime('%y')}",
+                "total": total,
+                "is_current": is_current,
+                "projected_total": projected,
+            }
+        )
         if cursor.month == 12:
             cursor = cursor.replace(year=cursor.year + 1, month=1)
         else:

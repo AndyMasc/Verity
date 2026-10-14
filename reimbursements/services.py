@@ -48,8 +48,7 @@ def create_stripe_account(email: str, user_id: int) -> stripe.Account:
     )
 
 
-def create_account_link(account_id: str, refresh_url: str,
-                        return_url: str) -> stripe.AccountLink:
+def create_account_link(account_id: str, refresh_url: str, return_url: str) -> stripe.AccountLink:
     _configure()
     return stripe.AccountLink.create(
         account=str(account_id),
@@ -84,12 +83,9 @@ def create_refund(
     )
 
 
-def retrieve_invoice(invoice_id: str,
-                     *,
-                     expand: list[str] | None = None) -> dict[str, Any]:
+def retrieve_invoice(invoice_id: str, *, expand: list[str] | None = None) -> dict[str, Any]:
     _configure()
-    return stripe.Invoice.retrieve(str(invoice_id), expand=expand
-                                   or []).to_dict()
+    return stripe.Invoice.retrieve(str(invoice_id), expand=expand or []).to_dict()
 
 
 def invoice_payment_intent(invoice_id: str) -> str:
@@ -137,9 +133,7 @@ def find_or_create_customer(*, email: str, stripe_account: str):
         return customers.data[0].id
     return stripe.Customer.create(
         email=email,
-        metadata={
-            "stripe_connect_account": stripe_account
-        },
+        metadata={"stripe_connect_account": stripe_account},
     ).id
 
 
@@ -160,25 +154,20 @@ def create_package_invoice(
 
     email = payer_email or (payer.email if payer else "")
     if not email:
-        return CheckoutOutcome(
-            error="A payer email is required to send an invoice.")
+        return CheckoutOutcome(error="A payer email is required to send an invoice.")
 
     try:
         with transaction.atomic():
             locked = package.lock_for_payment()
             if locked is None:
-                return CheckoutOutcome(
-                    error="This package is no longer available for payment.")
+                return CheckoutOutcome(error="This package is no longer available for payment.")
 
             if locked.payments.filter(is_completed=False).exists():
-                return CheckoutOutcome(
-                    error="An invoice is already outstanding for this package."
-                )
+                return CheckoutOutcome(error="An invoice is already outstanding for this package.")
 
             items = locked.build_line_items(currency)
             if not items.line_items:
-                return CheckoutOutcome(
-                    error="This package has no payable items.")
+                return CheckoutOutcome(error="This package has no payable items.")
 
             payment = PackagePayment.objects.create(
                 package=locked,
@@ -189,20 +178,19 @@ def create_package_invoice(
                 payer_currency=currency,
             )
     except ExchangeRateUnavailableError:
-        logger.error(
-            "Invoice blocked for package %s: exchange rates unavailable",
-            package.uuid)
+        logger.error("Invoice blocked for package %s: exchange rates unavailable", package.uuid)
         return CheckoutOutcome(
-            error=("Currency exchange rates are temporarily unavailable. "
-                   "No charge was made — please try again shortly."))
+            error=(
+                "Currency exchange rates are temporarily unavailable. "
+                "No charge was made — please try again shortly."
+            )
+        )
 
     destination = locked.payout_account_id
-    idempotency_key = hashlib.sha256(
-        f"invoice:{payment.pk}".encode()).hexdigest()
+    idempotency_key = hashlib.sha256(f"invoice:{payment.pk}".encode()).hexdigest()
 
     try:
-        customer_id = find_or_create_customer(email=email,
-                                              stripe_account=destination or "")
+        customer_id = find_or_create_customer(email=email, stripe_account=destination or "")
         # Draft first: auto_advance would finalise on the first line item and strand the rest.
         invoice = create_invoice(
             customer=customer_id,
@@ -212,20 +200,22 @@ def create_package_invoice(
             auto_advance=False,
             metadata={"package_uuid": str(package.uuid)},
             idempotency_key=idempotency_key,
-            **({
-                "application_fee_amount": package.platform_fee_cents(
-                    items.total_cents, currency, get_rates("USD")),
-                "transfer_data": {
-                    "destination": destination
-                },
-            } if destination else {}),
+            **(
+                {
+                    "application_fee_amount": package.platform_fee_cents(
+                        items.total_cents, currency, get_rates("USD")
+                    ),
+                    "transfer_data": {"destination": destination},
+                }
+                if destination
+                else {}
+            ),
         )
 
         for index, line in enumerate(items.line_items):
             price_data = line["price_data"]
             product_data = price_data.get("product_data", {})
-            description = product_data.get("description") or product_data.get(
-                "name", "Item")
+            description = product_data.get("description") or product_data.get("name", "Item")
             create_invoice_item(
                 invoice.id,
                 customer=customer_id,
@@ -233,7 +223,8 @@ def create_package_invoice(
                 currency=price_data["currency"].lower(),
                 description=description,
                 idempotency_key=hashlib.sha256(
-                    f"invoice-item:{payment.pk}:{index}".encode()).hexdigest(),
+                    f"invoice-item:{payment.pk}:{index}".encode()
+                ).hexdigest(),
             )
 
         # Persist the id as soon as Stripe has one, so a later failure still
@@ -249,17 +240,15 @@ def create_package_invoice(
 
         send_invoice(invoice.id, idempotency_key=f"{idempotency_key}:send")
     except stripe.error.StripeError:
-        logger.exception("Failed to raise Stripe invoice for package %s",
-                         package.uuid)
+        logger.exception("Failed to raise Stripe invoice for package %s", package.uuid)
         if not payment.stripe_invoice_id:
             # Nothing exists at Stripe yet, so the claim can be released.
             payment.delete()
         return CheckoutOutcome(
-            error=
-            "Unable to raise an invoice with Stripe. Please try again later.")
+            error="Unable to raise an invoice with Stripe. Please try again later."
+        )
 
-    return CheckoutOutcome(
-        redirect_url=services_hosted_url(payment.stripe_invoice_id))
+    return CheckoutOutcome(redirect_url=services_hosted_url(payment.stripe_invoice_id))
 
 
 def create_reimbursement_package(
@@ -270,14 +259,11 @@ def create_reimbursement_package(
     title: str,
     days_valid: int,
 ) -> tuple[ReimbursementPackage | None, str | None]:
-    recipient = get_user_model().objects.filter(
-        email__iexact=recipient_email).first()
+    recipient = get_user_model().objects.filter(email__iexact=recipient_email).first()
     if recipient == creator:
         return None, "You cannot send a reimbursement package to yourself."
 
-    records = Record.objects.filter(id__in=record_ids,
-                                    user=creator,
-                                    is_active=True)
+    records = Record.objects.filter(id__in=record_ids, user=creator, is_active=True)
     if not records.exists():
         return None, "No valid records found."
 
@@ -289,9 +275,13 @@ def create_reimbursement_package(
             title=title,
             records=records,
             days_valid=days_valid,
-            status=(ReimbursementPackage.Status.OPEN if recipient is not None
-                    else ReimbursementPackage.Status.QUEUED),
-        ))
+            status=(
+                ReimbursementPackage.Status.OPEN
+                if recipient is not None
+                else ReimbursementPackage.Status.QUEUED
+            ),
+        )
+    )
     if recipient is not None:
         grant_package_access(package)
     return package, None

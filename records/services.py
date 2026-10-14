@@ -15,7 +15,6 @@ from django.utils.dateparse import parse_date, parse_datetime
 from billing.models import CustomUser as User
 from core.apps import posthog_client
 from core.currencies import CURRENCY_CHOICES, DEFAULT_CURRENCY
-from teams.orgs import personal_org
 
 from .constants import RETENTION_YEARS
 from .matching import try_match_document_record
@@ -35,9 +34,7 @@ def archive_record(user: User, record: Record) -> None:
     with transaction.atomic():
         record.is_active = False
         record.save(update_fields=["is_active"])
-        AuditLog.objects.create(user=user,
-                                action=AuditLog.Action.ARCHIVE,
-                                record=record)
+        AuditLog.objects.create(user=user, action=AuditLog.Action.ARCHIVE, record=record)
 
 
 def unarchive_record(user: User, record: Record) -> None:
@@ -45,18 +42,14 @@ def unarchive_record(user: User, record: Record) -> None:
     with transaction.atomic():
         record.is_active = True
         record.save(update_fields=["is_active"])
-        AuditLog.objects.create(user=user,
-                                action=AuditLog.Action.UNARCHIVE,
-                                record=record)
+        AuditLog.objects.create(user=user, action=AuditLog.Action.UNARCHIVE, record=record)
 
 
 def soft_delete_record(user: User, record: Record) -> None:
     """Soft-delete record and log the action."""
     with transaction.atomic():
         record.delete()
-        AuditLog.objects.create(user=user,
-                                action=AuditLog.Action.SOFT_DELETE,
-                                record=record)
+        AuditLog.objects.create(user=user, action=AuditLog.Action.SOFT_DELETE, record=record)
 
 
 def hard_delete_record(user: User, record: Record) -> None:
@@ -99,12 +92,9 @@ def kickoff_ocr_scan(user: User, document) -> str | None:
         return None
 
     if not entitlements.can_scan(user):
-        message = ("Quick Scan limit reached. Upgrade to Verity Pro for "
-                   "unlimited Quick Scans, or enter the details manually.")
+        message = "Quick Scan limit reached. Upgrade to continue."
         cache.set(cache_key, {"error": message}, timeout=600)
-        set_document_status(document.id,
-                            DocumentStatus.ERROR,
-                            ocr_error="scan_limit_reached")
+        set_document_status(document.id, DocumentStatus.ERROR, ocr_error="scan_limit_reached")
         return message
 
     if document.did_ocr:
@@ -123,8 +113,7 @@ def _resolve_suggested_folder_id(document, initial: dict) -> int | None:
     suggested = initial.pop("suggested_folder", None)
     if not suggested:
         return None
-    folder = Folder.objects.filter(user=document.user,
-                                   name__iexact=suggested).first()
+    folder = Folder.objects.filter(user=document.user, name__iexact=suggested).first()
     return folder.pk if folder else None
 
 
@@ -162,8 +151,7 @@ def create_record_from_ocr(document_id: int) -> Record | None:
     from documents.ocr_helpers import ocr_data_to_form_initial
 
     with cachalot_disabled():
-        document = DocumentData.objects.select_related("user").filter(
-            id=document_id).first()
+        document = DocumentData.objects.select_related("user").filter(id=document_id).first()
     if document is None:
         return None
     if document.associated_record_id:
@@ -182,8 +170,7 @@ def create_record_from_ocr(document_id: int) -> Record | None:
 
     currency = initial.get("currency")
     if currency not in {code for code, _ in CURRENCY_CHOICES}:
-        currency = getattr(document.user.settings, "default_currency",
-                           DEFAULT_CURRENCY)
+        currency = getattr(document.user.settings, "default_currency", DEFAULT_CURRENCY)
 
     title = (initial.get("title") or "").strip()
     if not title:
@@ -196,7 +183,6 @@ def create_record_from_ocr(document_id: int) -> Record | None:
 
         record = Record.objects.create(
             user=document.user,
-            organization=personal_org(document.user),
             title=title,
             products=initial.get("products") or "",
             merchant=initial.get("merchant") or "",
@@ -225,10 +211,7 @@ def create_record_from_ocr(document_id: int) -> Record | None:
         )
     posthog_log_logger.info(
         "Record creation completed",
-        extra={
-            "event": "record_created",
-            **properties
-        },
+        extra={"event": "record_created", **properties},
     )
 
     return merged if merged is not None else record
@@ -259,18 +242,17 @@ def bulk_toggle_archive(
                 id__in=record_ids,
                 user=user,
                 is_active=archive,
-            ))
+            )
+        )
         if not records:
             return 0
 
         # Scope the update to this user's records, not the raw requested ids.
-        Record.objects.filter(id__in=[r.id for r in records]).update(
-            is_active=not archive)
+        Record.objects.filter(id__in=[r.id for r in records]).update(is_active=not archive)
 
-        AuditLog.objects.bulk_create([
-            AuditLog(user=user, action=action, record=record)
-            for record in records
-        ])
+        AuditLog.objects.bulk_create(
+            [AuditLog(user=user, action=action, record=record) for record in records]
+        )
 
     return len(records)
 
@@ -290,14 +272,14 @@ def bulk_hard_delete_record(
             f"Bulk operations are limited to {BULK_LIMIT} records. Received {len(record_ids)}."
         )
 
-    cutoff = timezone.now().date() - datetime.timedelta(days=365 *
-                                                        RETENTION_YEARS)
+    cutoff = timezone.now().date() - datetime.timedelta(days=365 * RETENTION_YEARS)
     records = list(
         Record.objects.filter(
             id__in=record_ids,
             user=user,
             date_added__lte=cutoff,
-        ))
+        )
+    )
     if not records:
         return 0
 

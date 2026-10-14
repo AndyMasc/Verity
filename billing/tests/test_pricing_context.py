@@ -11,13 +11,14 @@ class CheckoutPriceIdTests(TestCase):
 
     def setUp(self):
         self.product = Product.objects.create(
-            id=metadata.VERITY_PRO.stripe_id,
+            id=metadata.PLUS.stripe_id,
             livemode=False,
             active=True,
-            name="Verity Pro",
+            name="Plus",
         )
         self.user = get_user_model().objects.create_user(
-            username="card", email="card@example.com", password="password")
+            username="card", email="card@example.com", password="password"
+        )
 
     def _price(self, price_id, *, active=True, interval="month"):
         price = Price.objects.create(
@@ -27,19 +28,17 @@ class CheckoutPriceIdTests(TestCase):
             product=self.product,
             currency="usd",
         )
-        price.stripe_data = {
-            "recurring": {
-                "interval": interval
-            } if interval else None
-        }
+        price.stripe_data = {"recurring": {"interval": interval} if interval else None}
         price.save(update_fields=["stripe_data"])
         return price
 
     def _card_price_id(self):
         context = services.pricing_context(self.user)
-        return next(p.checkout_price_id for p in context["products"]
-                    if (p.stripe_id if hasattr(p, "stripe_id") else p.id
-                        ) == self.product.id)
+        return next(
+            p.checkout_price_id
+            for p in context["products"]
+            if (p.stripe_id if hasattr(p, "stripe_id") else p.id) == self.product.id
+        )
 
     def test_picks_newest_active_monthly_price(self):
         self._price("price_old")
@@ -59,16 +58,16 @@ class PricingContextTests(TestCase):
 
     def test_base_plan_card_gets_active_monthly_price(self):
         Product.objects.create(
-            id=metadata.VERITY_PRO.stripe_id,
+            id=metadata.PLUS.stripe_id,
             livemode=False,
             active=True,
-            name="Verity Pro",
+            name="Plus",
         )
         keep = Price.objects.create(
             id="price_keep",
             livemode=False,
             active=True,
-            product=Product.objects.get(id=metadata.VERITY_PRO.stripe_id),
+            product=Product.objects.get(id=metadata.PLUS.stripe_id),
             currency="usd",
         )
         keep.stripe_data = {"recurring": {"interval": "month"}}
@@ -78,7 +77,7 @@ class PricingContextTests(TestCase):
             id="price_archived",
             livemode=False,
             active=False,
-            product=Product.objects.get(id=metadata.VERITY_PRO.stripe_id),
+            product=Product.objects.get(id=metadata.PLUS.stripe_id),
             currency="usd",
         )
         archived.stripe_data = {"recurring": {"interval": "month"}}
@@ -86,9 +85,11 @@ class PricingContextTests(TestCase):
 
         context = services.pricing_context(self._user())
         # dj-stripe Product rows expose .id; the free card is a ProductMetadata.
-        pro_card = next(p for p in context["products"]
-                        if (p.stripe_id if hasattr(p, "stripe_id") else p.id
-                            ) == metadata.VERITY_PRO.stripe_id)
+        pro_card = next(
+            p
+            for p in context["products"]
+            if (p.stripe_id if hasattr(p, "stripe_id") else p.id) == metadata.PLUS.stripe_id
+        )
         self.assertEqual(pro_card.checkout_price_id, "price_keep")
 
     def test_catalog_is_scoped_to_the_configured_stripe_mode(self):
@@ -122,10 +123,7 @@ class PricingContextTests(TestCase):
 
         def ids(context):
             # dj-stripe Product rows expose .id; the free card is a ProductMetadata.
-            return [
-                p.stripe_id if hasattr(p, "stripe_id") else p.id
-                for p in context["products"]
-            ]
+            return [p.stripe_id if hasattr(p, "stripe_id") else p.id for p in context["products"]]
 
         self.assertIn("prod_test_mode", ids(test_mode))
         self.assertNotIn("prod_live_mode", ids(test_mode))
@@ -150,9 +148,9 @@ class AlreadyActiveTests(TestCase):
             email="owner@example.com",
             password="password",
         )
-        self.customer = Customer.objects.create(id="cus_owner",
-                                                livemode=False,
-                                                created=timezone.now())
+        self.customer = Customer.objects.create(
+            id="cus_owner", livemode=False, created=timezone.now()
+        )
         self.user.customer = self.customer
         self.user.save(update_fields=["customer"])
 
@@ -163,19 +161,13 @@ class AlreadyActiveTests(TestCase):
             defaults={
                 "active": True,
                 "name": meta.name or meta.stripe_id,
-                "metadata": {
-                    "category": category
-                },
+                "metadata": {"category": category},
             },
         )
         price, _ = Price.objects.get_or_create(
             id="price_" + meta.stripe_id.replace("prod_", ""),
             livemode=False,
-            defaults={
-                "active": True,
-                "product": product,
-                "currency": "usd"
-            },
+            defaults={"active": True, "product": product, "currency": "usd"},
         )
         price.stripe_data = {"recurring": {"interval": "month"}}
         price.save(update_fields=["stripe_data"])
@@ -183,8 +175,7 @@ class AlreadyActiveTests(TestCase):
 
     def _subscribe(self, meta):
         self._product(meta)
-        price = Price.objects.get(id="price_" +
-                                  meta.stripe_id.replace("prod_", ""))
+        price = Price.objects.get(id="price_" + meta.stripe_id.replace("prod_", ""))
         subscription = Subscription.objects.create(
             id=f"sub_{meta.stripe_id}",
             livemode=False,
@@ -201,12 +192,13 @@ class AlreadyActiveTests(TestCase):
         )
 
     def _card(self, context, meta):
-        return next(p for p in context["products"]
-                    if (p.stripe_id if hasattr(p, "stripe_id") else p.id
-                        ) == meta.stripe_id)
+        return next(
+            p
+            for p in context["products"]
+            if (p.stripe_id if hasattr(p, "stripe_id") else p.id) == meta.stripe_id
+        )
 
     def test_free_user_has_no_active_plan(self):
-        self._product(metadata.VERITY_PRO)
+        self._product(metadata.PLUS)
         context = services.pricing_context(self.user)
-        self.assertFalse(
-            self._card(context, metadata.VERITY_PRO).already_active)
+        self.assertFalse(self._card(context, metadata.PLUS).already_active)

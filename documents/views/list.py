@@ -35,16 +35,17 @@ class DocumentListView(LoginRequiredMixin, CachedPaginatorMixin, FilterView):
     filterset_class = DocumentFilter
     paginate_by = settings.PAGINATE_BY
 
-    @method_decorator(
-        ratelimit(key="user", rate="120/m", method="GET", block=True))
+    @method_decorator(ratelimit(key="user", rate="120/m", method="GET", block=True))
     def dispatch(self, *args: Any, **kwargs: Any) -> HttpResponse:
         return super().dispatch(*args, **kwargs)
 
     def get_queryset(self):
-        qs = (DocumentData.objects.for_user(
-            self.request.user).with_record().only(
-                *LIST_FIELDS,
-                "associated_record__title").order_by("-date_added"))
+        qs = (
+            DocumentData.objects.for_user(self.request.user)
+            .with_record()
+            .only(*LIST_FIELDS, "associated_record__title")
+            .order_by("-date_added")
+        )
         search_query = self.request.GET.get("search", "").strip()
         if search_query:
             return qs.search(search_query)

@@ -36,63 +36,55 @@ try:
 
     from records.models import Record
 
-    client = (posthog_genai.Client(
-        api_key=settings.GEMINI_API_KEY,
-        posthog_client=core_apps.posthog_client,
-        posthog_privacy_mode=False,
-    ) if core_apps.posthog_client is not None else genai.Client(
-        api_key=settings.GEMINI_API_KEY))
+    client = (
+        posthog_genai.Client(
+            api_key=settings.GEMINI_API_KEY,
+            posthog_client=core_apps.posthog_client,
+            posthog_privacy_mode=False,
+        )
+        if core_apps.posthog_client is not None
+        else genai.Client(api_key=settings.GEMINI_API_KEY)
+    )
 
     class OCRResult(BaseModel):
         title: str = Field(
-            description=
-            "2-5 word title: 'Merchant + Item'. Shorten product names; preserve identity. Default to shortest identifier for warranties/loans. No invoice numbers/dates. If no clear title exists, use a generic description like 'Financial Document', 'Receipt', or 'Untitled'. Absolute Max length 255 chars."
+            description="2-5 word title: 'Merchant + Item'. Shorten product names; preserve identity. Default to shortest identifier for warranties/loans. No invoice numbers/dates. If no clear title exists, use a generic description like 'Financial Document', 'Receipt', or 'Untitled'. Absolute Max length 255 chars."
         )
         merchant: str | None = Field(
             default=None,
-            description=
-            "The business name. Infer from logos if clear. Default to null if ambiguous. Absolute max length 255 chars.",
+            description="The business name. Infer from logos if clear. Default to null if ambiguous. Absolute max length 255 chars.",
         )
         balance: float | None = Field(
             default=None,
-            description=
-            "Total monetary sum as a raw number. No symbols, commas or currency symbols.",
+            description="Total monetary sum as a raw number. No symbols, commas or currency symbols.",
         )
         currency: str | None = Field(
             default=None,
-            description=
-            "ISO 4217 lowercase currency code (e.g. usd, eur, gbp). Infer from currency symbols on the document. Default to null if unclear.",
+            description="ISO 4217 lowercase currency code (e.g. usd, eur, gbp). Infer from currency symbols on the document. Default to null if unclear.",
         )
         products: list[str] = Field(
             default_factory=list,
-            description=
-            "List of items. Standardize typos, expand abbreviations, use Title Case. If no products are listed, use an empty list.",
+            description="List of items. Standardize typos, expand abbreviations, use Title Case. If no products are listed, use an empty list.",
         )
-        transaction_date: str | None = Field(
-            default=None, description="Date in YYYY-MM-DD format.")
-        expiry_date: str | None = Field(
-            default=None, description="Date in YYYY-MM-DD format.")
+        transaction_date: str | None = Field(default=None, description="Date in YYYY-MM-DD format.")
+        expiry_date: str | None = Field(default=None, description="Date in YYYY-MM-DD format.")
         record_type: Record.RecordTypes = Field(
-            description=
-            "Strictly classify the document type. If no clear type can be found, default to EXPENSE_RECEIPT"
+            description="Strictly classify the document type. If no clear type can be found, default to EXPENSE_RECEIPT"
         )
         suggested_folder: str | None = Field(
             default=None,
-            description=
-            "Choose from the user's available folders provided in the prompt. If the document clearly belongs in one, return that folder name exactly. If none fit, return null.",
+            description="Choose from the user's available folders provided in the prompt. If the document clearly belongs in one, return that folder name exactly. If none fit, return null.",
         )
 
     CONFIG = types.GenerateContentConfig(
         response_mime_type="application/json",
         response_schema=OCRResult,
-        system_instruction=
-        "Extract data exactly as it appears from the image. Never hallucinate or invent information. No preamble.",
+        system_instruction="Extract data exactly as it appears from the image. Never hallucinate or invent information. No preamble.",
         temperature=0.0,
         max_output_tokens=700,
         # Structured extraction with temperature 0 needs no reasoning budget;
         # minimal thinking cuts time-to-first-token and total latency.
-        thinking_config=types.ThinkingConfig(
-            thinking_level=types.ThinkingLevel.MINIMAL),
+        thinking_config=types.ThinkingConfig(thinking_level=types.ThinkingLevel.MINIMAL),
     )
 except ImportError:
     client = None
@@ -131,8 +123,7 @@ def fetch_from_r2(filepath: str) -> bytes:
     body = response["Body"]
     if hasattr(body, "read"):
         return body.read()
-    return b"".join(chunk
-                    for chunk in body.iter_chunks(chunk_size=1024 * 1024))
+    return b"".join(chunk for chunk in body.iter_chunks(chunk_size=1024 * 1024))
 
 
 def process_image(image_bytes: bytes, filepath: str) -> list[types.Part]:
@@ -146,13 +137,9 @@ def process_image(image_bytes: bytes, filepath: str) -> list[types.Part]:
         page_images = render_pdf_pages(image_bytes)
         if page_images:
             return [
-                types.Part.from_bytes(data=page, mime_type="image/jpeg")
-                for page in page_images
+                types.Part.from_bytes(data=page, mime_type="image/jpeg") for page in page_images
             ]
-        return [
-            types.Part.from_bytes(data=image_bytes,
-                                  mime_type="application/pdf")
-        ]
+        return [types.Part.from_bytes(data=image_bytes, mime_type="application/pdf")]
 
     image_bytes = prepare_image_for_gemini(image_bytes)
     return [types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg")]
@@ -176,13 +163,15 @@ def call_gemini(
     contents.append(folder_context)
     contents.extend(image_parts)
 
-    posthog_arguments = ({
-        "posthog_distinct_id": str(user_id),
-        "posthog_trace_id": str(uuid.uuid4()),
-        "posthog_properties": {
-            "$ai_session_id": f"document-{document_id}"
-        },
-    } if isinstance(client, posthog_genai.Client) else {})
+    posthog_arguments = (
+        {
+            "posthog_distinct_id": str(user_id),
+            "posthog_trace_id": str(uuid.uuid4()),
+            "posthog_properties": {"$ai_session_id": f"document-{document_id}"},
+        }
+        if isinstance(client, posthog_genai.Client)
+        else {}
+    )
     result = client.models.generate_content(
         model="gemini-3.5-flash-lite",
         contents=contents,
@@ -194,8 +183,7 @@ def call_gemini(
         return result.parsed.model_dump(mode="json")
 
     raw_text = result.text.strip()
-    clean_json = re.sub(r"^```json\s*|```$", "", raw_text,
-                        flags=re.MULTILINE).strip()
+    clean_json = re.sub(r"^```json\s*|```$", "", raw_text, flags=re.MULTILINE).strip()
     return OCRResult.model_validate_json(clean_json).model_dump(mode="json")
 
 
@@ -208,11 +196,9 @@ def extract(document_id: int) -> dict[str, Any]:
     """
     cache_key = get_cache_key(document_id)
 
-    doc_lookup = DocumentData.objects.filter(id=document_id).values(
-        "status", "did_ocr").first()
+    doc_lookup = DocumentData.objects.filter(id=document_id).values("status", "did_ocr").first()
     if not doc_lookup:
-        logger.warning("Document %s does not exist; skipping OCR.",
-                       document_id)
+        logger.warning("Document %s does not exist; skipping OCR.", document_id)
         return {"error": "Document not found."}
 
     if doc_lookup["did_ocr"]:
@@ -229,11 +215,13 @@ def extract(document_id: int) -> dict[str, Any]:
     try:
         set_document_status(document_id, DocumentStatus.PROCESSING)
 
-        document = (DocumentData.objects.select_related(
-            "user").prefetch_related("user__folders").get(id=document_id))
+        document = (
+            DocumentData.objects.select_related("user")
+            .prefetch_related("user__folders")
+            .get(id=document_id)
+        )
 
-        folder_names = list(
-            document.user.folders.values_list("name", flat=True))
+        folder_names = list(document.user.folders.values_list("name", flat=True))
 
         image_content = fetch_from_r2(document.filepath)
 
@@ -243,12 +231,8 @@ def extract(document_id: int) -> dict[str, Any]:
                 document_id,
                 validation_error,
             )
-            error_payload = {
-                "error": "Failed to automatically extract document details."
-            }
-            cache.set(get_cache_key(document_id),
-                      error_payload,
-                      timeout=OCR_CACHE_TTL)
+            error_payload = {"error": "Failed to automatically extract document details."}
+            cache.set(get_cache_key(document_id), error_payload, timeout=OCR_CACHE_TTL)
             set_document_status(
                 document_id,
                 DocumentStatus.ERROR,
@@ -284,12 +268,8 @@ def extract(document_id: int) -> dict[str, Any]:
 
     except Exception as exc:
         if _is_final_attempt():
-            error_payload = {
-                "error": "Failed to automatically extract document details."
-            }
-            cache.set(get_cache_key(document_id),
-                      error_payload,
-                      timeout=OCR_CACHE_TTL)
+            error_payload = {"error": "Failed to automatically extract document details."}
+            cache.set(get_cache_key(document_id), error_payload, timeout=OCR_CACHE_TTL)
             set_document_status(
                 document_id,
                 DocumentStatus.ERROR,

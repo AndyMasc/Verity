@@ -6,9 +6,9 @@ from .models import CustomUser, MonthlyUploadUsage
 @admin.register(MonthlyUploadUsage)
 class MonthlyUploadUsageAdmin(admin.ModelAdmin):
     list_display = ("user", "period", "count")
-    list_filter = ("period", )
+    list_filter = ("period",)
     search_fields = ("user__email", "user__username")
-    readonly_fields = ("count", )
+    readonly_fields = ("count",)
 
 
 @admin.register(CustomUser)

@@ -65,8 +65,7 @@ class AddRecordView(LoginRequiredMixin, CreateView):
         document = self.document
         if document:
             if document.associated_record:
-                return redirect("records:record_detail",
-                                pk=document.associated_record.pk)
+                return redirect("records:record_detail", pk=document.associated_record.pk)
 
             if document.status == DocumentStatus.COMPLETED:
                 record = services.create_record_from_ocr(document.id)
@@ -96,13 +95,15 @@ class AddRecordView(LoginRequiredMixin, CreateView):
             else:
                 error_message = "Extraction produced no data. Please enter details manually."
 
-        context.update({
-            "form": form,
-            "document": document,
-            "document_id": self.kwargs.get("document_id"),
-            "is_waiting": is_waiting,
-            "error_message": error_message,
-        })
+        context.update(
+            {
+                "form": form,
+                "document": document,
+                "document_id": self.kwargs.get("document_id"),
+                "is_waiting": is_waiting,
+                "error_message": error_message,
+            }
+        )
         return context
 
     @transaction.atomic
@@ -110,8 +111,7 @@ class AddRecordView(LoginRequiredMixin, CreateView):
         document = self.document
 
         if document and document.associated_record:
-            return redirect("records:record_detail",
-                            pk=document.associated_record.pk)
+            return redirect("records:record_detail", pk=document.associated_record.pk)
 
         self.object = form.save(commit=False)
         self.object.user = self.request.user
@@ -122,8 +122,7 @@ class AddRecordView(LoginRequiredMixin, CreateView):
             document.associated_record = self.object
             document.save(update_fields=["associated_record"])
 
-        merged = try_match_document_record(self.object,
-                                           document) if document else None
+        merged = try_match_document_record(self.object, document) if document else None
         creation_source = "uploaded_document" if document else "manual"
         if posthog_client is not None:
             posthog_client.capture(
@@ -140,9 +139,7 @@ class AddRecordView(LoginRequiredMixin, CreateView):
             },
         )
         if merged:
-            messages.success(
-                self.request,
-                "Receipt matched with bank transaction and merged.")
+            messages.success(self.request, "Receipt matched with bank transaction and merged.")
             return redirect("records:record_detail", pk=merged.pk)
 
         return redirect("records:record_detail", pk=self.object.pk)
@@ -156,8 +153,7 @@ class CheckOCRStatus(LoginRequiredMixin, View):
 
     def get(self, request: HttpRequest, document_id: int) -> HttpResponse:
         with cachalot_disabled():
-            document = DocumentData.objects.filter(id=document_id,
-                                                   user=request.user).first()
+            document = DocumentData.objects.filter(id=document_id, user=request.user).first()
             if not document:
                 raise Http404("Document not found.")
 
@@ -165,8 +161,9 @@ class CheckOCRStatus(LoginRequiredMixin, View):
                 record = services.create_record_from_ocr(document.id)
                 if record:
                     response = HttpResponse(status=200)
-                    response["HX-Redirect"] = reverse("records:record_detail",
-                                                      kwargs={"pk": record.pk})
+                    response["HX-Redirect"] = reverse(
+                        "records:record_detail", kwargs={"pk": record.pk}
+                    )
                     return response
                 return render(
                     request,
@@ -189,8 +186,5 @@ class CheckOCRStatus(LoginRequiredMixin, View):
         return render(
             request,
             "records/partials/form_card.html",
-            {
-                "is_waiting": True,
-                "document_id": document_id
-            },
+            {"is_waiting": True, "document_id": document_id},
         )

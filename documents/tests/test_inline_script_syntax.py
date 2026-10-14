@@ -9,17 +9,12 @@ from django.test import TestCase
 
 
 class InlineScriptSyntaxTests(TestCase):
-    TEMPLATES = [
-        "documents/upload_base.html", "billing/partials/pricing_cards.html"
-    ]
+    TEMPLATES = ["documents/upload_base.html", "billing/partials/pricing_cards.html"]
 
     def _parse_errors(self, js):
-        with tempfile.NamedTemporaryFile("w", suffix=".js",
-                                         delete=False) as handle:
+        with tempfile.NamedTemporaryFile("w", suffix=".js", delete=False) as handle:
             handle.write(js)
-        result = subprocess.run(["node", "--check", handle.name],
-                                capture_output=True,
-                                text=True)
+        result = subprocess.run(["node", "--check", handle.name], capture_output=True, text=True)
         return result.returncode, result.stderr
 
     def test_inline_scripts_parse(self):
@@ -30,16 +25,12 @@ class InlineScriptSyntaxTests(TestCase):
         for name in self.TEMPLATES:
             html = get_template(name).render()
             blocks = [
-                b
-                for b in re.findall(r"<script[^>]*>(.*?)</script>", html, re.S)
-                if b.strip()
+                b for b in re.findall(r"<script[^>]*>(.*?)</script>", html, re.S) if b.strip()
             ]
             for index, block in enumerate(blocks):
                 js = re.sub(r"\{\{.*?\}\}|\{%.*?%\}", "", block, flags=re.S)
                 code, stderr = self._parse_errors(js)
-                self.assertEqual(
-                    code, 0,
-                    f"{name} script {index} does not parse:\n{stderr}")
+                self.assertEqual(code, 0, f"{name} script {index} does not parse:\n{stderr}")
                 checked += 1
 
         self.assertGreaterEqual(checked, 5)
@@ -49,13 +40,13 @@ class InlineScriptSyntaxTests(TestCase):
             self.skipTest("node not installed")
 
         code, _ = self._parse_errors(
-            "posthog.capture_exception(error, { event: 'x', props: { a: 1 });")
+            "posthog.capture_exception(error, { event: 'x', props: { a: 1 });"
+        )
         self.assertNotEqual(code, 0)
 
     def test_parser_accepts_valid_js(self):
         if shutil.which("node") is None:
             self.skipTest("node not installed")
 
-        code, _ = self._parse_errors(
-            "posthog.capture_exception(error, { event: 'x' });")
+        code, _ = self._parse_errors("posthog.capture_exception(error, { event: 'x' });")
         self.assertEqual(code, 0)

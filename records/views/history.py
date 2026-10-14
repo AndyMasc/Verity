@@ -10,15 +10,17 @@ from ..models import MergeLog, Record, RecordShare
 from ..types import HistoryEntry
 from .records import snapshot_with_currency
 
-_HISTORY_EXCLUDE = frozenset({
-    "id",
-    "user",
-    "last_edited",
-    "is_active",
-    "expiry_notification_sent",
-    "plaid_transaction_id",
-    "plaid_item",
-})
+_HISTORY_EXCLUDE = frozenset(
+    {
+        "id",
+        "user",
+        "last_edited",
+        "is_active",
+        "expiry_notification_sent",
+        "plaid_transaction_id",
+        "plaid_item",
+    }
+)
 
 _HISTORY_MAX_ENTRIES_PER_SOURCE = 200
 
@@ -35,31 +37,39 @@ class RecordHistoryView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         from django.db.models import Q
 
-        self._record = get_object_or_404(Record.objects.visible_to(
-            self.request.user),
-                                         pk=self.kwargs["pk"])
+        self._record = get_object_or_404(
+            Record.objects.visible_to(self.request.user), pk=self.kwargs["pk"]
+        )
 
         if self._record.user_id == self.request.user.pk:
             can_see_documents = True
         else:
-            share = RecordShare.active_for(
-                self.request.user).filter(record=self._record).first()
+            share = RecordShare.active_for(self.request.user).filter(record=self._record).first()
             can_see_documents = share is not None and share.include_documents
 
         record_entries = list(
-            self._record.history.select_related("history_user")
-            [:_HISTORY_MAX_ENTRIES_PER_SOURCE])
+            self._record.history.select_related("history_user")[:_HISTORY_MAX_ENTRIES_PER_SOURCE]
+        )
         for h in record_entries:
             h.source_type = "record"
 
         if can_see_documents:
             doc_ids = set(self._record.documents.values_list("pk", flat=True))
-            doc_ids.update(v["pk"] for v in DocumentData.history.filter(
-                associated_record=self._record).values("pk").distinct())
-            doc_entries = (list(
-                DocumentData.history.filter(
-                    pk__in=doc_ids).select_related("history_user")
-                [:_HISTORY_MAX_ENTRIES_PER_SOURCE]) if doc_ids else [])
+            doc_ids.update(
+                v["pk"]
+                for v in DocumentData.history.filter(associated_record=self._record)
+                .values("pk")
+                .distinct()
+            )
+            doc_entries = (
+                list(
+                    DocumentData.history.filter(pk__in=doc_ids).select_related("history_user")[
+                        :_HISTORY_MAX_ENTRIES_PER_SOURCE
+                    ]
+                )
+                if doc_ids
+                else []
+            )
             for h in doc_entries:
                 h.source_type = "document"
         else:
@@ -72,9 +82,11 @@ class RecordHistoryView(LoginRequiredMixin, ListView):
         )[:_HISTORY_MAX_ENTRIES_PER_SOURCE]
         for merge in merges:
             merge.plaid_snapshot = snapshot_with_currency(
-                merge.plaid_snapshot, self._record.currency)
+                merge.plaid_snapshot, self._record.currency
+            )
             merge.document_snapshot = snapshot_with_currency(
-                merge.document_snapshot, self._record.currency)
+                merge.document_snapshot, self._record.currency
+            )
             merged.append(
                 HistoryEntry(
                     source_type="merge",
@@ -82,7 +94,8 @@ class RecordHistoryView(LoginRequiredMixin, ListView):
                     history_date=merge.created_at,
                     history_user=None,
                     merge=merge,
-                ))
+                )
+            )
             if merge.undone_at:
                 merged.append(
                     HistoryEntry(
@@ -91,7 +104,8 @@ class RecordHistoryView(LoginRequiredMixin, ListView):
                         history_date=merge.undone_at,
                         history_user=None,
                         merge=merge,
-                    ))
+                    )
+                )
 
         merged.sort(key=lambda x: x.history_date, reverse=True)
         return merged
@@ -101,11 +115,18 @@ class RecordHistoryView(LoginRequiredMixin, ListView):
         record = self._record
         context["record"] = record
         context["tracked_fields"] = tuple(
-            f.name for f in Record._meta.get_fields()
-            if f.name not in _HISTORY_EXCLUDE and f.name != "folder"
-            and not f.auto_created and not getattr(f, "is_relation", False))
+            f.name
+            for f in Record._meta.get_fields()
+            if f.name not in _HISTORY_EXCLUDE
+            and f.name != "folder"
+            and not f.auto_created
+            and not getattr(f, "is_relation", False)
+        )
         context["doc_tracked_fields"] = tuple(
-            f.name for f in DocumentData._meta.get_fields() if f.name not in (
+            f.name
+            for f in DocumentData._meta.get_fields()
+            if f.name
+            not in (
                 "id",
                 "user",
                 "filepath",
@@ -117,5 +138,8 @@ class RecordHistoryView(LoginRequiredMixin, ListView):
                 "status",
                 "created_at",
                 "updated_at",
-            ) and not f.auto_created and not getattr(f, "is_relation", False))
+            )
+            and not f.auto_created
+            and not getattr(f, "is_relation", False)
+        )
         return context

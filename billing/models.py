@@ -32,18 +32,40 @@ class MonthlyUploadUsage(models.Model):
         on_delete=models.CASCADE,
         related_name="monthly_usage",
     )
-    period = models.CharField(max_length=7,
-                              help_text="Calendar month, e.g. 2026-08")
+    period = models.CharField(max_length=7, help_text="Calendar month, e.g. 2026-08")
     action = models.CharField(
-        max_length=16,
-        help_text="The type of action being tracked. E.g. 'scan' or 'upload'.")
+        max_length=16, help_text="The type of action being tracked. E.g. 'scan' or 'upload'."
+    )
     count = models.PositiveIntegerField(default=0)
 
     class Meta:
         constraints: ClassVar[list[models.UniqueConstraint]] = [
-            models.UniqueConstraint(fields=["user", "period", "action"],
-                                    name="unique_monthly_usage")
+            models.UniqueConstraint(
+                fields=["user", "period", "action"], name="unique_monthly_usage"
+            )
         ]
 
     def __str__(self):
         return f"{self.user_id} {self.period} {self.action}: {self.count}"
+
+
+class OrgBilling(models.Model):
+    """Organisation -> Stripe customer. A OneToOne because django-organizations
+    owns the Organisation model, so its columns cannot be extended."""
+
+    organization = models.OneToOneField(
+        "organizations.Organization",
+        on_delete=models.CASCADE,
+        related_name="billing",
+    )
+    customer = models.ForeignKey(
+        "djstripe.Customer",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="org_billing",
+        to_field="id",
+    )
+
+    def __str__(self) -> str:
+        return f"OrgBilling<{self.organization_id}>"

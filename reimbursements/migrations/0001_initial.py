@@ -29,10 +29,9 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "uuid",
-                    models.UUIDField(db_index=True,
-                                     default=uuid.uuid4,
-                                     editable=False,
-                                     unique=True),
+                    models.UUIDField(
+                        db_index=True, default=uuid.uuid4, editable=False, unique=True
+                    ),
                 ),
                 ("title", models.CharField(max_length=255)),
                 ("description", models.TextField(blank=True, default="")),
@@ -60,8 +59,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "records",
-                    models.ManyToManyField(related_name="packages",
-                                           to="records.record"),
+                    models.ManyToManyField(related_name="packages", to="records.record"),
                 ),
             ],
             options={
@@ -84,10 +82,8 @@ class Migration(migrations.Migration):
                     "stripe_checkout_session_id",
                     models.CharField(max_length=255, unique=True),
                 ),
-                ("amount_paid",
-                 models.DecimalField(decimal_places=2, max_digits=12)),
-                ("is_completed",
-                 models.BooleanField(db_index=True, default=False)),
+                ("amount_paid", models.DecimalField(decimal_places=2, max_digits=12)),
+                ("is_completed", models.BooleanField(db_index=True, default=False)),
                 ("created_at", models.DateTimeField(auto_now_add=True)),
                 (
                     "payer",

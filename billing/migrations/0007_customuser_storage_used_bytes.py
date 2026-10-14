@@ -8,12 +8,13 @@ def backfill_storage_used_bytes(apps, schema_editor):
     CustomUser = apps.get_model("billing", "CustomUser")
     DocumentData = apps.get_model("documents", "DocumentData")
 
-    totals = (DocumentData.objects.filter(
-        is_active=True).values("user_id").annotate(
-            total=models.Sum("file_size")))
+    totals = (
+        DocumentData.objects.filter(is_active=True)
+        .values("user_id")
+        .annotate(total=models.Sum("file_size"))
+    )
     for row in totals:
-        CustomUser.objects.filter(pk=row["user_id"]).update(
-            storage_used_bytes=row["total"] or 0)
+        CustomUser.objects.filter(pk=row["user_id"]).update(storage_used_bytes=row["total"] or 0)
 
 
 def noop(apps, schema_editor):
@@ -32,8 +33,7 @@ class Migration(migrations.Migration):
             name="storage_used_bytes",
             field=models.BigIntegerField(
                 default=0,
-                help_text=
-                "Denormalized count of stored document bytes (active documents only), kept in sync by the documents storage signals so quota checks are O(1).",
+                help_text="Denormalized count of stored document bytes (active documents only), kept in sync by the documents storage signals so quota checks are O(1).",
             ),
         ),
         migrations.RunPython(backfill_storage_used_bytes, noop),

@@ -5,8 +5,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("core",
-         "0004_usersettings_expiring_notifications_advance_time_and_more"),
+        ("core", "0004_usersettings_expiring_notifications_advance_time_and_more"),
     ]
 
     operations = [

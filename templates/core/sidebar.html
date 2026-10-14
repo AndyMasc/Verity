@@ -295,12 +295,12 @@
                             <div x-data="{ open: $persist(true).as('manage_card_open') }"
                                  :class="open ? 'p-3' : 'p-2'"
                                  class="group relative overflow-hidden rounded-lg border border-zinc-200/80 bg-zinc-100 shadow-xs shadow-zinc-950/[0.02] backdrop-blur-xl transition-all duration-300 hover:border-zinc-300 dark:border-zinc-800/80 dark:bg-zinc-900 dark:shadow-black/40 dark:hover:border-zinc-700/80">
-                                <div class="pointer-events-none absolute -top-20 -right-20 h-36 w-36 rounded-full bg-[#5A67FF]/10 opacity-60 blur-2xl transition-opacity duration-500 group-hover:opacity-100 dark:bg-[#5A67FF]/15">
+                                <div class="pointer-events-none absolute -top-20 -right-20 h-36 w-36 rounded-full bg-[#533AFD]/10 opacity-60 blur-2xl transition-opacity duration-500 group-hover:opacity-100 dark:bg-[#533AFD]/15">
                                 </div>
                                 <div @click="open = !open"
                                      class="relative z-10 flex cursor-pointer items-center justify-between select-none">
                                     <div class="flex items-center gap-2">
-                                        <div class="flex items-center justify-center rounded-lg bg-[#5A67FF]/10 p-1 text-[#5A67FF] dark:bg-[#5A67FF]/20">
+                                        <div class="flex items-center justify-center rounded-lg bg-[#533AFD]/10 p-1 text-[#533AFD] dark:bg-[#533AFD]/20">
                                             <svg class="size-4"
                                                  xmlns="http://www.w3.org/2000/svg"
                                                  fill="none"
@@ -332,7 +332,7 @@
                                                 <span class="font-semibold text-zinc-800 dark:text-zinc-200">{{ scan_usage_count|default:0 }}/{{ monthly_scan_limit }}</span>
                                             </div>
                                             <div class="h-1 w-full overflow-hidden rounded-full bg-zinc-200/80 dark:bg-zinc-800/80">
-                                                <div class="h-full rounded-full bg-[#5A67FF] transition-all duration-500"
+                                                <div class="h-full rounded-full bg-[#533AFD] transition-all duration-500"
                                                      style="width: {% widthratio scan_usage_count|default:0 monthly_scan_limit 100 %}%">
                                                 </div>
                                             </div>
@@ -344,11 +344,11 @@
                                             </div>
                                             <div class="mb-3 h-1 w-full overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800/80">
                                                 {% if monthly_upload_limit %}
-                                                    <div class="h-full rounded-full bg-[#5A67FF] transition-all duration-500"
+                                                    <div class="h-full rounded-full bg-[#533AFD] transition-all duration-500"
                                                          style="width: {% widthratio upload_usage_count|default:0 monthly_upload_limit 100 %}%">
                                                     </div>
                                                 {% else %}
-                                                    <div class="h-full w-full rounded-full bg-[#5A67FF]"></div>
+                                                    <div class="h-full w-full rounded-full bg-[#533AFD]"></div>
                                                 {% endif %}
                                             </div>
                                         </div>

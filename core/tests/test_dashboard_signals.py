@@ -31,20 +31,17 @@ def _make_record(user, title: str) -> Record:
 
 
 class DashboardCacheInvalidationTest(TestCase):
-
     def setUp(self):
         cache.clear()
 
     def test_record_save_invalidates_dashboard_cache(self):
-        user = User.objects.create_user(username="signalrecord",
-                                        password="pass")
+        user = User.objects.create_user(username="signalrecord", password="pass")
         _prime_cache(user.id)
         _make_record(user, "Signal record")
         self.assertIsNone(cache.get(f"dashboard:{user.id}"))
 
     def test_record_delete_invalidates_dashboard_cache(self):
-        user = User.objects.create_user(username="signaldelete",
-                                        password="pass")
+        user = User.objects.create_user(username="signaldelete", password="pass")
         record = _make_record(user, "Signal delete")
         _prime_cache(user.id)
         record.delete()
@@ -62,22 +59,19 @@ class DashboardCacheInvalidationTest(TestCase):
         self.assertIsNone(cache.get(f"dashboard:{user.id}"))
 
     def test_notification_save_invalidates_dashboard_cache(self):
-        user = User.objects.create_user(username="signalnotif",
-                                        password="pass")
+        user = User.objects.create_user(username="signalnotif", password="pass")
         _prime_cache(user.id)
         Notification.objects.create(recipient=user, message="Expiring soon")
         self.assertIsNone(cache.get(f"dashboard:{user.id}"))
 
     def test_user_settings_save_invalidates_dashboard_cache(self):
-        user = User.objects.create_user(username="signalsettings",
-                                        password="pass")
+        user = User.objects.create_user(username="signalsettings", password="pass")
         _prime_cache(user.id)
         user.settings.save()
         self.assertIsNone(cache.get(f"dashboard:{user.id}"))
 
     def test_merge_log_create_invalidates_dashboard_cache(self):
-        user = User.objects.create_user(username="signalmerge",
-                                        password="pass")
+        user = User.objects.create_user(username="signalmerge", password="pass")
         plaid = _make_record(user, "Bank transaction")
         doc_record = _make_record(user, "Receipt")
         _prime_cache(user.id)
@@ -90,10 +84,8 @@ class DashboardCacheInvalidationTest(TestCase):
         self.assertIsNone(cache.get(f"dashboard:{user.id}"))
 
     def test_reimbursement_package_invalidates_creator_and_recipient(self):
-        creator = User.objects.create_user(username="signalcreator",
-                                           password="pass")
-        recipient = User.objects.create_user(username="signalrecipient",
-                                             password="pass")
+        creator = User.objects.create_user(username="signalcreator", password="pass")
+        recipient = User.objects.create_user(username="signalrecipient", password="pass")
         _prime_cache(creator.id)
         _prime_cache(recipient.id)
         ReimbursementPackage.objects.create(
@@ -105,10 +97,8 @@ class DashboardCacheInvalidationTest(TestCase):
         self.assertIsNone(cache.get(f"dashboard:{recipient.id}"))
 
     def test_package_payment_invalidates_package_users(self):
-        creator = User.objects.create_user(username="signalpaycreator",
-                                           password="pass")
-        recipient = User.objects.create_user(username="signalpayrecipient",
-                                             password="pass")
+        creator = User.objects.create_user(username="signalpaycreator", password="pass")
+        recipient = User.objects.create_user(username="signalpayrecipient", password="pass")
         package = ReimbursementPackage.objects.create(
             creator=creator,
             recipient=recipient,
@@ -127,10 +117,8 @@ class DashboardCacheInvalidationTest(TestCase):
         self.assertIsNone(cache.get(f"dashboard:{recipient.id}"))
 
     def test_package_payment_cascade_delete_does_not_error(self):
-        creator = User.objects.create_user(username="signalcascade",
-                                           password="pass")
-        package = ReimbursementPackage.objects.create(creator=creator,
-                                                      title="Trip")
+        creator = User.objects.create_user(username="signalcascade", password="pass")
+        package = ReimbursementPackage.objects.create(creator=creator, title="Trip")
         payment = PackagePayment.objects.create(
             package=package,
             stripe_checkout_session_id="cs_test_cascade",

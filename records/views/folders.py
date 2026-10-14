@@ -28,11 +28,7 @@ def _unfiled_count(user) -> int:
 def _folder_list_context(user):
     """Build the shared context for rendering the folder list partial."""
     folders = Folder.objects.filter(user=user).with_record_counts()
-    return {
-        "folders": folders,
-        "unfiled_count": _unfiled_count(user),
-        "page_obj": None
-    }
+    return {"folders": folders, "unfiled_count": _unfiled_count(user), "page_obj": None}
 
 
 class FolderListView(LoginRequiredMixin, ListView):
@@ -106,8 +102,7 @@ class FolderUpdateView(LoginRequiredMixin, HtmxFormErrorsMixin, UpdateView):
     pk_url_kwarg = "folder_id"
 
     def get_queryset(self):
-        return Folder.objects.filter(
-            user=self.request.user).with_record_counts()
+        return Folder.objects.filter(user=self.request.user).with_record_counts()
 
     def form_valid(self, form):
         self.object = form.save()

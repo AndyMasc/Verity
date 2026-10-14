@@ -21,7 +21,7 @@ def hard_delete_documents(modeladmin, request, queryset):  # noqa: ARG001
 class DocumentDataAdmin(admin.ModelAdmin):
     list_display = ("title", "user", "status", "did_ocr")
     list_filter = ("status", "did_ocr")
-    search_fields = ("title", )
+    search_fields = ("title",)
     actions: ClassVar[list[Callable[..., Any]]] = [hard_delete_documents]
 
     def get_actions(self, request):

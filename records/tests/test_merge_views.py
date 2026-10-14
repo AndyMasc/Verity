@@ -15,20 +15,13 @@ User = get_user_model()
 
 
 @override_settings(
-    CACHES={
-        "default": {
-            "BACKEND": "django.core.cache.backends.dummy.DummyCache"
-        }
-    },
+    CACHES={"default": {"BACKEND": "django.core.cache.backends.dummy.DummyCache"}},
     SESSION_ENGINE="django.contrib.sessions.backends.db",
 )
 class ManualMergeViewTest(TestCase):
-
     def setUp(self):
-        self.user = User.objects.create_user(username="merger",
-                                             password="pass")
-        self.other = User.objects.create_user(username="other",
-                                              password="pass")
+        self.user = User.objects.create_user(username="merger", password="pass")
+        self.other = User.objects.create_user(username="other", password="pass")
         self.plaid = Record.objects.create(
             user=self.user,
             title="Plaid Record",
@@ -70,20 +63,13 @@ class ManualMergeViewTest(TestCase):
 
 
 @override_settings(
-    CACHES={
-        "default": {
-            "BACKEND": "django.core.cache.backends.dummy.DummyCache"
-        }
-    },
+    CACHES={"default": {"BACKEND": "django.core.cache.backends.dummy.DummyCache"}},
     SESSION_ENGINE="django.contrib.sessions.backends.db",
 )
 class UndoMergeViewTest(TestCase):
-
     def setUp(self):
-        self.user = User.objects.create_user(username="undoer",
-                                             password="pass")
-        self.other = User.objects.create_user(username="other_undo",
-                                              password="pass")
+        self.user = User.objects.create_user(username="undoer", password="pass")
+        self.other = User.objects.create_user(username="other_undo", password="pass")
         self.plaid = Record.objects.create(
             user=self.user,
             title="Plaid",
@@ -121,19 +107,14 @@ class UndoMergeViewTest(TestCase):
 
 
 @override_settings(
-    CACHES={
-        "default": {
-            "BACKEND": "django.core.cache.backends.dummy.DummyCache"
-        }
-    },
+    CACHES={"default": {"BACKEND": "django.core.cache.backends.dummy.DummyCache"}},
     SESSION_ENGINE="django.contrib.sessions.backends.db",
 )
 class MergedRecordsFilterTest(TestCase):
     """The merged view is a filter on the main records list, not a separate page."""
 
     def setUp(self):
-        self.user = User.objects.create_user(username="listmerges",
-                                             password="pass")
+        self.user = User.objects.create_user(username="listmerges", password="pass")
         self.url = reverse("records:view_all_records")
 
     def test_merged_filter_shows_only_merged_plaid_records(self):

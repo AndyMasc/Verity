@@ -22,7 +22,8 @@ class Migration(migrations.Migration):
         ),
         migrations.AddConstraint(
             model_name="documentdata",
-            constraint=models.UniqueConstraint(fields=("user", "file_hash"),
-                                               name="unique_user_file_hash"),
+            constraint=models.UniqueConstraint(
+                fields=("user", "file_hash"), name="unique_user_file_hash"
+            ),
         ),
     ]

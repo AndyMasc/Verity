@@ -18,16 +18,18 @@ except (ImportError, OSError):
 
 logger = logging.getLogger(__name__)
 
-ALLOWED_MIME_TYPES = frozenset({
-    "application/pdf",
-    "image/jpeg",
-    "image/png",
-    "image/webp",
-    "image/tiff",
-    "image/bmp",
-    "image/heic",
-    "image/heif",
-})
+ALLOWED_MIME_TYPES = frozenset(
+    {
+        "application/pdf",
+        "image/jpeg",
+        "image/png",
+        "image/webp",
+        "image/tiff",
+        "image/bmp",
+        "image/heic",
+        "image/heif",
+    }
+)
 
 MAX_FILE_SIZE = 50 * 1024 * 1024
 MAX_IMAGE_PIXELS = 50_000_000
@@ -90,8 +92,8 @@ def _validate_file(size: int, detected_mime: str | None) -> ValidationResult:
 
 
 def validate_file_upload(
-        file_obj: IO[bytes],
-        declared_mime_type: str | None = None,  # noqa: ARG001
+    file_obj: IO[bytes],
+    declared_mime_type: str | None = None,  # noqa: ARG001
 ) -> ValidationResult:
     """Validate a file-like upload object by reading its header and checking constraints."""
     file_obj.seek(0, 2)
@@ -105,8 +107,7 @@ def validate_file_upload(
     return _validate_file(file_size, detected_mime)
 
 
-def validate_file_bytes(header_bytes: bytes,
-                        content_length: int) -> ValidationResult:
+def validate_file_bytes(header_bytes: bytes, content_length: int) -> ValidationResult:
     """Validate file type and size from raw header bytes and a known content length."""
     detected_mime = _detect_mime_from_bytes(header_bytes)
     return _validate_file(content_length, detected_mime)

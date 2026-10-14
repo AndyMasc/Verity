@@ -41,7 +41,8 @@ class Command(BaseCommand):
         self.stdout.write(
             self.style.SUCCESS(
                 f"Endpoints injected! Listening to account ({u_account}) and connect ({u_connect})..."
-            ))
+            )
+        )
 
         subprocess.run(  # noqa: S603  # nosec B603, B607 - local dev helper wrapping the Stripe CLI
             [  # noqa: S607
@@ -51,4 +52,5 @@ class Command(BaseCommand):
                 f"http://localhost:8000/stripe/webhook/{u_account}/",
                 "--forward-connect-to",
                 f"http://localhost:8000/stripe/webhook/{u_connect}/",
-            ])
+            ]
+        )

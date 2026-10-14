@@ -32,13 +32,13 @@ class ViewDocument(LoginRequiredMixin, UpdateView):
 
     def get_template_names(self) -> list[str]:
         if self.request.headers.get("HX-Target") in [
-                "search-results",
-                "query-results-container",
+            "search-results",
+            "query-results-container",
         ]:
             return ["documents/partials/record_list_partial.html"]
         if self.request.headers.get("HX-Target") in [
-                "document-form-container",
-                "document-metadata-form",
+            "document-form-container",
+            "document-metadata-form",
         ]:
             return ["documents/partials/document_form_partial.html"]
         return [self.template_name]
@@ -47,8 +47,8 @@ class ViewDocument(LoginRequiredMixin, UpdateView):
         # Documents attached to records that are shared with include_documents disabled (e.g. reimbursement grants) are hidden from the recipient.
         return DocumentData.objects.filter(
             Q(user=self.request.user)
-            | Q(associated_record__in=RecordShare.document_visible_records(
-                self.request.user))).select_related("associated_record")
+            | Q(associated_record__in=RecordShare.document_visible_records(self.request.user))
+        ).select_related("associated_record")
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
@@ -70,33 +70,30 @@ class ViewDocument(LoginRequiredMixin, UpdateView):
             # Documents attached to records shared with you are view-only.
             if self.request.headers.get("HX-Request") == "true":
                 response = HttpResponse(status=204)
-                response["HX-Trigger"] = json.dumps({
-                    "showToast": {
-                        "text": "Documents on shared records are view-only.",
-                        "tags": "error",
+                response["HX-Trigger"] = json.dumps(
+                    {
+                        "showToast": {
+                            "text": "Documents on shared records are view-only.",
+                            "tags": "error",
+                        }
                     }
-                })
+                )
                 return response
             return HttpResponseForbidden("This document is view-only.")
         if "associated_record" in self.request.POST:
             record_id = self.request.POST.get("associated_record", "").strip()
-            DocumentDetailService.associate_record(form.instance, record_id,
-                                                   self.request.user)
+            DocumentDetailService.associate_record(form.instance, record_id, self.request.user)
 
         form.save()
 
         if self.request.headers.get("HX-Request") == "true":
             if "associated_record" in self.request.POST:
-                redirect_url = reverse("documents:view_document",
-                                       kwargs={"pk": self.object.pk})
+                redirect_url = reverse("documents:view_document", kwargs={"pk": self.object.pk})
                 response = HttpResponse(status=204)
                 response["HX-Redirect"] = redirect_url
                 return response
             response = HttpResponse(status=204)
-            response["HX-Trigger"] = json.dumps({
-                "recordChanged": {},
-                "documentChanged": {}
-            })
+            response["HX-Trigger"] = json.dumps({"recordChanged": {}, "documentChanged": {}})
             return response
 
         messages.success(self.request, "Updated successfully.")
@@ -105,14 +102,11 @@ class ViewDocument(LoginRequiredMixin, UpdateView):
     def form_invalid(self, form) -> HttpResponse:
         messages.error(self.request, "An error occurred.")
         if self.request.headers.get("HX-Request") == "true":
-            return self.render_to_response(self.get_context_data(form=form),
-                                           status=422)
+            return self.render_to_response(self.get_context_data(form=form), status=422)
         return super().form_invalid(form)
 
 
-@method_decorator(ratelimit(key="user", rate="10/m", method="POST",
-                            block=True),
-                  name="dispatch")
+@method_decorator(ratelimit(key="user", rate="10/m", method="POST", block=True), name="dispatch")
 class DeleteDocument(LoginRequiredMixin, View):
     """Permanently deletes a document and redirects to the parent record."""
 
@@ -127,30 +121,36 @@ class DeleteDocument(LoginRequiredMixin, View):
         if not result.success:
             if request.headers.get("HX-Request") == "true":
                 response = HttpResponse(status=204)
-                response["HX-Trigger"] = json.dumps({
-                    "recordChanged": {},
-                    "documentChanged": {},
-                    "showToast": {
-                        "text": result.error or "An error occurred.",
-                        "tags": "error",
-                    },
-                })
+                response["HX-Trigger"] = json.dumps(
+                    {
+                        "recordChanged": {},
+                        "documentChanged": {},
+                        "showToast": {
+                            "text": result.error or "An error occurred.",
+                            "tags": "error",
+                        },
+                    }
+                )
                 return response
             messages.error(request, result.error or "An error occurred.")
             return redirect(
-                reverse("records:record_detail", kwargs={"pk": record.id}
-                        ) if record else reverse("records:view_all_records"))
+                reverse("records:record_detail", kwargs={"pk": record.id})
+                if record
+                else reverse("records:view_all_records")
+            )
 
         if request.headers.get("HX-Request") == "true":
             response = HttpResponse(status=204)
-            response["HX-Trigger"] = json.dumps({
-                "recordChanged": {},
-                "documentChanged": {},
-                "showToast": {
-                    "text": result.message,
-                    "tags": result.message_tag or "success",
-                },
-            })
+            response["HX-Trigger"] = json.dumps(
+                {
+                    "recordChanged": {},
+                    "documentChanged": {},
+                    "showToast": {
+                        "text": result.message,
+                        "tags": result.message_tag or "success",
+                    },
+                }
+            )
             return response
         messages.success(request, result.message)
         url = reverse("documents:document_list_view")

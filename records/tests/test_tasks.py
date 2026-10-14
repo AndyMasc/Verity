@@ -11,10 +11,8 @@ from records.models import Record
 
 
 class TasksTest(TestCase):
-
     def setUp(self):
-        self.user = User.objects.create_user(username="taskuser",
-                                             password="pass")
+        self.user = User.objects.create_user(username="taskuser", password="pass")
 
     def test_archive_expired_records(self):
         past = timezone.now().date() - timedelta(days=10)
@@ -25,8 +23,7 @@ class TasksTest(TestCase):
             expiry_date=past,
             transaction_date=date(2024, 6, 15),
         )
-        Record.objects.filter(pk=expired.pk).update(date_added=past -
-                                                    timedelta(days=1))
+        Record.objects.filter(pk=expired.pk).update(date_added=past - timedelta(days=1))
         from records.tasks import archive_expired_records
 
         archive_expired_records()
@@ -43,8 +40,7 @@ class TasksTest(TestCase):
             is_active=False,
             transaction_date=date(2024, 6, 15),
         )
-        Record.objects.filter(pk=already_inactive.pk).update(date_added=past -
-                                                             timedelta(days=1))
+        Record.objects.filter(pk=already_inactive.pk).update(date_added=past - timedelta(days=1))
         from records.tasks import archive_expired_records
 
         archive_expired_records()
@@ -62,8 +58,7 @@ class TasksTest(TestCase):
             expiry_date=past,
             transaction_date=date(2024, 6, 15),
         )
-        Record.objects.filter(pk=expired.pk).update(date_added=past -
-                                                    timedelta(days=1))
+        Record.objects.filter(pk=expired.pk).update(date_added=past - timedelta(days=1))
         from records.tasks import archive_expired_records
 
         archive_expired_records()

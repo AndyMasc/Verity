@@ -18,8 +18,9 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="reimbursementpackage",
             name="expires_at",
-            field=models.DateTimeField(
-                default=reimbursements.models.one_week_from_now),
+            field=models.DateTimeField(default=reimbursements.models.one_week_from_now),
         ),
-        migrations.DeleteModel(name="PackageEmailVerification", ),
+        migrations.DeleteModel(
+            name="PackageEmailVerification",
+        ),
     ]

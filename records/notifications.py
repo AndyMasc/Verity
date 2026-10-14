@@ -33,8 +33,7 @@ def build_record_url(record_id: int) -> str:
     return f"{site_url}{reverse('records:record_detail', args=[record_id])}"
 
 
-def send_records_shared_notification(*, shares: list[RecordShare],
-                                     actor) -> None:
+def send_records_shared_notification(*, shares: list[RecordShare], actor) -> None:
     """Notify each recipient about every record they were just granted, in one email.
 
     Grants are grouped by recipient so sharing 20 records with someone produces
@@ -66,14 +65,16 @@ def _notify_recipient(*, shares: list[RecordShare], actor) -> None:
     site_context = build_site_context()
     multiple = len(shares) > 1
 
-    rows = [{
-        "title": escape(share.record.title or "Untitled record"),
-        "merchant": escape(share.record.merchant or ""),
-        "date": share.record.transaction_date,
-        "amount": format_currency(share.record.balance, share.record.currency
-                                  or "usd"),
-        "url": build_record_url(share.record.pk),
-    } for share in shares]
+    rows = [
+        {
+            "title": escape(share.record.title or "Untitled record"),
+            "merchant": escape(share.record.merchant or ""),
+            "date": share.record.transaction_date,
+            "amount": format_currency(share.record.balance, share.record.currency or "usd"),
+            "url": build_record_url(share.record.pk),
+        }
+        for share in shares
+    ]
 
     if multiple:
         subject = f"{plain_actor} shared {len(shares)} records with you"
@@ -92,17 +93,14 @@ def _notify_recipient(*, shares: list[RecordShare], actor) -> None:
         "actor_name": escape(plain_actor),
         "rows": rows,
         "multiple": multiple,
-        "can_edit": all(s.permission == RecordShare.Permission.EDIT
-                        for s in shares),
+        "can_edit": all(s.permission == RecordShare.Permission.EDIT for s in shares),
         "record_count": len(shares),
         "record_url": rows[0]["url"],
         **site_context,
     }
 
-    html_body = render_to_string("records/email/record_shared_message.html",
-                                 template_context)
-    text_body = render_to_string("records/email/record_shared_message.txt",
-                                 template_context)
+    html_body = render_to_string("records/email/record_shared_message.html", template_context)
+    text_body = render_to_string("records/email/record_shared_message.txt", template_context)
 
     send_multi_channel_notification(
         user=recipient,

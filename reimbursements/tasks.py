@@ -19,8 +19,7 @@ def process_stripe_event_task(trigger_id: int) -> None:
     try:
         trigger = WebhookEventTrigger.objects.get(pk=trigger_id)
     except WebhookEventTrigger.DoesNotExist:
-        logger.warning("process_stripe_event_task: trigger %s not found",
-                       trigger_id)
+        logger.warning("process_stripe_event_task: trigger %s not found", trigger_id)
         return
 
     with transaction.atomic():
@@ -32,17 +31,16 @@ def sync_payment_status(package_uuid: str, payment_id: int) -> None:
     try:
         package = ReimbursementPackage.objects.get(uuid=package_uuid)
     except ReimbursementPackage.DoesNotExist:
-        logger.warning("sync_payment_status: package %s not found",
-                       package_uuid)
+        logger.warning("sync_payment_status: package %s not found", package_uuid)
         return
 
-    if package.status not in (ReimbursementPackage.Status.OPEN,
-                              ReimbursementPackage.Status.QUEUED):
+    if package.status not in (ReimbursementPackage.Status.OPEN, ReimbursementPackage.Status.QUEUED):
         return
 
     try:
-        payment = PackagePayment.objects.select_related(
-            "package", "payer").get(pk=payment_id, package=package)
+        payment = PackagePayment.objects.select_related("package", "payer").get(
+            pk=payment_id, package=package
+        )
     except PackagePayment.DoesNotExist:
         return
 
@@ -82,17 +80,22 @@ def sync_payment_from_stripe(payment, *, source: str) -> bool:
 
 @dramatiq.actor(max_retries=3, min_backoff=2, periodic=cron("*/15 * * * *"))
 def reconcile_pending_payments_task() -> None:
-    package_ids = (ReimbursementPackage.objects.filter(
-        status__in=(ReimbursementPackage.Status.OPEN,
-                    ReimbursementPackage.Status.QUEUED),
-        payments__is_completed=False,
-    ).values_list("pk", flat=True).distinct())
+    package_ids = (
+        ReimbursementPackage.objects.filter(
+            status__in=(ReimbursementPackage.Status.OPEN, ReimbursementPackage.Status.QUEUED),
+            payments__is_completed=False,
+        )
+        .values_list("pk", flat=True)
+        .distinct()
+    )
 
     for package_id in package_ids:
-        payment = (PackagePayment.objects.select_related(
-            "package", "payer").filter(
-                package_id=package_id,
-                is_completed=False).order_by("-created_at").first())
+        payment = (
+            PackagePayment.objects.select_related("package", "payer")
+            .filter(package_id=package_id, is_completed=False)
+            .order_by("-created_at")
+            .first()
+        )
         if payment is None:
             continue
         try:
@@ -116,8 +119,7 @@ def daily_stripe_reconciliation_task() -> None:
 
 
 @dramatiq.actor
-def send_package_paid_notification_task(package_pk: int,
-                                        payer_pk: int | None) -> None:
+def send_package_paid_notification_task(package_pk: int, payer_pk: int | None) -> None:
     from django.contrib.auth import get_user_model
 
     from .models import ReimbursementPackage

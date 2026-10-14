@@ -11,18 +11,12 @@ from records.models import Record
 
 
 @override_settings(
-    CACHES={
-        "default": {
-            "BACKEND": "django.core.cache.backends.dummy.DummyCache"
-        }
-    },
+    CACHES={"default": {"BACKEND": "django.core.cache.backends.dummy.DummyCache"}},
     SESSION_ENGINE="django.contrib.sessions.backends.db",
 )
 class RecordListViewTest(TestCase):
-
     def setUp(self):
-        self.user = User.objects.create_user(username="listuser",
-                                             password="pass")
+        self.user = User.objects.create_user(username="listuser", password="pass")
         self.url = reverse("records:view_all_records")
 
     def test_authenticated_access(self):
@@ -86,8 +80,7 @@ class RecordListViewTest(TestCase):
             )
         response = self.client.get(self.url)
         self.assertTrue(response.context["is_paginated"])
-        self.assertEqual(len(response.context["records"]),
-                         settings.PAGINATE_BY)
+        self.assertEqual(len(response.context["records"]), settings.PAGINATE_BY)
 
     def test_pagination_second_page(self):
         self.client.force_login(self.user)

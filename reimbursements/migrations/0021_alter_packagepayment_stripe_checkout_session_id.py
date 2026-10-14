@@ -12,9 +12,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="packagepayment",
             name="stripe_checkout_session_id",
-            field=models.CharField(blank=True,
-                                   max_length=255,
-                                   null=True,
-                                   unique=True),
+            field=models.CharField(blank=True, max_length=255, null=True, unique=True),
         ),
     ]

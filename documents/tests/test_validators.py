@@ -11,13 +11,10 @@ from documents.validators import (
 
 
 class ValidatorsTest(TestCase):
-
     def test_validate_file_upload_ok(self):
         from django.core.files.uploadedfile import SimpleUploadedFile
 
-        file = SimpleUploadedFile("test.pdf",
-                                  b"%PDF-1.4 content",
-                                  content_type="application/pdf")
+        file = SimpleUploadedFile("test.pdf", b"%PDF-1.4 content", content_type="application/pdf")
         result = validate_file_upload(file)
         self.assertEqual(result.mime_type, "application/pdf")
 
@@ -25,9 +22,9 @@ class ValidatorsTest(TestCase):
         from django.core.exceptions import ValidationError
         from django.core.files.uploadedfile import SimpleUploadedFile
 
-        file = SimpleUploadedFile("test.exe",
-                                  b"binary content",
-                                  content_type="application/x-msdownload")
+        file = SimpleUploadedFile(
+            "test.exe", b"binary content", content_type="application/x-msdownload"
+        )
         with self.assertRaises(ValidationError):
             validate_file_upload(file)
 
@@ -35,9 +32,9 @@ class ValidatorsTest(TestCase):
         from django.core.exceptions import ValidationError
         from django.core.files.uploadedfile import SimpleUploadedFile
 
-        file = SimpleUploadedFile("large.pdf",
-                                  b"x" * (51 * 1024 * 1024),
-                                  content_type="application/pdf")
+        file = SimpleUploadedFile(
+            "large.pdf", b"x" * (51 * 1024 * 1024), content_type="application/pdf"
+        )
         with self.assertRaises(ValidationError):
             validate_file_upload(file)
 

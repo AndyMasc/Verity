@@ -31,8 +31,7 @@ def unique_slug(model, base: str, pk: int) -> str:
 def forwards(apps, schema_editor):
     Organization = apps.get_model("organizations", "Organization")
     Membership = apps.get_model("teams", "Membership")
-    User = apps.get_model(
-        *apps.get_model("billing", "CustomUser")._meta.label.split("."))
+    User = apps.get_model(*apps.get_model("billing", "CustomUser")._meta.label.split("."))
 
     for user in User.objects.all().iterator():
         org = Organization.objects.create(
@@ -46,17 +45,14 @@ def forwards(apps, schema_editor):
 def backwards(apps, schema_editor):
     Organization = apps.get_model("organizations", "Organization")
     Membership = apps.get_model("teams", "Membership")
-    User = apps.get_model(
-        *apps.get_model("billing", "CustomUser")._meta.label.split("."))
+    User = apps.get_model(*apps.get_model("billing", "CustomUser")._meta.label.split("."))
 
     for user in User.objects.all().iterator():
-        org_ids = Membership.objects.filter(user=user).values_list(
-            "organization_id", flat=True)
+        org_ids = Membership.objects.filter(user=user).values_list("organization_id", flat=True)
         Organization.objects.filter(pk__in=list(org_ids)).delete()
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("organizations", "0006_alter_organization_slug"),
         ("teams", "0001_initial"),

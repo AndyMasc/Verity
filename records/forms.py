@@ -49,7 +49,8 @@ class FolderForm(forms.ModelForm):
                     "placeholder": "e.g., General expenses, Vacation...",
                     "maxlength": "255",
                     "data-maxlength": "255",
-                })
+                }
+            )
         }
 
 
@@ -73,13 +74,11 @@ class BaseRecordForm(forms.ModelForm):
     title = forms.CharField(max_length=255, required=True)
     products = forms.CharField(required=False, widget=FlushTextarea)
     merchant = forms.CharField(max_length=255, required=True)
-    balance = forms.DecimalField(max_digits=10,
-                                 decimal_places=2,
-                                 required=True)
+    balance = forms.DecimalField(max_digits=10, decimal_places=2, required=True)
     transaction_date = forms.DateField(
-        widget=forms.DateInput(attrs={"type": "date"}), required=True)
-    expiry_date = forms.DateField(
-        widget=forms.DateInput(attrs={"type": "date"}), required=False)
+        widget=forms.DateInput(attrs={"type": "date"}), required=True
+    )
+    expiry_date = forms.DateField(widget=forms.DateInput(attrs={"type": "date"}), required=False)
     record_type = forms.ChoiceField(
         choices=Record.RecordTypes.choices,
         required=True,
@@ -105,7 +104,8 @@ class BaseRecordForm(forms.ModelForm):
         widget=forms.Select(
             attrs={
                 "class": "w-full text-xs font-semibold bg-transparent border-transparent focus:outline-hidden cursor-pointer",
-            }),
+            }
+        ),
     )
     currency = forms.ChoiceField(
         choices=[("", "—"), *list(CURRENCY_CHOICES)],
@@ -175,9 +175,7 @@ class BaseRecordForm(forms.ModelForm):
         if expiry_date is None or transaction_date is None:
             return
         if expiry_date < transaction_date:
-            raise ValidationError({
-                "expiry_date": "Expiry date cannot be before transaction date."
-            })
+            raise ValidationError({"expiry_date": "Expiry date cannot be before transaction date."})
 
     def _validate_record_type_requirements(self, cleaned_data):
         """Require notes and payment method for expense and invoice records."""
@@ -185,23 +183,20 @@ class BaseRecordForm(forms.ModelForm):
         payment_method = cleaned_data.get("payment_method", "")
         record_type = cleaned_data.get("record_type")
         if record_type not in (
-                Record.RecordTypes.EXPENSE_RECEIPT,
-                Record.RecordTypes.VENDOR_INVOICE,
-                Record.RecordTypes.CUSTOMER_INVOICE,
+            Record.RecordTypes.EXPENSE_RECEIPT,
+            Record.RecordTypes.VENDOR_INVOICE,
+            Record.RecordTypes.CUSTOMER_INVOICE,
         ):
             return
 
         notes_missing = not notes or not notes.strip()
-        payment_method_missing = not payment_method or not payment_method.strip(
-        )
+        payment_method_missing = not payment_method or not payment_method.strip()
         if notes_missing:
-            raise ValidationError({
-                "notes": "Business purpose is required for this record type."
-            })
+            raise ValidationError({"notes": "Business purpose is required for this record type."})
         if payment_method_missing:
-            raise ValidationError({
-                "payment_method": "Payment method is required for this record type."
-            })
+            raise ValidationError(
+                {"payment_method": "Payment method is required for this record type."}
+            )
 
     def clean(self):
         """Cross-field validation: expiry vs. transaction date and record-type requirements."""
@@ -242,10 +237,12 @@ class RecordUpdateForm(BaseRecordForm):
 class ManualMergeForm(forms.Form):
     """Hidden-field form that pairs a Plaid record with a document record for manual merging."""
 
-    plaid_record_id = forms.IntegerField(widget=forms.HiddenInput(
-        attrs={"id": "id_plaid_record_id"}))
-    document_record_id = forms.IntegerField(widget=forms.HiddenInput(
-        attrs={"id": "id_document_record_id"}))
+    plaid_record_id = forms.IntegerField(
+        widget=forms.HiddenInput(attrs={"id": "id_plaid_record_id"})
+    )
+    document_record_id = forms.IntegerField(
+        widget=forms.HiddenInput(attrs={"id": "id_document_record_id"})
+    )
 
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop("user")

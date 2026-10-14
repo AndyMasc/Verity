@@ -94,14 +94,16 @@ def grant_access(
             share.expires_at = config.expires_at
             share.revoked_at = None
             share.shared_by = requester
-            share.save(update_fields=[
-                "permission",
-                "purpose",
-                "include_documents",
-                "expires_at",
-                "revoked_at",
-                "shared_by",
-            ])
+            share.save(
+                update_fields=[
+                    "permission",
+                    "purpose",
+                    "include_documents",
+                    "expires_at",
+                    "revoked_at",
+                    "shared_by",
+                ]
+            )
 
         details: dict[str, Any] = {
             "user": user.email,
@@ -132,10 +134,7 @@ def resolve_recipients(emails: list[str]) -> tuple[list[User], list[str]]:
     for email in email_set:
         email_filter |= Q(email__iexact=email)
 
-    users_by_email = {
-        u.email.lower(): u
-        for u in User.objects.filter(email_filter)
-    }
+    users_by_email = {u.email.lower(): u for u in User.objects.filter(email_filter)}
 
     recipients = [users_by_email[e] for e in email_set if e in users_by_email]
     unknown = [e for e in email_set if e not in users_by_email]
@@ -157,10 +156,7 @@ def grant_shares(
     for user in recipients:
         if user.pk == record.user_id:
             continue
-        share, granted_now = grant_access(record=record,
-                                          user=user,
-                                          requester=owner,
-                                          config=config)
+        share, granted_now = grant_access(record=record, user=user, requester=owner, config=config)
         if granted_now:
             granted.append(share)
     return granted
@@ -198,10 +194,7 @@ def revoke_share(*, record: Record, actor, share: RecordShare) -> None:
             user=actor,
             action=AuditLog.Action.REVOKE_SHARE,
             record=record,
-            details={
-                "user": share.user.email,
-                "user_id": share.user_id
-            },
+            details={"user": share.user.email, "user_id": share.user_id},
         )
 
 

@@ -31,22 +31,23 @@ def invoice_invoice_sent(package: ReimbursementPackage) -> None:
     body = (
         f'{creator} sent you a reimbursement request for "{package.title}" '
         f"({format_currency(package.total_amount, package.currency)}). "
-        f"Stripe has emailed you a link to view and pay it.")
+        f"Stripe has emailed you a link to view and pay it."
+    )
     send_background_email.send(
         EmailTaskPayload(
             subject=subject,
             message=body,
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[recipient],
-        ))
+        )
+    )
     # A registered recipient also needs the in-app record; email alone left
     # the notification panel empty for them.
     if package.recipient_id is not None:
         Notification.objects.create(
             recipient=package.recipient,
             subject=subject,
-            message=
-            f'{creator} sent you a reimbursement request for "{package.title}".',
+            message=f'{creator} sent you a reimbursement request for "{package.title}".',
         )
     logger.info("Invoice raised for package %s -> %s", package.uuid, recipient)
 
@@ -55,11 +56,9 @@ def send_package_paid_notification(package, payer) -> None:
     from core.services.notifications import send_multi_channel_notification
 
     package_url = build_package_url(package.uuid)
-    payer_name = escape(payer.get_full_name()
-                        or payer.email) if payer else "Someone"
+    payer_name = escape(payer.get_full_name() or payer.email) if payer else "Someone"
     safe_title = escape(package.title)
-    safe_creator = escape(package.creator.get_full_name()
-                          or package.creator.email)
+    safe_creator = escape(package.creator.get_full_name() or package.creator.email)
     amount = package.display_total
     currency = package.currency
 
@@ -76,10 +75,8 @@ def send_package_paid_notification(package, payer) -> None:
         **build_site_context(),
     }
 
-    html_body = render_to_string(
-        "reimbursements/email/package_paid_message.html", template_context)
-    text_body = render_to_string(
-        "reimbursements/email/package_paid_message.txt", template_context)
+    html_body = render_to_string("reimbursements/email/package_paid_message.html", template_context)
+    text_body = render_to_string("reimbursements/email/package_paid_message.txt", template_context)
 
     formatted_amount = format_currency(amount, currency)
     plain_payer = payer.get_full_name() or payer.email if payer else "Someone"

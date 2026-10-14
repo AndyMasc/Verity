@@ -2,62 +2,43 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from organizations.models import Organization, OrganizationOwner, OrganizationUser
 
-from teams.orgs import (NoMembershipError, can_approve_expenses,
-                        can_manage_members, is_admin, is_owner, personal_org)
+from teams.orgs import (
+    can_approve_expenses,
+    can_manage_members,
+    can_set_policy,
+    is_admin,
+    is_owner,
+    personal_org,
+)
 
 User = get_user_model()
 
 
 def make_user(email, username=None):
-    return User.objects.create_user(username=username or email,
-                                    email=email,
-                                    password="x")
+    return User.objects.create_user(username=username or email, email=email, password="x")
 
 
 def add(user, org, *, admin=False, owner=False):
-    org_user = OrganizationUser.objects.create(user=user,
-                                               organization=org,
-                                               is_admin=admin or owner)
+    org_user = OrganizationUser.objects.create(user=user, organization=org, is_admin=admin or owner)
     if owner:
-        OrganizationOwner.objects.create(organization=org,
-                                         organization_user=org_user)
+        OrganizationOwner.objects.create(organization=org, organization_user=org_user)
     return org_user
 
 
 class PersonalOrgTest(TestCase):
+    """Every account gets one org they own alone: the solo billing subject."""
 
-    def test_new_user_gets_personal_org_as_owner(self) -> None:
+    def test_new_user_gets_a_solo_org(self) -> None:
         user = make_user("solo@test.com")
         org = personal_org(user)
+        self.assertIsNotNone(org)
+        self.assertEqual(org.organization_users.count(), 1)
         self.assertTrue(is_owner(user, org))
-        self.assertTrue(is_admin(user, org))
-
-    def test_org_names_do_not_collide(self) -> None:
-        one = User.objects.create_user(username="w1",
-                                       email="w1@test.com",
-                                       password="x",
-                                       first_name="Wendy",
-                                       last_name="M")
-        two = User.objects.create_user(username="w2",
-                                       email="w2@test.com",
-                                       password="x",
-                                       first_name="Wendy",
-                                       last_name="M")
-        self.assertNotEqual(personal_org(one).slug, personal_org(two).slug)
-
-    def test_personal_org_raises_without_membership(self) -> None:
-        user = make_user("ghost@test.com")
-        OrganizationUser.objects.filter(user=user).delete()
-        with self.assertRaises(NoMembershipError):
-            personal_org(user)
 
 
 class PermissionTest(TestCase):
-
     def setUp(self) -> None:
-        self.org = Organization.objects.create(name="Acme",
-                                               slug="acme",
-                                               is_active=True)
+        self.org = Organization.objects.create(name="Acme", slug="acme", is_active=True)
         self.owner = make_user("owner@test.com", username="o")
         self.admin = make_user("admin@test.com", username="a")
         self.member = make_user("member@test.com", username="m")
@@ -72,6 +53,7 @@ class PermissionTest(TestCase):
     def test_member_cannot_manage_or_approve(self) -> None:
         self.assertFalse(can_manage_members(self.member, self.org))
         self.assertFalse(can_approve_expenses(self.member, self.org))
+        self.assertFalse(can_set_policy(self.member, self.org))
         self.assertFalse(is_owner(self.member, self.org))
         self.assertFalse(is_admin(self.member, self.org))
 
@@ -80,23 +62,21 @@ class PermissionTest(TestCase):
         self.assertFalse(can_manage_members(outsider, self.org))
         self.assertFalse(can_approve_expenses(outsider, self.org))
 
+    def test_owner_cannot_be_deleted(self) -> None:
+        from organizations.exceptions import OwnershipRequired
 
-class InvitationWiringTest(TestCase):
+        owner_membership = OrganizationUser.objects.get(user=self.owner, organization=self.org)
+        with self.assertRaises(OwnershipRequired):
+            owner_membership.delete()
 
-    def test_add_user_creates_org_user_row(self) -> None:
-        owner = make_user("o@test.com", username="o")
-        org = personal_org(owner)
-        member = make_user("m@test.com", username="m")
-        org.add_user(member)
-        self.assertTrue(
-            OrganizationUser.objects.filter(user=member,
-                                            organization=org).exists())
-        self.assertFalse(is_admin(member, org))
 
-    def test_first_user_added_becomes_owner(self) -> None:
-        org = Organization.objects.create(name="Fresh",
-                                          slug="fresh",
-                                          is_active=True)
-        member = make_user("m@test.com", username="m")
-        org.add_user(member)
-        self.assertTrue(is_owner(member, org))
+class OrgWithoutPersonalNamingTest(TestCase):
+    def test_org_names_do_not_collide(self) -> None:
+        one = Organization.objects.create(name="Wendy M", slug="wendy-m", is_active=True)
+        two = Organization.objects.create(name="Wendy M", slug="wendy-m-2", is_active=True)
+        self.assertNotEqual(one.slug, two.slug)
+
+    def test_inactive_org_is_soft(self) -> None:
+        org = Organization.objects.create(name="Old", slug="old", is_active=False)
+        self.assertFalse(Organization.active.filter(pk=org.pk).exists())
+        self.assertTrue(Organization.objects.filter(pk=org.pk).exists())

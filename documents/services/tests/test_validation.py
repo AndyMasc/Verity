@@ -22,7 +22,6 @@ def _make_hash(content: bytes = b"test") -> str:
 
 @pytest.mark.django_db
 class TestDocumentUploadServiceValidate:
-
     def test_rejects_non_pending_status(self, user):
         doc = DocumentData.objects.create(
             user=user,
@@ -49,8 +48,7 @@ class TestDocumentUploadServiceValidate:
         assert result.status_code == 400
         assert "Key mismatch" in result.error
 
-    @patch("documents.services.validation.get_r2_object_head",
-           return_value=None)
+    @patch("documents.services.validation.get_r2_object_head", return_value=None)
     def test_sets_error_when_r2_not_found(self, mock_head, user):
         doc = DocumentData.objects.create(
             user=user,
@@ -67,10 +65,7 @@ class TestDocumentUploadServiceValidate:
 
     @patch("documents.services.validation.get_r2_object_head")
     def test_rejects_empty_file(self, mock_head, user):
-        mock_head.return_value = {
-            "ContentLength": 0,
-            "ContentType": "image/jpeg"
-        }
+        mock_head.return_value = {"ContentLength": 0, "ContentType": "image/jpeg"}
         doc = DocumentData.objects.create(
             user=user,
             filepath="users/1/doc.pdf",
@@ -107,13 +102,9 @@ class TestDocumentUploadServiceValidate:
 
 @pytest.mark.django_db
 class TestDocumentUploadServiceConfirm:
-
     @patch("documents.services.validation.get_r2_object_head")
     def test_confirm_transitions_to_uploaded(self, mock_head, user):
-        mock_head.return_value = {
-            "ContentLength": 500,
-            "ContentType": "image/jpeg"
-        }
+        mock_head.return_value = {"ContentLength": 500, "ContentType": "image/jpeg"}
         doc = DocumentData.objects.create(
             user=user,
             filepath="users/1/doc.pdf",
@@ -140,12 +131,13 @@ class TestDocumentUploadServiceConfirm:
         assert result.status_code == 400
 
     def test_confirm_strips_semicolon_from_content_type(self, user):
-        mock_head = MagicMock(return_value={
-            "ContentLength": 100,
-            "ContentType": "image/png; charset=utf-8",
-        })
-        with patch("documents.services.validation.get_r2_object_head",
-                   mock_head):
+        mock_head = MagicMock(
+            return_value={
+                "ContentLength": 100,
+                "ContentType": "image/png; charset=utf-8",
+            }
+        )
+        with patch("documents.services.validation.get_r2_object_head", mock_head):
             doc = DocumentData.objects.create(
                 user=user,
                 filepath="users/1/doc.png",

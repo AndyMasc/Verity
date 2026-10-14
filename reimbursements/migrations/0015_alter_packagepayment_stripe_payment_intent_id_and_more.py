@@ -5,26 +5,19 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("reimbursements",
-         "0014_reimbursementpackage_recipient_email_and_more"),
+        ("reimbursements", "0014_reimbursementpackage_recipient_email_and_more"),
     ]
 
     operations = [
         migrations.AlterField(
             model_name="packagepayment",
             name="stripe_payment_intent_id",
-            field=models.CharField(blank=True,
-                                   db_index=True,
-                                   default="",
-                                   max_length=255),
+            field=models.CharField(blank=True, db_index=True, default="", max_length=255),
         ),
         migrations.AlterField(
             model_name="reimbursementpackage",
             name="recipient_email",
-            field=models.EmailField(blank=True,
-                                    db_index=True,
-                                    default="",
-                                    max_length=254),
+            field=models.EmailField(blank=True, db_index=True, default="", max_length=254),
         ),
         migrations.AlterField(
             model_name="stripeaccount",

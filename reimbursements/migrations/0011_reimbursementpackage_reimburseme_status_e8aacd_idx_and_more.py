@@ -14,13 +14,15 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AddIndex(
             model_name="reimbursementpackage",
-            index=models.Index(fields=["status", "expires_at"],
-                               name="reimburseme_status_e8aacd_idx"),
+            index=models.Index(
+                fields=["status", "expires_at"], name="reimburseme_status_e8aacd_idx"
+            ),
         ),
         migrations.AddIndex(
             model_name="reimbursementpackage",
-            index=models.Index(fields=["creator", "deleted_at"],
-                               name="reimburseme_creator_747ce0_idx"),
+            index=models.Index(
+                fields=["creator", "deleted_at"], name="reimburseme_creator_747ce0_idx"
+            ),
         ),
         migrations.AddIndex(
             model_name="reimbursementpackage",

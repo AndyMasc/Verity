@@ -19,10 +19,14 @@ def sync_upload_overage_to_stripe():
     """Report each subscriber's upload overage to Stripe's billing meter."""
     metered_product = metadata.USAGE_BASED_STORAGE
 
-    metered_subscriptions = (Subscription.objects.filter(
-        items__price__product_id=metered_product.stripe_id,
-        customer__subscriber__isnull=False,
-    ).select_related("customer__subscriber").distinct())
+    metered_subscriptions = (
+        Subscription.objects.filter(
+            items__price__product_id=metered_product.stripe_id,
+            customer__subscriber__isnull=False,
+        )
+        .select_related("customer__subscriber")
+        .distinct()
+    )
 
     _configure()
     for subscription in metered_subscriptions:
@@ -45,8 +49,7 @@ def sync_upload_overage_to_stripe():
                     "value": str(overage),
                     "stripe_customer_id": subscription.customer.id,
                 },
-                idempotency_key=
-                f"upload_overage_{subscription.customer.id}_{timezone.now().strftime('%Y%m%d%H')}",
+                idempotency_key=f"upload_overage_{subscription.customer.id}_{timezone.now().strftime('%Y%m%d%H')}",
             )
         except stripe.error.StripeError as e:
             logger.error("Failed to sync usage for %s: %s", user.pk, e)

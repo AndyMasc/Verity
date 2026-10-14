@@ -11,8 +11,10 @@ def _index_sql(field: str) -> str:
     concurrent = ""
     if not connection.in_atomic_block:
         concurrent = "CONCURRENTLY "
-    return (f"CREATE INDEX {concurrent}IF NOT EXISTS {name} "
-            f"ON records_record USING gin ({field} gin_trgm_ops)")
+    return (
+        f"CREATE INDEX {concurrent}IF NOT EXISTS {name} "
+        f"ON records_record USING gin ({field} gin_trgm_ops)"
+    )
 
 
 def create_indexes(apps, schema_editor):

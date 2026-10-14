@@ -6,18 +6,13 @@ from django.db import migrations, models
 
 
 class RunSQLPostgresOnly(migrations.RunSQL):
-
-    def database_forwards(self, app_label, schema_editor, from_state,
-                          to_state):
+    def database_forwards(self, app_label, schema_editor, from_state, to_state):
         if schema_editor.connection.vendor == "postgresql":
-            super().database_forwards(app_label, schema_editor, from_state,
-                                      to_state)
+            super().database_forwards(app_label, schema_editor, from_state, to_state)
 
-    def database_backwards(self, app_label, schema_editor, from_state,
-                           to_state):
+    def database_backwards(self, app_label, schema_editor, from_state, to_state):
         if schema_editor.connection.vendor == "postgresql":
-            super().database_backwards(app_label, schema_editor, from_state,
-                                       to_state)
+            super().database_backwards(app_label, schema_editor, from_state, to_state)
 
 
 class Migration(migrations.Migration):
@@ -34,8 +29,7 @@ class Migration(migrations.Migration):
         migrations.SeparateDatabaseAndState(
             database_operations=[
                 RunSQLPostgresOnly(
-                    sql=
-                    "ALTER TABLE plaid_integration_plaiditem ALTER COLUMN accounts_data TYPE bytea USING accounts_data::text::bytea",
+                    sql="ALTER TABLE plaid_integration_plaiditem ALTER COLUMN accounts_data TYPE bytea USING accounts_data::text::bytea",
                     reverse_sql=migrations.RunSQL.noop,
                 ),
             ],
@@ -43,17 +37,13 @@ class Migration(migrations.Migration):
                 migrations.AlterField(
                     model_name="plaiditem",
                     name="accounts_data",
-                    field=plaid_integration.models.EncryptedJSONField(
-                        blank=True, null=True),
+                    field=plaid_integration.models.EncryptedJSONField(blank=True, null=True),
                 ),
             ],
         ),
         migrations.AlterField(
             model_name="plaiditem",
             name="next_cursor",
-            field=models.CharField(blank=True,
-                                   db_index=True,
-                                   max_length=255,
-                                   null=True),
+            field=models.CharField(blank=True, db_index=True, max_length=255, null=True),
         ),
     ]

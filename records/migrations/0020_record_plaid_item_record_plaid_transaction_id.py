@@ -25,9 +25,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="record",
             name="plaid_transaction_id",
-            field=models.CharField(blank=True,
-                                   max_length=255,
-                                   null=True,
-                                   unique=True),
+            field=models.CharField(blank=True, max_length=255, null=True, unique=True),
         ),
     ]

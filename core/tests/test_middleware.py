@@ -19,7 +19,6 @@ from core.middleware import HtmxMessageMiddleware, PostHogSessionIdMiddleware
 
 
 class HtmxMessageMiddlewareTest(TestCase):
-
     def test_htmx_request_gets_trigger_header(self):
         from django.http import HttpRequest
         from django.contrib.messages.storage.fallback import FallbackStorage
@@ -42,7 +41,6 @@ class HtmxMessageMiddlewareTest(TestCase):
 
 
 class DramatiqEmailBackendTest(TestCase):
-
     @patch("core.backends.send_background_email")
     def test_send_messages(self, mock_task):
         from core.backends import DramatiqEmailBackend
@@ -71,7 +69,6 @@ class DramatiqEmailBackendTest(TestCase):
 
 
 class RequestIDMiddlewareTest(TestCase):
-
     def test_generates_uuid_when_no_header(self):
         from core.middleware import RequestIDMiddleware
 
@@ -101,13 +98,11 @@ class RequestIDMiddlewareTest(TestCase):
 
 
 class RequestIDLogFilterTest(TestCase):
-
     def test_injects_request_id(self):
         from core.middleware import RequestIDLogFilter, request_id_var
 
         filter_obj = RequestIDLogFilter()
-        record = logging.LogRecord("test", logging.INFO, "", 0, "msg", (),
-                                   None)
+        record = logging.LogRecord("test", logging.INFO, "", 0, "msg", (), None)
         request_id_var.set("test-id-123")
         result = filter_obj.filter(record)
         self.assertTrue(result)
@@ -115,7 +110,6 @@ class RequestIDLogFilterTest(TestCase):
 
 
 class TimezoneMiddlewareTest(TestCase):
-
     def test_activates_valid_timezone(self):
         from core.middleware import TimezoneMiddleware
 
@@ -147,7 +141,6 @@ class TimezoneMiddlewareTest(TestCase):
 
 
 class HtmxMessageMiddlewareDetailedTest(TestCase):
-
     def test_injects_messages_for_htmx(self):
         request = HttpRequest()
         request.META["HTTP_HX_REQUEST"] = "true"
@@ -218,8 +211,7 @@ class PostHogSessionIdMiddlewareTest(SimpleTestCase):
         request = HttpRequest()
         request.COOKIES = cookies or {}
         request.META = {
-            f"HTTP_{key.upper().replace('-', '_')}": value
-            for key, value in (headers or {}).items()
+            f"HTTP_{key.upper().replace('-', '_')}": value for key, value in (headers or {}).items()
         }
         return request
 
@@ -246,8 +238,7 @@ class PostHogSessionIdMiddlewareTest(SimpleTestCase):
         )
 
     def test_cookie_supplies_the_session_id(self):
-        request = self._request(
-            cookies={"posthog_session_cookie": "sess_COOKIE"})
+        request = self._request(cookies={"posthog_session_cookie": "sess_COOKIE"})
         self.assertEqual(self._session_seen(request), "sess_COOKIE")
 
     def test_tracing_header_is_left_to_the_context_middleware(self):
@@ -260,8 +251,7 @@ class PostHogSessionIdMiddlewareTest(SimpleTestCase):
     def test_malformed_cookie_is_ignored(self):
         for bad in ("sess has spaces", "sess;drop=1", "x" * 65, ""):
             with self.subTest(bad=bad):
-                request = self._request(
-                    cookies={"posthog_session_cookie": bad})
+                request = self._request(cookies={"posthog_session_cookie": bad})
                 self.assertIsNone(self._session_seen(request))
 
     def test_absent_cookie_is_not_an_error(self):
