@@ -5,8 +5,11 @@ from django.test import TestCase
 from django.utils import timezone
 from djstripe.models import Customer, Price, Product, Subscription, SubscriptionItem
 
+from teams.orgs import billing_org
+
 from .. import entitlements, metadata
 from ..tasks import sync_upload_overage_to_stripe
+from .helpers import attach_customer
 
 
 class SyncUploadOverageTests(TestCase):
@@ -16,14 +19,13 @@ class SyncUploadOverageTests(TestCase):
             email="metered@example.com",
             password="password",
         )
+        self.org = billing_org(self.user)
         self.customer = Customer.objects.create(
             id="cus_metered",
             livemode=False,
             created=timezone.now(),
-            subscriber=self.user,
         )
-        self.user.customer = self.customer
-        self.user.save(update_fields=["customer"])
+        attach_customer(self.org, self.customer)
 
     def _subscribe(self, product_id, status="active"):
         product = Product.objects.create(
@@ -67,7 +69,7 @@ class SyncUploadOverageTests(TestCase):
 
     def test_event_carries_customer_and_event_name(self):
         self._subscribe(metadata.USAGE_BASED_STORAGE.stripe_id)
-        limit = metadata.plan_for_user(self.user).monthly_upload_limit
+        limit = metadata.plan_for_org(self.org).monthly_upload_limit
 
         create_event = self._over(limit + 1)
 
@@ -79,7 +81,7 @@ class SyncUploadOverageTests(TestCase):
 
     def test_reported_value_is_the_overage(self):
         self._subscribe(metadata.USAGE_BASED_STORAGE.stripe_id)
-        limit = metadata.plan_for_user(self.user).monthly_upload_limit
+        limit = metadata.plan_for_org(self.org).monthly_upload_limit
 
         create_event = self._over(limit + 7)
 
@@ -87,7 +89,7 @@ class SyncUploadOverageTests(TestCase):
 
     def test_within_allowance_sends_nothing(self):
         self._subscribe(metadata.USAGE_BASED_STORAGE.stripe_id)
-        limit = metadata.plan_for_user(self.user).monthly_upload_limit
+        limit = metadata.plan_for_org(self.org).monthly_upload_limit
 
         self.assertEqual(self._over(limit).call_count, 0)
 

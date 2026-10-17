@@ -3,6 +3,8 @@ from django.test import TestCase, override_settings
 from django.utils import timezone
 from djstripe.models import Customer, Price, Product, Subscription, SubscriptionItem
 
+from teams.orgs import billing_org
+
 from .. import metadata, services
 
 
@@ -33,7 +35,7 @@ class CheckoutPriceIdTests(TestCase):
         return price
 
     def _card_price_id(self):
-        context = services.pricing_context(self.user)
+        context = services.pricing_context(billing_org(self.user))
         return next(
             p.checkout_price_id
             for p in context["products"]
@@ -83,7 +85,7 @@ class PricingContextTests(TestCase):
         archived.stripe_data = {"recurring": {"interval": "month"}}
         archived.save(update_fields=["stripe_data"])
 
-        context = services.pricing_context(self._user())
+        context = services.pricing_context(billing_org(self._user()))
         # dj-stripe Product rows expose .id; the free card is a ProductMetadata.
         pro_card = next(
             p
@@ -117,9 +119,9 @@ class PricingContextTests(TestCase):
 
         user = self._user()
         with override_settings(STRIPE_LIVE_MODE=False):
-            test_mode = services.pricing_context(user)
+            test_mode = services.pricing_context(billing_org(user))
         with override_settings(STRIPE_LIVE_MODE=True):
-            live_mode = services.pricing_context(user)
+            live_mode = services.pricing_context(billing_org(user))
 
         def ids(context):
             # dj-stripe Product rows expose .id; the free card is a ProductMetadata.
@@ -133,7 +135,7 @@ class PricingContextTests(TestCase):
     def test_free_plan_copy_does_not_mutate_the_shared_constant(self):
         # pricing_context used to attach display attributes to the module-level
         # VERITY_FREE, leaking between concurrent requests.
-        services.pricing_context(self._user())
+        services.pricing_context(billing_org(self._user()))
         self.assertFalse(hasattr(metadata.VERITY_FREE, "features_list"))
         self.assertFalse(hasattr(metadata.VERITY_FREE, "checkout_price_id"))
         self.assertFalse(hasattr(metadata.VERITY_FREE, "metadata"))
@@ -200,5 +202,5 @@ class AlreadyActiveTests(TestCase):
 
     def test_free_user_has_no_active_plan(self):
         self._product(metadata.PLUS)
-        context = services.pricing_context(self.user)
+        context = services.pricing_context(billing_org(self.user))
         self.assertFalse(self._card(context, metadata.PLUS).already_active)

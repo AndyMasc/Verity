@@ -14,9 +14,14 @@ from djstripe.models import (
     SubscriptionItem,
 )
 
+from teams.orgs import billing_org
+
+from django.contrib.auth.models import AnonymousUser
+from organizations.models import Organization, OrganizationUser
+
 from .. import entitlements, features, metadata
 from ..models import CustomUser
-from .helpers import add_subscription, give_pro_subscription
+from .helpers import add_subscription, attach_customer, give_feature, give_pro_subscription
 
 
 class EntitlementTests(TestCase):
@@ -29,9 +34,10 @@ class EntitlementTests(TestCase):
             email="plan@example.com",
             password="password",
         )
+        self.org = billing_org(self.user)
 
     def _add_subscription(self, status="active", product_id=None):
-        add_subscription(self.user, self.customer, status=status, product_id=product_id)
+        add_subscription(self.org, self.customer, status=status, product_id=product_id)
 
     def _attach_feature(self, product_id, lookup_key):
         Product.objects.get_or_create(
@@ -52,10 +58,8 @@ class EntitlementTests(TestCase):
         )
 
     def test_free_plan_holds_no_stripe_features(self):
-        self.assertEqual(
-            metadata.plan_for_user(self.user).stripe_id, metadata.VERITY_FREE.stripe_id
-        )
-        self.assertEqual(metadata.granted_features(self.user), set())
+        self.assertEqual(metadata.plan_for_org(self.org).stripe_id, metadata.VERITY_FREE.stripe_id)
+        self.assertEqual(metadata.granted_features(self.org), set())
         self.assertFalse(entitlements.has_feature(self.user, "transaction-sync"))
 
     def test_pro_product_grants_its_attached_features(self):
@@ -63,9 +67,9 @@ class EntitlementTests(TestCase):
         self._attach_feature(metadata.PLUS.stripe_id, "record-sharing")
         self._add_subscription(status="active", product_id=metadata.PLUS.stripe_id)
 
-        self.assertEqual(metadata.plan_for_user(self.user).stripe_id, metadata.PLUS.stripe_id)
+        self.assertEqual(metadata.plan_for_org(self.org).stripe_id, metadata.PLUS.stripe_id)
         self.assertEqual(
-            metadata.granted_features(self.user),
+            metadata.granted_features(self.org),
             {"transaction-sync", "record-sharing"},
         )
         self.assertTrue(entitlements.has_feature(self.user, "transaction-sync"))
@@ -80,19 +84,15 @@ class EntitlementTests(TestCase):
         self._attach_feature(metadata.USAGE_BASED_STORAGE.stripe_id, "transaction-sync")
         self._add_subscription(status="active", product_id=metadata.USAGE_BASED_STORAGE.stripe_id)
         self.assertTrue(entitlements.has_feature(self.user, "transaction-sync"))
-        self.assertEqual(
-            metadata.plan_for_user(self.user).stripe_id, metadata.VERITY_FREE.stripe_id
-        )
+        self.assertEqual(metadata.plan_for_org(self.org).stripe_id, metadata.VERITY_FREE.stripe_id)
 
     def test_trialing_counts_as_paid(self):
         self._add_subscription(status="trialing", product_id=metadata.PLUS.stripe_id)
-        self.assertEqual(metadata.plan_for_user(self.user).stripe_id, metadata.PLUS.stripe_id)
+        self.assertEqual(metadata.plan_for_org(self.org).stripe_id, metadata.PLUS.stripe_id)
 
     def test_canceled_subscription_is_free(self):
         self._add_subscription(status="canceled", product_id=metadata.PLUS.stripe_id)
-        self.assertEqual(
-            metadata.plan_for_user(self.user).stripe_id, metadata.VERITY_FREE.stripe_id
-        )
+        self.assertEqual(metadata.plan_for_org(self.org).stripe_id, metadata.VERITY_FREE.stripe_id)
         self.assertFalse(entitlements.has_feature(self.user, "transaction-sync"))
 
     def test_cancel_at_period_end_keeps_paid_access_until_cycle_end(self):
@@ -117,9 +117,8 @@ class EntitlementTests(TestCase):
             subscription=sub,
             price=price,
         )
-        sub.customer.subscriber = self.user
-        sub.customer.save(update_fields=["subscriber"])
-        self.assertEqual(metadata.plan_for_user(self.user).stripe_id, metadata.PLUS.stripe_id)
+        attach_customer(self.org, sub.customer)
+        self.assertEqual(metadata.plan_for_org(self.org).stripe_id, metadata.PLUS.stripe_id)
         self.assertTrue(entitlements.has_feature(self.user, "transaction-sync"))
 
     def test_unauthenticated_user_has_no_features(self):
@@ -140,6 +139,7 @@ class ContextProcessorTests(TestCase):
             email="cp@example.com",
             password="password",
         )
+        self.org = billing_org(self.user)
 
     def _request(self):
         from django.test import RequestFactory
@@ -158,7 +158,7 @@ class ContextProcessorTests(TestCase):
         ctx = subscription_status(request)
         self.assertFalse(ctx["is_subscribed"])
         self.assertEqual(
-            metadata.plan_for_user(request.user).stripe_id,
+            metadata.plan_for_org(None).stripe_id,
             metadata.VERITY_FREE.stripe_id,
         )
         self.assertEqual(ctx["plan_name"], metadata.VERITY_FREE.name)
@@ -169,9 +169,7 @@ class ContextProcessorTests(TestCase):
         self._add_subscription(status="canceled")
         ctx = subscription_status(self._request())
         self.assertFalse(ctx["is_subscribed"])
-        self.assertEqual(
-            metadata.plan_for_user(self.user).stripe_id, metadata.VERITY_FREE.stripe_id
-        )
+        self.assertEqual(metadata.plan_for_org(self.org).stripe_id, metadata.VERITY_FREE.stripe_id)
 
     def test_paid_plan_name_renders(self):
         from ..context_processors import subscription_status
@@ -180,7 +178,7 @@ class ContextProcessorTests(TestCase):
         self.assertEqual(subscription_status(self._request())["plan_name"], "Plus")
 
     def _add_subscription(self, status="active", product_id=None):
-        add_subscription(self.user, self.customer, status=status, product_id=product_id)
+        add_subscription(self.org, self.customer, status=status, product_id=product_id)
 
     def _attach_feature(self, product_id, lookup_key):
         Product.objects.get_or_create(
@@ -204,7 +202,7 @@ class ContextProcessorTests(TestCase):
 class ProSubscriptionResolvesTests(TestCase):
     """A Pro subscriber must resolve to Pro.
 
-    "plan_for_user" once read Stripe's category off the ProductMetadata dataclass,
+    "plan_for_org" once read Stripe's category off the ProductMetadata dataclass,
     which has no such attribute, so it always matched nothing and every subscriber
     was treated as Free.
     """
@@ -215,11 +213,11 @@ class ProSubscriptionResolvesTests(TestCase):
             email="resolved@example.com",
             password="password",
         )
+        self.org = billing_org(self.user)
         self.customer = Customer.objects.create(
             id="cus_resolved", livemode=False, created=timezone.now()
         )
-        self.user.customer = self.customer
-        self.user.save(update_fields=["customer"])
+        attach_customer(self.org, self.customer)
 
     def _subscribe(self, meta, category):
         product = Product.objects.create(
@@ -253,15 +251,15 @@ class ProSubscriptionResolvesTests(TestCase):
 
     def test_pro_subscriber_resolves_to_pro(self):
         self._subscribe(metadata.PLUS, "base_plan")
-        self.assertEqual(metadata.plan_for_user(self.user), metadata.PLUS)
-        self.assertEqual(metadata.plan_for_user(self.user).stripe_id, metadata.PLUS.stripe_id)
+        self.assertEqual(metadata.plan_for_org(self.org), metadata.PLUS)
+        self.assertEqual(metadata.plan_for_org(self.org).stripe_id, metadata.PLUS.stripe_id)
         self.assertEqual(
             entitlements.get_monthly_upload_limit(self.user, "scan"),
             metadata.PLUS.monthly_scan_limit,
         )
 
     def test_metered_only_subscriber_stays_free(self):
-        self.assertEqual(metadata.plan_for_user(self.user), metadata.VERITY_FREE)
+        self.assertEqual(metadata.plan_for_org(self.org), metadata.VERITY_FREE)
 
 
 class MeteredIsNotAPlanTests(TestCase):
@@ -278,13 +276,14 @@ class MeteredIsNotAPlanTests(TestCase):
             email="metered@example.com",
             password="password",
         )
+        self.org = billing_org(self.user)
         self.customer = Customer.objects.create(
             id="cus_metered", livemode=False, created=timezone.now()
         )
 
     def _subscribe_usage_storage(self):
         add_subscription(
-            self.user,
+            self.org,
             self.customer,
             status="active",
             product_id=metadata.USAGE_BASED_STORAGE.stripe_id,
@@ -292,24 +291,22 @@ class MeteredIsNotAPlanTests(TestCase):
 
     def test_usage_storage_alone_leaves_the_user_free(self):
         self._subscribe_usage_storage()
-        self.assertEqual(
-            metadata.plan_for_user(self.user).stripe_id, metadata.VERITY_FREE.stripe_id
-        )
-        self.assertTrue(metadata.has_metered_storage(self.user))
+        self.assertEqual(metadata.plan_for_org(self.org).stripe_id, metadata.VERITY_FREE.stripe_id)
+        self.assertTrue(metadata.has_metered_storage(self.org))
 
     def test_usage_storage_alone_grants_no_paid_features(self):
         self._subscribe_usage_storage()
-        self.assertEqual(metadata.granted_features(self.user), set())
+        self.assertEqual(metadata.granted_features(self.org), set())
 
     def test_plan_resolves_alongside_usage_storage(self):
         add_subscription(
-            self.user,
+            self.org,
             self.customer,
             status="active",
             product_id=metadata.PLUS.stripe_id,
         )
-        self.assertEqual(metadata.plan_for_user(self.user), metadata.PLUS)
-        self.assertEqual(metadata.plan_for_user(self.user).stripe_id, metadata.PLUS.stripe_id)
+        self.assertEqual(metadata.plan_for_org(self.org), metadata.PLUS)
+        self.assertEqual(metadata.plan_for_org(self.org).stripe_id, metadata.PLUS.stripe_id)
 
 
 class OrphanedSubscriptionItemTests(TestCase):
@@ -322,14 +319,13 @@ class OrphanedSubscriptionItemTests(TestCase):
         self.user = get_user_model().objects.create_user(
             username="orphan", email="orphan@example.com", password="password"
         )
+        self.org = billing_org(self.user)
         self.customer = Customer.objects.create(
             id="cus_orphan",
             livemode=False,
             created=timezone.now(),
-            subscriber=self.user,
         )
-        self.user.customer = self.customer
-        self.user.save(update_fields=["customer"])
+        attach_customer(self.org, self.customer)
 
         pro = Product.objects.create(
             id=metadata.PLUS.stripe_id,
@@ -381,22 +377,96 @@ class OrphanedSubscriptionItemTests(TestCase):
             )
 
     def test_removed_item_is_not_an_active_product(self):
-        ids = [m.stripe_id for m in metadata.held_products(self.user).values()]
+        ids = [m.stripe_id for m in metadata.held_products(self.org).values()]
         self.assertEqual(ids, [metadata.PLUS.stripe_id])
 
     def test_removed_metered_item_does_not_grant_unlimited_storage(self):
-        self.assertFalse(metadata.has_metered_storage(self.user))
+        self.assertFalse(metadata.has_metered_storage(self.org))
 
     def test_plan_still_resolves(self):
-        self.assertEqual(metadata.plan_for_user(self.user).stripe_id, metadata.PLUS.stripe_id)
+        self.assertEqual(metadata.plan_for_org(self.org).stripe_id, metadata.PLUS.stripe_id)
 
     def test_unsynced_row_falls_back_to_the_item_table(self):
         # A row never synced with an items payload carries nothing to reconcile
         # against, so its table is used rather than reporting nothing.
         self.subscription.stripe_data = {"status": "active"}
         self.subscription.save(update_fields=["stripe_data"])
-        ids = sorted(m.stripe_id for m in metadata.held_products(self.user).values())
+        ids = sorted(m.stripe_id for m in metadata.held_products(self.org).values())
         self.assertEqual(
             ids,
             sorted([metadata.PLUS.stripe_id, metadata.USAGE_BASED_STORAGE.stripe_id]),
         )
+
+
+class SponsoredAllowanceTests(TestCase):
+    """Membership alone raises a member onto the team's plan, and each member
+    spends from their own counter."""
+
+    def setUp(self):
+        self.org = Organization.objects.create(name="Acme", slug="sponsored", is_active=True)
+        self.member = CustomUser.objects.create_user(
+            username="member", email="member@x.com", password="p"
+        )
+        OrganizationUser.objects.create(user=self.member, organization=self.org)
+        give_feature(self.org, metadata.ORGANIZATIONS.stripe_id, "create-orgs")
+
+    def test_team_membership_raises_the_member_onto_the_team_plan(self):
+        self.assertEqual(
+            entitlements.get_monthly_upload_limit(self.member, "scan"),
+            features.PRO_MONTHLY_SCAN_LIMIT,
+        )
+
+    def test_each_member_spends_from_their_own_counter(self):
+        limit = entitlements.get_monthly_upload_limit(self.member, "scan")
+        for _ in range(limit):
+            entitlements.record_monthly_upload_usage(self.member, "scan")
+        self.assertFalse(entitlements.can_scan(self.member))
+        self.assertEqual(entitlements.get_monthly_upload_count(self.member, "scan"), limit)
+
+    def test_a_teammate_does_not_spend_this_members_allowance(self):
+        mate = CustomUser.objects.create_user(username="mate", email="mate@x.com", password="p")
+        OrganizationUser.objects.create(user=mate, organization=self.org)
+        limit = entitlements.get_monthly_upload_limit(self.member, "upload")
+        for _ in range(limit):
+            entitlements.record_monthly_upload_usage(self.member, "upload")
+        self.assertFalse(entitlements.can_upload(self.member))
+        self.assertTrue(entitlements.can_upload(mate))
+
+    def test_losing_the_team_returns_the_member_to_their_own_plan(self):
+        self.assertEqual(
+            entitlements.get_monthly_upload_limit(self.member, "upload"),
+            features.PRO_MONTHLY_UPLOAD_LIMIT,
+        )
+        OrganizationUser.objects.filter(user=self.member, organization=self.org).delete()
+        self.member = CustomUser.objects.get(pk=self.member.pk)
+        self.assertEqual(
+            entitlements.get_monthly_upload_limit(self.member, "upload"),
+            features.FREE_MONTHLY_UPLOAD_LIMIT,
+        )
+
+    def test_team_features_reach_the_member(self):
+        self.assertTrue(entitlements.has_feature(self.member, "create-orgs"))
+
+    def test_counts_are_kept_per_member(self):
+        entitlements.record_monthly_upload_usage(self.member, "scan")
+        entitlements.record_monthly_upload_usage(self.member, "scan")
+        self.assertEqual(entitlements.get_monthly_upload_count(self.member, "scan"), 2)
+
+
+class AnonymousLimitTests(TestCase):
+    """No plan resolves to Free, so the two actions must not share a number."""
+
+    def test_upload_and_scan_get_their_own_free_limits(self):
+        self.assertEqual(
+            entitlements.get_monthly_upload_limit(None, "upload"),
+            features.FREE_MONTHLY_UPLOAD_LIMIT,
+        )
+        self.assertEqual(
+            entitlements.get_monthly_upload_limit(None, "scan"), features.FREE_MONTHLY_SCAN_LIMIT
+        )
+
+    def test_anonymous_user_gets_free_too(self):
+        self.assertEqual(entitlements.plan_for_user(AnonymousUser()), metadata.VERITY_FREE)
+
+    def test_anonymous_user_has_no_features(self):
+        self.assertFalse(entitlements.has_feature(AnonymousUser(), "create-orgs"))

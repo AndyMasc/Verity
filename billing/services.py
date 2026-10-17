@@ -4,13 +4,10 @@ import logging
 from copy import copy
 
 import stripe
-from django.db.models import Count, F
+from django.db.models import F
 from django.http import HttpRequest, HttpResponseBadRequest
 from djstripe.models import Customer, Price, Product
 from djstripe.settings import djstripe_settings
-
-from billing.seats import SEAT_PLAN, seat_count
-from teams.orgs import personal_org
 
 from . import metadata
 
@@ -21,23 +18,21 @@ def _configure() -> None:
     stripe.api_key = djstripe_settings.STRIPE_SECRET_KEY
 
 
-def resolve_customer(user):
-    linked = list(Customer.objects.filter(subscriber=user).annotate(subs=Count("subscriptions")))
-    if not linked:
-        return None
-
-    keep = next((c for c in linked if c.pk == user.customer_id), None) or max(
-        linked, key=lambda c: (c.subs, c.pk)
+def org_customer(org) -> Customer:
+    """The org's Stripe customer, created on first checkout.
+    dj-stripe's Customer.create demands a user subscriber and stamps one into the
+    Stripe metadata; this is that same path without one.
+    """
+    billing = org.billing
+    if billing.customer_id:
+        return billing.customer
+    stripe_customer = Customer._api_create(name=org.name, metadata={"organization_id": str(org.pk)})
+    customer, _ = Customer.objects.get_or_create(
+        id=stripe_customer["id"], defaults={"livemode": stripe_customer["livemode"]}
     )
-    for cust in linked:
-        if cust.pk != keep.pk:
-            cust.subscriber = None
-            cust.save(update_fields=["subscriber"])
-    return keep
-
-
-def _is_seat(price) -> bool:
-    return bool(price and (price.product.metadata or {}).get("lookup_key") == SEAT_PLAN)
+    billing.customer = customer
+    billing.save(update_fields=["customer"])
+    return customer
 
 
 def fetch_line_items(
@@ -67,17 +62,10 @@ def fetch_line_items(
         if price_id in metas:
             (metered if metas[price_id].metered else licensed).append(price_id)
 
-    # Seats are billed per member; every other licensed price is flat.
-    prices = {price.id: price for price in products}
-    seats = seat_count(personal_org(request.user)) if request.user.is_authenticated else 0
-    line_items = [
-        {
-            "price": price_id,
-            "quantity": max(seats, 1) if _is_seat(prices.get(price_id)) else quantity,
-        }
-        for price_id in licensed
-    ]
-    line_items += [{"price": price_id} for price_id in metered]
+    # Plans are flat: every licensed line item is a single unit regardless of
+    # who is in the org. Usage is reported through billing meters, not quantities.
+    line_items = [{"price": price_id, "quantity": quantity} for price_id in licensed]
+    line_items.extend([{"price": price_id} for price_id in metered])
 
     if not line_items:
         return HttpResponseBadRequest("Select a valid plan.")
@@ -122,7 +110,7 @@ def sanitize_line_items(subscription, line_items: list[dict]) -> list[dict]:
     return sanitized_line_items
 
 
-def pricing_context(user) -> dict:
+def pricing_context(org) -> dict:
     """Build the pricing data shared by the pricing page and the landing page."""
     live = djstripe_settings.STRIPE_LIVE_MODE
     catalog = list(Product.objects.filter(active=True, livemode=live))
@@ -139,7 +127,7 @@ def pricing_context(user) -> dict:
     free = copy(metadata.VERITY_FREE)
     free.features_list = list(free.features)
 
-    held_ids = set(metadata.held_products(user))
+    held_ids = set(metadata.held_products(org))
 
     for product in catalog:
         product.checkout_price = checkout_price.get(product.id)
@@ -150,5 +138,5 @@ def pricing_context(user) -> dict:
 
     return {
         "products": products,
-        "has_active_subscription": bool(getattr(user, "has_active_subscription", False)),
+        "has_active_subscription": bool(metadata.active_subscriptions(org)),
     }

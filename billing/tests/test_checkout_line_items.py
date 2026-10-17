@@ -19,8 +19,10 @@ from django.urls import reverse
 from django.utils import timezone
 from djstripe.models import Customer, Price, Product, Subscription, SubscriptionItem
 
-from .. import metadata
-from .helpers import FakeSession, give_pro_subscription
+from .. import metadata, services
+from teams.orgs import billing_org
+
+from .helpers import FakeSession, attach_customer, give_pro_subscription
 
 PRO_PRICE = "price_pro_monthly"
 FREE_PRICE = "price_free_monthly"
@@ -38,10 +40,8 @@ class CheckoutLineItemTests(TestCase):
             id="cus_checkout",
             livemode=False,
             created=timezone.now(),
-            subscriber=self.user,
         )
-        self.user.customer = customer
-        self.user.save(update_fields=["customer"])
+        attach_customer(billing_org(self.user), customer)
         self.client.force_login(self.user)
         for meta, price_ids in (
             (metadata.PLUS, (PRO_PRICE,)),
@@ -184,10 +184,8 @@ class SubscriptionUpdateTests(TestCase):
             id="cus_updater",
             livemode=False,
             created=timezone.now(),
-            subscriber=self.user,
         )
-        self.user.customer = self.customer
-        self.user.save(update_fields=["customer"])
+        attach_customer(billing_org(self.user), self.customer)
         self.client.force_login(self.user)
         Price.objects.create(
             id="price_pro_update",
@@ -251,22 +249,58 @@ class SubscriptionUpdateTests(TestCase):
         self.assertEqual(response.status_code, 400)
 
     def test_new_customer_without_one_does_not_crash(self):
-        """user.customer was None here, so reading user.customer.id used to 500."""
+        """An org with no Stripe customer yet gets one at checkout."""
         user = get_user_model().objects.create_user(
             username="brandnew", email="brandnew@example.com", password="password"
         )
-        Customer.objects.create(
-            id="cus_brandnew", livemode=False, created=timezone.now(), subscriber=user
-        )
         self.client.force_login(user)
+        Customer.objects.create(id="cus_brandnew", livemode=False, created=timezone.now())
         with (
             mock.patch("stripe.checkout.Session.create", return_value=FakeSession()),
+            mock.patch(
+                "djstripe.models.Customer._api_create",
+                return_value={"id": "cus_brandnew", "livemode": False},
+            ),
         ):
             response = self.client.post(
                 reverse("billing:purchase_subscription"),
                 {"price_ids": ["price_pro_update"]},
             )
         self.assertEqual(response.status_code, 302)
+
+
+class OrgCustomerTests(TestCase):
+    """An org's Stripe customer is created without a user subscriber.
+
+    dj-stripe's Customer.create demands a subscriber and stamps its pk into the
+    Stripe metadata, which is exactly the user-coupling this model drops.
+    """
+
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(
+            username="orgcust", email="orgcust@example.com", password="password"
+        )
+        self.org = billing_org(self.user)
+        Customer.objects.create(id="cus_orgcust", livemode=False, created=timezone.now())
+
+    def test_creates_and_attaches_a_customer(self):
+        with mock.patch(
+            "djstripe.models.Customer._api_create",
+            return_value={"id": "cus_orgcust", "livemode": False},
+        ) as create:
+            customer = services.org_customer(self.org)
+
+        self.assertEqual(customer.id, "cus_orgcust")
+        self.assertEqual(metadata.org_customer(billing_org(self.user)).id, "cus_orgcust")
+        self.assertNotIn("subscriber", create.call_args.kwargs)
+
+    def test_existing_customer_is_reused(self):
+        attach_customer(self.org, Customer.objects.get(id="cus_orgcust"))
+        with mock.patch("djstripe.models.Customer._api_create") as create:
+            customer = services.org_customer(self.org)
+
+        self.assertEqual(customer.id, "cus_orgcust")
+        create.assert_not_called()
 
 
 class PurchaseSubscriptionErrorTests(TestCase):
@@ -280,10 +314,8 @@ class PurchaseSubscriptionErrorTests(TestCase):
             id="cus_errors",
             livemode=False,
             created=timezone.now(),
-            subscriber=self.user,
         )
-        self.user.customer = self.customer
-        self.user.save(update_fields=["customer"])
+        attach_customer(billing_org(self.user), self.customer)
         self.client.force_login(self.user)
         product = Product.objects.create(
             id=metadata.PLUS.stripe_id,
@@ -334,10 +366,8 @@ class SuccessUrlPlaceholderTests(TestCase):
             id="cus_placeholder",
             livemode=False,
             created=timezone.now(),
-            subscriber=user,
         )
-        user.customer = customer
-        user.save(update_fields=["customer"])
+        attach_customer(billing_org(user), customer)
         self.client.force_login(user)
         product = Product.objects.create(
             id=metadata.PLUS.stripe_id,
@@ -409,10 +439,8 @@ class UpdateSubscriptionPayloadTests(TestCase):
             id="cus_payload",
             livemode=False,
             created=timezone.now(),
-            subscriber=self.user,
         )
-        self.user.customer = customer
-        self.user.save(update_fields=["customer"])
+        attach_customer(billing_org(self.user), customer)
         self.client.force_login(self.user)
         Price.objects.create(
             id="price_pro_payload",

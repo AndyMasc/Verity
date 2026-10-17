@@ -244,6 +244,7 @@ class KickoffOCRScanTest(TestCase):
 
     def test_returns_warning_when_scan_limit_reached(self):
         from billing.entitlements import record_monthly_upload_usage
+        from teams.orgs import billing_org
 
         for _ in range(30):
             record_monthly_upload_usage(self.user, "scan")

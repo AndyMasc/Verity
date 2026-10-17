@@ -8,15 +8,14 @@ from . import entitlements
 
 
 class FeatureRequiredMixin(UserPassesTestMixin):
-    """Ensures the user's plan includes a given feature. Set "required_feature" on the view to one of the constants from "billing.features"."""
+    """Ensures the user's org's plan includes a given feature. Set "required_feature" on the view to one of the constants from "billing.features"."""
 
     required_feature: str | None = None
 
     def test_func(self) -> bool:
-        feature = self.required_feature
-        if feature is None:
+        if self.required_feature is None:
             return True
-        return entitlements.has_feature(self.request.user, feature)
+        return entitlements.has_feature(self.request.user, self.required_feature)
 
     def handle_no_permission(self):
         if not self.request.user.is_authenticated:

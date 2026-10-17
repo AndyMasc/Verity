@@ -1,10 +1,10 @@
 """Shared test helpers for the billing test suite.
 
 Views gated by "billing.mixins.FeatureRequiredMixin" redirect free users to
-the pricing page, so tests that exercise those views need a user with a real
-active Pro subscription. "give_pro_subscription" builds the djstripe rows
+the pricing page, so tests that exercise those views need an org with a real
+active subscription. "give_pro_subscription" builds the djstripe rows
 (Product / Price / SubscriptionItem / Customer) that "metadata" and the
-entitlement layer read.
+entitlement layer read, attached to the user's own org.
 
 "FakeSession" mimics the small surface of a Stripe checkout Session that the
 views read, so tests can mock "stripe.checkout.Session.retrieve" without a
@@ -21,8 +21,10 @@ from djstripe.models import (
     Subscription,
     SubscriptionItem,
 )
+from teams.orgs import billing_org
 
-from .. import features, metadata
+from .. import metadata
+from ..models import OrgBilling
 
 
 class FakeSession:
@@ -51,31 +53,30 @@ class FakeSession:
         return getattr(self, key, default)
 
 
-def give_pro_subscription(user) -> Subscription:
-    """Attach an active Plus subscription to "user".
+def attach_customer(org, customer: Customer) -> Customer:
+    """Point an org's billing row at a Stripe customer."""
+    billing = org.billing
+    billing.customer = customer
+    billing.save(update_fields=["customer"])
+    return customer
 
-    The customer is linked both via "subscriber" and the user's "customer"
-    FK so "metadata.active_subscriptions" and the feature gates see it.
-    """
-    # Reuse whatever customer is already linked. Creating a second one with
-    # subscriber=user makes Customer.get_or_create(subscriber=...) ambiguous.
-    customer = user.customer or Customer.objects.filter(subscriber=user).first()
-    if customer is None:
-        customer = Customer.objects.create(
-            id=f"cus_pro_{user.pk}",
-            livemode=False,
-            created=timezone.now(),
-            subscriber=user,
-        )
-    if customer.subscriber_id != user.pk:
-        customer.subscriber = user
-        customer.save(update_fields=["subscriber"])
-    if user.customer_id != customer.pk:
-        user.customer = customer
-        user.save(update_fields=["customer"])
+
+def org_customer(org, suffix: str = "") -> Customer:
+    customer, _ = Customer.objects.get_or_create(
+        id=f"cus_test_{org.pk}{suffix}",
+        livemode=False,
+        defaults={"created": timezone.now()},
+    )
+    return attach_customer(org, customer)
+
+
+def give_pro_subscription(user) -> Subscription:
+    """Attach an active Plus subscription to the user's own org."""
+    org = billing_org(user)
+    customer = org_customer(org)
 
     subscription = Subscription.objects.create(
-        id=f"sub_pro_{user.pk}",
+        id=f"sub_pro_{org.pk}",
         livemode=False,
         created=timezone.now(),
         customer=customer,
@@ -106,12 +107,12 @@ def give_pro_subscription(user) -> Subscription:
             defaults={"product": product, "entitlement_feature": feature},
         )
     price, _ = Price.objects.get_or_create(
-        id=f"price_pro_{user.pk}",
+        id=f"price_pro_{org.pk}",
         livemode=False,
         defaults={"active": True, "product": product, "currency": "usd"},
     )
     SubscriptionItem.objects.create(
-        id=f"si_pro_{user.pk}",
+        id=f"si_pro_{org.pk}",
         livemode=False,
         created=timezone.now(),
         subscription=subscription,
@@ -120,14 +121,30 @@ def give_pro_subscription(user) -> Subscription:
     return subscription
 
 
-def add_subscription(user, customer, status="active", product_id=None):
-    """Attach a djstripe Subscription to a user, optionally with a product.
+def give_feature(org, product_id, lookup_key):
+    """Give "org" an active subscription to "product_id" carrying one feature."""
+    add_subscription(org, org_customer(org), product_id=product_id)
+    feature, _ = Feature.objects.get_or_create(
+        id=f"feat_{lookup_key}",
+        livemode=False,
+        defaults={"stripe_data": {"lookup_key": lookup_key, "name": lookup_key}},
+    )
+    ProductFeature.objects.get_or_create(
+        id=f"pf_{product_id}_{lookup_key}",
+        livemode=False,
+        defaults={"product": Product.objects.get(id=product_id), "entitlement_feature": feature},
+    )
+
+
+def add_subscription(org, customer, status="active", product_id=None):
+    """Attach a djstripe Subscription to "org".
 
     Returns the subscription. product_id creates the Product / Price /
     SubscriptionItem rows the entitlement layer reads.
     """
+    attach_customer(org, customer)
     sub = Subscription.objects.create(
-        id=f"sub_{user.pk}_{status}",
+        id=f"sub_{org.pk}_{status}",
         livemode=False,
         created=timezone.now(),
         customer=customer,
@@ -152,6 +169,4 @@ def add_subscription(user, customer, status="active", product_id=None):
             subscription=sub,
             price=price,
         )
-    customer.subscriber = user
-    customer.save(update_fields=["subscriber"])
     return sub

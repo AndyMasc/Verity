@@ -20,12 +20,14 @@ class CustomUser(AbstractUser):
 
     @property
     def has_active_subscription(self) -> bool:
-        """True if the user has any active or trialing subscription."""
-        return bool(metadata.active_subscriptions(self))
+        """True if the user's own org has any active or trialing subscription."""
+        from teams.orgs import billing_org
+
+        return bool(metadata.active_subscriptions(billing_org(self)))
 
 
 class MonthlyUploadUsage(models.Model):
-    """Per-calendar-month counter for a rate-limited action."""
+    """One member's spend for a calendar month."""
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,

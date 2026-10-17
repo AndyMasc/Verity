@@ -1,10 +1,3 @@
-"""Root URL configuration for the Verity project.
-
-Routes all top-level URL patterns including admin, third-party apps,
-and the module-specific URL includes. Password management endpoints
-are intentionally blocked since Verity uses external auth.
-"""
-
 from django.conf import settings
 from django.contrib import admin
 from django.http import HttpResponseForbidden
@@ -18,7 +11,7 @@ from core.views import safe_webpush_save_info
 
 def forbidden_view(request, *args, **kwargs):  # noqa: ARG001
     """Return a 403 response for disabled password management endpoints."""
-    return HttpResponseForbidden("Password features are disabled.")
+    return HttpResponseForbidden("The requested endpoint is forbidden.")
 
 
 handler403 = "Verity.views.handler403"
@@ -41,7 +34,7 @@ urlpatterns = [
     path("records/", include("records.urls")),
     path("accounting/", include("accounting.urls")),
     path("reimbursements/", include("reimbursements.urls")),
-    path("organizations/", include("organizations.urls")),
+    path("organizations/", include("teams.urls")),
     path("invitations/", include(invitation_backend().get_urls())),
     path("billing/", include("billing.urls")),
     path("subscription-confirm/", subscription_confirm, name="subscription_confirm"),

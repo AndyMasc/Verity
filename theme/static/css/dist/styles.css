@@ -909,11 +909,11 @@
   .w-5 {
     width: calc(var(--spacing) * 5);
   }
+  .w-5xl {
+    width: var(--container-5xl);
+  }
   .w-6 {
     width: calc(var(--spacing) * 6);
-  }
-  .w-7xl {
-    width: var(--container-7xl);
   }
   .w-8 {
     width: calc(var(--spacing) * 8);
@@ -963,12 +963,6 @@
   .w-\[180vw\] {
     width: 180vw;
   }
-  .w-\[300px\] {
-    width: 300px;
-  }
-  .w-\[350px\] {
-    width: 350px;
-  }
   .w-\[calc\(100\%-2rem\)\] {
     width: calc(100% - 2rem);
   }
@@ -980,9 +974,6 @@
   }
   .w-full {
     width: 100%;
-  }
-  .w-max {
-    width: max-content;
   }
   .w-min {
     width: min-content;
@@ -1032,6 +1023,9 @@
   .max-w-\[85px\] {
     max-width: 85px;
   }
+  .max-w-\[90\%\] {
+    max-width: 90%;
+  }
   .max-w-\[100px\] {
     max-width: 100px;
   }
@@ -1053,9 +1047,6 @@
   .max-w-none {
     max-width: none;
   }
-  .max-w-screen {
-    max-width: 100vw;
-  }
   .max-w-sm {
     max-width: var(--container-sm);
   }
@@ -1068,9 +1059,6 @@
   .min-w-0 {
     min-width: calc(var(--spacing) * 0);
   }
-  .min-w-7xl {
-    min-width: var(--container-7xl);
-  }
   .min-w-\[4ch\] {
     min-width: 4ch;
   }
@@ -1079,21 +1067,6 @@
   }
   .min-w-\[280px\] {
     min-width: 280px;
-  }
-  .min-w-\[350px\] {
-    min-width: 350px;
-  }
-  .min-w-lg {
-    min-width: var(--container-lg);
-  }
-  .min-w-sm {
-    min-width: var(--container-sm);
-  }
-  .min-w-xl {
-    min-width: var(--container-xl);
-  }
-  .min-w-xs {
-    min-width: var(--container-xs);
   }
   .flex-1 {
     flex: 1;
@@ -3390,14 +3363,6 @@
       }
     }
   }
-  .group-hover\:translate-x-1 {
-    &:is(:where(.group):hover *) {
-      @media (hover: hover) {
-        --tw-translate-x: calc(var(--spacing) * 1);
-        translate: var(--tw-translate-x) var(--tw-translate-y);
-      }
-    }
-  }
   .group-hover\:scale-110 {
     &:is(:where(.group):hover *) {
       @media (hover: hover) {
@@ -3564,16 +3529,6 @@
       @media (hover: hover) {
         --tw-translate-x: calc(var(--spacing) * 1);
         translate: var(--tw-translate-x) var(--tw-translate-y);
-      }
-    }
-  }
-  .hover\:scale-101 {
-    &:hover {
-      @media (hover: hover) {
-        --tw-scale-x: 101%;
-        --tw-scale-y: 101%;
-        --tw-scale-z: 101%;
-        scale: var(--tw-scale-x) var(--tw-scale-y);
       }
     }
   }
@@ -4377,11 +4332,6 @@
   .sm\:max-w-none {
     @media (width >= 40rem) {
       max-width: none;
-    }
-  }
-  .sm\:min-w-xs {
-    @media (width >= 40rem) {
-      min-width: var(--container-xs);
     }
   }
   .sm\:flex-initial {

@@ -1,7 +1,6 @@
 import hashlib
 import logging
 import time
-from typing import cast
 
 import stripe
 from django.contrib import messages
@@ -17,13 +16,12 @@ from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 from django_ratelimit.decorators import ratelimit
-from djstripe.models import Customer
 
 from core.apps import posthog_client
+from teams.orgs import billing_org
 
-from . import services
+from . import metadata, services
 from .context_processors import invalidate_plan_usage_caches
-from .models import CustomUser
 
 logger = logging.getLogger(__name__)
 
@@ -35,12 +33,15 @@ def pricing_page(request: HttpRequest) -> HttpResponse:
             request,
             "Checkout canceled. You were not charged. Select a plan to try again.",
         )
-    return render(request, "billing/pricing_page.html", services.pricing_context(request.user))
+    return render(
+        request, "billing/pricing_page.html", services.pricing_context(billing_org(request.user))
+    )
 
 
 @login_required
 @ratelimit(key="user", rate="10/m", method=["GET"], block=True)
 def subscription_confirm(request: HttpRequest) -> HttpResponse:
+    org = billing_org(request.user)
     try:
         session_id = request.GET.get("session_id")
         if not session_id:
@@ -52,8 +53,8 @@ def subscription_confirm(request: HttpRequest) -> HttpResponse:
             return HttpResponseBadRequest("Checkout did not complete.")
         if not session.subscription:
             return HttpResponseBadRequest("Session is not a subscription checkout.")
-        if session.get("client_reference_id") != str(request.user.pk):
-            return HttpResponseBadRequest("Session does not belong to this user.")
+        if session.get("client_reference_id") != str(org.pk):
+            return HttpResponseBadRequest("Session does not belong to this organization.")
 
     except stripe.error.StripeError as e:
         logger.error("Stripe API error during subscription confirmation: %s", e)
@@ -75,11 +76,12 @@ def subscription_confirm(request: HttpRequest) -> HttpResponse:
 
 @login_required
 @require_POST
-@ratelimit(key="user", rate="10/m", method="POST", block=True)
+@ratelimit(key="user", rate="10/m", method=["POST"], block=True)
 def create_portal_session(request: HttpRequest) -> HttpResponse:
-    customer = Customer.get_or_create(request.user)[0]
+    org = billing_org(request.user)
+    customer = metadata.org_customer(org)
     if customer is None:
-        return HttpResponseBadRequest("No Stripe customer associated with this account.")
+        return HttpResponseBadRequest("No Stripe customer associated with this organization.")
 
     services._configure()
     portal_session = stripe.billing_portal.Session.create(
@@ -93,13 +95,13 @@ def create_portal_session(request: HttpRequest) -> HttpResponse:
 @require_POST
 @ratelimit(key="user", rate="15/m", method="POST", block=True)
 def purchase_subscription(request: HttpRequest) -> HttpResponse:
-    user = cast(CustomUser, request.user)
+    org = billing_org(request.user)
     line_items = services.fetch_line_items(request)
     if isinstance(line_items, HttpResponseBadRequest):
         return line_items
 
-    customer = services.resolve_customer(user) or Customer.get_or_create(subscriber=user)[0]
-    lock = f"billing:lock:{user.pk}"
+    customer = services.org_customer(org)
+    lock = f"billing:lock:{org.pk}"
     if not cache.add(lock, 1, timeout=30):
         messages.info(request, "A plan change is already in progress.")
         return redirect("billing:pricing_page")
@@ -108,8 +110,8 @@ def purchase_subscription(request: HttpRequest) -> HttpResponse:
         subscription = customer.subscriptions.active().order_by("-created").first()
 
         if subscription is None:
-            key = hashlib.sha256(  # Hourly-unique per user and line items, so a retry for the same user and line items cannot double-charge.
-                f"{user.pk}:{','.join(sorted(item['price'] for item in line_items))}:{int(time.time() // 3600)}".encode()
+            key = hashlib.sha256(  # Hourly-unique per org and line items, so a retry for the same org and line items cannot double-charge.
+                f"{org.pk}:{','.join(sorted(item['price'] for item in line_items))}:{int(time.time() // 3600)}".encode()
             ).hexdigest()
             success_url = (
                 request.build_absolute_uri(reverse("subscription_confirm"))
@@ -124,12 +126,12 @@ def purchase_subscription(request: HttpRequest) -> HttpResponse:
                     customer=customer.id,
                     mode="subscription",
                     line_items=line_items,
-                    client_reference_id=str(user.pk),
+                    client_reference_id=str(org.pk),
                     success_url=success_url,
                     cancel_url=cancel_url,
                     idempotency_key=key,
                 )
-                invalidate_plan_usage_caches(user.pk)
+                invalidate_plan_usage_caches(request.user.pk)
             except stripe.error.StripeError as e:
                 logger.error("Stripe API error during checkout session creation: %s", e)
                 messages.error(
@@ -155,7 +157,7 @@ def purchase_subscription(request: HttpRequest) -> HttpResponse:
                 request,
                 "Your subscription has been updated successfully.",
             )
-            invalidate_plan_usage_caches(user.pk)
+            invalidate_plan_usage_caches(request.user.pk)
         except stripe.error.StripeError as e:
             logger.error("Stripe API error during subscription update: %s", e)
             messages.error(

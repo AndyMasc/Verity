@@ -4,6 +4,8 @@ from dataclasses import dataclass
 
 from djstripe.models import Customer, ProductFeature, Subscription
 
+from teams.models import PersonalOrg, SponsoredOrg
+
 from . import features
 
 ACTIVE_SUBSCRIPTION_STATUSES = frozenset({"active", "trialing"})
@@ -49,6 +51,9 @@ PLUS = ProductMetadata(
 
 ORGANIZATIONS = ProductMetadata(
     stripe_id="prod_VRCG4ddJeaMqzl",
+    features=["create-orgs", "add-org-members"],
+    monthly_upload_limit=features.PRO_MONTHLY_UPLOAD_LIMIT,
+    monthly_scan_limit=features.PRO_MONTHLY_SCAN_LIMIT,
 )
 
 USAGE_BASED_STORAGE = ProductMetadata(
@@ -64,29 +69,30 @@ PRODUCTS = {
 }
 
 
-def active_subscriptions(user) -> list:
-    """The user's active subscriptions, across every customer linked to them."""
-    if not getattr(user, "is_authenticated", False):
+def org_customer(org) -> Customer | None:
+    """The Stripe customer backing an org's subscription."""
+    return getattr(getattr(org, "billing", None), "customer", None)
+
+
+def active_subscriptions(org) -> list:
+    """The org's active subscriptions."""
+    if org is None:
         return []
 
-    cached = getattr(user, "_active_subs", None)
+    cached = getattr(org, "_active_subs", None)
     if cached is not None:
         return cached
 
-    customer_ids = set(Customer.objects.filter(subscriber=user).values_list("id", flat=True))
-    own = getattr(user, "customer", None)
-    if own is not None:
-        customer_ids.add(own.id)
-
+    customer = org_customer(org)
     subscriptions = (
-        Subscription.objects.filter(customer_id__in=customer_ids)
+        Subscription.objects.filter(customer=customer)
         .prefetch_related("items__price__product")
         .order_by("pk")
-        if customer_ids
+        if customer is not None
         else []
     )
-    user._active_subs = [s for s in subscriptions if is_active_subscription(s)]
-    return user._active_subs
+    org._active_subs = [s for s in subscriptions if is_active_subscription(s)]
+    return org._active_subs
 
 
 def live_items(subscription) -> list:
@@ -98,23 +104,55 @@ def live_items(subscription) -> list:
     return [item for item in subscription.items.all() if item.price and item.price.id in live]
 
 
-def held_products(user) -> dict[str, ProductMetadata]:
-    """Products the user currently holds, keyed by Stripe product id."""
-    return {
+def payer_still_holds(sponsored) -> bool:
+    """A sponsorship lasts exactly as long as its sponsor holds that plan.
+
+    Reads the sponsor's personal org through their marker rather than importing
+    teams.orgs, which would close a cycle back through billing.models.
+    """
+    try:
+        sponsor_org = sponsored.sponsor.personal_org.organization
+    except PersonalOrg.DoesNotExist:
+        return False
+    return sponsored.product_id in {
+        item.price.product.id
+        for sub in active_subscriptions(sponsor_org)
+        for item in live_items(sub)
+    }
+
+
+def held_products(org) -> dict[str, ProductMetadata]:
+    """Products the org holds, keyed by Stripe product id.
+
+    A sponsored org runs on the plan its sponsor bought, on top of anything the
+    org holds itself.
+    """
+    held = {
         meta.stripe_id: meta
-        for subscription in active_subscriptions(user)
+        for subscription in active_subscriptions(org)
         for item in live_items(subscription)
         if (meta := PRODUCTS.get(item.price.product.id))
     }
 
+    if org is None:
+        return held
 
-def plan_for_user(user) -> ProductMetadata:
-    """The user's plan, or Free. Metered add-ons are excluded."""
-    return next((m for m in held_products(user).values() if not m.metered), VERITY_FREE)
+    sponsored = SponsoredOrg.objects.filter(organization=org).first()
+    if sponsored and payer_still_holds(sponsored):
+        granted = PRODUCTS.get(sponsored.product_id)
+        if granted:
+            held[granted.stripe_id] = granted
+
+    return held
 
 
-def has_metered_storage(user) -> bool:
-    return USAGE_BASED_STORAGE.stripe_id in held_products(user)
+def plan_for_org(org) -> ProductMetadata:
+    """The org's plan, or Free. Metered add-ons are excluded."""
+    return next((m for m in held_products(org).values() if not m.metered), VERITY_FREE)
+
+
+def has_metered_storage(org) -> bool:
+    return USAGE_BASED_STORAGE.stripe_id in held_products(org)
 
 
 def is_active_subscription(subscription) -> bool:
@@ -124,11 +162,11 @@ def is_active_subscription(subscription) -> bool:
     )
 
 
-def granted_features(user) -> set[str]:
-    """lookup_keys of the Stripe features attached to the products "user" holds."""
+def granted_features(org) -> set[str]:
+    """lookup_keys of the Stripe features attached to the products "org" holds."""
     return {
         product_feature.entitlement_feature.stripe_data.get("lookup_key")
         for product_feature in ProductFeature.objects.filter(
-            product_id__in=held_products(user)
+            product_id__in=held_products(org)
         ).select_related("entitlement_feature")
     }

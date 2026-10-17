@@ -7,9 +7,11 @@ from django.db import transaction
 from django.dispatch import receiver
 from django.utils import timezone
 from djstripe.event_handlers import djstripe_receiver
-from djstripe.models import Customer, Subscription
+from djstripe.models import Subscription
 
 from core.apps import posthog_client
+
+from .models import OrgBilling
 
 logger = logging.getLogger(__name__)
 
@@ -35,20 +37,31 @@ def _event_object(event: Any) -> dict[str, Any]:
 
 
 def _subscriber_pk(customer_id: str | None, client_reference_id: str | None = None) -> str | None:
-    """Resolve the local user behind a Stripe event, or None when unlinked."""
-    if client_reference_id and str(client_reference_id).isdigit():
-        from .models import CustomUser
+    """Resolve the local user behind a Stripe event, or None when unlinked.
+    Checkout tags the session with the org id, and an org's Stripe customer
+    maps back through OrgBilling rather than Customer.subscriber.
+    """
+    from teams.models import PersonalOrg
 
-        if CustomUser.objects.filter(pk=int(client_reference_id)).exists():
-            return str(int(client_reference_id))
+    if client_reference_id and str(client_reference_id).isdigit():
+        org_id = int(client_reference_id)
+        user_id = (
+            PersonalOrg.objects.filter(organization_id=org_id)
+            .values_list("user_id", flat=True)
+            .first()
+        )
+        if user_id is not None:
+            return str(user_id)
 
     if not customer_id:
         return None
 
-    subscriber_id = (
-        Customer.objects.filter(id=customer_id).values_list("subscriber_id", flat=True).first()
+    user_id = (
+        OrgBilling.objects.filter(customer_id=customer_id)
+        .values_list("organization__personal_for__user_id", flat=True)
+        .first()
     )
-    return str(subscriber_id) if subscriber_id else None
+    return str(user_id) if user_id else None
 
 
 def capture(event: str, distinct_id: str | None, properties: dict[str, Any]) -> None:

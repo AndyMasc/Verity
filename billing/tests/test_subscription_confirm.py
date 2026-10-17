@@ -5,6 +5,8 @@ from django.core.cache import cache
 from django.test import TestCase
 from django.urls import reverse
 
+from teams.orgs import billing_org
+
 from ..context_processors import _SUBSCRIPTION_STATUS_KEY
 from .helpers import FakeSession
 
@@ -28,6 +30,7 @@ class SubscriptionConfirmTests(TestCase):
             email="wendy@example.com",
             password="password",
         )
+        self.org = billing_org(self.user)
         self.url = reverse("subscription_confirm")
 
     def _get(self, session, user=None):
@@ -42,7 +45,7 @@ class SubscriptionConfirmTests(TestCase):
         return client.get(self.url, {"session_id": "cs_test"})
 
     def test_accepts_own_session(self):
-        response = self._get(FakeSession(client_reference_id=str(self.user.pk)))
+        response = self._get(FakeSession(client_reference_id=str(self.org.pk)))
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse("core:dashboard"))
 
@@ -51,7 +54,7 @@ class SubscriptionConfirmTests(TestCase):
         response = self._get(
             FakeSession(
                 payment_status="no_payment_required",
-                client_reference_id=str(self.user.pk),
+                client_reference_id=str(self.org.pk),
             )
         )
         self.assertEqual(response.status_code, 302)
@@ -62,13 +65,13 @@ class SubscriptionConfirmTests(TestCase):
         response = self._get(
             FakeSession(
                 payment_status="unpaid",
-                client_reference_id=str(self.user.pk),
+                client_reference_id=str(self.org.pk),
             )
         )
         self.assertEqual(response.status_code, 302)
 
     def test_rejects_another_users_session(self):
-        response = self._get(FakeSession(client_reference_id=str(self.other_user.pk)))
+        response = self._get(FakeSession(client_reference_id=str(billing_org(self.other_user).pk)))
         self.assertEqual(response.status_code, 400)
 
     def test_rejects_session_without_client_reference(self):
@@ -80,7 +83,7 @@ class SubscriptionConfirmTests(TestCase):
             FakeSession(
                 status="open",
                 payment_status="unpaid",
-                client_reference_id=str(self.user.pk),
+                client_reference_id=str(self.org.pk),
             )
         )
         self.assertEqual(response.status_code, 400)
@@ -89,7 +92,7 @@ class SubscriptionConfirmTests(TestCase):
         response = self._get(
             FakeSession(
                 subscription=None,
-                client_reference_id=str(self.user.pk),
+                client_reference_id=str(self.org.pk),
             )
         )
         self.assertEqual(response.status_code, 400)
@@ -101,7 +104,7 @@ class SubscriptionConfirmTests(TestCase):
         key = _SUBSCRIPTION_STATUS_KEY.format(user_id=self.user.pk)
         cache.set(key, {"plan_name": "Free"}, 60)
 
-        response = self._get(FakeSession(client_reference_id=str(self.user.pk)))
+        response = self._get(FakeSession(client_reference_id=str(self.org.pk)))
 
         self.assertEqual(response.status_code, 302)
         self.assertIsNone(cache.get(key))

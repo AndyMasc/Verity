@@ -41,7 +41,8 @@ def index(request: HttpRequest) -> HttpResponse:
     if request.user.is_authenticated:
         return redirect("core:dashboard")
 
-    return render(request, "core/landing_page.html", pricing_context(request.user))
+    # Authenticated users are redirected above, so there is no billing subject here.
+    return render(request, "core/landing_page.html", pricing_context(None))
 
 
 def privacy_policy(_request: HttpRequest) -> HttpResponse:

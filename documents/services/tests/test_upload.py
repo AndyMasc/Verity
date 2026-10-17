@@ -235,6 +235,7 @@ class TestUploadServiceHandle:
             get_monthly_upload_limit,
             record_monthly_upload_usage,
         )
+        from teams.orgs import billing_org
 
         for _ in range(get_monthly_upload_limit(user, "upload")):
             record_monthly_upload_usage(user, "upload")
