@@ -14,7 +14,8 @@ from .services import _configure
 logger = logging.getLogger(__name__)
 
 
-@dramatiq.actor(periodic=cron("0 * * * *"), max_retries=3, time_limit=300)
+# Dramatiq time limits are in milliseconds.
+@dramatiq.actor(periodic=cron("0 * * * *"), max_retries=3, time_limit=300_000)
 def sync_upload_overage_to_stripe():
     """Report each subscriber's upload overage to Stripe's billing meter."""
     metered_product = metadata.USAGE_BASED_STORAGE
