@@ -1,7 +1,11 @@
+import time
 from unittest import mock
 
+import dramatiq
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.test import SimpleTestCase, TestCase
+from dramatiq.brokers.stub import StubBroker
+from dramatiq.middleware import TimeLimit
 from django.utils import timezone
 from djstripe.models import Customer, Price, Product, Subscription, SubscriptionItem
 
@@ -103,3 +107,33 @@ class SyncUploadOverageTests(TestCase):
         self._subscribe(metadata.USAGE_BASED_STORAGE.stripe_id,
                         status="canceled")
         self.assertEqual(self._over(100).call_count, 0)
+
+
+class SyncUploadOverageTimeLimitTests(SimpleTestCase):
+
+    def test_time_limit_is_five_minutes_in_milliseconds(self):
+        self.assertEqual(sync_upload_overage_to_stripe.options["time_limit"],
+                         300_000)
+
+    def test_worker_finishes_work_longer_than_300_milliseconds(self):
+        broker = StubBroker(middleware=[TimeLimit(interval=10)])
+        broker.emit_after("process_boot")
+        finished = []
+
+        @dramatiq.actor(
+            broker=broker,
+            time_limit=sync_upload_overage_to_stripe.options["time_limit"])
+        def slow_metering():
+            time.sleep(0.5)
+            finished.append(True)
+
+        worker = dramatiq.Worker(broker, worker_timeout=100)
+        worker.start()
+        try:
+            slow_metering.send()
+            broker.join(slow_metering.queue_name, fail_fast=True)
+            worker.join()
+        finally:
+            worker.stop()
+
+        self.assertEqual(finished, [True])
