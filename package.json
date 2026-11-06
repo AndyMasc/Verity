@@ -9,7 +9,7 @@
     "@tailwindcss/cli": "^4.3.0",
     "prettier": "^3.9.8",
     "prettier-plugin-tailwindcss": "^0.8.1",
-    "tailwindcss": "^4.3.0"
+    "tailwindcss": "^4.3.4"
   },
   "dependencies": {
     "@sentry/browser": "^11.0.0"
